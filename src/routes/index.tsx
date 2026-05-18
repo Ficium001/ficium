@@ -4,15 +4,17 @@ import Register from "../pages/Register";
 import Login from "../pages/Login";
 import Dashboard from "../pages/Dashboard";
 import CheckEmail from "../pages/CheckEmail";
+import Kyc from "../pages/Kyc";
+import Dossier from "../pages/Dossier";
 import NotFound from "../pages/NotFound";
 import { ProtectedRoute, PublicOnlyRoute } from "./ProtectedRoute";
 
 export const router = createBrowserRouter([
-  // Public — everyone can see
+  // Public
   { path: "/", element: <Splash /> },
   { path: "/onboarding/check-email", element: <CheckEmail /> },
 
-  // Public-only — bounce to dashboard if already logged in
+  // Public-only
   {
     path: "/register",
     element: (
@@ -30,12 +32,28 @@ export const router = createBrowserRouter([
     ),
   },
 
-  // Protected — require login
+  // Protected
   {
     path: "/dashboard",
     element: (
       <ProtectedRoute>
         <Dashboard />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/onboarding/kyc",
+    element: (
+      <ProtectedRoute>
+        <Kyc />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/onboarding/dossier",
+    element: (
+      <ProtectedRoute>
+        <Dossier />
       </ProtectedRoute>
     ),
   },
