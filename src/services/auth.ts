@@ -12,90 +12,68 @@ export type SignUpInput = {
   title?: string;
 };
 
-export type SignUpResult =
-  | { ok: true; userId: string; needsEmailConfirmation: boolean }
-  | { ok: false; error: AuthError };
-
 export type AuthError = {
   code:
     | "email_already_registered"
     | "weak_password"
     | "invalid_email"
-    | "profile_insert_failed"
     | "network"
     | "unknown";
   message: string;
 };
 
+export type SignUpResult =
+  | { ok: true; userId: string; needsEmailConfirmation: boolean }
+  | { ok: false; error: AuthError };
+
+export type SignInResult =
+  | { ok: true; userId: string }
+  | { ok: false; error: AuthError };
+
 /* ---------- Sign up ---------- */
 
 /**
- * Creates a Supabase Auth account, then inserts the corresponding row in public.users.
- * Returns a discriminated union so callers can handle success/error without try/catch.
- *
- * The two operations are NOT in a database transaction (Supabase Auth and our table
- * are technically separate). If the auth account is created but the users-row insert
- * fails, we surface a clear error so the user can retry; the orphaned auth account
- * is rare and cleaned up by a future maintenance task.
+ * Create a new auth account. Profile fields are passed as user metadata;
+ * a database trigger (handle_new_user) reads that metadata and creates
+ * the matching public.users row automatically. So this function only
+ * makes ONE network call, and the client code never touches public.users
+ * directly during signup — which keeps RLS strict and avoids
+ * "orphaned auth account" edge cases.
  */
 export async function signUp(input: SignUpInput): Promise<SignUpResult> {
   const { email, password, firstName, middleName, lastName, phone, title } = input;
-
   const fullName = [firstName, middleName, lastName].filter(Boolean).join(" ").trim();
 
-  // 1. Create the auth account
-  const { data: authData, error: authError } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      data: { full_name: fullName },
+      data: {
+        full_name: fullName,
+        first_name: firstName,
+        middle_name: middleName || "",
+        last_name: lastName,
+        phone: phone || "",
+        title: title || "",
+      },
     },
   });
 
-  if (authError) return { ok: false, error: mapAuthError(authError) };
-  if (!authData.user) {
-    return {
-      ok: false,
-      error: { code: "unknown", message: "Sign up did not return a user." },
-    };
+  if (error) return { ok: false, error: mapAuthError(error) };
+  if (!data.user) {
+    return { ok: false, error: { code: "unknown", message: "Sign up did not return a user." } };
   }
 
-  const userId = authData.user.id;
-  const needsEmailConfirmation = !authData.session;
-
-  // 2. Insert the matching public.users row
-  const { error: profileError } = await supabase.from("users").insert({
-    id: userId,
-    email,
-    full_name: fullName,
-    first_name: firstName,
-    middle_name: middleName || null,
-    last_name: lastName,
-    phone: phone || null,
-    title: title || null,
-    role: "client",
-    kyc_status: "pending",
-  });
-
-  if (profileError) {
-    return {
-      ok: false,
-      error: {
-        code: "profile_insert_failed",
-        message: profileError.message,
-      },
-    };
-  }
-
-  return { ok: true, userId, needsEmailConfirmation };
+  return {
+    ok: true,
+    userId: data.user.id,
+    needsEmailConfirmation: !data.session,
+  };
 }
 
 /* ---------- Sign in ---------- */
 
-export async function signIn(
-  email: string,
-  password: string
-): Promise<{ ok: true; userId: string } | { ok: false; error: AuthError }> {
+export async function signIn(email: string, password: string): Promise<SignInResult> {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return { ok: false, error: mapAuthError(error) };
   if (!data.user) {
@@ -123,16 +101,10 @@ function mapAuthError(err: { message?: string; code?: string; status?: number })
   const msg = (err.message || "").toLowerCase();
 
   if (msg.includes("already registered") || msg.includes("user already")) {
-    return {
-      code: "email_already_registered",
-      message: "An account with this email already exists.",
-    };
+    return { code: "email_already_registered", message: "An account with this email already exists." };
   }
   if (msg.includes("password") && (msg.includes("weak") || msg.includes("short"))) {
-    return {
-      code: "weak_password",
-      message: "Password is too weak. Use at least 8 characters.",
-    };
+    return { code: "weak_password", message: "Password is too weak. Use at least 8 characters." };
   }
   if (msg.includes("email") && msg.includes("invalid")) {
     return { code: "invalid_email", message: "That doesn't look like a valid email address." };
