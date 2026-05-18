@@ -124,13 +124,15 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Primary CTA */}
-        <Link
-          to="/requests/new"
-          className="fixed bottom-20 right-5 sm:right-8 z-30 inline-flex items-center gap-2 bg-ficium text-white px-5 py-3.5 rounded-pill shadow-ficium font-semibold no-underline"
-        >
-          <Plus size={18} /> New Request
-        </Link>
+{/* Primary CTA — only when there's at least one request (otherwise empty-state CTA is enough) */}
+        {requests.length > 0 && (
+          <Link
+            to="/requests/new"
+            className="fixed bottom-20 right-5 sm:right-8 z-30 inline-flex items-center gap-2 bg-ficium text-white px-5 py-3.5 rounded-pill shadow-ficium font-semibold no-underline"
+          >
+            <Plus size={18} /> New Request
+          </Link>
+        )}
       </div>
 
       <BottomNav />

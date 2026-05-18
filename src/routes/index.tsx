@@ -7,6 +7,7 @@ import CheckEmail from "../pages/CheckEmail";
 import Kyc from "../pages/Kyc";
 import Dossier from "../pages/Dossier";
 import Requests from "../pages/Requests";
+import NewRequest from "../pages/NewRequest";
 import Advisor from "../pages/Advisor";
 import Alerts from "../pages/Alerts";
 import Profile from "../pages/Profile";
@@ -27,6 +28,7 @@ export const router = createBrowserRouter([
   { path: "/onboarding/kyc",     element: <ProtectedRoute><Kyc /></ProtectedRoute> },
   { path: "/onboarding/dossier", element: <ProtectedRoute><Dossier /></ProtectedRoute> },
   { path: "/requests",           element: <ProtectedRoute><Requests /></ProtectedRoute> },
+  { path: "/requests/new",       element: <ProtectedRoute><NewRequest /></ProtectedRoute> },
   { path: "/advisor",            element: <ProtectedRoute><Advisor /></ProtectedRoute> },
   { path: "/alerts",             element: <ProtectedRoute><Alerts /></ProtectedRoute> },
   { path: "/profile",            element: <ProtectedRoute><Profile /></ProtectedRoute> },
