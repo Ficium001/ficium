@@ -5,12 +5,41 @@ import Login from "../pages/Login";
 import Dashboard from "../pages/Dashboard";
 import CheckEmail from "../pages/CheckEmail";
 import NotFound from "../pages/NotFound";
+import { ProtectedRoute, PublicOnlyRoute } from "./ProtectedRoute";
 
 export const router = createBrowserRouter([
+  // Public — everyone can see
   { path: "/", element: <Splash /> },
-  { path: "/register", element: <Register /> },
-  { path: "/login", element: <Login /> },
   { path: "/onboarding/check-email", element: <CheckEmail /> },
-  { path: "/dashboard", element: <Dashboard /> },
+
+  // Public-only — bounce to dashboard if already logged in
+  {
+    path: "/register",
+    element: (
+      <PublicOnlyRoute>
+        <Register />
+      </PublicOnlyRoute>
+    ),
+  },
+  {
+    path: "/login",
+    element: (
+      <PublicOnlyRoute>
+        <Login />
+      </PublicOnlyRoute>
+    ),
+  },
+
+  // Protected — require login
+  {
+    path: "/dashboard",
+    element: (
+      <ProtectedRoute>
+        <Dashboard />
+      </ProtectedRoute>
+    ),
+  },
+
+  // Catch-all
   { path: "*", element: <NotFound /> },
 ]);

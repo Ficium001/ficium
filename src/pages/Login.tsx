@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -20,7 +20,11 @@ type FormData = z.infer<typeof schema>;
 
 export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // Where the user was trying to go before they got bounced to /login.
+  const from = (location.state as { from?: string } | null)?.from || "/dashboard";
 
   const {
     register,
@@ -41,7 +45,7 @@ export default function Login() {
       return;
     }
 
-    navigate("/dashboard");
+    navigate(from, { replace: true });
   };
 
   return (
