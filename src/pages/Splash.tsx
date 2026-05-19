@@ -47,6 +47,7 @@ function useReducedMotion(): boolean {
     return () => mq.removeEventListener("change", onChange);
   }, []);
   return reduced;
+
 }
 
 function useScrollY(): number {
@@ -155,6 +156,17 @@ export default function Splash() {
 
   const [sceneIndex, setSceneIndex] = useState(0);
   const [activeOffer, setActiveOffer] = useState(0);
+
+  // Detect Supabase auth errors arriving in the URL hash (e.g., expired
+  // password reset link) and redirect to a friendly explanation page.
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash.includes("error=access_denied") || hash.includes("error_code=otp_expired")) {
+      window.history.replaceState(null, "", window.location.pathname);
+      window.location.href = "/auth/reset-password";
+    }
+  }, []);
+
 
   useEffect(() => {
     if (reducedMotion) return;
