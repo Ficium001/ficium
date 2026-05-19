@@ -2,6 +2,8 @@ import { createBrowserRouter } from "react-router-dom";
 import Splash from "../pages/Splash";
 import Register from "../pages/Register";
 import Login from "../pages/Login";
+import ForgotPassword from "../pages/ForgotPassword";
+import ResetPassword from "../pages/ResetPassword";
 import Dashboard from "../pages/Dashboard";
 import CheckEmail from "../pages/CheckEmail";
 import Kyc from "../pages/Kyc";
@@ -18,6 +20,8 @@ export const router = createBrowserRouter([
   // Public
   { path: "/", element: <Splash /> },
   { path: "/onboarding/check-email", element: <CheckEmail /> },
+  { path: "/forgot-password", element: <ForgotPassword /> },
+  { path: "/auth/reset-password", element: <ResetPassword /> },
 
   // Public-only
   { path: "/register", element: <PublicOnlyRoute><Register /></PublicOnlyRoute> },

@@ -87,9 +87,9 @@ export default function Login() {
               htmlFor="password"
               error={errors.password?.message}
               rightLabel={
-                <a href="#" className="text-xs text-ficium font-semibold no-underline hover:underline">
-                  Forgot password?
-                </a>
+                <Link to="/forgot-password" className="text-xs text-ficium font-semibold no-underline hover:underline">
+                Forgot password?
+               </Link>
               }
             >
               <Input
