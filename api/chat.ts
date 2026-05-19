@@ -2,111 +2,157 @@ import Anthropic from "@anthropic-ai/sdk";
 
 /* ---------- Types ---------- */
 
-type ChatMessage = { role: "user" | "assistant"; content: string };
+type ChatMessage = {
+  role: "user" | "assistant";
+  content: string;
+};
 
 type Body = {
   messages?: ChatMessage[];
 };
 
-/* ---------- System prompt ---------- */
+/* ---------- Runtime ---------- */
 
-const SYSTEM_PROMPT = `You are Ficium's AI Financial Advisor, helping clients in Mauritius make better banking decisions.
+export const config = {
+  runtime: "nodejs",
+};
 
-Ficium is a reverse-banking marketplace: clients post requests (loans, deposits, business funding, investments) and banks in Mauritius compete with bids. You help the client understand offers, market rates, and trade-offs.
+/* ---------- System Prompt ---------- */
 
-Your tone:
-- Direct and practical. No fluff, no jargon-for-its-own-sake.
-- Specific to Mauritius (MUR, local banks: MCB, SBM, AfrAsia, MauBank, ABC Banking) when relevant.
-- Honest about uncertainty. If you don't know current rates or specifics, say so.
-- Empathetic but not sycophantic.
+const SYSTEM_PROMPT = `
+You are Ficium's AI Financial Advisor, helping clients in Mauritius make better banking decisions.
 
-What you can help with:
-- Explaining loan/deposit terms (APR, processing fees, early repayment penalties)
-- Comparing bids the client is considering
-- Estimating whether a rate is competitive for the Mauritian market
-- Walking through the financial implications of a decision
+Ficium is a reverse-banking marketplace:
+clients post requests (loans, deposits, business funding, investments)
+and banks in Mauritius compete with bids.
 
-What you must NOT do:
-- Give personalized investment advice beyond general education
-- Recommend a specific bank by name unless the client asks you to compare specific bids
-- Make promises about approval, rates, or outcomes
-- Pretend to know real-time market data
+You help users:
+- compare offers
+- understand rates and fees
+- evaluate trade-offs
+- understand Mauritian banking products
 
-If asked about something outside finance/banking, politely redirect. Keep responses focused and reasonably brief — usually under 200 words unless the user explicitly asks for depth.`;
+Tone:
+- Direct
+- Practical
+- Clear
+- Mauritius-focused
+- Honest about uncertainty
+
+Do not:
+- Give personalized investment advice
+- Guarantee approvals or rates
+- Pretend to know real-time data
+- Recommend a bank unless explicitly comparing offers
+
+Keep responses concise and useful.
+`;
+
+/* ---------- Anthropic Client ---------- */
+
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+});
 
 /* ---------- Handler ---------- */
 
-export default async function handler(req: Request): Promise<Response> {
-  if (req.method !== "POST") {
-    return json({ error: "Method not allowed" }, 405);
-  }
-
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    return json({ error: "Server misconfigured: ANTHROPIC_API_KEY missing" }, 500);
-  }
-
-  let body: Body;
+export default async function handler(req: any, res: any) {
   try {
-    body = await req.json();
-  } catch {
-    return json({ error: "Invalid JSON body" }, 400);
-  }
+    /* ---------- Method Check ---------- */
 
-  const messages = body.messages;
-  if (!Array.isArray(messages) || messages.length === 0) {
-    return json({ error: "messages must be a non-empty array" }, 400);
-  }
+    if (req.method !== "POST") {
+      return res.status(405).json({
+        error: "Method not allowed",
+      });
+    }
 
-  // Lightweight defense: cap input size so a user can't burn through tokens with a giant payload.
-  const totalChars = messages.reduce((s, m) => s + (m.content?.length || 0), 0);
-  if (totalChars > 20_000) {
-    return json({ error: "Message history too long. Please start a new conversation." }, 413);
-  }
+    /* ---------- Validate API Key ---------- */
 
-  // Normalize: clamp to last 20 messages so deep history doesn't compound costs.
-  const recent = messages.slice(-20).map((m) => ({
-    role: m.role === "assistant" ? ("assistant" as const) : ("user" as const),
-    content: String(m.content ?? "").slice(0, 4000),
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return res.status(500).json({
+        error: "ANTHROPIC_API_KEY missing",
+      });
+    }
+
+    /* ---------- Parse Body ---------- */
+
+    const body: Body = req.body;
+
+    if (
+      !body.messages ||
+      !Array.isArray(body.messages) ||
+      body.messages.length === 0
+    ) {
+      return res.status(400).json({
+        error: "messages must be a non-empty array",
+      });
+    }
+
+    /* ---------- Limit Payload ---------- */
+
+    const totalChars = body.messages.reduce(
+      (sum, m) => sum + (m.content?.length || 0),
+      0
+    );
+
+    if (totalChars > 20000) {
+      return res.status(413).json({
+        error: "Conversation too large",
+      });
+    }
+
+    /* ---------- Normalize Messages ---------- */
+
+const recentMessages: {
+  role: "user" | "assistant";
+  content: string;
+}[] = body.messages
+  .slice(-20)
+  .map((m) => ({
+    role:
+      m.role === "assistant"
+        ? ("assistant" as const)
+        : ("user" as const),
+
+    content: String(m.content || "").slice(0, 4000),
   }));
+    console.log("Sending request to Anthropic...");
 
-  const client = new Anthropic({ apiKey });
+    /* ---------- Claude Request ---------- */
 
-  try {
-    const completion = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
+    const completion = await anthropic.messages.create({
+      model: "claude-3-5-haiku-latest",
       max_tokens: 700,
       system: SYSTEM_PROMPT,
-      messages: recent,
+      messages: recentMessages,
     });
 
-    // Extract the text content (Anthropic returns an array of content blocks)
-    const text = completion.content
-      .map((c) => (c.type === "text" ? c.text : ""))
+    console.log("Anthropic response received");
+
+    /* ---------- Extract Text ---------- */
+
+    const reply = completion.content
+      .map((c: any) => (c.type === "text" ? c.text : ""))
       .join("")
       .trim();
 
-    return json({
-      reply: text,
+    /* ---------- Response ---------- */
+
+    return res.status(200).json({
+      reply,
       usage: {
         input_tokens: completion.usage.input_tokens,
         output_tokens: completion.usage.output_tokens,
       },
     });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("Anthropic call failed:", message);
-    return json({ error: "AI advisor is temporarily unavailable. Please try again." }, 502);
+
+  } catch (error: any) {
+    console.error("API Error:", error);
+
+    return res.status(500).json({
+      error:
+        error?.message ||
+        "AI advisor is temporarily unavailable",
+    });
   }
 }
-
-/* ---------- Helpers ---------- */
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "content-type": "application/json" },
-  });
-}
-
-export const runtime = 'nodejs';
