@@ -1,122 +1,187 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { KeyboardEvent } from "react";
+import { Send, Sparkles, RotateCcw } from "lucide-react";
+import { sendToAdvisor } from "../services/advisor";
+import type { ChatMessage } from "../services/advisor";
+import { BottomNav, Button } from "../components/ui";
 
-export default function AdvisorPage() {
+const INITIAL_GREETING: ChatMessage = {
+  role: "assistant",
+  content:
+    "Hi — I'm Ficium's AI advisor. Ask me anything about loans, deposits, or comparing bids in Mauritius. I'll be direct and practical.",
+};
+
+export default function Advisor() {
+  const [messages, setMessages] = useState<ChatMessage[]>([INITIAL_GREETING]);
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<
-    { role: string; content: string }[]
-  >([]);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const [loading, setLoading] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  async function sendMessage() {
-    if (!input.trim()) return;
+  // Auto-scroll to bottom whenever messages change
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [messages, sending]);
 
-    const updatedMessages = [
-      ...messages,
-      {
-        role: "user",
-        content: input,
-      },
-    ];
+  const send = async () => {
+    const trimmed = input.trim();
+    if (!trimmed || sending) return;
 
-    setMessages(updatedMessages);
+    setError(null);
+
+    const userMsg: ChatMessage = { role: "user", content: trimmed };
+    const next = [...messages, userMsg];
+    setMessages(next);
     setInput("");
-    setLoading(true);
+    setSending(true);
 
-    try {
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          messages: updatedMessages,
-        }),
-      });
+    // The greeting is UI-only — don't send it to the API
+    const apiMessages = next.filter((m) => m !== INITIAL_GREETING);
+    const result = await sendToAdvisor(apiMessages);
 
-      const data = await response.json();
-
-      setMessages([
-        ...updatedMessages,
-        {
-          role: "assistant",
-          content: data.reply,
-        },
-      ]);
-
-    } catch (error) {
-      console.error(error);
-
-      setMessages([
-        ...updatedMessages,
-        {
-          role: "assistant",
-          content:
-            "Sorry, Ficium AI is temporarily unavailable.",
-        },
-      ]);
+    if (result.ok) {
+      setMessages((m) => [...m, { role: "assistant", content: result.reply }]);
+    } else {
+      setError(result.error);
     }
+    setSending(false);
 
-    setLoading(false);
-  }
+    // refocus the input for the next message
+    setTimeout(() => inputRef.current?.focus(), 0);
+  };
+
+  const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      send();
+    }
+  };
+
+  const resetConversation = () => {
+    if (sending) return;
+    setMessages([INITIAL_GREETING]);
+    setError(null);
+    setInput("");
+    setTimeout(() => inputRef.current?.focus(), 0);
+  };
 
   return (
-    <div className="max-w-3xl mx-auto p-6">
-      <h1 className="text-4xl font-bold mb-6">
-        AI Advisor
-      </h1>
-
-      <div className="border rounded-xl p-4 h-[500px] overflow-y-auto bg-white mb-4">
-        {messages.length === 0 && (
-          <p className="text-gray-500">
-            Ask Ficium AI about loans, rates, deposits,
-            or banking decisions.
-          </p>
-        )}
-
-        {messages.map((msg, index) => (
-          <div
-            key={index}
-            className={`mb-4 ${
-              msg.role === "user"
-                ? "text-right"
-                : "text-left"
-            }`}
-          >
-            <div
-              className={`inline-block px-4 py-3 rounded-xl max-w-[80%] whitespace-pre-wrap ${
-                msg.role === "user"
-                  ? "bg-black text-white"
-                  : "bg-gray-100 text-black"
-              }`}
-            >
-              {msg.content}
+    <div className="min-h-screen bg-cream flex flex-col">
+      {/* Header */}
+      <header className="px-5 sm:px-6 pt-6 sm:pt-8 pb-3 max-w-[640px] mx-auto w-full">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-ficium text-white grid place-items-center flex-shrink-0">
+              <Sparkles size={18} />
+            </div>
+            <div className="min-w-0">
+              <h1 className="font-display text-xl sm:text-2xl font-bold leading-tight">
+                AI Advisor
+              </h1>
+              <p className="text-xs text-muted">Ficium's banking helper</p>
             </div>
           </div>
-        ))}
+          {messages.length > 1 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              leftIcon={<RotateCcw size={14} />}
+              onClick={resetConversation}
+              disabled={sending}
+            >
+              Reset
+            </Button>
+          )}
+        </div>
+      </header>
 
-        {loading && (
-          <p className="text-gray-500">
-            Ficium AI is thinking...
-          </p>
-        )}
+      {/* Message list */}
+      <div
+        ref={scrollRef}
+        className="flex-1 overflow-y-auto px-5 sm:px-6 pb-4"
+      >
+        <div className="max-w-[640px] mx-auto w-full flex flex-col gap-3">
+          {messages.map((m, i) => (
+            <Bubble key={i} message={m} />
+          ))}
+          {sending && <TypingBubble />}
+          {error && (
+            <div
+              role="alert"
+              className="self-start max-w-[85%] px-3.5 py-3 bg-red-50 border border-red-200 text-red-800 rounded-2xl text-[13px]"
+            >
+              {error}
+            </div>
+          )}
+        </div>
       </div>
 
-      <div className="flex gap-2">
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask about loans, rates, or banking..."
-          className="flex-1 border rounded-xl px-4 py-3"
-        />
+      {/* Composer */}
+      <div className="border-t border-ink/[0.06] bg-white/95 backdrop-blur-xl pb-20 sm:pb-24">
+        <div className="max-w-[640px] mx-auto w-full px-5 sm:px-6 py-3 sm:py-4">
+          <div className="flex items-end gap-2">
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={onKeyDown}
+              placeholder="Ask about loans, rates, or banking…"
+              rows={1}
+              disabled={sending}
+              className="flex-1 resize-none min-h-[48px] max-h-[140px] px-4 py-3 text-[15px] font-body text-ink bg-cream border-[1.5px] border-ink/12 rounded-2xl outline-none focus:border-ficium focus:ring-2 focus:ring-ficium/15 placeholder:text-muted transition-colors disabled:bg-ink/5"
+            />
+            <button
+              type="button"
+              onClick={send}
+              disabled={!input.trim() || sending}
+              aria-label="Send message"
+              className="w-12 h-12 rounded-2xl bg-ficium text-white grid place-items-center shadow-ficium disabled:opacity-50 disabled:cursor-not-allowed transition-opacity flex-shrink-0"
+            >
+              <Send size={18} />
+            </button>
+          </div>
+          <div className="text-[11px] text-muted mt-2 px-1">
+            AI advice is general. For complex decisions, talk to a licensed advisor.
+          </div>
+        </div>
+      </div>
 
-        <button
-          onClick={sendMessage}
-          className="bg-black text-white px-6 py-3 rounded-xl"
-        >
-          Send
-        </button>
+      <BottomNav />
+    </div>
+  );
+}
+
+/* ---------- Pieces ---------- */
+
+function Bubble({ message }: { message: ChatMessage }) {
+  const isUser = message.role === "user";
+  return (
+    <div className={["flex", isUser ? "justify-end" : "justify-start"].join(" ")}>
+      <div
+        className={[
+          "max-w-[85%] px-4 py-3 rounded-2xl text-[14px] sm:text-[15px] leading-relaxed whitespace-pre-wrap",
+          isUser
+            ? "bg-ficium text-white rounded-br-md"
+            : "bg-white text-ink border border-ink/[0.06] rounded-bl-md",
+        ].join(" ")}
+      >
+        {message.content}
+      </div>
+    </div>
+  );
+}
+
+function TypingBubble() {
+  return (
+    <div className="flex justify-start">
+      <div className="bg-white border border-ink/[0.06] rounded-2xl rounded-bl-md px-4 py-3">
+        <div className="flex gap-1">
+          <span className="w-2 h-2 rounded-full bg-muted animate-bounce" style={{ animationDelay: "0ms" }} />
+          <span className="w-2 h-2 rounded-full bg-muted animate-bounce" style={{ animationDelay: "120ms" }} />
+          <span className="w-2 h-2 rounded-full bg-muted animate-bounce" style={{ animationDelay: "240ms" }} />
+        </div>
       </div>
     </div>
   );
