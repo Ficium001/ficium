@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "./lib/supabase";
+import { supabase } from "./shared/lib/supabase";
 
 type ConnectionStatus = "checking" | "connected" | "error";
 
