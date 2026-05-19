@@ -71,6 +71,53 @@ export async function signUp(input: SignUpInput): Promise<SignUpResult> {
   };
 }
 
+/* ---------- Bank sign up ---------- */
+
+export type SignUpBankInput = {
+  email: string;
+  password: string;
+  institutionName: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+  title?: string;
+};
+
+export async function signUpBank(input: SignUpBankInput): Promise<SignUpResult> {
+  const { email, password, institutionName, firstName, lastName, phone, title } = input;
+  const fullName = [firstName, lastName].filter(Boolean).join(" ").trim();
+
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        full_name: fullName,
+        first_name: firstName,
+        last_name: lastName,
+        phone: phone || "",
+        title: title || "",
+        role: "bank",
+        institution_name: institutionName,
+      },
+    },
+  });
+
+  if (error) return { ok: false, error: mapAuthError(error) };
+  if (!data.user) {
+    return { ok: false, error: { code: "unknown", message: "Sign up did not return a user." } };
+  }
+
+  return {
+    ok: true,
+    userId: data.user.id,
+    needsEmailConfirmation: !data.session,
+  };
+}
+
+
+
+
 /* ---------- Sign in ---------- */
 
 export async function signIn(email: string, password: string): Promise<SignInResult> {

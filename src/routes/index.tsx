@@ -13,6 +13,8 @@ import NewRequest from "../pages/NewRequest";
 import Advisor from "../pages/Advisor";
 import Alerts from "../pages/Alerts";
 import Profile from "../pages/Profile";
+import BankRegister from "../pages/BankRegister";
+import BankPending from "../pages/BankPending";
 import NotFound from "../pages/NotFound";
 import { ProtectedRoute, PublicOnlyRoute } from "./ProtectedRoute";
 
@@ -24,10 +26,11 @@ export const router = createBrowserRouter([
   { path: "/auth/reset-password", element: <ResetPassword /> },
 
   // Public-only
-  { path: "/register", element: <PublicOnlyRoute><Register /></PublicOnlyRoute> },
-  { path: "/login",    element: <PublicOnlyRoute><Login /></PublicOnlyRoute> },
+  { path: "/register",      element: <PublicOnlyRoute><Register /></PublicOnlyRoute> },
+  { path: "/bank/register", element: <PublicOnlyRoute><BankRegister /></PublicOnlyRoute> },
+  { path: "/login",         element: <PublicOnlyRoute><Login /></PublicOnlyRoute> },
 
-  // Protected
+  // Protected — client
   { path: "/dashboard",          element: <ProtectedRoute><Dashboard /></ProtectedRoute> },
   { path: "/onboarding/kyc",     element: <ProtectedRoute><Kyc /></ProtectedRoute> },
   { path: "/onboarding/dossier", element: <ProtectedRoute><Dossier /></ProtectedRoute> },
@@ -36,6 +39,9 @@ export const router = createBrowserRouter([
   { path: "/advisor",            element: <ProtectedRoute><Advisor /></ProtectedRoute> },
   { path: "/alerts",             element: <ProtectedRoute><Alerts /></ProtectedRoute> },
   { path: "/profile",            element: <ProtectedRoute><Profile /></ProtectedRoute> },
+
+  // Protected — bank
+  { path: "/bank/pending", element: <ProtectedRoute><BankPending /></ProtectedRoute> },
 
   // Catch-all
   { path: "*", element: <NotFound /> },
