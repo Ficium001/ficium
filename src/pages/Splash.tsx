@@ -226,7 +226,7 @@ function Nav({ scrollY }: { scrollY: number }) {
           <div className="flex gap-2 sm:gap-3">
             <Link
               to="/login"
-              className="hidden sm:inline-flex items-center bg-transparent px-4 py-2 text-sm font-semibold text-ink no-underline"
+              className="inline-flex items-center bg-transparent px-3 sm:px-4 py-2 text-sm font-semibold text-ink no-underline"
             >
               Sign in
             </Link>
