@@ -121,7 +121,7 @@ const recentMessages: {
     /* ---------- Claude Request ---------- */
 
     const completion = await anthropic.messages.create({
-      model: "claude-3-5-haiku-latest",
+    model: "claude-3-haiku-20240307",
       max_tokens: 700,
       system: SYSTEM_PROMPT,
       messages: recentMessages,
