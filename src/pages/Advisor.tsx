@@ -84,7 +84,7 @@ export default function AdvisorPage() {
             }`}
           >
             <div
-              className={`inline-block px-4 py-3 rounded-xl max-w-[80%] ${
+              className={`inline-block px-4 py-3 rounded-xl max-w-[80%] whitespace-pre-wrap ${
                 msg.role === "user"
                   ? "bg-black text-white"
                   : "bg-gray-100 text-black"
