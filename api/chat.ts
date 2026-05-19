@@ -109,4 +109,4 @@ function json(body: unknown, status = 200): Response {
   });
 }
 
-export const config = { runtime: "edge" };
+export const runtime = 'nodejs';
