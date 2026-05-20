@@ -1,5 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getRequest, getRequestBids, acceptBid } from "../api/requests";
+import { getMyRequests } from "../../dashboard/api/profile";
+
+export function useMyRequests() {
+  return useQuery({
+    queryKey: ["my-requests"],
+    queryFn: () => getMyRequests(),
+  });
+}
 
 export function useRequest(id: string) {
   return useQuery({

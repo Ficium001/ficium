@@ -1,28 +1,16 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Plus, FileText } from "lucide-react";
-import { getMyRequests, formatMUR, formatProductType } from "../../dashboard/api/profile";
+import { useMyRequests } from "../hooks/useRequests";
+import { formatMUR, formatProductType } from "../../dashboard/api/profile";
 import type { RequestSummary } from "../../dashboard/api/profile";
 import { BottomNav, Card } from "../../../shared/ui";
 
 type Filter = "all" | "open" | "accepted" | "closed";
 
 export default function Requests() {
-  const [requests, setRequests] = useState<RequestSummary[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: requests = [], isLoading } = useMyRequests();
   const [filter, setFilter] = useState<Filter>("all");
-
-  useEffect(() => {
-    let cancelled = false;
-    getMyRequests().then((r) => {
-      if (cancelled) return;
-      setRequests(r);
-      setLoading(false);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const filtered = requests.filter((r) => {
     if (filter === "all") return true;
@@ -58,7 +46,7 @@ export default function Requests() {
           <FilterChip label="Closed" count={counts.closed} active={filter === "closed"} onClick={() => setFilter("closed")} />
         </div>
 
-        {loading ? (
+        {isLoading ? (
           <SkeletonList />
         ) : filtered.length === 0 ? (
           <EmptyState filter={filter} />
@@ -75,18 +63,18 @@ export default function Requests() {
   );
 }
 
-function FilterChip({
-  label, count, active, onClick,
-}: { label: string; count: number; active: boolean; onClick: () => void }) {
+/* ---------- Sub-components (unchanged) ---------- */
+
+function FilterChip({ label, count, active, onClick }: {
+  label: string; count: number; active: boolean; onClick: () => void;
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
       className={[
         "flex-shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-pill text-sm font-semibold transition-colors border-[1.5px]",
-        active
-          ? "bg-ink text-cream border-ink"
-          : "bg-transparent text-ink border-ink/15 hover:border-ink/30",
+        active ? "bg-ink text-cream border-ink" : "bg-transparent text-ink border-ink/15 hover:border-ink/30",
       ].join(" ")}
     >
       {label}
