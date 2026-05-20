@@ -22,18 +22,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  async function fetchUserMeta(userId: string) {
-    const [{ data: userRow }, { count }] = await Promise.all([
-      supabase.from("users").select("role").eq("id", userId).single(),
-      supabase
-        .from("notifications")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", userId)
-        .is("read_at", null),
-    ]);
+async function fetchUserMeta(userId: string) {
+  const [{ data: userRow }, { count }] = await Promise.all([
+    supabase.from("users").select("role").eq("id", userId).single(),
+    supabase
+      .from("notifications")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .is("read_at", null),
+  ]);
 
-    setRole((userRow?.role as UserRole) ?? "client");
-    setUnreadCount(count ?? 0);
+  // If the user row doesn't exist (deleted from DB), force sign out
+  if (!userRow) {
+    await supabase.auth.signOut();
+    setRole(null);
+    setUnreadCount(0);
+    return;
+  }
+
+  setRole((userRow?.role as UserRole) ?? "client");
+  setUnreadCount(count ?? 0);
+
   }
 
   useEffect(() => {
