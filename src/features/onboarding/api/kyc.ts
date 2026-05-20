@@ -1,4 +1,5 @@
 import { supabase } from "../../../shared/lib/supabase";
+import { audit } from "../../../shared/lib/audit";
 
 /* ---------- Types ---------- */
 
@@ -88,5 +89,7 @@ export async function submitKyc(input: KycInput): Promise<KycResult> {
 
   if (error) return { ok: false, error: error.message };
 
-  return { ok: true };
+  // After the supabase.from("users").update(...) succeeds:
+await audit.kycSubmitted(userId);
+return { ok: true };
 }

@@ -1,4 +1,5 @@
 import { supabase } from "../../../shared/lib/supabase";
+import { audit } from "../../../shared/lib/audit";
 
 /* ---------- Types ---------- */
 
@@ -32,14 +33,6 @@ export type SignInResult =
 
 /* ---------- Sign up ---------- */
 
-/**
- * Create a new auth account. Profile fields are passed as user metadata;
- * a database trigger (handle_new_user) reads that metadata and creates
- * the matching public.users row automatically. So this function only
- * makes ONE network call, and the client code never touches public.users
- * directly during signup — which keeps RLS strict and avoids
- * "orphaned auth account" edge cases.
- */
 export async function signUp(input: SignUpInput): Promise<SignUpResult> {
   const { email, password, firstName, middleName, lastName, phone, title } = input;
   const fullName = [firstName, middleName, lastName].filter(Boolean).join(" ").trim();
@@ -63,6 +56,9 @@ export async function signUp(input: SignUpInput): Promise<SignUpResult> {
   if (!data.user) {
     return { ok: false, error: { code: "unknown", message: "Sign up did not return a user." } };
   }
+
+  // Audit: user created
+  await audit.login();
 
   return {
     ok: true,
@@ -108,6 +104,9 @@ export async function signUpBank(input: SignUpBankInput): Promise<SignUpResult> 
     return { ok: false, error: { code: "unknown", message: "Sign up did not return a user." } };
   }
 
+  // Audit: bank user created
+  await audit.login();
+
   return {
     ok: true,
     userId: data.user.id,
@@ -115,23 +114,32 @@ export async function signUpBank(input: SignUpBankInput): Promise<SignUpResult> 
   };
 }
 
-
-
-
 /* ---------- Sign in ---------- */
 
 export async function signIn(email: string, password: string): Promise<SignInResult> {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) return { ok: false, error: mapAuthError(error) };
+
+  if (error) {
+    // Audit: failed login attempt
+    await audit.loginFailed(error.message);
+    return { ok: false, error: mapAuthError(error) };
+  }
+
   if (!data.user) {
     return { ok: false, error: { code: "unknown", message: "Sign in did not return a user." } };
   }
+
+  // Audit: successful login
+  await audit.login();
+
   return { ok: true, userId: data.user.id };
 }
 
 /* ---------- Sign out ---------- */
 
 export async function signOut(): Promise<void> {
+  // Audit: logout before session is cleared
+  await audit.logout();
   await supabase.auth.signOut();
 }
 

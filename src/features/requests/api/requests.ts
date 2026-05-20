@@ -1,4 +1,5 @@
 import { supabase } from "../../../shared/lib/supabase";
+import { audit } from "../../../shared/lib/audit";
 
 /* ---------- Types ---------- */
 
@@ -12,26 +13,49 @@ export type ProductType =
   | "business_account"
   | "investment_account";
 
+export type RequestStatus = "open" | "closed" | "cancelled";
+
 export type CreateRequestInput = {
   productType: ProductType;
   amount: number;
   purpose: string;
   preferredTermMonths: number;
   maxRate?: number;
-  decisionDeadline?: string; // ISO date
+  decisionDeadline?: string;
 };
 
 export type CreateRequestResult =
   | { ok: true; requestId: string }
   | { ok: false; error: string };
 
+export type RequestDetail = {
+  id: string;
+  productType: ProductType;
+  amount: number;
+  purpose: string;
+  preferredTermMonths: number;
+  maxRate: number | null;
+  decisionDeadline: string | null;
+  anonymizedBrief: string;
+  status: RequestStatus;
+  createdAt: string;
+};
+
+export type Bid = {
+  id: string;
+  requestId: string;
+  bankId: string;
+  institutionName: string;
+  rate: number;
+  terms: string;
+  status: "pending" | "accepted" | "rejected";
+  createdAt: string;
+};
+
+export type AcceptBidResult = { ok: true } | { ok: false; error: string };
+
 /* ---------- Anonymized brief ---------- */
 
-/**
- * STUB — produces a short structured summary banks see (without identity).
- * Eventually this will be a Claude API call producing a polished paragraph;
- * for now the deterministic version is fine and is what banks would query.
- */
 function generateAnonymizedBrief(input: CreateRequestInput): string {
   const product = formatProductType(input.productType);
   const amount = new Intl.NumberFormat("en-MU", {
@@ -78,56 +102,12 @@ export async function createRequest(input: CreateRequestInput): Promise<CreateRe
   if (error || !data) {
     return { ok: false, error: error?.message ?? "Could not create request." };
   }
+
+  // Audit
+  await audit.requestCreated(data.id, input.amount, input.productType);
+
   return { ok: true, requestId: data.id };
 }
-
-/* ---------- Helper ---------- */
-
-function formatProductType(t: string): string {
-  const labels: Record<string, string> = {
-    sme_loan: "SME Loan",
-    personal_loan: "Personal Loan",
-    mortgage: "Mortgage",
-    fixed_deposit: "Fixed Deposit",
-    savings_account: "Savings Account",
-    credit_card: "Credit Card",
-    business_account: "Business Account",
-    investment_account: "Investment Account",
-  };
-  return labels[t] ?? t;
-}
-
-
-
-
-
-/* ---------- Types ---------- */
-
-export type RequestStatus = "open" | "closed" | "cancelled";
-
-export type RequestDetail = {
-  id: string;
-  productType: ProductType;
-  amount: number;
-  purpose: string;
-  preferredTermMonths: number;
-  maxRate: number | null;
-  decisionDeadline: string | null;
-  anonymizedBrief: string;
-  status: RequestStatus;
-  createdAt: string;
-};
-
-export type Bid = {
-  id: string;
-  requestId: string;
-  bankId: string;
-  institutionName: string;
-  rate: number;
-  terms: string;
-  status: "pending" | "accepted" | "rejected";
-  createdAt: string;
-};
 
 /* ---------- Get single request ---------- */
 
@@ -188,13 +168,10 @@ export async function getRequestBids(requestId: string): Promise<Bid[]> {
 
 /* ---------- Accept a bid ---------- */
 
-export type AcceptBidResult = { ok: true } | { ok: false; error: string };
-
 export async function acceptBid(
   bidId: string,
   requestId: string
 ): Promise<AcceptBidResult> {
-  // Mark the bid as accepted
   const { error: bidError } = await supabase
     .from("bids")
     .update({ status: "accepted" })
@@ -202,7 +179,6 @@ export async function acceptBid(
 
   if (bidError) return { ok: false, error: bidError.message };
 
-  // Close the request
   const { error: reqError } = await supabase
     .from("requests")
     .update({ status: "closed" })
@@ -210,8 +186,24 @@ export async function acceptBid(
 
   if (reqError) return { ok: false, error: reqError.message };
 
+  // Audit
+  await audit.bidAccepted(bidId, requestId);
+
   return { ok: true };
 }
 
-/* ---------- Re-export helper ---------- */
-export { formatProductType };
+/* ---------- Helper ---------- */
+
+export function formatProductType(t: string): string {
+  const labels: Record<string, string> = {
+    sme_loan: "SME Loan",
+    personal_loan: "Personal Loan",
+    mortgage: "Mortgage",
+    fixed_deposit: "Fixed Deposit",
+    savings_account: "Savings Account",
+    credit_card: "Credit Card",
+    business_account: "Business Account",
+    investment_account: "Investment Account",
+  };
+  return labels[t] ?? t;
+}

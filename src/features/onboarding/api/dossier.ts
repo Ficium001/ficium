@@ -1,4 +1,5 @@
 import { supabase } from "../../../shared/lib/supabase";
+import { audit } from "../../../shared/lib/audit";
 
 /* ============================================================
    TYPES
@@ -356,7 +357,10 @@ export async function submitDossier(input: DossierInput): Promise<DossierResult>
     },
     { onConflict: "user_id" }
   );
-  if (compError) return { ok: false, error: `Compliance: ${compError.message}` };
+if (compError) return { ok: false, error: `Compliance: ${compError.message}` };
+
+  // Audit — fire after all tables written successfully
+  await audit.financialProfileCreated(userId);
 
   return { ok: true, healthScore, riskScore, affordabilityScore };
 }
