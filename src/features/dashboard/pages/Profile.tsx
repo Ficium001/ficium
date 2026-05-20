@@ -1,19 +1,13 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { LogOut } from "lucide-react";
 import { useAuth } from "../../auth/context/AuthContext";
-import { getProfileSummary } from "../../dashboard/api/profile";
-import type { ProfileSummary } from "../../dashboard/api/profile";
+import { useProfile } from "../hooks/useDashboard";
 import { Button, Card, BottomNav } from "../../../shared/ui";
 
 export default function Profile() {
   const { signOut } = useAuth();
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<ProfileSummary | null>(null);
-
-  useEffect(() => {
-    getProfileSummary().then(setProfile);
-  }, []);
+  const { data: profile } = useProfile();
 
   const handleSignOut = async () => {
     await signOut();

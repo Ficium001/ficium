@@ -1,69 +1,33 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  BellOff,
-  ShieldCheck,
-  ShieldAlert,
-  FileText,
-  Sparkles,
-  TrendingDown,
-  TrendingUp,
-  Clock,
-  CheckCheck,
+  BellOff, ShieldCheck, ShieldAlert, FileText, Sparkles,
+  TrendingDown, TrendingUp, Clock, CheckCheck,
 } from "lucide-react";
-import {
-  getMyNotifications,
-  markAllRead,
-  markOneRead,
-  timeAgo,
-} from "../../alerts/api/notifications";
+import { useNotifications, useMarkAllRead, useMarkOneRead } from "../hooks/useAlerts";
+import { timeAgo } from "../../alerts/api/notifications";
 import type { AppNotification, NotificationKind } from "../../alerts/api/notifications";
 import { BottomNav, Card, Button } from "../../../shared/ui";
 
 const KIND_STYLE: Record<NotificationKind, { icon: typeof ShieldCheck; bg: string; fg: string }> = {
-  kyc_verified:    { icon: ShieldCheck,  bg: "bg-mint/20",   fg: "text-ink" },
-  kyc_rejected:    { icon: ShieldAlert,  bg: "bg-red-100",   fg: "text-red-700" },
-  request_created: { icon: FileText,     bg: "bg-ficium/10", fg: "text-ficium" },
-  request_expiring:{ icon: Clock,        bg: "bg-accent/30", fg: "text-ink" },
-  bid_received:    { icon: TrendingUp,   bg: "bg-mint/20",   fg: "text-ink" },
-  bid_accepted:    { icon: Sparkles,     bg: "bg-ficium/10", fg: "text-ficium" },
-  bid_expired:     { icon: TrendingDown, bg: "bg-ink/5",     fg: "text-muted" },
-  system:          { icon: Sparkles,     bg: "bg-ficium/10", fg: "text-ficium" },
+  kyc_verified:     { icon: ShieldCheck,  bg: "bg-mint/20",   fg: "text-ink" },
+  kyc_rejected:     { icon: ShieldAlert,  bg: "bg-red-100",   fg: "text-red-700" },
+  request_created:  { icon: FileText,     bg: "bg-ficium/10", fg: "text-ficium" },
+  request_expiring: { icon: Clock,        bg: "bg-accent/30", fg: "text-ink" },
+  bid_received:     { icon: TrendingUp,   bg: "bg-mint/20",   fg: "text-ink" },
+  bid_accepted:     { icon: Sparkles,     bg: "bg-ficium/10", fg: "text-ficium" },
+  bid_expired:      { icon: TrendingDown, bg: "bg-ink/5",     fg: "text-muted" },
+  system:           { icon: Sparkles,     bg: "bg-ficium/10", fg: "text-ficium" },
 };
 
 export default function Alerts() {
-  const [items, setItems] = useState<AppNotification[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: items = [], isLoading } = useNotifications();
+  const { mutate: markAll } = useMarkAllRead();
+  const { mutate: markOne } = useMarkOneRead();
 
-  useEffect(() => {
-    let cancelled = false;
-    getMyNotifications().then((data) => {
-      if (cancelled) return;
-      setItems(data);
-      setLoading(false);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+const unreadCount = items.filter((n: AppNotification) => !n.readAt).length;
 
-  const unreadCount = items.filter((n) => !n.readAt).length;
-
-  const handleMarkAllRead = async () => {
-    // optimistic
-    const now = new Date().toISOString();
-    setItems((prev) => prev.map((n) => (n.readAt ? n : { ...n, readAt: now })));
-    await markAllRead();
-  };
-
-  const handleClick = async (n: AppNotification) => {
-    if (!n.readAt) {
-      // optimistic
-      setItems((prev) =>
-        prev.map((x) => (x.id === n.id ? { ...x, readAt: new Date().toISOString() } : x))
-      );
-      markOneRead(n.id);
-    }
+  const handleClick = (n: AppNotification) => {
+    if (!n.readAt) markOne(n.id);
   };
 
   return (
@@ -72,24 +36,19 @@ export default function Alerts() {
         <div className="flex items-center justify-between mb-6">
           <h1 className="font-display text-3xl sm:text-4xl font-bold">Alerts</h1>
           {unreadCount > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              leftIcon={<CheckCheck size={14} />}
-              onClick={handleMarkAllRead}
-            >
+            <Button variant="ghost" size="sm" leftIcon={<CheckCheck size={14} />} onClick={() => markAll()}>
               Mark all read
             </Button>
           )}
         </div>
 
-        {loading ? (
+        {isLoading ? (
           <SkeletonList />
         ) : items.length === 0 ? (
           <EmptyState />
         ) : (
           <div className="flex flex-col gap-3">
-            {items.map((n) => (
+            {items.map((n: AppNotification) => (
               <NotificationRow key={n.id} notification={n} onClick={() => handleClick(n)} />
             ))}
           </div>
@@ -100,13 +59,7 @@ export default function Alerts() {
   );
 }
 
-function NotificationRow({
-  notification,
-  onClick,
-}: {
-  notification: AppNotification;
-  onClick: () => void;
-}) {
+function NotificationRow({ notification, onClick }: { notification: AppNotification; onClick: () => void }) {
   const style = KIND_STYLE[notification.kind];
   const Icon = style.icon;
   const unread = !notification.readAt;
@@ -127,26 +80,18 @@ function NotificationRow({
             </div>
           </div>
           {notification.body && (
-            <div className="text-[13px] text-muted mt-1 leading-relaxed">
-              {notification.body}
-            </div>
+            <div className="text-[13px] text-muted mt-1 leading-relaxed">{notification.body}</div>
           )}
         </div>
-        {unread && (
-          <div className="w-2 h-2 rounded-full bg-ficium flex-shrink-0 mt-2" aria-label="unread" />
-        )}
+        {unread && <div className="w-2 h-2 rounded-full bg-ficium flex-shrink-0 mt-2" aria-label="unread" />}
       </div>
     </Card>
   );
 
   return notification.link ? (
-    <Link to={notification.link} onClick={onClick} className="no-underline block">
-      {Content}
-    </Link>
+    <Link to={notification.link} onClick={onClick} className="no-underline block">{Content}</Link>
   ) : (
-    <button type="button" onClick={onClick} className="text-left block w-full">
-      {Content}
-    </button>
+    <button type="button" onClick={onClick} className="text-left block w-full">{Content}</button>
   );
 }
 
