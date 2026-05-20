@@ -1,11 +1,28 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ArrowLeft, ArrowRight, Lock } from "lucide-react";
+import { useProfile } from "../../dashboard/hooks/useDashboard";
 import { createRequest } from "../../requests/api/requests";
 import { Button, Card, Field, Input, Select } from "../../../shared/ui";
+
+const { data: profile, isLoading: profileLoading } = useProfile();
+const navigate = useNavigate();
+
+// Gate: KYC must be verified and dossier must exist
+useEffect(() => {
+  if (profileLoading) return;
+  if (!profile) return;
+  if (profile.kycStatus !== "verified") {
+    navigate("/onboarding/kyc", { replace: true });
+    return;
+  }
+  if (!profile.hasDossier) {
+    navigate("/onboarding/dossier", { replace: true });
+  }
+}, [profile, profileLoading, navigate]);
 
 /* ---------- Validation schema ---------- */
 

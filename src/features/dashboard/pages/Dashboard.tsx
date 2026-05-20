@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Plus, LogOut, FileText, TrendingUp, Activity, ShieldAlert, Sparkles } from "lucide-react";
+import { Plus, LogOut, FileText, TrendingUp, Activity, ShieldAlert, Sparkles, BookOpen } from "lucide-react";
 import { useAuth } from "../../auth/context/AuthContext";
 import { useProfile, useMyRequests } from "../hooks/useDashboard";
 import { formatMUR, formatProductType } from "../../dashboard/api/profile";
@@ -25,6 +25,10 @@ export default function Dashboard() {
   const activeRequests = requests.filter((r) => r.status === "open").length;
   const totalNewBids = requests.reduce((s, r) => s + r.bidCount, 0);
 
+  const kycVerified = profile?.kycStatus === "verified";
+  const hasDossier = !!profile?.hasDossier;
+  const readyToRequest = kycVerified && hasDossier;
+
   return (
     <div className="min-h-screen bg-cream pb-24">
       <div className="mx-auto w-full max-w-[640px] px-5 py-6 sm:px-6 sm:py-8">
@@ -48,8 +52,8 @@ export default function Dashboard() {
         </div>
 
         {/* KYC banner */}
-        {profile && profile.kycStatus !== "verified" && (
-          <div className="flex items-start gap-3 px-4 py-3 mb-5 bg-accent/20 border border-accent/40 rounded-xl">
+        {profile && !kycVerified && (
+          <div className="flex items-start gap-3 px-4 py-3 mb-4 bg-accent/20 border border-accent/40 rounded-xl">
             <ShieldAlert size={18} className="text-ink mt-0.5 flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <div className="text-sm font-semibold">Finish verifying your identity</div>
@@ -59,6 +63,22 @@ export default function Dashboard() {
             </div>
             <Link to="/onboarding/kyc" className="text-sm font-semibold text-ficium no-underline flex-shrink-0">
               Resume →
+            </Link>
+          </div>
+        )}
+
+        {/* Dossier banner */}
+        {profile && kycVerified && !hasDossier && (
+          <div className="flex items-start gap-3 px-4 py-3 mb-4 bg-ficium/[0.06] border border-ficium/20 rounded-xl">
+            <BookOpen size={18} className="text-ficium mt-0.5 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-semibold">Complete your financial profile</div>
+              <div className="text-[13px] text-muted mt-0.5">
+                Banks need your financial profile to bid accurately on your requests.
+              </div>
+            </div>
+            <Link to="/onboarding/dossier" className="text-sm font-semibold text-ficium no-underline flex-shrink-0">
+              Start →
             </Link>
           </div>
         )}
@@ -83,7 +103,7 @@ export default function Dashboard() {
         {loading ? (
           <SkeletonRequests />
         ) : requests.length === 0 ? (
-          <EmptyState />
+          <EmptyState kycVerified={kycVerified} hasDossier={hasDossier} />
         ) : (
           <div className="flex flex-col gap-3">
             {requests.slice(0, 5).map((r) => (
@@ -92,12 +112,23 @@ export default function Dashboard() {
           </div>
         )}
 
-        {requests.length > 0 && (
+        {/* FAB — only shown when ready and has requests */}
+        {requests.length > 0 && readyToRequest && (
           <Link
             to="/requests/new"
             className="fixed bottom-20 right-5 sm:right-8 z-30 inline-flex items-center gap-2 bg-ficium text-white px-5 py-3.5 rounded-pill shadow-ficium font-semibold no-underline"
           >
             <Plus size={18} /> New Request
+          </Link>
+        )}
+
+        {/* FAB — redirect to onboarding if not ready */}
+        {requests.length > 0 && !readyToRequest && (
+          <Link
+            to={!kycVerified ? "/onboarding/kyc" : "/onboarding/dossier"}
+            className="fixed bottom-20 right-5 sm:right-8 z-30 inline-flex items-center gap-2 bg-accent text-ink px-5 py-3.5 rounded-pill shadow-ficium font-semibold no-underline"
+          >
+            <ShieldAlert size={18} /> Complete profile
           </Link>
         )}
       </div>
@@ -159,18 +190,27 @@ function RequestCard({ request }: { request: RequestSummary }) {
   );
 }
 
-function EmptyState() {
+function EmptyState({ kycVerified, hasDossier }: { kycVerified: boolean; hasDossier: boolean }) {
+  const ready = kycVerified && hasDossier;
   return (
     <Card className="text-center py-10">
       <div className="w-14 h-14 rounded-2xl bg-ficium/10 text-ficium grid place-items-center mx-auto mb-4">
         <Sparkles size={24} />
       </div>
-      <div className="font-display text-2xl font-bold mb-2">Post your first request</div>
-      <div className="text-sm text-muted mb-6 max-w-[280px] mx-auto">
-        Tell us what you need. Banks across Mauritius will bid against each other for your business.
+      <div className="font-display text-2xl font-bold mb-2">
+        {ready ? "Post your first request" : "Complete your profile first"}
       </div>
-      <Link to="/requests/new" className="inline-flex items-center gap-2 bg-ficium text-white px-5 py-3 rounded-pill text-sm font-semibold no-underline shadow-ficium">
-        <Plus size={16} /> New Request
+      <div className="text-sm text-muted mb-6 max-w-[280px] mx-auto">
+        {ready
+          ? "Tell us what you need. Banks across Mauritius will bid against each other for your business."
+          : "Verify your identity and complete your financial profile so banks can bid accurately."}
+      </div>
+      <Link
+        to={ready ? "/requests/new" : !kycVerified ? "/onboarding/kyc" : "/onboarding/dossier"}
+        className="inline-flex items-center gap-2 bg-ficium text-white px-5 py-3 rounded-pill text-sm font-semibold no-underline shadow-ficium"
+      >
+        <Plus size={16} />
+        {ready ? "New Request" : !kycVerified ? "Verify identity" : "Complete profile"}
       </Link>
     </Card>
   );
