@@ -3,46 +3,64 @@ import type { ReactNode } from "react";
 import { useAuth } from "../features/auth/context/AuthContext";
 
 /**
- * Wraps a route that requires authentication.
- * - While auth state is loading: show a minimal loading screen
- * - If user is logged out: redirect to /login (preserving where they came from)
- * - If user is logged in: render the protected content
+ * Requires authentication. Any logged-in role allowed.
  */
 export function ProtectedRoute({ children }: { children: ReactNode }) {
   const { user, isLoading } = useAuth();
   const location = useLocation();
 
-  if (isLoading) {
-    return <LoadingScreen />;
-  }
-
-  if (!user) {
-    // Save the page they tried to visit so we can redirect back after login.
-    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
-  }
+  if (isLoading) return <LoadingScreen />;
+  if (!user) return <Navigate to="/login" state={{ from: location.pathname }} replace />;
 
   return <>{children}</>;
 }
 
 /**
- * Wraps routes that should ONLY be visible when logged out (login, register).
- * If you're already logged in, you bounce to /dashboard.
+ * Requires authentication AND role = client. Banks get bounced to their dashboard.
+ */
+export function ClientOnlyRoute({ children }: { children: ReactNode }) {
+  const { user, role, isLoading } = useAuth();
+  const location = useLocation();
+
+  if (isLoading) return <LoadingScreen />;
+  if (!user) return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+  if (role === "bank") return <Navigate to="/bank/dashboard" replace />;
+  if (role === "admin") return <Navigate to="/admin" replace />;
+
+  return <>{children}</>;
+}
+
+/**
+ * Requires authentication AND role = bank.
+ */
+export function BankOnlyRoute({ children }: { children: ReactNode }) {
+  const { user, role, isLoading } = useAuth();
+  const location = useLocation();
+
+  if (isLoading) return <LoadingScreen />;
+  if (!user) return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+  if (role === "client") return <Navigate to="/dashboard" replace />;
+  if (role === "admin") return <Navigate to="/admin" replace />;
+
+  return <>{children}</>;
+}
+
+/**
+ * Routes only visible when logged out. Smart redirect based on role.
  */
 export function PublicOnlyRoute({ children }: { children: ReactNode }) {
-  const { user, isLoading } = useAuth();
+  const { user, role, isLoading } = useAuth();
 
-  if (isLoading) {
-    return <LoadingScreen />;
-  }
+  if (isLoading) return <LoadingScreen />;
 
   if (user) {
+    if (role === "bank") return <Navigate to="/bank/dashboard" replace />;
+    if (role === "admin") return <Navigate to="/admin" replace />;
     return <Navigate to="/dashboard" replace />;
   }
 
   return <>{children}</>;
 }
-
-/* ---------- Loading state ---------- */
 
 function LoadingScreen() {
   return (

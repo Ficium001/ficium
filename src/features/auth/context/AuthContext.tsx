@@ -3,11 +3,12 @@ import type { ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "../../../shared/lib/supabase";
 
-/* ---------- Context shape ---------- */
+type UserRole = "client" | "bank" | "admin";
 
 type AuthContextValue = {
   user: User | null;
   session: Session | null;
+  role: UserRole | null;
   isLoading: boolean;
   unreadCount: number;
   signOut: () => Promise<void>;
@@ -15,30 +16,34 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-/* ---------- Provider ---------- */
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
+  const [role, setRole] = useState<UserRole | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // Fetch initial unread count
-  async function fetchUnreadCount(userId: string) {
-    const { count } = await supabase
-      .from("notifications")
-      .select("*", { count: "exact", head: true })
-      .eq("user_id", userId)
-      .is("read_at", null);
+  async function fetchUserMeta(userId: string) {
+    const [{ data: userRow }, { count }] = await Promise.all([
+      supabase.from("users").select("role").eq("id", userId).single(),
+      supabase
+        .from("notifications")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .is("read_at", null),
+    ]);
+
+    setRole((userRow?.role as UserRole) ?? "client");
     setUnreadCount(count ?? 0);
   }
 
   useEffect(() => {
-    // 1. Hydrate initial session
+    // 1. Hydrate session
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
-      setIsLoading(false);
       if (data.session?.user) {
-        fetchUnreadCount(data.session.user.id);
+        fetchUserMeta(data.session.user.id).finally(() => setIsLoading(false));
+      } else {
+        setIsLoading(false);
       }
     });
 
@@ -47,8 +52,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       (_event, newSession) => {
         setSession(newSession);
         if (newSession?.user) {
-          fetchUnreadCount(newSession.user.id);
+          fetchUserMeta(newSession.user.id);
         } else {
+          setRole(null);
           setUnreadCount(0);
         }
       }
@@ -57,45 +63,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => authSub.unsubscribe();
   }, []);
 
-  // 3. Realtime subscription — fires when a new notification is inserted
+  // 3. Realtime notifications
   useEffect(() => {
     if (!session?.user) return;
-
     const userId = session.user.id;
 
     const channel = supabase
       .channel(`notifications:${userId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "notifications",
-          filter: `user_id=eq.${userId}`,
-        },
-        () => {
-          // New notification arrived — bump the count
-          setUnreadCount((prev) => prev + 1);
-        }
+      .on("postgres_changes",
+        { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
+        () => setUnreadCount((prev) => prev + 1)
       )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "notifications",
-          filter: `user_id=eq.${userId}`,
-        },
+      .on("postgres_changes",
+        { event: "UPDATE", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
         () => {
-          // A notification was marked read — re-fetch accurate count
-          fetchUnreadCount(userId);
+          supabase
+            .from("notifications")
+            .select("*", { count: "exact", head: true })
+            .eq("user_id", userId)
+            .is("read_at", null)
+            .then(({ count }) => setUnreadCount(count ?? 0));
         }
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [session?.user?.id]);
 
   const signOut = async () => {
@@ -103,13 +95,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user: session?.user ?? null, session, isLoading, unreadCount, signOut }}>
+    <AuthContext.Provider value={{ user: session?.user ?? null, session, role, isLoading, unreadCount, signOut }}>
       {children}
     </AuthContext.Provider>
   );
 }
-
-/* ---------- Hook ---------- */
 
 export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);

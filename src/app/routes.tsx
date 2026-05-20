@@ -1,6 +1,6 @@
 import { lazy, Suspense } from "react";
 import { createBrowserRouter } from "react-router-dom";
-import { ProtectedRoute, PublicOnlyRoute } from "./ProtectedRoute";
+import { PublicOnlyRoute, ClientOnlyRoute } from "./ProtectedRoute";
 
 // Eagerly loaded — needed on first paint
 import Splash from "../features/marketing/pages/Splash";
@@ -53,16 +53,16 @@ export const router = createBrowserRouter([
   { path: "/bank/register",         element: <S><BankRegister /></S> },
   { path: "/bank/pending",          element: <S><BankPending /></S> },
 
-  // ── Protected (client) ───────────────────────────────────────────
-  { path: "/dashboard",             element: <ProtectedRoute><S><Dashboard /></S></ProtectedRoute> },
-  { path: "/profile",               element: <ProtectedRoute><S><Profile /></S></ProtectedRoute> },
-  { path: "/onboarding/kyc",        element: <ProtectedRoute><S><Kyc /></S></ProtectedRoute> },
-  { path: "/onboarding/dossier",    element: <ProtectedRoute><S><Dossier /></S></ProtectedRoute> },
-  { path: "/requests",              element: <ProtectedRoute><S><Requests /></S></ProtectedRoute> },
-  { path: "/requests/new",          element: <ProtectedRoute><S><NewRequest /></S></ProtectedRoute> },
-  { path: "/requests/:id",          element: <ProtectedRoute><S><RequestDetail /></S></ProtectedRoute> },
-  { path: "/alerts",                element: <ProtectedRoute><S><Alerts /></S></ProtectedRoute> },
-  { path: "/advisor",               element: <ProtectedRoute><S><Advisor /></S></ProtectedRoute> },
+// Client-only protected routes
+{ path: "/dashboard",          element: <ClientOnlyRoute><S><Dashboard /></S></ClientOnlyRoute> },
+{ path: "/profile",            element: <ClientOnlyRoute><S><Profile /></S></ClientOnlyRoute> },
+{ path: "/onboarding/kyc",     element: <ClientOnlyRoute><S><Kyc /></S></ClientOnlyRoute> },
+{ path: "/onboarding/dossier", element: <ClientOnlyRoute><S><Dossier /></S></ClientOnlyRoute> },
+{ path: "/requests",           element: <ClientOnlyRoute><S><Requests /></S></ClientOnlyRoute> },
+{ path: "/requests/new",       element: <ClientOnlyRoute><S><NewRequest /></S></ClientOnlyRoute> },
+{ path: "/requests/:id",       element: <ClientOnlyRoute><S><RequestDetail /></S></ClientOnlyRoute> },
+{ path: "/alerts",             element: <ClientOnlyRoute><S><Alerts /></S></ClientOnlyRoute> },
+{ path: "/advisor",            element: <ClientOnlyRoute><S><Advisor /></S></ClientOnlyRoute> },
 
   // ── Fallback ─────────────────────────────────────────────────────
   { path: "*",                      element: <S><NotFound /></S> },

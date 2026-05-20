@@ -12,7 +12,10 @@ const tabs = [
 
 export function BottomNav() {
   const { pathname } = useLocation();
-  const { unreadCount } = useAuth();
+  const { unreadCount, role } = useAuth();
+
+  // BottomNav is client-only — banks have a different UI
+  if (role !== "client") return null;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-ink/[0.06]">
