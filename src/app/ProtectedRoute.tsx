@@ -53,7 +53,9 @@ export function PublicOnlyRoute({ children }: { children: ReactNode }) {
 
   if (isLoading) return <LoadingScreen />;
 
-  if (user) {
+  // Only redirect if user is logged in AND has a valid role
+  // (auto signout will clear stale sessions, so this means a real user)
+  if (user && role) {
     if (role === "bank") return <Navigate to="/bank/dashboard" replace />;
     if (role === "admin") return <Navigate to="/admin" replace />;
     return <Navigate to="/dashboard" replace />;
