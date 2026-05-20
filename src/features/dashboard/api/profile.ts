@@ -9,6 +9,8 @@ export type ProfileSummary = {
   firstName: string | null;
   kycStatus: "pending" | "verified" | "rejected";
   healthScore: number | null;
+  riskScore: number | null;
+  affordabilityScore: number | null;
   hasDossier: boolean;
 };
 
@@ -19,14 +21,14 @@ export type RequestSummary = {
   status: "open" | "closed" | "accepted" | "expired";
   createdAt: string;
   bidCount: number;
-  bestRate: number | null; // best interest_rate across bids on this request
+  bestRate: number | null;
 };
 
 /* ---------- Profile summary ---------- */
 
 /**
  * Pull everything the dashboard greeting + stat tiles need in one go.
- * Combines the users row and the (optional) client_dossiers row.
+ * Combines the users row and the (optional) financial_profiles row.
  */
 export async function getProfileSummary(): Promise<ProfileSummary | null> {
   const { data: authData } = await supabase.auth.getUser();
@@ -34,15 +36,15 @@ export async function getProfileSummary(): Promise<ProfileSummary | null> {
   if (!userId) return null;
 
   // RLS limits these to the logged-in user's own rows.
-  const [{ data: user }, { data: dossier }] = await Promise.all([
+  const [{ data: user }, { data: profile }] = await Promise.all([
     supabase
       .from("users")
       .select("id, email, full_name, first_name, kyc_status")
       .eq("id", userId)
       .single(),
     supabase
-      .from("client_dossiers")
-      .select("health_score")
+      .from("financial_profiles")
+      .select("health_score, risk_score, affordability_score")
       .eq("user_id", userId)
       .maybeSingle(),
   ]);
@@ -55,8 +57,10 @@ export async function getProfileSummary(): Promise<ProfileSummary | null> {
     fullName: user.full_name,
     firstName: user.first_name,
     kycStatus: user.kyc_status,
-    healthScore: dossier?.health_score ?? null,
-    hasDossier: !!dossier,
+    healthScore: profile?.health_score ?? null,
+    riskScore: profile?.risk_score ?? null,
+    affordabilityScore: profile?.affordability_score ?? null,
+    hasDossier: !!profile,
   };
 }
 
@@ -64,9 +68,6 @@ export async function getProfileSummary(): Promise<ProfileSummary | null> {
 
 /**
  * Pull the user's open + recently closed requests, with bid counts and best rate.
- * Two-query approach: get requests first, then aggregate bids per request id.
- * For a small-N client we can do this client-side; if it ever gets large
- * we'd push the aggregation into a Postgres view.
  */
 export async function getMyRequests(): Promise<RequestSummary[]> {
   const { data: authData } = await supabase.auth.getUser();
