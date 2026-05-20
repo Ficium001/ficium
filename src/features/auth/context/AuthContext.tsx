@@ -22,27 +22,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
 
-async function fetchUserMeta(userId: string) {
-  const [{ data: userRow }, { count }] = await Promise.all([
-    supabase.from("users").select("role").eq("id", userId).single(),
-    supabase
-      .from("notifications")
-      .select("*", { count: "exact", head: true })
-      .eq("user_id", userId)
-      .is("read_at", null),
-  ]);
+  async function fetchUserMeta(userId: string) {
+    const [{ data: userRow }, { count }] = await Promise.all([
+      supabase.from("users").select("role").eq("id", userId).single(),
+      supabase
+        .from("notifications")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .is("read_at", null),
+    ]);
 
-  // If the user row doesn't exist (deleted from DB), force sign out
-  if (!userRow) {
-    await supabase.auth.signOut();
-    setRole(null);
-    setUnreadCount(0);
-    return;
-  }
+    // Stale session detected — DB row gone. Force complete cleanup + reload.
+    if (!userRow) {
+      await supabase.auth.signOut();
+      setSession(null);
+      setRole(null);
+      setUnreadCount(0);
+      window.location.href = "/";
+      return;
+    }
 
-  setRole((userRow?.role as UserRole) ?? "client");
-  setUnreadCount(count ?? 0);
-
+    setRole((userRow?.role as UserRole) ?? "client");
+    setUnreadCount(count ?? 0);
   }
 
   useEffect(() => {
@@ -79,11 +80,13 @@ async function fetchUserMeta(userId: string) {
 
     const channel = supabase
       .channel(`notifications:${userId}`)
-      .on("postgres_changes",
+      .on(
+        "postgres_changes",
         { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
         () => setUnreadCount((prev) => prev + 1)
       )
-      .on("postgres_changes",
+      .on(
+        "postgres_changes",
         { event: "UPDATE", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
         () => {
           supabase
@@ -96,7 +99,9 @@ async function fetchUserMeta(userId: string) {
       )
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [session?.user?.id]);
 
   const signOut = async () => {
@@ -104,7 +109,16 @@ async function fetchUserMeta(userId: string) {
   };
 
   return (
-    <AuthContext.Provider value={{ user: session?.user ?? null, session, role, isLoading, unreadCount, signOut }}>
+    <AuthContext.Provider
+      value={{
+        user: session?.user ?? null,
+        session,
+        role,
+        isLoading,
+        unreadCount,
+        signOut,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
