@@ -96,3 +96,122 @@ function formatProductType(t: string): string {
   };
   return labels[t] ?? t;
 }
+
+
+
+
+
+/* ---------- Types ---------- */
+
+export type RequestStatus = "open" | "closed" | "cancelled";
+
+export type RequestDetail = {
+  id: string;
+  productType: ProductType;
+  amount: number;
+  purpose: string;
+  preferredTermMonths: number;
+  maxRate: number | null;
+  decisionDeadline: string | null;
+  anonymizedBrief: string;
+  status: RequestStatus;
+  createdAt: string;
+};
+
+export type Bid = {
+  id: string;
+  requestId: string;
+  bankId: string;
+  institutionName: string;
+  rate: number;
+  terms: string;
+  status: "pending" | "accepted" | "rejected";
+  createdAt: string;
+};
+
+/* ---------- Get single request ---------- */
+
+export async function getRequest(id: string): Promise<RequestDetail | null> {
+  const { data, error } = await supabase
+    .from("requests")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (error || !data) return null;
+
+  return {
+    id: data.id,
+    productType: data.product_type,
+    amount: data.amount,
+    purpose: data.purpose,
+    preferredTermMonths: data.preferred_term_months,
+    maxRate: data.max_rate,
+    decisionDeadline: data.decision_deadline,
+    anonymizedBrief: data.anonymized_brief,
+    status: data.status,
+    createdAt: data.created_at,
+  };
+}
+
+/* ---------- Get bids for a request ---------- */
+
+export async function getRequestBids(requestId: string): Promise<Bid[]> {
+  const { data, error } = await supabase
+    .from("bids")
+    .select(`
+      id,
+      request_id,
+      bank_id,
+      rate,
+      terms,
+      status,
+      created_at,
+      bank_profiles ( institution_name )
+    `)
+    .eq("request_id", requestId)
+    .order("rate", { ascending: true });
+
+  if (error || !data) return [];
+
+  return data.map((b: any) => ({
+    id: b.id,
+    requestId: b.request_id,
+    bankId: b.bank_id,
+    institutionName: b.bank_profiles?.institution_name ?? "Unknown Bank",
+    rate: b.rate,
+    terms: b.terms,
+    status: b.status,
+    createdAt: b.created_at,
+  }));
+}
+
+/* ---------- Accept a bid ---------- */
+
+export type AcceptBidResult = { ok: true } | { ok: false; error: string };
+
+export async function acceptBid(
+  bidId: string,
+  requestId: string
+): Promise<AcceptBidResult> {
+  // Mark the bid as accepted
+  const { error: bidError } = await supabase
+    .from("bids")
+    .update({ status: "accepted" })
+    .eq("id", bidId);
+
+  if (bidError) return { ok: false, error: bidError.message };
+
+  // Close the request
+  const { error: reqError } = await supabase
+    .from("requests")
+    .update({ status: "closed" })
+    .eq("id", requestId);
+
+  if (reqError) return { ok: false, error: reqError.message };
+
+  return { ok: true };
+}
+
+/* ---------- Re-export helper ---------- */
+export { formatProductType };
