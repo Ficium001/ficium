@@ -48,31 +48,33 @@ export default function Kyc() {
     mode: "onTouched",
   });
 
-  const onSubmit = async (data: FormData) => {
-    setSubmitError(null);
+const onSubmit = async (data: FormData) => {
+  setSubmitError(null);
 
-    if (!idFile) {
-      setSubmitError("Please upload an image of your ID document.");
-      return;
-    }
-    if (!selfieFile) {
-      setSubmitError("Please take a selfie for verification.");
-      return;
-    }
+  if (!idFile) {
+    setSubmitError("Please upload an image of your ID document.");
+    return;
+  }
+  if (!selfieFile) {
+    setSubmitError("Please take a selfie for verification.");
+    return;
+  }
 
-    const result = await submitKyc({
-      documentType: data.documentType,
-      documentNumber: data.documentNumber,
-      dateOfBirth: data.dateOfBirth,
-    });
+  const result = await submitKyc({
+    documentType: data.documentType,
+    documentNumber: data.documentNumber,
+    dateOfBirth: data.dateOfBirth,
+    idFile,
+    selfieFile,
+  });
 
-    if (!result.ok) {
-      setSubmitError(result.error);
-      return;
-    }
+  if (!result.ok) {
+    setSubmitError(result.error);
+    return;
+  }
 
-    navigate("/onboarding/dossier");
-  };
+  navigate("/onboarding/dossier");
+};
 
   return (
     <div className="min-h-screen bg-cream px-5 py-8 sm:px-6 sm:py-10">
