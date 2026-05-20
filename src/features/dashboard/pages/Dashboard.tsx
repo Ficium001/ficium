@@ -87,7 +87,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-3 gap-3 mb-6">
           <StatTile icon={<FileText size={18} />} value={loading ? "—" : activeRequests.toString()} label="Requests" />
           <StatTile icon={<TrendingUp size={18} />} value={loading ? "—" : totalNewBids.toString()} label="New bids" />
-          <StatTile icon={<Activity size={18} />} value={loading ? "—" : profile?.healthScore?.toString() ?? "—"} label="Health" highlight />
+          <StatTile icon={<Activity size={18} />} value={loading ? "—" : profile?.healthScore?.toString() ?? "—"} label="Health" />
         </div>
 
         {/* Requests section */}
