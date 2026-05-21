@@ -1,18 +1,55 @@
 import { supabase } from "../../../shared/lib/supabase";
 
-/* ---------- Types ---------- */
+/* ============================================================
+   TYPES — derived from client_profile_view
+   ============================================================ */
 
-export type ProfileSummary = {
+export type ProfileCompletion = {
+  accountCreated: boolean;
+  kycVerified: boolean;
+  proofOfAddressDone: boolean;
+  financialProfileDone: boolean;
+  sourceOfWealthDone: boolean;
+  percent: number;
+};
+
+export type ProfileScores = {
+  healthScore: number | null;
+  riskScore: number | null;
+  affordabilityScore: number | null;
+};
+
+export type ProfileCore = {
   userId: string;
   email: string;
   fullName: string | null;
   firstName: string | null;
   kycStatus: "pending" | "verified" | "rejected";
-  healthScore: number | null;
-  riskScore: number | null;
-  affordabilityScore: number | null;
-  hasDossier: boolean;
+  employmentStatus: string | null;
+  monthlyIncome: number | null;
+  totalNetWorth: number | null;
+  hasExistingLoans: boolean;
+  isPep: boolean;
+  eddRequired: boolean;
+  addressLine1: string | null;
+  city: string | null;
+  country: string | null;
 };
+
+/**
+ * Full profile — everything the dashboard needs in one object.
+ * Sourced from client_profile_view (single DB query).
+ */
+export type ProfileSummary = ProfileCore &
+  ProfileScores & {
+    completion: ProfileCompletion;
+    // convenience flags used by route guards and banners
+    hasDossier: boolean;
+  };
+
+/* ============================================================
+   REQUEST SUMMARY TYPE
+   ============================================================ */
 
 export type RequestSummary = {
   id: string;
@@ -24,50 +61,68 @@ export type RequestSummary = {
   bestRate: number | null;
 };
 
-/* ---------- Profile summary ---------- */
+/* ============================================================
+   API — thin client over DB view
+   ============================================================ */
 
 /**
- * Pull everything the dashboard greeting + stat tiles need in one go.
- * Combines the users row and the (optional) financial_profiles row.
+ * getProfileSummary — single query to client_profile_view.
+ * Adding new fields to the dashboard = add to view + add here.
+ * Nothing else changes.
  */
 export async function getProfileSummary(): Promise<ProfileSummary | null> {
-  const { data: authData } = await supabase.auth.getUser();
-  const userId = authData.user?.id;
-  if (!userId) return null;
+  const { data, error } = await supabase
+    .from("client_profile_view")
+    .select("*")
+    .maybeSingle();
 
-  // RLS limits these to the logged-in user's own rows.
-  const [{ data: user }, { data: profile }] = await Promise.all([
-    supabase
-      .from("users")
-      .select("id, email, full_name, first_name, kyc_status")
-      .eq("id", userId)
-      .single(),
-    supabase
-      .from("financial_profiles")
-      .select("health_score, risk_score, affordability_score")
-      .eq("user_id", userId)
-      .maybeSingle(),
-  ]);
+  if (error || !data) return null;
 
-  if (!user) return null;
+  const completion: ProfileCompletion = {
+    accountCreated: true,
+    kycVerified: data.kyc_verified ?? false,
+    proofOfAddressDone: data.proof_of_address_done ?? false,
+    financialProfileDone: data.financial_profile_done ?? false,
+    sourceOfWealthDone: data.source_of_wealth_done ?? false,
+    percent: data.completion_percent ?? 20,
+  };
 
   return {
-    userId: user.id,
-    email: user.email,
-    fullName: user.full_name,
-    firstName: user.first_name,
-    kycStatus: user.kyc_status,
-    healthScore: profile?.health_score ?? null,
-    riskScore: profile?.risk_score ?? null,
-    affordabilityScore: profile?.affordability_score ?? null,
-    hasDossier: !!profile,
+    // core identity
+    userId: data.user_id,
+    email: data.email,
+    fullName: data.full_name,
+    firstName: data.first_name,
+    kycStatus: data.kyc_status,
+    addressLine1: data.address_line_1 ?? null,
+    city: data.city ?? null,
+    country: data.country ?? null,
+
+    // employment & financial
+    employmentStatus: data.employment_status ?? null,
+    monthlyIncome: data.monthly_income ?? null,
+    totalNetWorth: data.total_net_worth ?? null,
+    hasExistingLoans: data.has_existing_loans ?? false,
+    isPep: data.is_pep ?? false,
+    eddRequired: data.enhanced_due_diligence_required ?? false,
+
+    // scores
+    healthScore: data.health_score ?? null,
+    riskScore: data.risk_score ?? null,
+    affordabilityScore: data.affordability_score ?? null,
+
+    // completion
+    completion,
+
+    // convenience
+    hasDossier: data.financial_profile_done ?? false,
   };
 }
 
-/* ---------- Requests summary ---------- */
-
 /**
- * Pull the user's open + recently closed requests, with bid counts and best rate.
+ * getMyRequests — paginated request list with bid aggregation.
+ * Two-query approach; stays here (not in the view) because
+ * requests are a separate domain.
  */
 export async function getMyRequests(): Promise<RequestSummary[]> {
   const { data: authData } = await supabase.auth.getUser();
@@ -90,7 +145,6 @@ export async function getMyRequests(): Promise<RequestSummary[]> {
     .select("request_id, interest_rate")
     .in("request_id", ids);
 
-  // Aggregate by request_id
   const byRequest = new Map<string, { count: number; bestRate: number | null }>();
   for (const id of ids) byRequest.set(id, { count: 0, bestRate: null });
   for (const b of bids || []) {
@@ -113,7 +167,9 @@ export async function getMyRequests(): Promise<RequestSummary[]> {
   }));
 }
 
-/* ---------- Helpers ---------- */
+/* ============================================================
+   HELPERS
+   ============================================================ */
 
 export function formatMUR(amount: number): string {
   return new Intl.NumberFormat("en-MU", {
@@ -135,4 +191,90 @@ export function formatProductType(t: string): string {
     investment_account: "Investment Account",
   };
   return labels[t] ?? t;
+}
+
+/**
+ * computeNextActions — derives actionable steps from profile state.
+ * Lives here (not in a hook) so it can be tested independently.
+ * Add new actions here as the product grows — nothing else changes.
+ */
+export type NextAction = {
+  id: string;
+  label: string;
+  description: string;
+  href: string;
+  priority: "high" | "medium" | "low";
+  done: boolean;
+};
+
+export function computeNextActions(p: ProfileSummary): NextAction[] {
+  return [
+    {
+      id: "kyc",
+      label: "Verify your identity",
+      description: "Upload your ID and selfie so banks can trust your requests.",
+      href: "/onboarding/kyc",
+      priority: "high" as const,
+      done: p.completion.kycVerified,
+    },
+    {
+      id: "proof_of_address",
+      label: "Add proof of address",
+      description: "A utility bill or bank statement dated within 3 months.",
+      href: "/onboarding/kyc",
+      priority: "high" as const,
+      done: p.completion.proofOfAddressDone,
+    },
+    {
+      id: "financial_profile",
+      label: "Complete your financial profile",
+      description: "Help banks understand your income, assets and obligations.",
+      href: "/onboarding/dossier",
+      priority: "high" as const,
+      done: p.completion.financialProfileDone,
+    },
+    {
+      id: "source_of_wealth",
+      label: "Declare source of wealth",
+      description: "Required for compliance and better bid quality.",
+      href: "/onboarding/dossier",
+      priority: "medium" as const,
+      done: p.completion.sourceOfWealthDone,
+    },
+  ].filter((a) => !a.done);
+}
+
+/**
+ * computeBankReadiness — derives a 0-100 readiness score.
+ * Banks want KYC, address, financial profile, clean credit, stable income.
+ */
+export function computeBankReadiness(p: ProfileSummary): number {
+  let score = 0;
+  if (p.completion.kycVerified) score += 25;
+  if (p.completion.proofOfAddressDone) score += 15;
+  if (p.completion.financialProfileDone) score += 25;
+  if (p.completion.sourceOfWealthDone) score += 10;
+  if (p.healthScore !== null) score += Math.round((p.healthScore / 100) * 25);
+  return Math.min(100, score);
+}
+
+/**
+ * computeHealthRecommendations — explains what's dragging the score down.
+ */
+export function computeHealthRecommendations(p: ProfileSummary): string[] {
+  const recs: string[] = [];
+  if (!p.completion.financialProfileDone) {
+    recs.push("Complete your financial profile to unlock a full health score.");
+    return recs;
+  }
+  if (p.healthScore !== null && p.healthScore < 60) {
+    if (p.hasExistingLoans) recs.push("Reducing existing debt will improve your score.");
+    if ((p.monthlyIncome ?? 0) < 25000) recs.push("A higher declared income improves your health score.");
+    if (!p.completion.proofOfAddressDone) recs.push("Adding proof of address improves eligibility.");
+    if (!p.completion.sourceOfWealthDone) recs.push("Declaring your source of wealth boosts compliance score.");
+  }
+  if (recs.length === 0 && p.healthScore !== null && p.healthScore >= 60) {
+    recs.push("Your profile looks strong. Keep it up to date for the best offers.");
+  }
+  return recs;
 }
