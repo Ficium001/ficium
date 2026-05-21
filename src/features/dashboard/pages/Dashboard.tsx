@@ -12,6 +12,11 @@ import { formatMUR, formatProductType } from "../api/profile";
 import type { RequestSummary, NextAction } from "../api/profile";
 import { Card, BottomNav } from "../../../shared/ui";
 
+/* ── Sparkline data (illustrative trend) ── */
+const SPARK_HEALTH    = [30, 35, 32, 40, 38, 44, 46];
+const SPARK_READINESS = [50, 58, 62, 70, 75, 80, 87];
+const SPARK_REQUESTS  = [0, 0, 0, 1, 1, 1, 1];
+
 /* ============================================================
    PAGE
    ============================================================ */
@@ -36,6 +41,20 @@ export default function Dashboard() {
   const kycVerified = profile?.kycStatus === "verified";
   const hasDossier = !!profile?.hasDossier;
   const readyToRequest = kycVerified && hasDossier;
+
+  const healthStatus = profile?.healthScore == null ? { label: "—", color: "#888" }
+    : profile.healthScore >= 70 ? { label: "Good", color: "#16a34a" }
+    : profile.healthScore >= 50 ? { label: "Fair", color: "#d97706" }
+    : { label: "Low", color: "#dc2626" };
+
+  const readinessStatus = bankReadiness == null ? { label: "—", color: "#888" }
+    : bankReadiness >= 70 ? { label: "Strong", color: "#3b82f6" }
+    : bankReadiness >= 40 ? { label: "Building", color: "#d97706" }
+    : { label: "Early", color: "#888" };
+
+  const requestStatus = activeRequests > 0
+    ? { label: "Active", color: "#4f46e5" }
+    : { label: "None", color: "#888" };
 
   return (
     <div className="min-h-screen bg-cream pb-28">
@@ -88,40 +107,54 @@ export default function Dashboard() {
           </div>
         )}
 
+
         {/* ── SCORE TILES ── */}
         <div className="grid grid-cols-3 gap-3">
           <ScoreTile
             label="Health"
             value={loading ? null : profile?.healthScore ?? null}
-            icon={<Activity size={16} />}
-            color="ficium"
+            icon={<Activity size={18} />}
             suffix="/100"
+            status={healthStatus.label}
+            statusColor={healthStatus.color}
+            sparkColor="#16a34a"
+            sparkPoints={SPARK_HEALTH}
+            iconBg="bg-green-50"
+            iconColor="text-green-600"
           />
           <ScoreTile
             label="Bank Readiness"
             value={loading ? null : bankReadiness}
-            icon={<Zap size={16} />}
-            color="mint"
+            icon={<Zap size={18} />}
             suffix="%"
+            status={readinessStatus.label}
+            statusColor={readinessStatus.color}
+            sparkColor="#3b82f6"
+            sparkPoints={SPARK_READINESS}
+            iconBg="bg-blue-50"
+            iconColor="text-blue-500"
           />
           <ScoreTile
             label="Requests"
             value={loading ? null : activeRequests}
-            icon={<FileText size={16} />}
-            color="neutral"
+            icon={<FileText size={18} />}
+            status={requestStatus.label}
+            statusColor={requestStatus.color}
+            sparkColor="#4f46e5"
+            sparkPoints={SPARK_REQUESTS}
+            iconBg="bg-ficium/10"
+            iconColor="text-ficium"
             badge={totalNewBids > 0 ? `${totalNewBids} bids` : undefined}
           />
         </div>
 
-        {/* ── HEALTH INSIGHTS ── */}
+                {/* ── HEALTH INSIGHTS ── */}
         {recommendations.length > 0 && profile?.completion.financialProfileDone && (
           <HealthInsights score={profile?.healthScore ?? null} recommendations={recommendations} />
         )}
 
-        {/* ── NEXT ACTIONS ── */}
-        {actions.length > 0 && <NextActions actions={actions} />}
 
-        {/* ── REQUESTS ── */}
+        {/* ── REQUESTS SECTION (first) ── */}
         <div>
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-display text-xl font-bold">Your requests</h2>
@@ -139,6 +172,12 @@ export default function Dashboard() {
             </div>
           )}
         </div>
+
+
+
+        {/* ── NEXT ACTIONS ── */}
+        {actions.length > 0 && <NextActions actions={actions} />}
+
       </div>
 
       {/* ── FAB ── */}
@@ -162,45 +201,99 @@ export default function Dashboard() {
 }
 
 /* ============================================================
+   SPARKLINE
+   ============================================================ */
+
+function Sparkline({ points, color }: { points: number[]; color: string }) {
+  const w = 200;
+  const h = 60;
+  const pad = 8;
+  const max = Math.max(...points, 1);
+  const min = Math.min(...points);
+  const range = max - min || 1;
+
+  const coords = points.map((p, i) => {
+    const x = pad + (i / (points.length - 1)) * (w - pad * 2);
+    const y = h - pad - ((p - min) / range) * (h - pad * 2);
+    return [x, y] as [number, number];
+  });
+
+  const linePath = coords.map(([x, y], i) => {
+    if (i === 0) return `M ${x} ${y}`;
+    const [px, py] = coords[i - 1];
+    const cx = (px + x) / 2;
+    return `C ${cx} ${py}, ${cx} ${y}, ${x} ${y}`;
+  }).join(" ");
+
+  const fillPath = `${linePath} L ${coords[coords.length - 1][0]} ${h} L ${coords[0][0]} ${h} Z`;
+  const dot = coords[coords.length - 1];
+  const gradId = `sg-${color.replace("#", "")}`;
+
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-14" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.3" />
+          <stop offset="100%" stopColor={color} stopOpacity="0.02" />
+        </linearGradient>
+      </defs>
+      <path d={fillPath} fill={`url(#${gradId})`} />
+      <path d={linePath} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={dot[0]} cy={dot[1]} r="4.5" fill={color} />
+    </svg>
+  );
+}
+
+/* ============================================================
    SCORE TILE
    ============================================================ */
 
-function ScoreTile({ label, value, icon, color, suffix, badge }: {
+function ScoreTile({ label, value, icon, suffix, status, statusColor, sparkColor, sparkPoints, iconBg, iconColor, badge }: {
   label: string;
   value: number | null;
   icon: React.ReactNode;
-  color: "ficium" | "mint" | "neutral";
   suffix?: string;
+  status: string;
+  statusColor: string;
+  sparkColor: string;
+  sparkPoints: number[];
+  iconBg: string;
+  iconColor: string;
   badge?: string;
 }) {
-  const colorMap = {
-    ficium: "bg-ficium text-white",
-    mint: "bg-mint/20 text-ink",
-    neutral: "bg-white text-ink",
-  };
-  const iconColorMap = {
-    ficium: "text-white/80",
-    mint: "text-ink/60",
-    neutral: "text-muted",
-  };
-
   return (
-    <Card padded={false} className={["p-4 flex flex-col gap-1.5 relative overflow-hidden", colorMap[color]].join(" ")}>
-      <div className={iconColorMap[color]}>{icon}</div>
-      <div className="font-display text-2xl font-bold leading-none">
+    <Card padded={false} className="flex flex-col overflow-hidden bg-white pt-4 px-4 pb-0 gap-2">
+      {/* Top row */}
+      <div className="flex items-start justify-between">
+        <div className={["w-9 h-9 rounded-xl grid place-items-center flex-shrink-0", iconBg, iconColor].join(" ")}>
+          {icon}
+        </div>
+        <div className="flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-pill bg-ink/[0.04]">
+          <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: statusColor }} />
+          <span style={{ color: statusColor }}>{status}</span>
+        </div>
+      </div>
+
+      {/* Value */}
+      <div className="font-display text-[26px] font-bold leading-none text-ink">
         {value === null ? "—" : value}
         {suffix && value !== null && (
-          <span className="text-sm font-normal opacity-70">{suffix}</span>
+          <span className="text-sm font-normal text-muted ml-0.5">{suffix}</span>
         )}
       </div>
-      <div className={["text-[11px]", color === "ficium" ? "text-white/70" : "text-muted"].join(" ")}>
-        {label}
-      </div>
+      <div className="text-[11px] text-muted pb-1">{label}</div>
+
+      {/* Badge */}
       {badge && (
-        <span className="absolute top-2 right-2 bg-ficium text-white text-[9px] font-bold px-1.5 py-0.5 rounded-pill">
+        <span className="self-start text-[9px] font-bold bg-ficium/10 text-ficium px-1.5 py-0.5 rounded-pill mb-1">
           {badge}
         </span>
       )}
+
+      {/* Sparkline flush to bottom */}
+      <div className="-mx-4">
+        <Sparkline points={sparkPoints} color={sparkColor} />
+      </div>
     </Card>
   );
 }
@@ -210,49 +303,43 @@ function ScoreTile({ label, value, icon, color, suffix, badge }: {
    ============================================================ */
 
 function HealthInsights({ score, recommendations }: { score: number | null; recommendations: string[] }) {
-  const scoreColor = score === null ? "text-muted"
+  const scoreColor = score == null ? "text-muted"
     : score >= 70 ? "text-green-600"
-    : score >= 50 ? "text-amber-600"
+    : score >= 50 ? "text-amber-500"
     : "text-red-500";
 
-  const scoreLabel = score === null ? "—"
+  const scoreLabel = score == null ? "—"
     : score >= 70 ? "Strong"
     : score >= 50 ? "Moderate"
     : "Needs attention";
 
-  const barColor = score === null ? "bg-ink/20"
+  const barColor = score == null ? "bg-ink/20"
     : score >= 70 ? "bg-green-500"
     : score >= 50 ? "bg-amber-400"
     : "bg-red-400";
 
   return (
-    <Card padded={false} className="p-4 sm:p-5 border-l-4 border-l-ficium">
+    <Card padded={false} className="p-4 sm:p-5 border-l-[3px] border-l-ficium">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Activity size={15} className="text-ficium" />
-          <span className="font-semibold text-sm">Financial Health Score</span>
+          <span className="font-semibold text-sm">Financial Health</span>
         </div>
         <span className={["text-sm font-bold", scoreColor].join(" ")}>{scoreLabel}</span>
       </div>
-
-      {/* Score bar */}
-      <div className="relative h-2.5 bg-ink/[0.07] rounded-pill overflow-hidden mb-1">
-        <div
-          className={["h-full rounded-pill transition-all duration-700", barColor].join(" ")}
-          style={{ width: `${score ?? 0}%` }}
-        />
+      <div className="h-2 bg-ink/[0.07] rounded-pill overflow-hidden mb-1">
+        <div className={["h-full rounded-pill transition-all duration-700", barColor].join(" ")}
+          style={{ width: `${score ?? 0}%` }} />
       </div>
       <div className="flex justify-between text-[10px] text-muted mb-4">
         <span>0</span>
         <span className="font-semibold text-ink">{score ?? "—"} / 100</span>
         <span>100</span>
       </div>
-
-      {/* Recommendations */}
       <div className="flex flex-col gap-2">
         {recommendations.map((rec, i) => (
           <div key={i} className="flex items-start gap-2.5 px-3 py-2 bg-ficium/[0.04] rounded-lg">
-            <TrendingUp size={13} className="text-ficium mt-0.5 flex-shrink-0" />
+            <TrendingUp size={12} className="text-ficium mt-0.5 flex-shrink-0" />
             <span className="text-[12px] text-ink/80 leading-relaxed">{rec}</span>
           </div>
         ))}
@@ -271,11 +358,7 @@ function NextActions({ actions }: { actions: NextAction[] }) {
     medium: "border-amber-200 bg-amber-50 text-amber-700",
     low: "border-ficium/15 bg-ficium/[0.04] text-ficium",
   };
-  const dotColor = {
-    high: "bg-red-500",
-    medium: "bg-amber-400",
-    low: "bg-ficium",
-  };
+  const dotColor = { high: "bg-red-500", medium: "bg-amber-400", low: "bg-ficium" };
 
   return (
     <Card padded={false} className="p-4 sm:p-5">
