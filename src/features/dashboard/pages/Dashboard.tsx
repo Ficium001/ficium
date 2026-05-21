@@ -1,11 +1,13 @@
 import { Link, useNavigate } from "react-router-dom";
 import {
-  Plus, LogOut, FileText, Activity, ShieldAlert, Sparkles,
-  BookOpen, ChevronRight, CheckCircle2, Circle, TrendingUp,
-  ArrowUpRight, Zap,
+  Plus, LogOut, FileText, Activity, ShieldAlert,
+  Sparkles, BookOpen, ChevronRight, TrendingUp, Zap,
 } from "lucide-react";
 import { useAuth } from "../../auth/context/AuthContext";
-import { useProfile, useMyRequests, useNextActions, useBankReadiness, useHealthRecommendations } from "../hooks/useDashboard";
+import {
+  useProfile, useMyRequests, useNextActions,
+  useBankReadiness, useHealthRecommendations,
+} from "../hooks/useDashboard";
 import { formatMUR, formatProductType } from "../api/profile";
 import type { RequestSummary, NextAction } from "../api/profile";
 import { Card, BottomNav } from "../../../shared/ui";
@@ -25,7 +27,6 @@ export default function Dashboard() {
   const { recommendations } = useHealthRecommendations();
 
   const loading = profileLoading || requestsLoading;
-
   const handleSignOut = async () => { await signOut(); navigate("/"); };
 
   const greeting = getGreeting();
@@ -61,12 +62,7 @@ export default function Dashboard() {
           </button>
         </div>
 
-        {/* ── PROFILE COMPLETION RING ── */}
-        {!profileLoading && (
-          <CompletionRing percent={profile?.completion.percent ?? 20} profile={profile} />
-        )}
-
-        {/* ── ALERT BANNERS ── */}
+        {/* ── BANNERS ── */}
         {profile && !kycVerified && (
           <div className="flex items-start gap-3 px-4 py-3 bg-accent/20 border border-accent/40 rounded-xl">
             <ShieldAlert size={18} className="text-ink mt-0.5 flex-shrink-0" />
@@ -74,7 +70,9 @@ export default function Dashboard() {
               <div className="text-sm font-semibold">Finish verifying your identity</div>
               <div className="text-[13px] text-muted mt-0.5">Banks can't bid until KYC is complete.</div>
             </div>
-            <Link to="/onboarding/kyc" className="text-sm font-semibold text-ficium no-underline flex-shrink-0">Resume →</Link>
+            <Link to="/onboarding/kyc" className="text-sm font-semibold text-ficium no-underline flex-shrink-0">
+              Resume →
+            </Link>
           </div>
         )}
         {profile && kycVerified && !hasDossier && (
@@ -84,7 +82,9 @@ export default function Dashboard() {
               <div className="text-sm font-semibold">Complete your financial profile</div>
               <div className="text-[13px] text-muted mt-0.5">Banks need this to bid accurately.</div>
             </div>
-            <Link to="/onboarding/dossier" className="text-sm font-semibold text-ficium no-underline flex-shrink-0">Start →</Link>
+            <Link to="/onboarding/dossier" className="text-sm font-semibold text-ficium no-underline flex-shrink-0">
+              Start →
+            </Link>
           </div>
         )}
 
@@ -113,15 +113,13 @@ export default function Dashboard() {
           />
         </div>
 
-        {/* ── HEALTH SCORE INSIGHTS ── */}
+        {/* ── HEALTH INSIGHTS ── */}
         {recommendations.length > 0 && profile?.completion.financialProfileDone && (
           <HealthInsights score={profile?.healthScore ?? null} recommendations={recommendations} />
         )}
 
-        {/* ── NEXT BEST ACTIONS ── */}
-        {actions.length > 0 && (
-          <NextActions actions={actions} />
-        )}
+        {/* ── NEXT ACTIONS ── */}
+        {actions.length > 0 && <NextActions actions={actions} />}
 
         {/* ── REQUESTS ── */}
         <div>
@@ -133,10 +131,7 @@ export default function Dashboard() {
               </Link>
             )}
           </div>
-
-          {loading ? (
-            <SkeletonRequests />
-          ) : requests.length === 0 ? (
+          {loading ? <SkeletonRequests /> : requests.length === 0 ? (
             <EmptyState kycVerified={kycVerified} hasDossier={hasDossier} />
           ) : (
             <div className="flex flex-col gap-3">
@@ -148,10 +143,7 @@ export default function Dashboard() {
 
       {/* ── FAB ── */}
       {readyToRequest && (
-        <Link
-          to="/requests/new"
-          className="fixed bottom-20 right-5 sm:right-8 z-30 inline-flex items-center gap-2 bg-ficium text-white px-5 py-3.5 rounded-pill shadow-ficium font-semibold no-underline"
-        >
+        <Link to="/requests/new" className="fixed bottom-20 right-5 sm:right-8 z-30 inline-flex items-center gap-2 bg-ficium text-white px-5 py-3.5 rounded-pill shadow-ficium font-semibold no-underline">
           <Plus size={18} /> New Request
         </Link>
       )}
@@ -166,78 +158,6 @@ export default function Dashboard() {
 
       <BottomNav />
     </div>
-  );
-}
-
-/* ============================================================
-   COMPLETION RING
-   ============================================================ */
-
-function CompletionRing({ percent, profile }: { percent: number; profile: any }) {
-  const r = 36;
-  const circ = 2 * Math.PI * r;
-  const filled = (percent / 100) * circ;
-
-  const milestones = [
-    { label: "Account created", done: true },
-    { label: "Identity verified", done: profile?.completion.kycVerified ?? false },
-    { label: "Proof of address", done: profile?.completion.proofOfAddressDone ?? false },
-    { label: "Financial profile", done: profile?.completion.financialProfileDone ?? false },
-    { label: "Source of wealth", done: profile?.completion.sourceOfWealthDone ?? false },
-  ];
-
-  const nextIncomplete = milestones.find((m) => !m.done);
-
-  return (
-    <Card padded={false} className="p-4 sm:p-5">
-      <div className="flex items-center gap-5">
-        {/* SVG Ring */}
-        <div className="relative flex-shrink-0">
-          <svg width="88" height="88" viewBox="0 0 88 88">
-            <circle cx="44" cy="44" r={r} fill="none" stroke="currentColor" strokeWidth="7"
-              className="text-ink/[0.07]" />
-            <circle cx="44" cy="44" r={r} fill="none" stroke="currentColor" strokeWidth="7"
-              strokeDasharray={`${filled} ${circ}`}
-              strokeLinecap="round"
-              strokeDashoffset={circ / 4}
-              className="text-ficium transition-all duration-700"
-              style={{ transform: "rotate(-90deg)", transformOrigin: "center" }}
-            />
-          </svg>
-          <div className="absolute inset-0 grid place-items-center">
-            <div className="text-center">
-              <div className="font-display text-xl font-bold leading-none">{percent}%</div>
-              <div className="text-[9px] text-muted mt-0.5">complete</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Milestones */}
-        <div className="flex-1 min-w-0">
-          <div className="text-sm font-semibold mb-2">Profile completion</div>
-          <div className="flex flex-col gap-1.5">
-            {milestones.map((m) => (
-              <div key={m.label} className="flex items-center gap-2">
-                {m.done
-                  ? <CheckCircle2 size={14} className="text-ficium flex-shrink-0" />
-                  : <Circle size={14} className="text-ink/20 flex-shrink-0" />}
-                <span className={["text-[12px]", m.done ? "text-ink" : "text-muted"].join(" ")}>
-                  {m.label}
-                </span>
-              </div>
-            ))}
-          </div>
-          {nextIncomplete && (
-            <Link
-              to={nextIncomplete.label.includes("Identity") || nextIncomplete.label.includes("address") ? "/onboarding/kyc" : "/onboarding/dossier"}
-              className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-ficium no-underline"
-            >
-              Complete next step <ArrowUpRight size={12} />
-            </Link>
-          )}
-        </div>
-      </div>
-    </Card>
   );
 }
 
@@ -268,9 +188,14 @@ function ScoreTile({ label, value, icon, color, suffix, badge }: {
     <Card padded={false} className={["p-4 flex flex-col gap-1.5 relative overflow-hidden", colorMap[color]].join(" ")}>
       <div className={iconColorMap[color]}>{icon}</div>
       <div className="font-display text-2xl font-bold leading-none">
-        {value === null ? "—" : value}{suffix && value !== null ? <span className="text-sm font-normal opacity-70">{suffix}</span> : null}
+        {value === null ? "—" : value}
+        {suffix && value !== null && (
+          <span className="text-sm font-normal opacity-70">{suffix}</span>
+        )}
       </div>
-      <div className={["text-[11px]", color === "ficium" ? "text-white/70" : "text-muted"].join(" ")}>{label}</div>
+      <div className={["text-[11px]", color === "ficium" ? "text-white/70" : "text-muted"].join(" ")}>
+        {label}
+      </div>
       {badge && (
         <span className="absolute top-2 right-2 bg-ficium text-white text-[9px] font-bold px-1.5 py-0.5 rounded-pill">
           {badge}
@@ -285,27 +210,50 @@ function ScoreTile({ label, value, icon, color, suffix, badge }: {
    ============================================================ */
 
 function HealthInsights({ score, recommendations }: { score: number | null; recommendations: string[] }) {
-  const color = score === null ? "text-muted" : score >= 70 ? "text-green-600" : score >= 50 ? "text-amber-600" : "text-red-600";
-  const label = score === null ? "—" : score >= 70 ? "Strong" : score >= 50 ? "Moderate" : "Needs work";
+  const scoreColor = score === null ? "text-muted"
+    : score >= 70 ? "text-green-600"
+    : score >= 50 ? "text-amber-600"
+    : "text-red-500";
+
+  const scoreLabel = score === null ? "—"
+    : score >= 70 ? "Strong"
+    : score >= 50 ? "Moderate"
+    : "Needs attention";
+
+  const barColor = score === null ? "bg-ink/20"
+    : score >= 70 ? "bg-green-500"
+    : score >= 50 ? "bg-amber-400"
+    : "bg-red-400";
 
   return (
-    <Card padded={false} className="p-4 sm:p-5">
+    <Card padded={false} className="p-4 sm:p-5 border-l-4 border-l-ficium">
       <div className="flex items-center justify-between mb-3">
-        <div className="font-semibold text-sm">Financial Health</div>
-        <div className={["text-sm font-bold", color].join(" ")}>{label}</div>
+        <div className="flex items-center gap-2">
+          <Activity size={15} className="text-ficium" />
+          <span className="font-semibold text-sm">Financial Health Score</span>
+        </div>
+        <span className={["text-sm font-bold", scoreColor].join(" ")}>{scoreLabel}</span>
       </div>
-      {/* Bar */}
-      <div className="h-2 bg-ink/[0.07] rounded-pill overflow-hidden mb-3">
+
+      {/* Score bar */}
+      <div className="relative h-2.5 bg-ink/[0.07] rounded-pill overflow-hidden mb-1">
         <div
-          className="h-full rounded-pill transition-all duration-700 bg-ficium"
+          className={["h-full rounded-pill transition-all duration-700", barColor].join(" ")}
           style={{ width: `${score ?? 0}%` }}
         />
       </div>
-      <div className="flex flex-col gap-1.5">
-        {recommendations.map((r, i) => (
-          <div key={i} className="flex items-start gap-2 text-[12px] text-muted">
-            <TrendingUp size={12} className="text-ficium mt-0.5 flex-shrink-0" />
-            {r}
+      <div className="flex justify-between text-[10px] text-muted mb-4">
+        <span>0</span>
+        <span className="font-semibold text-ink">{score ?? "—"} / 100</span>
+        <span>100</span>
+      </div>
+
+      {/* Recommendations */}
+      <div className="flex flex-col gap-2">
+        {recommendations.map((rec, i) => (
+          <div key={i} className="flex items-start gap-2.5 px-3 py-2 bg-ficium/[0.04] rounded-lg">
+            <TrendingUp size={13} className="text-ficium mt-0.5 flex-shrink-0" />
+            <span className="text-[12px] text-ink/80 leading-relaxed">{rec}</span>
           </div>
         ))}
       </div>
@@ -314,30 +262,40 @@ function HealthInsights({ score, recommendations }: { score: number | null; reco
 }
 
 /* ============================================================
-   NEXT BEST ACTIONS
+   NEXT ACTIONS
    ============================================================ */
 
 function NextActions({ actions }: { actions: NextAction[] }) {
-  const priorityColor = {
-    high: "bg-red-50 border-red-200 text-red-700",
-    medium: "bg-amber-50 border-amber-200 text-amber-700",
-    low: "bg-ficium/[0.05] border-ficium/15 text-ficium",
+  const priorityStyles = {
+    high: "border-red-200 bg-red-50 text-red-700",
+    medium: "border-amber-200 bg-amber-50 text-amber-700",
+    low: "border-ficium/15 bg-ficium/[0.04] text-ficium",
+  };
+  const dotColor = {
+    high: "bg-red-500",
+    medium: "bg-amber-400",
+    low: "bg-ficium",
   };
 
   return (
     <Card padded={false} className="p-4 sm:p-5">
-      <div className="font-semibold text-sm mb-3 flex items-center gap-2">
-        <Zap size={14} className="text-ficium" /> Next steps
+      <div className="flex items-center gap-2 mb-3">
+        <Zap size={15} className="text-ficium" />
+        <span className="font-semibold text-sm">Next steps</span>
+        <span className="ml-auto text-[11px] font-bold bg-ficium/10 text-ficium px-2 py-0.5 rounded-pill">
+          {actions.length} remaining
+        </span>
       </div>
-      <div className="flex flex-col gap-2.5">
+      <div className="flex flex-col gap-2">
         {actions.map((a) => (
-          <Link key={a.id} to={a.href} className="no-underline">
-            <div className={["flex items-start gap-3 px-3 py-2.5 rounded-xl border transition-colors hover:opacity-80", priorityColor[a.priority]].join(" ")}>
+          <Link key={a.id} to={a.href} className="no-underline group">
+            <div className={["flex items-center gap-3 px-3.5 py-3 rounded-xl border transition-all hover:shadow-sm", priorityStyles[a.priority]].join(" ")}>
+              <div className={["w-2 h-2 rounded-full flex-shrink-0", dotColor[a.priority]].join(" ")} />
               <div className="flex-1 min-w-0">
-                <div className="text-[13px] font-semibold">{a.label}</div>
-                <div className="text-[11px] opacity-75 mt-0.5">{a.description}</div>
+                <div className="text-[13px] font-semibold leading-snug">{a.label}</div>
+                <div className="text-[11px] opacity-70 mt-0.5">{a.description}</div>
               </div>
-              <ChevronRight size={16} className="mt-0.5 flex-shrink-0" />
+              <ChevronRight size={15} className="flex-shrink-0 opacity-60 group-hover:opacity-100 transition-opacity" />
             </div>
           </Link>
         ))}
@@ -359,16 +317,23 @@ function RequestCard({ request }: { request: RequestSummary }) {
             <div className="text-xs text-muted">{formatProductType(request.productType)}</div>
             <div className="font-display text-xl font-bold mt-0.5">{formatMUR(request.amount)}</div>
             <div className="text-xs text-muted mt-1.5">
-              {request.bidCount === 0 ? "Awaiting bids…" : request.bestRate !== null ? (
-                <><span className="font-semibold text-ink">{request.bidCount} bid{request.bidCount === 1 ? "" : "s"}</span>
-                  <span className="mx-1.5">·</span>Best {request.bestRate.toFixed(2)}% APR</>
-              ) : `${request.bidCount} bid${request.bidCount === 1 ? "" : "s"}`}
+              {request.bidCount === 0 ? "Awaiting bids…"
+                : request.bestRate !== null ? (
+                  <>
+                    <span className="font-semibold text-ink">
+                      {request.bidCount} bid{request.bidCount === 1 ? "" : "s"}
+                    </span>
+                    <span className="mx-1.5">·</span>
+                    Best {request.bestRate.toFixed(2)}% APR
+                  </>
+                ) : `${request.bidCount} bid${request.bidCount === 1 ? "" : "s"}`}
             </div>
           </div>
           <span className={[
             "text-[11px] font-bold px-2.5 py-1 rounded-pill uppercase tracking-wide flex-shrink-0",
-            request.status === "open" ? "bg-mint/30 text-ink" :
-            request.status === "accepted" ? "bg-ficium text-white" : "bg-ink/10 text-muted",
+            request.status === "open" ? "bg-mint/30 text-ink"
+              : request.status === "accepted" ? "bg-ficium text-white"
+              : "bg-ink/10 text-muted",
           ].join(" ")}>
             {request.status}
           </span>
