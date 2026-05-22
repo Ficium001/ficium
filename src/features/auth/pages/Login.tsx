@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowRight, Eye, EyeOff } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Shield, Zap, Globe } from "lucide-react";
 import { signIn } from "../../../shared/lib/auth";
 import { Button, Field, Input } from "../../../shared/ui";
 
@@ -47,125 +47,170 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-ink">
+    <div className="min-h-screen relative overflow-hidden bg-ink flex">
 
-      {/* ── ANIMATED GRADIENT BACKGROUND ── */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e]" />
-      <div className="absolute inset-0 opacity-60"
-        style={{
-          background: "radial-gradient(ellipse at 20% 50%, rgba(79,70,229,0.4) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(99,102,241,0.3) 0%, transparent 50%), radial-gradient(ellipse at 60% 80%, rgba(139,92,246,0.3) 0%, transparent 50%)",
-        }}
-      />
-      <div className="absolute top-1/4 -left-20 w-80 h-80 rounded-full bg-ficium/20 blur-[80px] animate-pulse" />
-      <div className="absolute bottom-1/4 -right-20 w-96 h-96 rounded-full bg-violet-500/15 blur-[100px] animate-pulse" style={{ animationDelay: "1s" }} />
-      <div className="absolute top-3/4 left-1/3 w-64 h-64 rounded-full bg-indigo-400/10 blur-[60px] animate-pulse" style={{ animationDelay: "2s" }} />
+      {/* ── LEFT PANEL ── */}
+      <div className="hidden lg:flex lg:w-[45%] xl:w-[40%] flex-col relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e]" />
+        <div className="absolute inset-0"
+          style={{ background: "radial-gradient(ellipse at 30% 40%, rgba(79,70,229,0.5) 0%, transparent 60%), radial-gradient(ellipse at 80% 80%, rgba(139,92,246,0.3) 0%, transparent 50%)" }}
+        />
+        <div className="absolute top-1/3 -left-10 w-72 h-72 rounded-full bg-ficium/20 blur-[80px] animate-pulse" />
+        <div className="absolute bottom-1/4 right-0 w-64 h-64 rounded-full bg-violet-500/20 blur-[80px] animate-pulse" style={{ animationDelay: "1.5s" }} />
 
-      {/* ── CONTENT ── */}
-      <div className="relative z-10 min-h-screen flex flex-col">
-
-        {/* Top nav */}
-        <div className="flex items-center justify-between px-5 sm:px-8 py-5">
-          <Link to="/" className="flex items-center gap-2 no-underline">
-            <FLogo size={24} className="text-white" />
-            <span className="font-display text-lg font-bold text-white">Ficium</span>
+        <div className="relative z-10 flex flex-col h-full p-10 xl:p-14">
+          <Link to="/" className="flex items-center gap-2.5 no-underline mb-auto">
+            <FLogo size={28} className="text-white" />
+            <span className="font-display text-xl font-bold text-white">Ficium</span>
           </Link>
-          <Link to="/register" className="text-sm font-semibold text-white/60 hover:text-white transition-colors no-underline">
-            Create account →
-          </Link>
+
+          <div className="py-16">
+            <div className="text-xs font-bold tracking-[0.12em] uppercase text-ficium/80 mb-4">
+              The reverse-banking marketplace
+            </div>
+            <h2 className="font-display text-4xl xl:text-5xl font-bold text-white leading-[1.1] mb-6">
+              Banks compete.<br />You choose.
+            </h2>
+            <p className="text-white/50 text-base leading-relaxed max-w-[320px]">
+              Post what you need once. Banks across Mauritius bid against each other with their best offer.
+            </p>
+            <div className="flex flex-col gap-3 mt-10">
+              {[
+                { icon: Shield, text: "Bank-grade security" },
+                { icon: Zap, text: "Bids in as little as 24 hours" },
+                { icon: Globe, text: "All major Mauritian banks" },
+              ].map((item) => (
+                <div key={item.text} className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-white/10 grid place-items-center flex-shrink-0">
+                    <item.icon size={15} className="text-white/70" />
+                  </div>
+                  <span className="text-sm text-white/60">{item.text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="text-xs text-white/25">© {new Date().getFullYear()} Ficium · Mauritius</div>
         </div>
+      </div>
 
-        {/* Centered — phone width on all screens */}
-        <div className="flex-1 flex items-center justify-center px-5 py-6">
-          <div className="w-full max-w-[390px] flex flex-col gap-5">
+      {/* ── RIGHT PANEL ── */}
+      <div className="flex-1 flex flex-col min-h-screen relative">
+        {/* Mobile bg */}
+        <div className="absolute inset-0 lg:hidden bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e]" />
+        <div className="absolute inset-0 lg:hidden" style={{ background: "radial-gradient(ellipse at 20% 50%, rgba(79,70,229,0.4) 0%, transparent 60%)" }} />
+        {/* Desktop bg */}
+        <div className="absolute inset-0 hidden lg:block bg-[#f8f7f4]" />
 
-            {/* Heading */}
-            <div className="text-center">
-              <h1 className="font-display text-3xl sm:text-4xl font-bold text-white">
-                Welcome back
-              </h1>
-              <p className="text-sm text-white/50 mt-1.5">
-                Sign in to your Ficium account
+        <div className="relative z-10 flex flex-col h-full">
+          {/* Mobile nav */}
+          <div className="flex lg:hidden items-center justify-between px-5 py-5">
+            <Link to="/" className="flex items-center gap-2 no-underline">
+              <FLogo size={22} className="text-white" />
+              <span className="font-display text-base font-bold text-white">Ficium</span>
+            </Link>
+            <Link to="/register" className="text-sm text-white/60 font-semibold no-underline">Register →</Link>
+          </div>
+
+          {/* Desktop top bar */}
+          <div className="hidden lg:flex items-center justify-between px-8 xl:px-12 py-6 border-b border-ink/[0.06]">
+            <div />
+            <div className="text-sm text-muted">
+              New to Ficium?{" "}
+              <Link to="/register" className="text-ficium font-semibold no-underline hover:underline">Create account</Link>
+            </div>
+          </div>
+
+          {/* Form */}
+          <div className="flex-1 flex items-center justify-center px-5 py-8 lg:px-10 xl:px-16">
+            <div className="w-full max-w-[420px]">
+
+              <div className="mb-7">
+                <h1 className="font-display text-3xl font-bold lg:text-ink text-white">Welcome back</h1>
+                <p className="text-sm mt-1.5 lg:text-muted text-white/50">Sign in to your Ficium account</p>
+              </div>
+
+              {/* Mobile: glass card | Desktop: plain */}
+              <div className="lg:hidden bg-white/[0.97] backdrop-blur-2xl rounded-3xl shadow-2xl p-6 mb-5">
+                <LoginForm
+                  register={register}
+                  handleSubmit={handleSubmit}
+                  onSubmit={onSubmit}
+                  errors={errors}
+                  isSubmitting={isSubmitting}
+                  submitError={submitError}
+                  showPassword={showPassword}
+                  setShowPassword={setShowPassword}
+                />
+              </div>
+
+              <div className="hidden lg:block">
+                <LoginForm
+                  register={register}
+                  handleSubmit={handleSubmit}
+                  onSubmit={onSubmit}
+                  errors={errors}
+                  isSubmitting={isSubmitting}
+                  submitError={submitError}
+                  showPassword={showPassword}
+                  setShowPassword={setShowPassword}
+                />
+              </div>
+
+              <p className="lg:hidden text-center text-sm text-white/50 mt-4">
+                New to Ficium?{" "}
+                <Link to="/register" className="text-white font-semibold no-underline">Create an account</Link>
               </p>
             </div>
-
-            {/* Glass card */}
-            <div className="bg-white/[0.97] backdrop-blur-2xl rounded-3xl shadow-2xl p-6 sm:p-7">
-              <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
-
-                <Field label="Email address" htmlFor="email" error={errors.email?.message}>
-                  <Input
-                    id="email"
-                    type="email"
-                    autoComplete="email"
-                    inputMode="email"
-                    autoFocus
-                    invalid={!!errors.email}
-                    {...register("email")}
-                  />
-                </Field>
-
-                <Field
-                  label="Password"
-                  htmlFor="password"
-                  error={errors.password?.message}
-                  rightLabel={
-                    <Link to="/forgot-password" className="text-xs text-ficium font-semibold no-underline hover:underline">
-                      Forgot password?
-                    </Link>
-                  }
-                >
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      autoComplete="current-password"
-                      invalid={!!errors.password}
-                      {...register("password")}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword((v) => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-ink transition-colors"
-                    >
-                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-                </Field>
-
-                <label className="flex items-center gap-2.5 cursor-pointer select-none">
-                  <input type="checkbox" {...register("rememberMe")} className="w-4 h-4 accent-ficium rounded" />
-                  <span className="text-sm text-ink/70">Remember me</span>
-                </label>
-
-                {submitError && (
-                  <div role="alert" className="px-3.5 py-3 bg-red-50 border border-red-200 text-red-800 rounded-xl text-[13px]">
-                    {submitError}
-                  </div>
-                )}
-
-                <Button
-                  type="submit"
-                  size="lg"
-                  loading={isSubmitting}
-                  rightIcon={!isSubmitting && <ArrowRight size={18} />}
-                  fullWidth
-                  className="mt-1"
-                >
-                  Sign in
-                </Button>
-              </form>
-            </div>
-
-            <p className="text-center text-sm text-white/50">
-              New to Ficium?{" "}
-              <Link to="/register" className="text-white font-semibold no-underline hover:underline">
-                Create an account
-              </Link>
-            </p>
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
+/* ── Form extracted to avoid duplication ── */
+function LoginForm({ register, handleSubmit, onSubmit, errors, isSubmitting, submitError, showPassword, setShowPassword }: any) {
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
+      <Field label="Email address" htmlFor="email" error={errors.email?.message}>
+        <Input id="email" type="email" autoComplete="email" inputMode="email" autoFocus
+          invalid={!!errors.email} {...register("email")} />
+      </Field>
+
+      <Field label="Password" htmlFor="password" error={errors.password?.message}
+        rightLabel={
+          <Link to="/forgot-password" className="text-xs text-ficium font-semibold no-underline hover:underline">
+            Forgot password?
+          </Link>
+        }
+      >
+        <div className="relative">
+          <Input id="password" type={showPassword ? "text" : "password"}
+            autoComplete="current-password" invalid={!!errors.password} {...register("password")} />
+          <button type="button" onClick={() => setShowPassword((v: boolean) => !v)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-ink transition-colors">
+            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+          </button>
+        </div>
+      </Field>
+
+      <label className="flex items-center gap-2.5 cursor-pointer select-none">
+        <input type="checkbox" {...register("rememberMe")} className="w-4 h-4 accent-ficium rounded" />
+        <span className="text-sm text-ink/70">Remember me</span>
+      </label>
+
+      {submitError && (
+        <div role="alert" className="px-3.5 py-3 bg-red-50 border border-red-200 text-red-800 rounded-xl text-[13px]">
+          {submitError}
+        </div>
+      )}
+
+      <Button type="submit" size="lg" loading={isSubmitting}
+        rightIcon={!isSubmitting && <ArrowRight size={18} />} fullWidth className="mt-1">
+        Sign in
+      </Button>
+    </form>
   );
 }
 
