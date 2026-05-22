@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ArrowRight, ArrowLeft, Camera, Upload, ShieldCheck, MapPin, FileText } from "lucide-react";
-import { submitKyc } from "../../onboarding/api/kyc";
+import { submitKyc } from "../api/kyc";
 import { Button, Card, Field, Input, Select } from "../../../shared/ui";
 
 /* ---------- Schema ---------- */

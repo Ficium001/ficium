@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ArrowRight, ArrowLeft } from "lucide-react";
-import { signIn } from "../../auth/api/auth";
+import { signIn } from "../../../shared/lib/auth";
 import { Button, Card, Field, Input } from "../../../shared/ui";
 
 /* ---------- Validation schema ---------- */

@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ArrowLeft, ArrowRight, Lock } from "lucide-react";
 import { useProfile } from "../../dashboard/hooks/useDashboard";
-import { createRequest } from "../../requests/api/requests";
+import { createRequest } from "../api/requests";
 import { Button, Card, Field, Input, Select } from "../../../shared/ui";
 
 /* ---------- Validation schema ---------- */

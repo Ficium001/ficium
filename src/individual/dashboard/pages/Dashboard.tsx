@@ -3,7 +3,7 @@ import {
   Plus, LogOut, FileText, Activity, ShieldAlert,
   Sparkles, BookOpen, ChevronRight, TrendingUp, Zap,
 } from "lucide-react";
-import { useAuth } from "../../auth/context/AuthContext";
+import { useAuth } from "../../../features/auth/context/AuthContext";
 import {
   useProfile, useMyRequests, useNextActions,
   useBankReadiness, useHealthRecommendations,

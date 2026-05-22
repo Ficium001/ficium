@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Clock, LogOut } from "lucide-react";
-import { useAuth } from "../../auth/context/AuthContext";
+import { useAuth } from "../../../features/auth/context/AuthContext";
 import { Button, Card } from "../../../shared/ui";
 
 export default function BankPending() {

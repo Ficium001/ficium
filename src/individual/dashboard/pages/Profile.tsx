@@ -4,7 +4,7 @@ import {
   AlertCircle, CheckCircle2, Circle, ChevronRight,
   Wallet, Activity, Zap,
 } from "lucide-react";
-import { useAuth } from "../../auth/context/AuthContext";
+import { useAuth } from "../../../features/auth/context/AuthContext";
 import { useProfile, useBankReadiness } from "../hooks/useDashboard";
 import { Card, BottomNav } from "../../../shared/ui";
 
