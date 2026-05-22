@@ -6,25 +6,21 @@ type Props = {
   children: React.ReactNode;
 };
 
-// Free Pexels MP4s — loop between them for variety
-const VIDEO_URL = "https://videos.pexels.com/video-files/3044128/3044128-uhd_2560_1440_25fps.mp4";
-
 export function RegisterShell({ back, children }: Props) {
   return (
-    <div className="min-h-screen relative overflow-hidden">
+    <div className="min-h-screen relative overflow-hidden bg-ink">
 
-      {/* ── BACKGROUND VIDEO ── */}
-      <video
-        autoPlay
-        muted
-        loop
-        playsInline
-        className="absolute inset-0 w-full h-full object-cover"
-        src={VIDEO_URL}
+      {/* ── ANIMATED GRADIENT BACKGROUND ── */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e]" />
+      <div className="absolute inset-0 opacity-60"
+        style={{
+          background: "radial-gradient(ellipse at 20% 50%, rgba(79,70,229,0.4) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(99,102,241,0.3) 0%, transparent 50%), radial-gradient(ellipse at 60% 80%, rgba(139,92,246,0.3) 0%, transparent 50%)",
+        }}
       />
-
-      {/* ── GRADIENT OVERLAY ── */}
-      <div className="absolute inset-0 bg-gradient-to-br from-ink/80 via-ink/60 to-ficium/40" />
+      {/* Floating orbs */}
+      <div className="absolute top-1/4 -left-20 w-80 h-80 rounded-full bg-ficium/20 blur-[80px] animate-pulse" />
+      <div className="absolute bottom-1/4 -right-20 w-96 h-96 rounded-full bg-violet-500/15 blur-[100px] animate-pulse" style={{ animationDelay: "1s" }} />
+      <div className="absolute top-3/4 left-1/3 w-64 h-64 rounded-full bg-indigo-400/10 blur-[60px] animate-pulse" style={{ animationDelay: "2s" }} />
 
       {/* ── CONTENT ── */}
       <div className="relative z-10 min-h-screen flex flex-col">
@@ -34,30 +30,30 @@ export function RegisterShell({ back, children }: Props) {
           {back ? (
             <Link
               to={back.to}
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-white/70 hover:text-white transition-colors no-underline"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-white/60 hover:text-white transition-colors no-underline"
             >
-              <ArrowLeft size={16} /> {back.label}
+              <ArrowLeft size={15} /> {back.label}
             </Link>
           ) : <div />}
-
           <Link to="/" className="flex items-center gap-2 no-underline">
             <FLogo size={24} className="text-white" />
             <span className="font-display text-lg font-bold text-white">Ficium</span>
           </Link>
         </div>
 
-        {/* Main content — centered card */}
-        <div className="flex-1 flex items-center justify-center px-5 py-8">
-          <div className="w-full max-w-[560px]">
+        {/* Centered card — phone width on all screens */}
+        <div className="flex-1 flex items-center justify-center px-5 py-6">
+          <div className="w-full max-w-[420px] flex flex-col gap-5">
+
             {/* Glass card */}
-            <div className="bg-white/[0.97] backdrop-blur-xl rounded-3xl shadow-2xl overflow-hidden">
+            <div className="bg-white/[0.97] backdrop-blur-2xl rounded-3xl shadow-2xl overflow-hidden">
               <div className="p-6 sm:p-8">
                 {children}
               </div>
             </div>
 
-            {/* Sign in link below card */}
-            <p className="text-center text-sm text-white/70 mt-5">
+            {/* Sign in link */}
+            <p className="text-center text-sm text-white/50">
               Already have an account?{" "}
               <Link to="/login" className="text-white font-semibold no-underline hover:underline">
                 Sign in
