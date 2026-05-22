@@ -6,42 +6,64 @@ type Props = {
   children: React.ReactNode;
 };
 
+// Free Pexels MP4s — loop between them for variety
+const VIDEO_URL = "https://videos.pexels.com/video-files/3044128/3044128-uhd_2560_1440_25fps.mp4";
+
 export function RegisterShell({ back, children }: Props) {
   return (
-    <div className="min-h-screen bg-cream relative overflow-hidden">
-      {/* Decorative blobs */}
-      <div className="absolute top-0 right-0 w-72 h-72 bg-ficium/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-56 h-56 bg-mint/20 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-accent/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="min-h-screen relative overflow-hidden">
 
-      <div className="relative z-10 min-h-screen flex flex-col px-5 py-8 sm:px-6 sm:py-10">
-        {/* Top bar */}
-        <div className="flex items-center justify-between mb-8 max-w-[640px] mx-auto w-full">
+      {/* ── BACKGROUND VIDEO ── */}
+      <video
+        autoPlay
+        muted
+        loop
+        playsInline
+        className="absolute inset-0 w-full h-full object-cover"
+        src={VIDEO_URL}
+      />
+
+      {/* ── GRADIENT OVERLAY ── */}
+      <div className="absolute inset-0 bg-gradient-to-br from-ink/80 via-ink/60 to-ficium/40" />
+
+      {/* ── CONTENT ── */}
+      <div className="relative z-10 min-h-screen flex flex-col">
+
+        {/* Top nav */}
+        <div className="flex items-center justify-between px-5 sm:px-8 py-5">
           {back ? (
             <Link
               to={back.to}
-              className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-ink transition-colors no-underline"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-white/70 hover:text-white transition-colors no-underline"
             >
               <ArrowLeft size={16} /> {back.label}
             </Link>
           ) : <div />}
-          <Link to="/" className="flex items-center gap-2 no-underline text-ink">
-            <FLogo size={24} className="text-ficium" />
-            <span className="font-display text-lg font-bold">Ficium</span>
+
+          <Link to="/" className="flex items-center gap-2 no-underline">
+            <FLogo size={24} className="text-white" />
+            <span className="font-display text-lg font-bold text-white">Ficium</span>
           </Link>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 flex flex-col items-center justify-start">
-          <div className="w-full max-w-[640px]">
-            {children}
-          </div>
-        </div>
+        {/* Main content — centered card */}
+        <div className="flex-1 flex items-center justify-center px-5 py-8">
+          <div className="w-full max-w-[560px]">
+            {/* Glass card */}
+            <div className="bg-white/[0.97] backdrop-blur-xl rounded-3xl shadow-2xl overflow-hidden">
+              <div className="p-6 sm:p-8">
+                {children}
+              </div>
+            </div>
 
-        {/* Footer */}
-        <div className="text-center text-xs text-muted mt-8">
-          Already have an account?{" "}
-          <Link to="/login" className="text-ficium font-semibold no-underline">Sign in</Link>
+            {/* Sign in link below card */}
+            <p className="text-center text-sm text-white/70 mt-5">
+              Already have an account?{" "}
+              <Link to="/login" className="text-white font-semibold no-underline hover:underline">
+                Sign in
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>
