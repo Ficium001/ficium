@@ -47,14 +47,12 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-ink flex">
+    <div className="min-h-screen flex overflow-hidden">
 
-      {/* ── LEFT PANEL ── */}
+      {/* ── LEFT PANEL — dark branding ── */}
       <div className="hidden lg:flex lg:w-[45%] xl:w-[40%] flex-col relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e]" />
-        <div className="absolute inset-0"
-          style={{ background: "radial-gradient(ellipse at 30% 40%, rgba(79,70,229,0.5) 0%, transparent 60%), radial-gradient(ellipse at 80% 80%, rgba(139,92,246,0.3) 0%, transparent 50%)" }}
-        />
+        <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at 30% 40%, rgba(79,70,229,0.5) 0%, transparent 60%), radial-gradient(ellipse at 80% 80%, rgba(139,92,246,0.3) 0%, transparent 50%)" }} />
         <div className="absolute top-1/3 -left-10 w-72 h-72 rounded-full bg-ficium/20 blur-[80px] animate-pulse" />
         <div className="absolute bottom-1/4 right-0 w-64 h-64 rounded-full bg-violet-500/20 blur-[80px] animate-pulse" style={{ animationDelay: "1.5s" }} />
 
@@ -63,9 +61,8 @@ export default function Login() {
             <FLogo size={28} className="text-white" />
             <span className="font-display text-xl font-bold text-white">Ficium</span>
           </Link>
-
           <div className="py-16">
-            <div className="text-xs font-bold tracking-[0.12em] uppercase text-ficium/80 mb-4">
+            <div className="text-xs font-bold tracking-[0.12em] uppercase text-indigo-400 mb-4">
               The reverse-banking marketplace
             </div>
             <h2 className="font-display text-4xl xl:text-5xl font-bold text-white leading-[1.1] mb-6">
@@ -89,21 +86,20 @@ export default function Login() {
               ))}
             </div>
           </div>
-
           <div className="text-xs text-white/25">© {new Date().getFullYear()} Ficium · Mauritius</div>
         </div>
       </div>
 
-      {/* ── RIGHT PANEL ── */}
-      <div className="flex-1 flex flex-col min-h-screen relative">
-        {/* Mobile bg */}
+      {/* ── RIGHT PANEL — light form ── */}
+      <div className="flex-1 flex flex-col min-h-screen relative bg-[#f8f7f4]">
+
+        {/* Mobile: dark gradient bg */}
         <div className="absolute inset-0 lg:hidden bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e]" />
         <div className="absolute inset-0 lg:hidden" style={{ background: "radial-gradient(ellipse at 20% 50%, rgba(79,70,229,0.4) 0%, transparent 60%)" }} />
-        {/* Desktop bg */}
-        <div className="absolute inset-0 hidden lg:block bg-[#f8f7f4]" />
 
         <div className="relative z-10 flex flex-col h-full">
-          {/* Mobile nav */}
+
+          {/* Mobile top nav */}
           <div className="flex lg:hidden items-center justify-between px-5 py-5">
             <Link to="/" className="flex items-center gap-2 no-underline">
               <FLogo size={22} className="text-white" />
@@ -113,24 +109,32 @@ export default function Login() {
           </div>
 
           {/* Desktop top bar */}
-          <div className="hidden lg:flex items-center justify-between px-8 xl:px-12 py-6 border-b border-ink/[0.06]">
-            <div />
+          <div className="hidden lg:flex items-center justify-end px-8 xl:px-12 py-6 border-b border-ink/[0.06]">
             <div className="text-sm text-muted">
               New to Ficium?{" "}
-              <Link to="/register" className="text-ficium font-semibold no-underline hover:underline">Create account</Link>
+              <Link to="/register" className="text-ficium font-semibold no-underline hover:underline">
+                Create account
+              </Link>
             </div>
           </div>
 
-          {/* Form */}
-          <div className="flex-1 flex items-center justify-center px-5 py-8 lg:px-10 xl:px-16">
-            <div className="w-full max-w-[420px]">
+          {/* Form area */}
+          <div className="flex-1 flex items-center justify-center px-5 py-8 lg:px-12 xl:px-20">
+            <div className="w-full max-w-[400px]">
 
-              <div className="mb-7">
-                <h1 className="font-display text-3xl font-bold lg:text-ink text-white">Welcome back</h1>
-                <p className="text-sm mt-1.5 lg:text-muted text-white/50">Sign in to your Ficium account</p>
+              {/* Title — dark on desktop (light bg), white on mobile (dark bg) */}
+              <div className="mb-8">
+                <h1 className="font-display text-3xl font-bold" style={{ color: "inherit" }}>
+                  <span className="hidden lg:block text-ink">Welcome back</span>
+                  <span className="lg:hidden text-white">Welcome back</span>
+                </h1>
+                <p className="text-sm mt-1.5">
+                  <span className="hidden lg:block text-muted">Sign in to your Ficium account</span>
+                  <span className="lg:hidden text-white/50">Sign in to your Ficium account</span>
+                </p>
               </div>
 
-              {/* Mobile: glass card | Desktop: plain */}
+              {/* Mobile: glass card */}
               <div className="lg:hidden bg-white/[0.97] backdrop-blur-2xl rounded-3xl shadow-2xl p-6 mb-5">
                 <LoginForm
                   register={register}
@@ -144,6 +148,7 @@ export default function Login() {
                 />
               </div>
 
+              {/* Desktop: no card, plain form on light bg */}
               <div className="hidden lg:block">
                 <LoginForm
                   register={register}
@@ -157,10 +162,14 @@ export default function Login() {
                 />
               </div>
 
-              <p className="lg:hidden text-center text-sm text-white/50 mt-4">
+              {/* Mobile footer */}
+              <p className="lg:hidden text-center text-sm text-white/50 mt-5">
                 New to Ficium?{" "}
-                <Link to="/register" className="text-white font-semibold no-underline">Create an account</Link>
+                <Link to="/register" className="text-white font-semibold no-underline">
+                  Create an account
+                </Link>
               </p>
+
             </div>
           </div>
         </div>
@@ -169,7 +178,6 @@ export default function Login() {
   );
 }
 
-/* ── Form extracted to avoid duplication ── */
 function LoginForm({ register, handleSubmit, onSubmit, errors, isSubmitting, submitError, showPassword, setShowPassword }: any) {
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
@@ -178,7 +186,10 @@ function LoginForm({ register, handleSubmit, onSubmit, errors, isSubmitting, sub
           invalid={!!errors.email} {...register("email")} />
       </Field>
 
-      <Field label="Password" htmlFor="password" error={errors.password?.message}
+      <Field
+        label="Password"
+        htmlFor="password"
+        error={errors.password?.message}
         rightLabel={
           <Link to="/forgot-password" className="text-xs text-ficium font-semibold no-underline hover:underline">
             Forgot password?
