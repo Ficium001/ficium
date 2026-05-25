@@ -36,6 +36,7 @@ export default function Login() {
   }, [setValue]);
 
   const onSubmit = async (data: FormData) => {
+      console.log("SUBMIT DATA:", JSON.stringify(data)); // ← add this
     setSubmitError(null);
     const result = await signIn(data.email, data.password, data.rememberMe ?? false);
     if (!result.ok) {
