@@ -19,7 +19,6 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
   const from = (location.state as { from?: string } | null)?.from || "/dashboard";
 
   const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
@@ -142,8 +141,6 @@ export default function Login() {
                   errors={errors}
                   isSubmitting={isSubmitting}
                   submitError={submitError}
-                  showPassword={showPassword}
-                  setShowPassword={setShowPassword}
                 />
               </div>
 
@@ -156,8 +153,6 @@ export default function Login() {
                   errors={errors}
                   isSubmitting={isSubmitting}
                   submitError={submitError}
-                  showPassword={showPassword}
-                  setShowPassword={setShowPassword}
                 />
               </div>
 
@@ -176,7 +171,8 @@ export default function Login() {
   );
 }
 
-function LoginForm({ register, handleSubmit, onSubmit, errors, isSubmitting, submitError, showPassword, setShowPassword }: any) {
+function LoginForm({ register, handleSubmit, onSubmit, errors, isSubmitting, submitError }: any) {
+  const [showPassword, setShowPassword] = useState(false);
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
       <Field label="Email address" htmlFor="email" error={errors.email?.message}>
