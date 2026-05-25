@@ -122,9 +122,8 @@ export default function Login() {
           <div className="flex-1 flex items-center justify-center px-5 py-8 lg:px-12 xl:px-20">
             <div className="w-full max-w-[400px]">
 
-              {/* Title — dark on desktop (light bg), white on mobile (dark bg) */}
               <div className="mb-8">
-                <h1 className="font-display text-3xl font-bold" style={{ color: "inherit" }}>
+                <h1 className="font-display text-3xl font-bold">
                   <span className="hidden lg:block text-ink">Welcome back</span>
                   <span className="lg:hidden text-white">Welcome back</span>
                 </h1>
@@ -148,7 +147,7 @@ export default function Login() {
                 />
               </div>
 
-              {/* Desktop: no card, plain form on light bg */}
+              {/* Desktop: plain form on light bg */}
               <div className="hidden lg:block">
                 <LoginForm
                   register={register}
@@ -162,7 +161,6 @@ export default function Login() {
                 />
               </div>
 
-              {/* Mobile footer */}
               <p className="lg:hidden text-center text-sm text-white/50 mt-5">
                 New to Ficium?{" "}
                 <Link to="/register" className="text-white font-semibold no-underline">
@@ -182,8 +180,18 @@ function LoginForm({ register, handleSubmit, onSubmit, errors, isSubmitting, sub
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
       <Field label="Email address" htmlFor="email" error={errors.email?.message}>
-        <Input id="email" type="email" autoComplete="email" inputMode="email" autoFocus
-          invalid={!!errors.email} {...register("email")} />
+        <Input
+          id="email"
+          type="email"
+          autoComplete="email"
+          inputMode="email"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          autoFocus
+          invalid={!!errors.email}
+          {...register("email")}
+        />
       </Field>
 
       <Field
@@ -197,8 +205,15 @@ function LoginForm({ register, handleSubmit, onSubmit, errors, isSubmitting, sub
         }
       >
         <div className="relative">
-          <Input id="password" type={showPassword ? "text" : "password"}
-            autoComplete="current-password" invalid={!!errors.password} {...register("password")} />
+          <Input
+            id="password"
+            type={showPassword ? "text" : "password"}
+            autoComplete="current-password"
+            autoCapitalize="none"
+            autoCorrect="off"
+            invalid={!!errors.password}
+            {...register("password")}
+          />
           <button type="button" onClick={() => setShowPassword((v: boolean) => !v)}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-ink transition-colors">
             {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
