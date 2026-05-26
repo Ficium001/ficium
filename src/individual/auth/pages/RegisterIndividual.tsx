@@ -71,8 +71,8 @@ export default function RegisterIndividual() {
       <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-ink/[0.06]">
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
 
-          {/* Name row */}
-          <div className="grid grid-cols-[80px_1fr_1fr] gap-3">
+          {/* Row 1: Title + First name */}
+          <div className="grid grid-cols-[80px_1fr] gap-3">
             <Field label="Title" htmlFor="title" error={errors.title?.message}>
               <Select id="title" defaultValue="" {...register("title")}>
                 <option value="">—</option>
@@ -85,10 +85,12 @@ export default function RegisterIndividual() {
             <Field label="First name" htmlFor="firstName" error={errors.firstName?.message}>
               <Input id="firstName" autoComplete="given-name" invalid={!!errors.firstName} {...register("firstName")} />
             </Field>
-            <Field label="Last name" htmlFor="lastName" error={errors.lastName?.message}>
-              <Input id="lastName" autoComplete="family-name" invalid={!!errors.lastName} {...register("lastName")} />
-            </Field>
           </div>
+
+          {/* Row 2: Last name */}
+          <Field label="Last name" htmlFor="lastName" error={errors.lastName?.message}>
+            <Input id="lastName" autoComplete="family-name" invalid={!!errors.lastName} {...register("lastName")} />
+          </Field>
 
           <Field label="Middle name" htmlFor="middleName" optional error={errors.middleName?.message}>
             <Input id="middleName" autoComplete="additional-name" {...register("middleName")} />
