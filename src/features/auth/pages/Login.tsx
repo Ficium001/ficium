@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ArrowRight, Eye, EyeOff, Shield, Zap, Globe } from "lucide-react";
 import { signIn } from "../../../shared/lib/auth";
-import { Button, Field, Input } from "../../../shared/ui";
+import { Button, Field } from "../../../shared/ui";
 
 const schema = z.object({
   email: z.string().trim().toLowerCase().email("Enter a valid email address"),
@@ -15,13 +15,28 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>;
 
+/* Shared input class — bypasses the Input wrapper to guarantee all attrs reach the DOM */
+const inputCls = (invalid: boolean) =>
+  [
+    "w-full rounded-xl border px-4 py-3 text-[15px] outline-none transition-all",
+    "bg-white text-ink placeholder:text-ink/30",
+    invalid
+      ? "border-red-400 focus:ring-2 focus:ring-red-200"
+      : "border-ink/[0.12] focus:border-ficium focus:ring-2 focus:ring-ficium/20",
+  ].join(" ");
+
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const from = (location.state as { from?: string } | null)?.from || "/dashboard";
 
-  const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors, isSubmitting },
+  } = useForm<FormData>({
     resolver: zodResolver(schema),
     mode: "onTouched",
     defaultValues: { email: "", password: "", rememberMe: false },
@@ -30,15 +45,15 @@ export default function Login() {
   useEffect(() => {
     const remembered = localStorage.getItem("ficium_remembered_email");
     if (remembered) {
-      setValue("email", remembered);
+      setValue("email", remembered.trim().toLowerCase());
       setValue("rememberMe", true);
     }
   }, [setValue]);
 
   const onSubmit = async (data: FormData) => {
-      console.log("SUBMIT DATA:", JSON.stringify(data)); // ← add this
     setSubmitError(null);
-    const result = await signIn(data.email, data.password, data.rememberMe ?? false);
+    const email = data.email.trim().toLowerCase();
+    const result = await signIn(email, data.password, data.rememberMe ?? false);
     if (!result.ok) {
       setSubmitError("Incorrect email or password. Please try again.");
       return;
@@ -49,13 +64,12 @@ export default function Login() {
   return (
     <div className="min-h-screen flex overflow-hidden">
 
-      {/* ── LEFT PANEL — dark branding ── */}
+      {/* ── LEFT PANEL ── */}
       <div className="hidden lg:flex lg:w-[45%] xl:w-[40%] flex-col relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e]" />
         <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at 30% 40%, rgba(79,70,229,0.5) 0%, transparent 60%), radial-gradient(ellipse at 80% 80%, rgba(139,92,246,0.3) 0%, transparent 50%)" }} />
         <div className="absolute top-1/3 -left-10 w-72 h-72 rounded-full bg-ficium/20 blur-[80px] animate-pulse" />
         <div className="absolute bottom-1/4 right-0 w-64 h-64 rounded-full bg-violet-500/20 blur-[80px] animate-pulse" style={{ animationDelay: "1.5s" }} />
-
         <div className="relative z-10 flex flex-col h-full p-10 xl:p-14">
           <Link to="/" className="flex items-center gap-2.5 no-underline mb-auto">
             <FLogo size={28} className="text-white" />
@@ -90,10 +104,10 @@ export default function Login() {
         </div>
       </div>
 
-      {/* ── RIGHT PANEL — light form ── */}
+      {/* ── RIGHT PANEL ── */}
       <div className="flex-1 flex flex-col min-h-screen relative bg-[#f8f7f4]">
 
-        {/* Mobile: dark gradient bg */}
+        {/* Mobile dark bg */}
         <div className="absolute inset-0 lg:hidden bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e]" />
         <div className="absolute inset-0 lg:hidden" style={{ background: "radial-gradient(ellipse at 20% 50%, rgba(79,70,229,0.4) 0%, transparent 60%)" }} />
 
@@ -145,7 +159,7 @@ export default function Login() {
                 />
               </div>
 
-              {/* Desktop: plain form on light bg */}
+              {/* Desktop */}
               <div className="hidden lg:block">
                 <LoginForm
                   register={register}
@@ -172,25 +186,42 @@ export default function Login() {
   );
 }
 
+/* ============================================================
+   LOGIN FORM
+   — Uses raw <input> elements instead of the shared Input
+     wrapper so every HTML attribute is guaranteed to reach
+     the DOM node (the wrapper may not forward unknown attrs).
+   ============================================================ */
+
 function LoginForm({ register, handleSubmit, onSubmit, errors, isSubmitting, submitError }: any) {
   const [showPassword, setShowPassword] = useState(false);
+
+  /* Pull ref out of register so we can attach it ourselves */
+  const { ref: emailRef, ...emailRest } = register("email");
+  const { ref: passwordRef, ...passwordRest } = register("password");
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
+
+      {/* ── EMAIL ── */}
       <Field label="Email address" htmlFor="email" error={errors.email?.message}>
-        <Input
+        <input
           id="email"
+          ref={emailRef}
+          {...emailRest}
           type="email"
-          autoComplete="email"
           inputMode="email"
+          autoComplete="email"
           autoCapitalize="none"
           autoCorrect="off"
-          spellCheck={false}
           autoFocus
-          invalid={!!errors.email}
-          {...register("email")}
+          spellCheck={false}
+          className={inputCls(!!errors.email)}
+          placeholder="you@example.com"
         />
       </Field>
 
+      {/* ── PASSWORD ── */}
       <Field
         label="Password"
         htmlFor="password"
@@ -202,41 +233,60 @@ function LoginForm({ register, handleSubmit, onSubmit, errors, isSubmitting, sub
         }
       >
         <div className="relative">
-          <Input
+          <input
             id="password"
+            ref={passwordRef}
+            {...passwordRest}
             type={showPassword ? "text" : "password"}
             autoComplete="current-password"
             autoCapitalize="none"
             autoCorrect="off"
-            invalid={!!errors.password}
-            {...register("password")}
+            spellCheck={false}
+            className={inputCls(!!errors.password)}
+            placeholder="••••••••"
+            style={{ paddingRight: "2.75rem" }}
           />
-          <button type="button" onClick={() => setShowPassword((v: boolean) => !v)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-ink transition-colors">
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()} /* prevent focus loss / field reset */
+            onClick={() => setShowPassword((v) => !v)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-ink/40 hover:text-ink transition-colors"
+            aria-label={showPassword ? "Hide password" : "Show password"}
+          >
             {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
           </button>
         </div>
       </Field>
 
+      {/* ── REMEMBER ME ── */}
       <label className="flex items-center gap-2.5 cursor-pointer select-none">
         <input type="checkbox" {...register("rememberMe")} className="w-4 h-4 accent-ficium rounded" />
         <span className="text-sm text-ink/70">Remember me</span>
       </label>
 
+      {/* ── ERROR ── */}
       {submitError && (
         <div role="alert" className="px-3.5 py-3 bg-red-50 border border-red-200 text-red-800 rounded-xl text-[13px]">
           {submitError}
         </div>
       )}
 
-      <Button type="submit" size="lg" loading={isSubmitting}
-        rightIcon={!isSubmitting && <ArrowRight size={18} />} fullWidth className="mt-1">
+      {/* ── SUBMIT ── */}
+      <Button
+        type="submit"
+        size="lg"
+        loading={isSubmitting}
+        rightIcon={!isSubmitting && <ArrowRight size={18} />}
+        fullWidth
+        className="mt-1"
+      >
         Sign in
       </Button>
     </form>
   );
 }
 
+/* ── LOGO ── */
 function FLogo({ size = 24, className = "" }: { size?: number; className?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
