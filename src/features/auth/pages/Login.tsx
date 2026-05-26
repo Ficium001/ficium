@@ -53,7 +53,6 @@ export default function Login() {
   const onSubmit = async (data: FormData) => {
     setSubmitError(null);
     const email = data.email.trim().toLowerCase();
-      setSubmitError(`Sending: [${email}] / [${data.password}]`); return; // ← temp debug
     const result = await signIn(email, data.password, data.rememberMe ?? false);
     if (!result.ok) {
       setSubmitError("Incorrect email or password. Please try again.");
@@ -148,29 +147,15 @@ export default function Login() {
                 </p>
               </div>
 
-              {/* Mobile: glass card */}
-              <div className="lg:hidden bg-white/[0.97] backdrop-blur-2xl rounded-3xl shadow-2xl p-6 mb-5">
-                <LoginForm
-                  register={register}
-                  handleSubmit={handleSubmit}
-                  onSubmit={onSubmit}
-                  errors={errors}
-                  isSubmitting={isSubmitting}
-                  submitError={submitError}
-                />
-              </div>
-
-              {/* Desktop */}
-              <div className="hidden lg:block">
-                <LoginForm
-                  register={register}
-                  handleSubmit={handleSubmit}
-                  onSubmit={onSubmit}
-                  errors={errors}
-                  isSubmitting={isSubmitting}
-                  submitError={submitError}
-                />
-              </div>
+              {/* Single form instance — styled differently via inner className */}
+              <LoginForm
+                register={register}
+                handleSubmit={handleSubmit}
+                onSubmit={onSubmit}
+                errors={errors}
+                isSubmitting={isSubmitting}
+                submitError={submitError}
+              />
 
               <p className="lg:hidden text-center text-sm text-white/50 mt-5">
                 New to Ficium?{" "}
@@ -197,12 +182,14 @@ export default function Login() {
 function LoginForm({ register, handleSubmit, onSubmit, errors, isSubmitting, submitError }: any) {
   const [showPassword, setShowPassword] = useState(false);
 
-  /* Pull ref out of register so we can attach it ourselves */
   const { ref: emailRef, ...emailRest } = register("email");
   const { ref: passwordRef, ...passwordRest } = register("password");
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
+    <div className="lg:hidden-wrapper">
+      {/* Glass card on mobile, plain on desktop */}
+      <div className="bg-white/[0.97] backdrop-blur-2xl rounded-3xl shadow-2xl p-6 mb-5 lg:bg-transparent lg:backdrop-blur-none lg:rounded-none lg:shadow-none lg:p-0 lg:mb-0">
+        <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
 
       {/* ── EMAIL ── */}
       <Field label="Email address" htmlFor="email" error={errors.email?.message}>
@@ -283,7 +270,9 @@ function LoginForm({ register, handleSubmit, onSubmit, errors, isSubmitting, sub
       >
         Sign in
       </Button>
-    </form>
+      </form>
+      </div>
+    </div>
   );
 }
 
