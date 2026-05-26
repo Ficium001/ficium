@@ -18,7 +18,7 @@ type FormData = z.infer<typeof schema>;
 /* Shared input class — bypasses the Input wrapper to guarantee all attrs reach the DOM */
 const inputCls = (invalid: boolean) =>
   [
-    "w-full rounded-xl border px-4 py-3 text-[15px] outline-none transition-all",
+    "w-full rounded-xl border px-4 py-3.5 text-[16px] outline-none transition-all",
     "bg-white text-ink placeholder:text-ink/30",
     invalid
       ? "border-red-400 focus:ring-2 focus:ring-red-200"
@@ -76,26 +76,26 @@ export default function Login() {
             <span className="font-display text-xl font-bold text-white">Ficium</span>
           </Link>
           <div className="py-16">
-            <div className="text-xs font-bold tracking-[0.12em] uppercase text-indigo-400 mb-4">
+            <div className="text-[11px] font-bold tracking-[0.15em] uppercase text-indigo-400 mb-5">
               The reverse-banking marketplace
             </div>
-            <h2 className="font-display text-4xl xl:text-5xl font-bold text-white leading-[1.1] mb-6">
+            <h2 className="font-display text-5xl xl:text-6xl font-bold text-white leading-[1.08] mb-6">
               Banks compete.<br />You choose.
             </h2>
-            <p className="text-white/50 text-base leading-relaxed max-w-[320px]">
+            <p className="text-white/50 text-[17px] leading-relaxed max-w-[320px]">
               Post what you need once. Banks across Mauritius bid against each other with their best offer.
             </p>
-            <div className="flex flex-col gap-3 mt-10">
+            <div className="flex flex-col gap-4 mt-12">
               {[
                 { icon: Shield, text: "Bank-grade security" },
                 { icon: Zap, text: "Bids in as little as 24 hours" },
                 { icon: Globe, text: "All major Mauritian banks" },
               ].map((item) => (
                 <div key={item.text} className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-white/10 grid place-items-center flex-shrink-0">
-                    <item.icon size={15} className="text-white/70" />
+                  <div className="w-9 h-9 rounded-lg bg-white/10 grid place-items-center flex-shrink-0">
+                    <item.icon size={17} className="text-white/70" />
                   </div>
-                  <span className="text-sm text-white/60">{item.text}</span>
+                  <span className="text-[15px] text-white/60">{item.text}</span>
                 </div>
               ))}
             </div>
@@ -124,7 +124,7 @@ export default function Login() {
 
           {/* Desktop top bar */}
           <div className="hidden lg:flex items-center justify-end px-8 xl:px-12 py-6 border-b border-ink/[0.06]">
-            <div className="text-sm text-muted">
+            <div className="text-[15px] text-muted">
               New to Ficium?{" "}
               <Link to="/register" className="text-ficium font-semibold no-underline hover:underline">
                 Create account
@@ -136,12 +136,12 @@ export default function Login() {
           <div className="flex-1 flex items-center justify-center px-5 py-8 lg:px-12 xl:px-20">
             <div className="w-full max-w-[400px]">
 
-              <div className="mb-8">
-                <h1 className="font-display text-3xl font-bold">
+              <div className="mb-10">
+                <h1 className="font-display text-4xl lg:text-5xl font-bold">
                   <span className="hidden lg:block text-ink">Welcome back</span>
                   <span className="lg:hidden text-white">Welcome back</span>
                 </h1>
-                <p className="text-sm mt-1.5">
+                <p className="text-[16px] mt-2">
                   <span className="hidden lg:block text-muted">Sign in to your Ficium account</span>
                   <span className="lg:hidden text-white/50">Sign in to your Ficium account</span>
                 </p>
@@ -157,7 +157,7 @@ export default function Login() {
                 submitError={submitError}
               />
 
-              <p className="lg:hidden text-center text-sm text-white/50 mt-5">
+              <p className="lg:hidden text-center text-[15px] text-white/50 mt-5">
                 New to Ficium?{" "}
                 <Link to="/register" className="text-white font-semibold no-underline">
                   Create an account
@@ -192,7 +192,7 @@ function LoginForm({ register, handleSubmit, onSubmit, errors, isSubmitting, sub
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
 
       {/* ── EMAIL ── */}
-      <Field label="Email address" htmlFor="email" error={errors.email?.message}>
+      <Field label="Email address" htmlFor="email" error={errors.email?.message} labelClassName="text-[14px] font-semibold">
         <input
           id="email"
           ref={emailRef}
@@ -214,8 +214,9 @@ function LoginForm({ register, handleSubmit, onSubmit, errors, isSubmitting, sub
         label="Password"
         htmlFor="password"
         error={errors.password?.message}
+        labelClassName="text-[14px] font-semibold"
         rightLabel={
-          <Link to="/forgot-password" className="text-xs text-ficium font-semibold no-underline hover:underline">
+          <Link to="/forgot-password" className="text-[13px] text-ficium font-semibold no-underline hover:underline">
             Forgot password?
           </Link>
         }
@@ -236,12 +237,12 @@ function LoginForm({ register, handleSubmit, onSubmit, errors, isSubmitting, sub
           />
           <button
             type="button"
-            onMouseDown={(e) => e.preventDefault()} /* prevent focus loss / field reset */
+            onMouseDown={(e) => e.preventDefault()}
             onClick={() => setShowPassword((v) => !v)}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-ink/40 hover:text-ink transition-colors"
             aria-label={showPassword ? "Hide password" : "Show password"}
           >
-            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
         </div>
       </Field>
@@ -249,12 +250,12 @@ function LoginForm({ register, handleSubmit, onSubmit, errors, isSubmitting, sub
       {/* ── REMEMBER ME ── */}
       <label className="flex items-center gap-2.5 cursor-pointer select-none">
         <input type="checkbox" {...register("rememberMe")} className="w-4 h-4 accent-ficium rounded" />
-        <span className="text-sm text-ink/70">Remember me</span>
+        <span className="text-[14px] text-ink/70">Remember me</span>
       </label>
 
       {/* ── ERROR ── */}
       {submitError && (
-        <div role="alert" className="px-3.5 py-3 bg-red-50 border border-red-200 text-red-800 rounded-xl text-[13px]">
+        <div role="alert" className="px-4 py-3.5 bg-red-50 border border-red-200 text-red-800 rounded-xl text-[14px]">
           {submitError}
         </div>
       )}
