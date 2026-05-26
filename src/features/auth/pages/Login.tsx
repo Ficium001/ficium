@@ -192,7 +192,7 @@ function LoginForm({ register, handleSubmit, onSubmit, errors, isSubmitting, sub
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
 
       {/* ── EMAIL ── */}
-      <Field label="Email address" htmlFor="email" error={errors.email?.message} labelClassName="text-[14px] font-semibold">
+      <Field label="Email address" htmlFor="email" error={errors.email?.message}>
         <input
           id="email"
           ref={emailRef}
@@ -214,7 +214,6 @@ function LoginForm({ register, handleSubmit, onSubmit, errors, isSubmitting, sub
         label="Password"
         htmlFor="password"
         error={errors.password?.message}
-        labelClassName="text-[14px] font-semibold"
         rightLabel={
           <Link to="/forgot-password" className="text-[13px] text-ficium font-semibold no-underline hover:underline">
             Forgot password?
