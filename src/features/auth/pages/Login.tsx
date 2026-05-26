@@ -53,6 +53,7 @@ export default function Login() {
   const onSubmit = async (data: FormData) => {
     setSubmitError(null);
     const email = data.email.trim().toLowerCase();
+      setSubmitError(`Sending: [${email}] / [${data.password}]`); return; // ← temp debug
     const result = await signIn(email, data.password, data.rememberMe ?? false);
     if (!result.ok) {
       setSubmitError("Incorrect email or password. Please try again.");
