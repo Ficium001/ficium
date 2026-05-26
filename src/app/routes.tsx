@@ -12,6 +12,7 @@ const RegisterBusiness    = lazy(() => import("../business/auth/pages/RegisterBu
 const RegisterInstitution = lazy(() => import("../institution/auth/pages/RegisterInstitution"));
 const ForgotPassword      = lazy(() => import("../features/auth/pages/ForgotPassword"));
 const ResetPassword       = lazy(() => import("../features/auth/pages/ResetPassword"));
+const HowItWorks          = lazy(() => import("../features/marketing/pages/HowItWorks"));
 const Dashboard           = lazy(() => import("../individual/dashboard/pages/Dashboard"));
 const Profile             = lazy(() => import("../individual/dashboard/pages/Profile"));
 const Kyc                 = lazy(() => import("../individual/onboarding/pages/Kyc"));
@@ -38,6 +39,7 @@ function S({ children }: { children: React.ReactNode }) {
 
 export const router = createBrowserRouter([
   { path: "/",                       element: <Splash /> },
+  { path: "/how-it-works",           element: <S><HowItWorks /></S> },
   { path: "/onboarding/check-email", element: <CheckEmail /> },
 
   { path: "/login",                  element: <PublicOnlyRoute><Login /></PublicOnlyRoute> },
