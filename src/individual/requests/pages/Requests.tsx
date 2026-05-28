@@ -1,5 +1,4 @@
-import { useState } from "react";
-import type React from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import {
   Plus, ChevronRight, CheckCircle2, Clock, Zap,
@@ -26,7 +25,7 @@ export default function Requests() {
   const { data: requests = [], isLoading } = useMyRequests();
   const { score: bankReadiness } = useBankReadiness();
 
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  // expandedId reserved for future collapsible behaviour
 
   const openRequests = requests.filter((r) => r.status === "open");
   const totalBids = requests.reduce((s, r) => s + r.bidCount, 0);
@@ -37,7 +36,7 @@ export default function Requests() {
     <div className="min-h-screen pb-28 lg:pb-10">
 
       {/* ── GRADIENT BACKGROUND ── */}
-      <div className="absolute top-0 left-0 right-0 h-[380px] overflow-hidden pointer-events-none">
+      <div className="absolute top-0 left-0 right-0 h-[520px] overflow-hidden pointer-events-none">
         <div className="absolute inset-0 bg-gradient-to-br from-[#0f0c29] via-[#1a1040] to-[#302b63]" />
         <div className="absolute inset-0" style={{
           background: "radial-gradient(ellipse at 20% 40%, rgba(79,70,229,0.5) 0%, transparent 55%), radial-gradient(ellipse at 85% 60%, rgba(201,168,76,0.2) 0%, transparent 50%)"
@@ -73,7 +72,7 @@ export default function Requests() {
             { label: "Banks Interested", value: isLoading ? "—" : String(totalBids), icon: Building2, color: "text-amber-300" },
             { label: "Best Rate", value: bestRate, icon: TrendingUp, color: "text-emerald-300" },
             { label: "Pending Docs", value: String(pendingDocs), icon: Clock, color: "text-rose-300" },
-          ] as { label: string; value: string; icon: React.ElementType; color: string }[]).map((s) => (
+          ] as { label: string; value: string; icon: (props: { size: number; className: string }) => React.ReactElement; color: string }[]).map((s) => (
             <div key={s.label} className="rounded-[22px] bg-white/[0.08] backdrop-blur-xl border border-white/[0.10] p-5">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-[13px] text-white/55 font-medium">{s.label}</span>
@@ -99,8 +98,6 @@ export default function Requests() {
                   <RequestCard
                     key={r.id}
                     request={r}
-                    isExpanded={expandedId === r.id}
-                    onToggle={() => setExpandedId((id) => id === r.id ? null : r.id)}
                   />
                 ))}
               </div>
@@ -190,11 +187,7 @@ export default function Requests() {
 /* ============================================================
    REQUEST CARD — full detail inline
    ============================================================ */
-function RequestCard({ request, isExpanded, onToggle }: {
-  request: RequestSummary;
-  isExpanded: boolean;
-  onToggle: () => void;
-}) {
+function RequestCard({ request }: { request: RequestSummary }) {
   const MOCK_BIDS = [
     { bank: "MCB", rate: "8.2%", note: "Lowest monthly repayment", color: "text-ficium" },
     { bank: "SBM", rate: "8.4%", note: "Flexible repayment period", color: "text-amber-600" },
@@ -214,14 +207,8 @@ function RequestCard({ request, isExpanded, onToggle }: {
     : 0;
 
   return (
-    <div className={[
-      "bg-white rounded-[28px] border transition-all duration-300 overflow-hidden shadow-sm",
-      isExpanded ? "border-ficium/20 shadow-md" : "border-ink/[0.06] hover:border-ink/20",
-    ].join(" ")}>
-      <div
-        className="p-6 sm:p-7 cursor-pointer"
-        onClick={onToggle}
-      >
+    <div className="bg-white rounded-[28px] border border-ficium/10 transition-all duration-300 overflow-hidden shadow-sm hover:shadow-md">
+      <div className="p-6 sm:p-7">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-4 flex-1 min-w-0">
             <div className="w-12 h-12 rounded-2xl bg-ficium/10 text-ficium grid place-items-center flex-shrink-0">
@@ -261,8 +248,8 @@ function RequestCard({ request, isExpanded, onToggle }: {
         )}
       </div>
 
-      {/* Expanded detail */}
-      {isExpanded && (
+      {/* Expanded detail — always visible */}
+      {true && (
         <div className="px-6 sm:px-7 pb-7 border-t border-ink/[0.05]">
 
           {/* Journey */}
