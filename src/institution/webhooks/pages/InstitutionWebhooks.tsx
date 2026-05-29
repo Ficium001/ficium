@@ -6,7 +6,7 @@
 // =============================================================
 import { useState } from "react";
 import { Webhook, Plus, CheckCircle, XCircle, Clock, AlertTriangle, X } from "lucide-react";
-import { useWebhooks, useSubmitBid } from "../../hooks/useInstitution";
+import { useWebhooks } from "../../hooks/useInstitution";
 import { formatDistanceToNow } from "../../lib/utils";
 
 const ALL_EVENTS = [
@@ -19,7 +19,7 @@ const ALL_EVENTS = [
 
 export default function InstitutionWebhooks() {
   const { data: webhooks = [], isLoading } = useWebhooks();
-  const submitBid = useSubmitBid();  // reused for webhook create via maker-checker
+  // submitBid available via useSubmitBid() when maker-checker RPC is wired
 
   const [showAdd, setShowAdd]     = useState(false);
   const [addSuccess, setAddSuccess] = useState(false);

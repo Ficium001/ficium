@@ -7,7 +7,7 @@
 import { useState, useMemo } from "react";
 import { ScrollText, Filter, Download, X } from "lucide-react";
 import { useAuditEvents } from "../../hooks/useInstitution";
-import { formatDistanceToNow } from "../../lib/utils";
+// utils imported on demand
 
 const OUTCOME_FILTERS = [
   { key: "all",     label: "All"      },

@@ -7,7 +7,7 @@
 // =============================================================
 import { useState } from "react";
 import {
-  FileText, Filter, TrendingUp, CheckCircle,
+  FileText, Filter, CheckCircle,
   XCircle, Clock, AlertTriangle, ChevronDown, ChevronUp, X,
 } from "lucide-react";
 import { useMyBids, useMyInstitution, useSubmitBid } from "../../hooks/useInstitution";
