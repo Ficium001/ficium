@@ -16,7 +16,8 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
 }
 
 /**
- * Requires authentication AND role = client. Banks get bounced to their dashboard.
+ * Requires authentication AND role = client.
+ * Banks/institutions get bounced to their portal.
  */
 export function ClientOnlyRoute({ children }: { children: ReactNode }) {
   const { user, role, isLoading } = useAuth();
@@ -24,21 +25,22 @@ export function ClientOnlyRoute({ children }: { children: ReactNode }) {
 
   if (isLoading) return <LoadingScreen />;
   if (!user) return <Navigate to="/login" state={{ from: location.pathname }} replace />;
-  if (role === "bank") return <Navigate to="/bank/dashboard" replace />;
+  if (role === "bank") return <Navigate to="/institution" replace />;
   if (role === "admin") return <Navigate to="/admin" replace />;
 
   return <>{children}</>;
 }
 
 /**
- * Requires authentication AND role = bank.
+ * Requires authentication AND role = bank (institution user).
+ * Clients get bounced to their dashboard.
  */
 export function BankOnlyRoute({ children }: { children: ReactNode }) {
   const { user, role, isLoading } = useAuth();
   const location = useLocation();
 
   if (isLoading) return <LoadingScreen />;
-  if (!user) return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+  if (!user) return <Navigate to="/institution/login" state={{ from: location.pathname }} replace />;
   if (role === "client") return <Navigate to="/dashboard" replace />;
   if (role === "admin") return <Navigate to="/admin" replace />;
 
@@ -46,17 +48,16 @@ export function BankOnlyRoute({ children }: { children: ReactNode }) {
 }
 
 /**
- * Routes only visible when logged out. Smart redirect based on role.
+ * Routes only visible when logged out.
+ * Smart redirect based on role on login.
  */
 export function PublicOnlyRoute({ children }: { children: ReactNode }) {
   const { user, role, isLoading } = useAuth();
 
   if (isLoading) return <LoadingScreen />;
 
-  // Only redirect if user is logged in AND has a valid role
-  // (auto signout will clear stale sessions, so this means a real user)
   if (user && role) {
-    if (role === "bank") return <Navigate to="/bank/dashboard" replace />;
+    if (role === "bank")  return <Navigate to="/institution" replace />;
     if (role === "admin") return <Navigate to="/admin" replace />;
     return <Navigate to="/dashboard" replace />;
   }
