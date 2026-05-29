@@ -1,35 +1,35 @@
 // =============================================================
 // Ficium 3 — Institution Supabase Client
-// Separate client scoped to institution.* schema.
-// Import this (not the public client) in all institution pages.
+// Uses same env vars as the main app (VITE_SUPABASE_URL +
+// VITE_SUPABASE_PUBLISHABLE_KEY). Scoped to institution schema.
 // =============================================================
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from "@supabase/supabase-js";
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  throw new Error('Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY')
-}
+// Graceful fallback — avoids hard crash on import if env vars missing
+const url = SUPABASE_URL ?? "";
+const key = SUPABASE_KEY ?? "";
 
-// Institution schema client — all queries default to institution.*
-export const institutionSupabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  db: { schema: 'institution' },
+// Institution schema client — all queries target institution.*
+export const institutionSupabase = createClient(url, key, {
+  db: { schema: "institution" },
   auth: {
-    persistSession: true,
+    persistSession:   true,
     autoRefreshToken: true,
-    storageKey: 'ficium-institution-session',
+    storageKey:       "ficium-institution-session",
   },
-})
+});
 
 // Public schema client — for cross-schema reads (client_requests etc.)
-export const publicSupabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  db: { schema: 'public' },
+export const publicSupabase = createClient(url, key, {
+  db: { schema: "public" },
   auth: {
-    persistSession: true,
+    persistSession:   true,
     autoRefreshToken: true,
-    storageKey: 'ficium-institution-session', // same session
+    storageKey:       "ficium-institution-session",
   },
-})
+});
 
-export default institutionSupabase
+export default institutionSupabase;
