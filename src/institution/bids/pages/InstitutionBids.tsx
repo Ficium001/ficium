@@ -5,7 +5,6 @@ import { useState } from "react";
 import { FileText, Filter, CheckCircle, XCircle, Clock, AlertTriangle, ChevronDown, ChevronUp, X } from "lucide-react";
 import { useMyBids, useMyInstitution, useSubmitBid } from "../../hooks/useInstitution";
 import { formatDistanceToNow, formatRate, formatAmount } from "../../lib/utils";
-import type { InstitutionBid } from "../../types/institution";
 
 const STATUS_FILTERS = [
   { key: "all", label: "All bids" }, { key: "submitted", label: "Active" },

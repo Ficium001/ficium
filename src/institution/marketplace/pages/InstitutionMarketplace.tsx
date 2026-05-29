@@ -6,7 +6,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Zap, Filter, Clock, X, AlertTriangle, ArrowRight } from "lucide-react";
+import { Zap, Filter, Clock, X, AlertTriangle } from "lucide-react";
 import { useMarketplace, useProducts, useSubmitBid, useMyInstitution } from "../../hooks/useInstitution";
 import { formatDistanceToNow } from "../../lib/utils";
 import type { MarketplaceRequest } from "../../types/institution";
@@ -49,10 +49,6 @@ export default function InstitutionMarketplace() {
       setSelectedRequest(null);
     } catch (e) { console.error(e); }
   };
-
-  const fmt = (v: number) => v >= 1_000_000
-    ? `MUR ${(v / 1_000_000).toFixed(1)}M`
-    : `MUR ${Number(v).toLocaleString()}`;
 
   return (
     <div className="p-6 lg:p-8 max-w-[1400px] mx-auto">
