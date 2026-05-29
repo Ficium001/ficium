@@ -1,206 +1,286 @@
+
 // =============================================================
 // Ficium 3 — Institution Dashboard
+// Layout inspired by provided mockup.
+// Ficium design tokens: cream bg, ink text, ficium blue.
+// Real data from institution.* schema via hooks.
 // =============================================================
-import { Link } from 'react-router-dom'
+import { Link } from "react-router-dom";
 import {
-  TrendingUp, Clock, CheckCircle,
-  ArrowRight, AlertTriangle, Zap,
-} from 'lucide-react'
-import { useMyInstitution, useMyBids, usePendingActions, useMarketplace } from '../../hooks/useInstitution'
-import { formatDistanceToNow } from '../../lib/utils'
-
-function StoreIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
-      <path d="M3 9l1-5h16l1 5"/><path d="M3 9h18v11a1 1 0 01-1 1H4a1 1 0 01-1-1V9z"/>
-      <path d="M9 21V12h6v9"/>
-    </svg>
-  )
-}
+  TrendingUp, Clock, CheckCircle, ArrowRight,
+  AlertTriangle, Zap, Store,
+} from "lucide-react";
+import {
+  useMyInstitution,
+  useMyBids,
+  usePendingActions,
+  useMarketplace,
+} from "../../hooks/useInstitution";
 
 export default function InstitutionDashboard() {
-  const { data: institution } = useMyInstitution()
-  const { data: bids = [],        isLoading: bidsLoading   } = useMyBids()
-  const { data: pending = [],     isLoading: pendingLoading } = usePendingActions()
-  const { data: marketplace = [], isLoading: mktLoading    } = useMarketplace()
+  const { data: institution }      = useMyInstitution();
+  const { data: bids        = [] } = useMyBids();
+  const { data: pending     = [] } = usePendingActions();
+  const { data: marketplace = [] } = useMarketplace();
 
-  const modules      = institution?.modules ?? []
-  const activeBids   = bids.filter(b => b.status === 'submitted').length
-  const acceptedBids = bids.filter(b => b.status === 'accepted').length
-  const pendingCount = pending.length
-  const openRequests = marketplace.length
-  const expiringBids = pending.filter(p => {
-    const diff = new Date(p.expires_at).getTime() - Date.now()
-    return diff < 4 * 60 * 60 * 1000 && diff > 0
-  }).length
+  const modules = institution?.modules ?? [];
+
+  // ── KPI calculations ──────────────────────────────────────
+  const openRequests   = marketplace.length;
+  const marketplaceVal = marketplace.reduce((s, r) => s + Number(r.amount), 0);
+  const activeBids     = bids.filter(b => b.status === "submitted").length;
+  const acceptedBids   = bids.filter(b => b.status === "accepted").length;
+  const pendingCount   = pending.length;
+  const winRate        = bids.length > 0
+    ? Math.round((acceptedBids / bids.length) * 100)
+    : 0;
+
+  // ── Pipeline stages (derived from bids) ───────────────────
+  const pipeline = [
+    { label: "New",         value: marketplace.filter(r => r.status === "open").length },
+    { label: "Bidding",     value: marketplace.filter(r => r.status === "bidding").length },
+    { label: "Active bids", value: activeBids },
+    { label: "Accepted",    value: acceptedBids },
+    { label: "Expired",     value: bids.filter(b => b.status === "expired").length },
+  ];
+
+  // ── Top opportunities (highest amount, open only) ─────────
+  const topOpps = [...marketplace]
+    .sort((a, b) => Number(b.amount) - Number(a.amount))
+    .slice(0, 5);
+
+  // ── Recent marketplace activity ───────────────────────────
+  const recentActivity = [...marketplace]
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .slice(0, 5);
+
+  // ── Performance metrics ───────────────────────────────────
+  const avgResponseMs = bids.filter(b => b.response_time_ms).reduce((s, b) => s + (b.response_time_ms ?? 0), 0)
+    / (bids.filter(b => b.response_time_ms).length || 1);
+  const avgResponseMin = Math.round(avgResponseMs / 60000);
+
+  const fmt = {
+    currency: (v: number) => v >= 1_000_000
+      ? `MUR ${(v / 1_000_000).toFixed(1)}M`
+      : v >= 1_000
+      ? `MUR ${(v / 1_000).toFixed(0)}K`
+      : `MUR ${v.toLocaleString()}`,
+    time: (s: string) => new Date(s).toLocaleTimeString("en-MU", { hour: "2-digit", minute: "2-digit" }),
+  };
+
+  const expiringCount = pending.filter(p =>
+    new Date(p.expires_at).getTime() - Date.now() < 4 * 60 * 60 * 1000
+  ).length;
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-start justify-between">
+    <div className="p-6 lg:p-8 max-w-[1400px] mx-auto">
+
+      {/* ── Header ───────────────────────────────────────── */}
+      <div className="flex items-start justify-between mb-8">
         <div>
-          <h1 className="text-lg font-bold text-slate-100 tracking-wide">
-            {institution?.name ?? 'Dashboard'}
+          <h1 className="font-display text-3xl font-bold text-ink tracking-tight">
+            Institution Dashboard
           </h1>
-          <p className="text-[11px] text-slate-600 mt-0.5 font-mono">
-            {institution?.institution_type} · {institution?.deployment_model?.toUpperCase()} ·{' '}
-            <span className="text-green-500">approved</span>
+          <p className="text-muted mt-1.5">
+            Monitor marketplace activity, bids and approvals.
           </p>
         </div>
-        {modules.includes('marketplace') && (
-          <Link
-            to="/institution/marketplace"
-            className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg transition-colors"
-          >
-            <StoreIcon className="w-3 h-3" />
-            Browse marketplace
-          </Link>
-        )}
-      </div>
-
-      {expiringBids > 0 && (
-        <div className="bg-[#1c0f00] border border-orange-900 rounded-lg p-3 flex items-center gap-3">
-          <AlertTriangle className="w-4 h-4 text-orange-400 flex-shrink-0" />
-          <p className="text-[11px] text-orange-300">
-            <strong>{expiringBids}</strong> pending action{expiringBids > 1 ? 's' : ''} expiring in less than 4 hours.
-          </p>
-          <Link to="/institution/approvals" className="ml-auto text-orange-400 hover:text-orange-300 text-[11px] font-bold flex items-center gap-1">
-            Review <ArrowRight className="w-3 h-3" />
-          </Link>
-        </div>
-      )}
-
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Open requests"     value={mktLoading     ? '—' : openRequests} icon={StoreIcon}    color="blue"   sub="in marketplace"       href="/institution/marketplace" />
-        <StatCard label="Active bids"       value={bidsLoading    ? '—' : activeBids}   icon={TrendingUp}  color="purple" sub="awaiting client"        href="/institution/bids" />
-        <StatCard label="Pending approvals" value={pendingLoading ? '—' : pendingCount} icon={Clock}       color="amber"  sub="maker-checker queue"   href="/institution/approvals" alert={pendingCount > 0} />
-        <StatCard label="Accepted bids"     value={bidsLoading    ? '—' : acceptedBids} icon={CheckCircle} color="green"  sub="all time" />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-[#0b0f18] border border-[#141b27] rounded-xl overflow-hidden">
-          <div className="px-5 py-3.5 border-b border-[#141b27] flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-300 uppercase tracking-widest">Recent bids</span>
-            <Link to="/institution/bids" className="text-[10px] text-blue-500 hover:text-blue-400 flex items-center gap-1">
-              View all <ArrowRight className="w-3 h-3" />
+        <div className="flex items-center gap-3">
+          {expiringCount > 0 && (
+            <Link to="/institution/approvals"
+              className="flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-700 text-[12px] font-semibold px-3 py-2 rounded-full hover:bg-amber-100 transition-colors">
+              <AlertTriangle className="w-3.5 h-3.5" />
+              {expiringCount} expiring soon
             </Link>
-          </div>
-          {bidsLoading ? (
-            <div className="p-6 flex justify-center"><div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" /></div>
-          ) : bids.length === 0 ? (
-            <div className="p-8 text-center text-[11px] text-slate-600">No bids yet</div>
-          ) : (
-            <div className="divide-y divide-[#0d1420]">
-              {bids.slice(0, 5).map(bid => (
-                <div key={bid.id} className="px-5 py-3 flex items-center justify-between">
-                  <div>
-                    <div className="text-[11px] text-slate-300 font-medium">{bid.product_label ?? bid.product_type}</div>
-                    <div className="text-[10px] text-slate-600 mt-0.5 font-mono">
-                      MUR {Number(bid.amount_offered).toLocaleString()} · {(bid.rate * 100).toFixed(2)}% · {bid.term_months}m
-                    </div>
-                  </div>
-                  <BidStatusBadge status={bid.status} />
-                </div>
-              ))}
-            </div>
           )}
-        </div>
-
-        <div className="bg-[#0b0f18] border border-[#141b27] rounded-xl overflow-hidden">
-          <div className="px-5 py-3.5 border-b border-[#141b27] flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-300 uppercase tracking-widest">Live marketplace</span>
-            <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-              <span className="text-[9px] text-green-500 font-mono">LIVE</span>
-            </div>
-          </div>
-          {mktLoading ? (
-            <div className="p-6 flex justify-center"><div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" /></div>
-          ) : marketplace.length === 0 ? (
-            <div className="p-8 text-center text-[11px] text-slate-600">No open requests right now</div>
-          ) : (
-            <div className="divide-y divide-[#0d1420]">
-              {marketplace.slice(0, 5).map(req => (
-                <div key={req.id} className="px-5 py-3 flex items-center justify-between">
-                  <div>
-                    <div className="text-[11px] text-slate-300 font-medium">{req.product_label ?? req.product_type}</div>
-                    <div className="text-[10px] text-slate-600 mt-0.5 font-mono">
-                      {req.currency} {Number(req.amount).toLocaleString()}
-                      {req.term_months ? ` · ${req.term_months}m` : ''}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-[9px] text-slate-600 font-mono">
-                      closes {formatDistanceToNow(req.bid_window_closes_at)}
-                    </div>
-                    {modules.includes('marketplace') && (
-                      <Link to="/institution/marketplace" className="text-[9px] text-blue-500 hover:text-blue-400 flex items-center gap-0.5 justify-end mt-0.5">
-                        Bid <Zap className="w-2.5 h-2.5" />
-                      </Link>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          <span className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 font-bold text-[13px] px-4 py-2 rounded-full">
+            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+            LIVE
+          </span>
         </div>
       </div>
 
-      <div className="bg-[#0b0f18] border border-[#141b27] rounded-xl p-5">
-        <div className="text-[10px] font-bold text-slate-600 uppercase tracking-widest mb-3">Licensed modules</div>
-        <div className="flex flex-wrap gap-2">
-          {['marketplace','credit','ai_advisory','analytics'].map(m => (
-            <span key={m} className={`px-3 py-1 rounded-full text-[10px] font-bold ${
-              modules.includes(m)
-                ? 'bg-[#052e16] text-green-400 border border-[#166534]'
-                : 'bg-[#111] text-slate-700 border border-[#222]'
-            }`}>
-              {modules.includes(m) ? '✓ ' : ''}{m}
-            </span>
+      {/* ── KPI Row ──────────────────────────────────────── */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+        {[
+          { label: "Marketplace value",  value: fmt.currency(marketplaceVal), trend: `${openRequests} open`,      icon: Store,        href: "/institution/marketplace" },
+          { label: "Open opportunities", value: openRequests,                 trend: "Live requests",              icon: TrendingUp,   href: "/institution/marketplace" },
+          { label: "Pending approvals",  value: pendingCount,                 trend: "Maker-checker queue",        icon: Clock,        href: "/institution/approvals",   alert: pendingCount > 0 },
+          { label: "Accepted bids",      value: acceptedBids,                 trend: `${activeBids} active`,       icon: CheckCircle,  href: "/institution/bids"         },
+          { label: "Win rate",           value: `${winRate}%`,                trend: `${bids.length} total bids`,  icon: Zap                                             },
+        ].map(kpi => (
+          <KpiCard key={kpi.label} {...kpi} />
+        ))}
+      </div>
+
+      {/* ── Main grid ────────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+
+        {/* Left col — pipeline + table */}
+        <div className="lg:col-span-2 space-y-6">
+
+          {/* Pipeline */}
+          <div className="bg-white rounded-2xl p-6 shadow-card">
+            <h2 className="font-display font-bold text-[17px] text-ink mb-5">
+              Request pipeline
+            </h2>
+            <div className="grid grid-cols-5 gap-3">
+              {pipeline.map((stage, i) => (
+                <div key={stage.label}
+                  className={`rounded-xl p-4 text-center ${
+                    i === 0 ? "bg-ficium/8" :
+                    i === 1 ? "bg-ficium/5" :
+                    "bg-[#F8FAFC]"
+                  }`}>
+                  <div className={`text-3xl font-bold mb-1.5 ${
+                    i === 0 ? "text-ficium" :
+                    i === 3 ? "text-green-600" :
+                    i === 4 ? "text-red-400" :
+                    "text-ink"
+                  }`}>
+                    {stage.value}
+                  </div>
+                  <div className="text-[12px] text-muted font-medium">{stage.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* High priority opportunities */}
+          <div className="bg-white rounded-2xl p-6 shadow-card">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="font-display font-bold text-[17px] text-ink">
+                High priority opportunities
+              </h2>
+              {modules.includes("marketplace") && (
+                <Link to="/institution/marketplace"
+                  className="text-[12px] text-ficium font-semibold flex items-center gap-1 hover:underline">
+                  View all <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              )}
+            </div>
+            {topOpps.length === 0 ? (
+              <p className="text-muted text-sm py-4 text-center">No open opportunities right now</p>
+            ) : (
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-ink/[0.06]">
+                    {["Client ref","Product","Value","Term",""].map(h => (
+                      <th key={h} className="text-left pb-3 text-[12px] text-muted font-semibold">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {topOpps.map(opp => (
+                    <tr key={opp.id} className="border-b border-ink/[0.04] hover:bg-cream/60 transition-colors">
+                      <td className="py-4 text-[13px] font-mono text-ink/50">{opp.client_ref?.slice(0,8)}…</td>
+                      <td className="py-4 text-[13px] font-semibold text-ink">{opp.product_label ?? opp.product_type}</td>
+                      <td className="py-4 text-[13px] font-bold text-ink">{fmt.currency(Number(opp.amount))}</td>
+                      <td className="py-4 text-[13px] text-muted">{opp.term_months ? `${opp.term_months}m` : "—"}</td>
+                      <td className="py-4">
+                        {modules.includes("marketplace") && (
+                          <Link to="/institution/marketplace"
+                            className="text-[11px] bg-ficium text-white font-bold px-3 py-1.5 rounded-lg hover:bg-ficium-deep transition-colors">
+                            Bid
+                          </Link>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+
+        {/* Right col — activity feed */}
+        <div className="space-y-6">
+          <div className="bg-white rounded-2xl p-6 shadow-card h-full">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="font-display font-bold text-[17px] text-ink">
+                Marketplace activity
+              </h2>
+              <span className="flex items-center gap-1.5 text-[11px] text-green-600 font-semibold">
+                <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                Live
+              </span>
+            </div>
+            {recentActivity.length === 0 ? (
+              <p className="text-muted text-sm py-4 text-center">No activity yet</p>
+            ) : (
+              <div className="divide-y divide-ink/[0.05]">
+                {recentActivity.map(req => (
+                  <div key={req.id} className="py-4">
+                    <div className="font-semibold text-[13px] text-ink mb-1">
+                      {req.product_label ?? req.product_type} — {fmt.currency(Number(req.amount))}
+                    </div>
+                    <div className="text-[12px] text-muted flex items-center gap-2">
+                      <span>{fmt.time(req.created_at)} Today</span>
+                      {req.client_type && (
+                        <span className="capitalize bg-ink/[0.05] px-2 py-0.5 rounded-full">
+                          {req.client_type}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Performance row ───────────────────────────────── */}
+      <div className="bg-white rounded-2xl p-6 shadow-card">
+        <h2 className="font-display font-bold text-[17px] text-ink mb-5">
+          Institution performance
+        </h2>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { label: "Offers submitted",  value: bids.length },
+            { label: "Success rate",      value: `${winRate}%` },
+            { label: "Active bids",       value: activeBids },
+            { label: "Avg response time", value: avgResponseMs > 0 ? `${avgResponseMin}m` : "—" },
+          ].map(m => (
+            <div key={m.label} className="bg-[#F8FAFC] rounded-xl p-5">
+              <div className="text-3xl font-bold text-ink mb-2">{m.value}</div>
+              <div className="text-[13px] text-muted">{m.label}</div>
+            </div>
           ))}
         </div>
       </div>
+
     </div>
-  )
+  );
 }
 
-function StatCard({ label, value, icon: Icon, color, sub, href, alert }: {
-  label: string; value: number | string; icon: React.ElementType
-  color: 'blue' | 'purple' | 'green' | 'amber' | 'red'
-  sub?: string; href?: string; alert?: boolean
+// ── KPI Card ──────────────────────────────────────────────────
+function KpiCard({
+  label, value, trend, icon: Icon, href, alert,
+}: {
+  label:  string;
+  value:  string | number;
+  trend?: string;
+  icon:   React.ElementType;
+  href?:  string;
+  alert?: boolean;
 }) {
-  const colorMap = {
-    blue:   { val: 'text-blue-400',   bg: 'bg-[#0c1a2e]' },
-    purple: { val: 'text-purple-400', bg: 'bg-[#120c2e]' },
-    green:  { val: 'text-green-400',  bg: 'bg-[#052e16]' },
-    amber:  { val: 'text-amber-400',  bg: 'bg-[#1c1208]' },
-    red:    { val: 'text-red-400',    bg: 'bg-[#1c0000]' },
-  }
-  const { val, bg } = colorMap[color]
   const inner = (
-    <div className={`${bg} border border-[#141b27] rounded-xl p-5 ${href ? 'hover:border-[#1e2d3d] transition-colors cursor-pointer' : ''} ${alert ? 'border-orange-900' : ''}`}>
-      <div className="flex items-start justify-between mb-2">
-        <Icon className={`w-4 h-4 ${val}`} />
-        {alert && <span className="w-2 h-2 bg-orange-400 rounded-full animate-pulse" />}
+    <div className={`bg-white rounded-2xl p-5 shadow-card h-full transition-all ${
+      href ? "hover:shadow-md hover:-translate-y-0.5 cursor-pointer" : ""
+    } ${alert ? "ring-2 ring-amber-300/60" : ""}`}>
+      <div className="flex items-start justify-between mb-4">
+        <div className="w-9 h-9 rounded-xl bg-ficium/8 flex items-center justify-center">
+          <Icon className="w-4 h-4 text-ficium" />
+        </div>
+        {alert && (
+          <span className="w-2 h-2 bg-amber-400 rounded-full animate-pulse mt-1" />
+        )}
       </div>
-      <div className={`text-3xl font-bold ${val} tracking-tight mb-1`}>{value}</div>
-      <div className="text-[10px] text-slate-600 uppercase tracking-widest">{label}</div>
-      {sub && <div className="text-[9px] text-slate-700 mt-0.5">{sub}</div>}
+      <div className="text-[13px] text-muted mb-2">{label}</div>
+      <div className="text-3xl font-bold text-ink tracking-tight mb-1.5">{value}</div>
+      {trend && <div className="text-[12px] text-muted">{trend}</div>}
     </div>
-  )
-  return href ? <Link to={href}>{inner}</Link> : inner
-}
-
-function BidStatusBadge({ status }: { status: string }) {
-  const map: Record<string, string> = {
-    submitted: 'bg-[#0c1a2e] text-blue-400',
-    accepted:  'bg-[#052e16] text-green-400',
-    rejected:  'bg-[#1c0000] text-red-400',
-    expired:   'bg-[#1c1208] text-amber-400',
-    withdrawn: 'bg-[#111] text-slate-500',
-  }
-  return (
-    <span className={`${map[status] ?? 'bg-[#111] text-slate-500'} px-2 py-0.5 rounded-full text-[9px] font-bold uppercase`}>
-      {status}
-    </span>
-  )
+  );
+  return href ? <Link to={href} className="block">{inner}</Link> : inner;
 }
