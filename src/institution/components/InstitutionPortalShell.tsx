@@ -18,17 +18,23 @@ import {
   Bell,
   Building2,
 } from 'lucide-react'
-import { useMyInstitution, useMyRole, usePendingActions } from '../../hooks/useInstitution'
-import institutionSupabase from '../../lib/institutionSupabase'
-import type { PortalSection } from '../../types/institution'
+import { useMyInstitution, useMyRole, usePendingActions } from '../hooks/useInstitution'
+import institutionSupabase from '../lib/institutionSupabase'
+import type { PortalSection } from '../types/institution'
 
 interface NavItem {
   section: PortalSection
   label: string
   path: string
   icon: React.ElementType
-  module?: string  // required module licence — undefined means always show
+  module?: string
   badge?: number
+}
+
+const DEPLOY_LABELS: Record<string, string> = {
+  saas:    'SaaS',
+  paas:    'PaaS',
+  on_prem: 'On-Prem',
 }
 
 export default function InstitutionPortalShell() {
@@ -38,43 +44,31 @@ export default function InstitutionPortalShell() {
   const { data: pendingActions } = usePendingActions()
 
   const modules: string[] = institution?.modules ?? []
-  const hasModule = (m: string) => modules.includes(m)
   const pendingCount = pendingActions?.length ?? 0
 
   const NAV_ITEMS: NavItem[] = [
-    { section: 'dashboard',       label: 'Dashboard',         path: '/institution',                  icon: LayoutDashboard },
-    { section: 'marketplace',     label: 'Marketplace',       path: '/institution/marketplace',       icon: Store,          module: 'marketplace' },
-    { section: 'my-bids',         label: 'My bids',           path: '/institution/bids',              icon: FileText,       module: 'marketplace' },
-    { section: 'pending-actions', label: 'Approvals',         path: '/institution/approvals',         icon: Clock,          badge: pendingCount },
-    { section: 'products',        label: 'Products',          path: '/institution/products',          icon: Package },
-    { section: 'webhooks',        label: 'Webhooks',          path: '/institution/webhooks',          icon: Webhook },
-    { section: 'audit',           label: 'Audit log',         path: '/institution/audit',             icon: ScrollText },
-    { section: 'settings',        label: 'Settings',          path: '/institution/settings',          icon: Settings },
+    { section: 'dashboard',       label: 'Dashboard',   path: '/institution',             icon: LayoutDashboard },
+    { section: 'marketplace',     label: 'Marketplace',  path: '/institution/marketplace',  icon: Store,   module: 'marketplace' },
+    { section: 'my-bids',         label: 'My bids',      path: '/institution/bids',         icon: FileText, module: 'marketplace' },
+    { section: 'pending-actions', label: 'Approvals',   path: '/institution/approvals',    icon: Clock,   badge: pendingCount },
+    { section: 'products',        label: 'Products',    path: '/institution/products',     icon: Package },
+    { section: 'webhooks',        label: 'Webhooks',    path: '/institution/webhooks',     icon: Webhook },
+    { section: 'audit',           label: 'Audit log',   path: '/institution/audit',        icon: ScrollText },
+    { section: 'settings',        label: 'Settings',    path: '/institution/settings',     icon: Settings },
   ]
 
-  // Filter nav by module licences
-  const visibleNav = NAV_ITEMS.filter(item =>
-    !item.module || hasModule(item.module)
-  )
+  const visibleNav = NAV_ITEMS.filter(item => !item.module || modules.includes(item.module))
 
   const handleSignOut = async () => {
     await institutionSupabase.auth.signOut()
     navigate('/institution/login')
   }
 
-  const deployLabel = {
-    saas:    'SaaS',
-    paas:    'PaaS',
-    on_prem: 'On-Prem',
-  }[institution?.deployment_model ?? 'saas']
+  const deployLabel = DEPLOY_LABELS[institution?.deployment_model ?? 'saas'] ?? 'SaaS'
 
   return (
     <div className="flex h-screen bg-[#070a0f] text-slate-300 font-mono overflow-hidden">
-
-      {/* ── Sidebar ─────────────────────────────────────────── */}
       <aside className="w-56 bg-[#0b0f18] border-r border-[#141b27] flex flex-col flex-shrink-0">
-
-        {/* Logo */}
         <div className="px-5 py-6 border-b border-[#141b27]">
           <div className="flex items-center gap-2.5">
             <Building2 className="w-5 h-5 text-blue-400" />
@@ -89,7 +83,6 @@ export default function InstitutionPortalShell() {
           </div>
         </div>
 
-        {/* Navigation */}
         <nav className="flex-1 py-3 overflow-y-auto">
           {visibleNav.map(item => (
             <NavLink
@@ -115,7 +108,6 @@ export default function InstitutionPortalShell() {
           ))}
         </nav>
 
-        {/* User footer */}
         <div className="border-t border-[#141b27] p-4">
           <div className="text-[9px] text-slate-700 uppercase tracking-widest mb-1.5">Signed in as</div>
           <div className="text-[11px] text-slate-500 truncate">{institution?.primary_contact_email}</div>
@@ -130,10 +122,7 @@ export default function InstitutionPortalShell() {
         </div>
       </aside>
 
-      {/* ── Main ────────────────────────────────────────────── */}
       <div className="flex-1 flex flex-col overflow-hidden">
-
-        {/* Top bar */}
         <header className="h-12 bg-[#0b0f18] border-b border-[#141b27] flex items-center justify-between px-6 flex-shrink-0">
           <div className="flex items-center gap-2 text-[11px] text-slate-500">
             <span className="text-slate-700">ficium</span>
@@ -141,7 +130,6 @@ export default function InstitutionPortalShell() {
             <span className="text-slate-300">{institution?.name}</span>
           </div>
           <div className="flex items-center gap-3">
-            {/* Status badges */}
             {institution?.approved && (
               <span className="bg-[#052e16] border border-[#166534] text-green-400 text-[9px] font-bold px-2 py-0.5 rounded-full tracking-widest">
                 APPROVED
@@ -150,7 +138,6 @@ export default function InstitutionPortalShell() {
             <span className="bg-[#0f1929] border border-[#1e3a5f] text-blue-400 text-[9px] font-bold px-2 py-0.5 rounded-full tracking-widest">
               MAKER-CHECKER
             </span>
-            {/* Notification bell */}
             <button className="relative text-slate-600 hover:text-slate-300 transition-colors">
               <Bell className="w-4 h-4" />
               {pendingCount > 0 && (
@@ -161,8 +148,6 @@ export default function InstitutionPortalShell() {
             </button>
           </div>
         </header>
-
-        {/* Page content */}
         <main className="flex-1 overflow-auto bg-[#070a0f]">
           <Outlet />
         </main>
