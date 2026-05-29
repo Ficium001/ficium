@@ -1,128 +1,105 @@
 // =============================================================
 // Ficium 3 — Institution Approvals (Maker-Checker)
-// Lists all pending actions. Checker approves or rejects.
-// Four-eyes enforced: maker cannot approve own action.
+// Ficium light theme.
 // =============================================================
-import { useState } from 'react'
-import { Clock, CheckCircle, XCircle, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react'
-import { usePendingActions, useApproveAction, useRejectAction } from '../../hooks/useInstitution'
-import { formatDistanceToNow } from '../../lib/utils'
+import { useState } from "react";
+import { Clock, CheckCircle, XCircle, AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
+import { usePendingActions, useApproveAction, useRejectAction } from "../../hooks/useInstitution";
+import { formatDistanceToNow } from "../../lib/utils";
 
 export default function InstitutionApprovals() {
-  const { data: actions = [], isLoading } = usePendingActions()
-  const approveAction = useApproveAction()
-  const rejectAction  = useRejectAction()
+  const { data: actions = [], isLoading } = usePendingActions();
+  const approveAction = useApproveAction();
+  const rejectAction  = useRejectAction();
+  const [expanded,   setExpanded]   = useState<string | null>(null);
+  const [rejectNote, setRejectNote] = useState("");
+  const [rejectingId,setRejectingId] = useState<string | null>(null);
 
-  const [expanded, setExpanded]       = useState<string | null>(null)
-  const [rejectNote, setRejectNote]   = useState('')
-  const [rejectingId, setRejectingId] = useState<string | null>(null)
-
-  const handleApprove = async (actionId: string) => {
-    await approveAction.mutateAsync({ actionId })
-  }
-
-  const handleReject = async (actionId: string) => {
-    if (!rejectNote.trim()) return
-    await rejectAction.mutateAsync({ actionId, note: rejectNote })
-    setRejectingId(null)
-    setRejectNote('')
-  }
+  const inputCls = "w-full bg-white border border-ink/[0.12] rounded-xl px-4 py-2.5 text-[14px] outline-none focus:border-ficium focus:ring-2 focus:ring-ficium/20 transition-all";
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-6 lg:p-8 max-w-[1000px] mx-auto">
+      <div className="flex items-start justify-between mb-8">
         <div>
-          <h1 className="text-lg font-bold text-slate-100 tracking-wide">Approvals</h1>
-          <p className="text-[11px] text-slate-600 mt-0.5 font-mono">
-            Maker-checker queue · {actions.length} pending
-          </p>
+          <h1 className="font-display text-3xl font-bold text-ink tracking-tight">Approvals</h1>
+          <p className="text-muted mt-1.5">Maker-checker queue · {actions.length} pending</p>
         </div>
-        <span className="bg-[#0a1628] border border-[#1e3a5f] text-blue-400 text-[9px] font-bold px-3 py-1.5 rounded-full tracking-widest">
+        <span className="bg-ficium/8 text-ficium text-[12px] font-bold px-4 py-2 rounded-full">
           FOUR-EYES ENFORCED
         </span>
       </div>
 
-      <div className="bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-4 py-3 mb-5 text-[10px] text-slate-500">
+      <div className="bg-ficium/5 border border-ficium/15 rounded-2xl px-5 py-4 mb-6 text-[13px] text-ink/70">
         Every material action requires a second admin to approve. You cannot approve an action you initiated.
       </div>
 
       {isLoading && (
-        <div className="flex justify-center py-16">
-          <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        <div className="flex justify-center py-24">
+          <div className="w-8 h-8 border-2 border-ficium border-t-transparent rounded-full animate-spin" />
         </div>
       )}
 
       {!isLoading && actions.length === 0 && (
-        <div className="text-center py-16">
-          <CheckCircle className="w-10 h-10 text-green-800 mx-auto mb-3" />
-          <p className="text-slate-600 text-sm">All clear — no pending approvals</p>
+        <div className="text-center py-24 bg-white rounded-2xl shadow-card">
+          <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-3" />
+          <p className="font-semibold text-ink mb-1">All clear</p>
+          <p className="text-muted text-[13px]">No pending approvals</p>
         </div>
       )}
 
-      <div className="space-y-3">
+      <div className="space-y-4">
         {actions.map(action => {
-          const isExpanded  = expanded === action.id
-          const isRejecting = rejectingId === action.id
-          const expiresIn   = new Date(action.expires_at).getTime() - Date.now()
-          const isUrgent    = expiresIn < 4 * 60 * 60 * 1000 && expiresIn > 0
-          const isExpired   = expiresIn <= 0
+          const isExpanded  = expanded === action.id;
+          const isRejecting = rejectingId === action.id;
+          const expiresIn   = new Date(action.expires_at).getTime() - Date.now();
+          const isUrgent    = expiresIn < 4 * 60 * 60 * 1000 && expiresIn > 0;
+          const isExpired   = expiresIn <= 0;
 
           return (
-            <div
-              key={action.id}
-              className={`bg-[#0b0f18] border rounded-xl overflow-hidden transition-colors ${
-                isUrgent ? 'border-orange-900' : isExpired ? 'border-red-900' : 'border-[#141b27]'
-              }`}
-            >
-              <div className="px-5 py-4 flex items-center gap-4">
-                <div className="w-8 h-8 bg-[#0f1929] rounded-lg flex items-center justify-center flex-shrink-0">
-                  <ActionIcon category={action.action_category} />
+            <div key={action.id} className={`bg-white rounded-2xl overflow-hidden shadow-card ${isUrgent ? "ring-2 ring-amber-300/60" : ""}`}>
+              <div className="px-6 py-5 flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-ficium/8 flex items-center justify-center flex-shrink-0 text-[16px]">
+                  {actionEmoji(action.action_category)}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
-                    <code className="text-[11px] text-slate-300 font-bold">{action.action_category}</code>
-                    <span className="text-slate-700 text-[9px]">·</span>
-                    <span className="text-[10px] text-slate-600">{action.resource_type}</span>
+                    <code className="text-[13px] font-bold text-ink">{action.action_category}</code>
+                    <span className="text-ink/20">·</span>
+                    <span className="text-[12px] text-muted">{action.resource_type}</span>
                   </div>
-                  <div className="text-[10px] text-slate-600 font-mono">
-                    Initiated by <span className="text-slate-500">{action.maker_role}</span>
-                    {' · '}{formatDistanceToNow(action.initiated_at)} ago
+                  <div className="text-[12px] text-muted">
+                    Initiated by <span className="font-medium text-ink/60">{action.maker_role}</span>
+                    {" · "}{formatDistanceToNow(action.initiated_at)} ago
                   </div>
                 </div>
-                <div className={`text-right text-[10px] flex-shrink-0 ${isUrgent ? 'text-orange-400' : 'text-slate-600'}`}>
-                  <div className="flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    <span className="font-mono">
-                      {isExpired ? 'Expired' : `Expires ${formatDistanceToNow(action.expires_at)}`}
-                    </span>
+                <div className={`text-right text-[12px] flex-shrink-0 ${isUrgent ? "text-amber-600 font-semibold" : "text-muted"}`}>
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5" />
+                    {isExpired ? "Expired" : `Expires ${formatDistanceToNow(action.expires_at)}`}
                   </div>
                   {isUrgent && !isExpired && (
-                    <div className="text-[9px] text-orange-500 mt-0.5 flex items-center gap-1">
-                      <AlertTriangle className="w-2.5 h-2.5" />
-                      Expiring soon
+                    <div className="flex items-center gap-1 text-[11px] text-amber-500 mt-0.5">
+                      <AlertTriangle className="w-3 h-3" />Expiring soon
                     </div>
                   )}
                 </div>
-                <button
-                  onClick={() => setExpanded(isExpanded ? null : action.id)}
-                  className="text-slate-600 hover:text-slate-300 transition-colors ml-2"
-                >
-                  {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                <button onClick={() => setExpanded(isExpanded ? null : action.id)} className="text-muted hover:text-ink transition-colors ml-1">
+                  {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                 </button>
               </div>
 
               {isExpanded && (
-                <div className="border-t border-[#141b27] px-5 py-4 space-y-3">
+                <div className="border-t border-ink/[0.07] px-6 py-4 bg-cream/40 space-y-3">
                   <div>
-                    <div className="text-[9px] text-slate-600 uppercase tracking-widest mb-1.5">Payload</div>
-                    <pre className="bg-[#070a0f] border border-[#1e2d3d] rounded-lg p-3 text-[10px] text-slate-400 overflow-auto max-h-40 font-mono">
+                    <div className="text-[11px] font-semibold text-muted uppercase tracking-wider mb-2">Payload</div>
+                    <pre className="bg-white border border-ink/[0.08] rounded-xl p-4 text-[12px] text-ink/70 overflow-auto max-h-40 font-mono">
                       {JSON.stringify(action.payload, null, 2)}
                     </pre>
                   </div>
                   {action.payload_before && (
                     <div>
-                      <div className="text-[9px] text-slate-600 uppercase tracking-widest mb-1.5">Before</div>
-                      <pre className="bg-[#070a0f] border border-[#1e2d3d] rounded-lg p-3 text-[10px] text-slate-600 overflow-auto max-h-32 font-mono">
+                      <div className="text-[11px] font-semibold text-muted uppercase tracking-wider mb-2">Before</div>
+                      <pre className="bg-white border border-ink/[0.08] rounded-xl p-4 text-[12px] text-muted overflow-auto max-h-32 font-mono">
                         {JSON.stringify(action.payload_before, null, 2)}
                       </pre>
                     </div>
@@ -131,92 +108,63 @@ export default function InstitutionApprovals() {
               )}
 
               {!isExpired && (
-                <div className="border-t border-[#141b27] px-5 py-3 flex items-center gap-3">
+                <div className="border-t border-ink/[0.07] px-6 py-4 flex items-center gap-3">
                   {isRejecting ? (
-                    <div className="flex-1 flex items-center gap-2">
-                      <input
-                        value={rejectNote}
-                        onChange={e => setRejectNote(e.target.value)}
+                    <div className="flex-1 flex items-center gap-3">
+                      <input value={rejectNote} onChange={e => setRejectNote(e.target.value)}
                         placeholder="Reason for rejection (required)"
-                        className="flex-1 bg-[#070a0f] border border-[#1e2d3d] text-slate-200 rounded-lg px-3 py-1.5 text-[11px] font-mono focus:border-red-500 outline-none"
-                      />
-                      <button
-                        onClick={() => handleReject(action.id)}
-                        disabled={!rejectNote.trim() || rejectAction.isPending}
-                        className="flex items-center gap-1.5 bg-[#3a1e1e] hover:bg-red-900 disabled:opacity-50 text-red-400 text-[10px] font-bold px-3 py-1.5 rounded-lg border border-red-900 transition-colors"
-                      >
-                        {rejectAction.isPending ? (
-                          <div className="w-3 h-3 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
-                        ) : (
-                          <XCircle className="w-3 h-3" />
-                        )}
+                        className={`flex-1 ${inputCls}`} />
+                      <button onClick={async () => {
+                        if (!rejectNote.trim()) return;
+                        await rejectAction.mutateAsync({ actionId: action.id, note: rejectNote });
+                        setRejectingId(null); setRejectNote("");
+                      }} disabled={!rejectNote.trim() || rejectAction.isPending}
+                        className="flex items-center gap-1.5 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white text-[13px] font-bold px-4 py-2.5 rounded-xl transition-colors whitespace-nowrap">
+                        {rejectAction.isPending ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <XCircle className="w-4 h-4" />}
                         Confirm reject
                       </button>
-                      <button
-                        onClick={() => { setRejectingId(null); setRejectNote('') }}
-                        className="text-[10px] text-slate-600 hover:text-slate-300 px-2"
-                      >
-                        Cancel
-                      </button>
+                      <button onClick={() => { setRejectingId(null); setRejectNote(""); }}
+                        className="text-[13px] text-muted hover:text-ink px-3">Cancel</button>
                     </div>
                   ) : (
                     <>
-                      <button
-                        onClick={() => handleApprove(action.id)}
+                      <button onClick={() => approveAction.mutate({ actionId: action.id })}
                         disabled={approveAction.isPending}
-                        className="flex items-center gap-1.5 bg-[#0d2e1a] hover:bg-green-900 disabled:opacity-50 text-green-400 text-[10px] font-bold px-4 py-1.5 rounded-lg border border-[#166534] transition-colors"
-                      >
-                        {approveAction.isPending ? (
-                          <div className="w-3 h-3 border-2 border-green-400 border-t-transparent rounded-full animate-spin" />
-                        ) : (
-                          <CheckCircle className="w-3 h-3" />
-                        )}
+                        className="flex items-center gap-2 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white text-[13px] font-bold px-5 py-2.5 rounded-xl transition-colors">
+                        {approveAction.isPending ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <CheckCircle className="w-4 h-4" />}
                         Approve
                       </button>
-                      <button
-                        onClick={() => setRejectingId(action.id)}
-                        className="flex items-center gap-1.5 bg-[#1a0f0f] hover:bg-red-950 text-red-500 text-[10px] font-bold px-4 py-1.5 rounded-lg border border-red-950 transition-colors"
-                      >
-                        <XCircle className="w-3 h-3" />
-                        Reject
+                      <button onClick={() => setRejectingId(action.id)}
+                        className="flex items-center gap-2 bg-white border border-red-200 hover:border-red-400 text-red-500 text-[13px] font-bold px-5 py-2.5 rounded-xl transition-colors">
+                        <XCircle className="w-4 h-4" />Reject
                       </button>
-                      <div className="ml-auto text-[9px] text-slate-700 font-mono">
-                        ID: {action.id.slice(0, 8)}…
-                      </div>
+                      <div className="ml-auto text-[11px] text-muted/50 font-mono">{action.id.slice(0, 8)}…</div>
                     </>
                   )}
                 </div>
               )}
 
               {(approveAction.error || rejectAction.error) && (
-                <div className="px-5 pb-3">
-                  <p className="text-[10px] text-red-400 bg-[#1c0000] border border-red-900 rounded-lg px-3 py-2">
+                <div className="px-6 pb-4">
+                  <p className="text-[12px] text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
                     {(approveAction.error as Error)?.message || (rejectAction.error as Error)?.message}
                   </p>
                 </div>
               )}
             </div>
-          )
+          );
         })}
       </div>
     </div>
-  )
+  );
 }
 
-function ActionIcon({ category }: { category: string }) {
+function actionEmoji(category: string): string {
   const map: Record<string, string> = {
-    'bid.submit':               '⚡',
-    'bid.withdraw':             '↩',
-    'webhook.create':           '🔗',
-    'webhook.delete':           '✂',
-    'api_key.create':           '🔑',
-    'api_key.revoke':           '🔒',
-    'user.invite':              '👤',
-    'user.role_change':         '🔄',
-    'user.remove':              '✕',
-    'institution.approve':      '✓',
-    'institution.suspend':      '⊘',
-    'institution.modules_update': '◈',
-  }
-  return <span className="text-[13px]">{map[category] ?? '⬡'}</span>
+    "bid.submit": "⚡", "bid.withdraw": "↩", "webhook.create": "🔗",
+    "webhook.delete": "✂", "api_key.create": "🔑", "api_key.revoke": "🔒",
+    "user.invite": "👤", "user.role_change": "🔄", "user.remove": "✕",
+    "institution.approve": "✓", "institution.suspend": "⊘", "institution.modules_update": "◈",
+  };
+  return map[category] ?? "⬡";
 }
