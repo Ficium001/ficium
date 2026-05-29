@@ -411,11 +411,10 @@ function IdentityEditForm({ profile, onClose }: { profile: any; onClose: () => v
     setSaving(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setSaving(false); return; }
-    await supabase.from("profiles").update({
+    await supabase.from("users").update({
       first_name: form.firstName,
       country: form.country,
-      phone: form.phone || null,
-    }).eq("user_id", user.id);
+    }).eq("id", user.id);
     await queryClient.invalidateQueries({ queryKey: ["profile"] });
     setSaving(false);
     onClose();
@@ -463,11 +462,11 @@ function AddressEditForm({ profile, onClose }: { profile: any; onClose: () => vo
     setSaving(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setSaving(false); return; }
-    await supabase.from("profiles").update({
+    await supabase.from("users").update({
       address_line_1: form.addressLine1,
       city: form.city,
       country: form.country,
-    }).eq("user_id", user.id);
+    }).eq("id", user.id);
     await queryClient.invalidateQueries({ queryKey: ["profile"] });
     setSaving(false);
     onClose();
