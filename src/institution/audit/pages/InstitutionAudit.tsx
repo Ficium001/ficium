@@ -18,12 +18,26 @@ export default function InstitutionAudit() {
   }), [events, outcome, search]);
 
   const exportCSV = () => {
-    const rows = [["Timestamp","Event","Resource","Resource ID","Actor role","Outcome","Note"],
-      ...filtered.map(e => [new Date(e.created_at).toISOString(), e.event_label, e.resource_type ?? "", e.resource_id ?? "", e.actor_role ?? "", e.outcome, e.outcome_note ?? ""])];
-    const blob = new Blob([rows.map(r => r.map(v => `"${v}"`).join(",")).join("
-")], { type: "text/csv" });
-    const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: `ficium-audit-${new Date().toISOString().slice(0,10)}.csv` });
-    a.click(); URL.revokeObjectURL(a.href);
+    const headers = ["Timestamp","Event","Resource","Resource ID","Actor role","Outcome","Note"];
+    const rowData = filtered.map(e => [
+      new Date(e.created_at).toISOString(),
+      e.event_label,
+      e.resource_type ?? "",
+      e.resource_id ?? "",
+      e.actor_role ?? "",
+      e.outcome,
+      e.outcome_note ?? "",
+    ]);
+    const csv = [headers, ...rowData]
+      .map(row => row.map(v => JSON.stringify(v)).join(","))
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href     = url;
+    a.download = "ficium-audit-" + new Date().toISOString().slice(0, 10) + ".csv";
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const outcomeBadge = (o: string) => {
