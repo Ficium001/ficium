@@ -4,7 +4,7 @@ import {
   LogOut, ShieldCheck, ShieldAlert, MapPin, Briefcase,
   TrendingUp, AlertCircle, CheckCircle2, Circle,
   Wallet, Activity, Zap, Edit3, X, Save, Eye, EyeOff,
-  User, Mail, Phone, Globe, Building2, DollarSign,
+  User, Mail, Globe, Building2, DollarSign,
 } from "lucide-react";
 import { useAuth } from "../../../features/auth/context/AuthContext";
 import { useProfile, useBankReadiness } from "../hooks/useDashboard";
@@ -108,20 +108,25 @@ export default function Profile() {
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-4">
               {[
-                { label: "Account created",   done: true,                                    href: null },
-                { label: "Identity verified",  done: completion?.kycVerified ?? false,        href: "/onboarding/kyc" },
-                { label: "Proof of address",   done: completion?.proofOfAddressDone ?? false, href: "/onboarding/kyc" },
-                { label: "Financial profile",  done: completion?.financialProfileDone ?? false, href: "/onboarding/dossier" },
-                { label: "Source of wealth",   done: completion?.sourceOfWealthDone ?? false, href: "/onboarding/dossier" },
+                { label: "Account created",    done: true,                                       href: null },
+                { label: "Identity verified",  done: completion?.kycVerified ?? false,           href: "/onboarding/kyc" },
+                { label: "Proof of address",   done: completion?.proofOfAddressDone ?? false,    href: "/onboarding/kyc" },
+                { label: "Financial profile",  done: completion?.financialProfileDone ?? false,  href: "/onboarding/dossier" },
+                { label: "Source of wealth",   done: completion?.sourceOfWealthDone ?? false,    href: "/onboarding/dossier" },
               ].map((m) => (
                 <div key={m.label} className={[
-                  "flex items-center gap-2 px-3 py-2 rounded-xl",
-                  m.done ? "bg-white/10" : "bg-white/[0.04]",
+                  "flex items-center gap-2 px-3 py-2.5 rounded-xl border",
+                  m.done
+                    ? "bg-emerald-500/20 border-emerald-400/30"
+                    : "bg-white/5 border-white/10",
                 ].join(" ")}>
                   {m.done
                     ? <CheckCircle2 size={13} className="text-emerald-400 flex-shrink-0" />
-                    : <Circle size={13} className="text-white/20 flex-shrink-0" />}
-                  <span className={["text-[12px] font-medium truncate", m.done ? "text-white/80" : "text-white/35"].join(" ")}>
+                    : <Circle size={13} className="text-white/30 flex-shrink-0" />}
+                  <span className={[
+                    "text-[12px] font-semibold truncate",
+                    m.done ? "text-white" : "text-white/45",
+                  ].join(" ")}>
                     {m.label}
                   </span>
                 </div>
@@ -172,7 +177,6 @@ export default function Profile() {
             <div className="flex flex-col gap-0">
               <InfoRow icon={<User size={14} />}    label="Full name"  value={profile?.fullName ?? profile?.firstName ?? "—"} />
               <InfoRow icon={<Mail size={14} />}    label="Email"      value={profile?.email ?? "—"} />
-              <InfoRow icon={<Phone size={14} />}   label="Phone"      value={"—"} />
               <InfoRow icon={<Globe size={14} />}   label="Country"    value={profile?.country ?? "—"} />
               <InfoRow
                 icon={<ShieldCheck size={14} />}
@@ -398,8 +402,16 @@ function IdentityEditForm({ profile, onClose }: { profile: any; onClose: () => v
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
 
-  const handleSave = () => {
-    // TODO: call updateProfile(form) mutation
+  const handleSave = async () => {
+    const { data: { user } } = await import("../../../shared/lib/supabase").then(m => m.supabase.auth.getUser());
+    if (!user) return;
+    await import("../../../shared/lib/supabase").then(({ supabase }) =>
+      supabase.from("profiles").update({
+        first_name: form.firstName,
+        country: form.country,
+        phone: form.phone || null,
+      }).eq("user_id", user.id)
+    );
     onClose();
   };
 
@@ -439,8 +451,16 @@ function AddressEditForm({ profile, onClose }: { profile: any; onClose: () => vo
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
 
-  const handleSave = () => {
-    // TODO: call updateAddress(form) mutation
+  const handleSave = async () => {
+    const { data: { user } } = await import("../../../shared/lib/supabase").then(m => m.supabase.auth.getUser());
+    if (!user) return;
+    await import("../../../shared/lib/supabase").then(({ supabase }) =>
+      supabase.from("profiles").update({
+        address_line_1: form.addressLine1,
+        city: form.city,
+        country: form.country,
+      }).eq("user_id", user.id)
+    );
     onClose();
   };
 
@@ -480,8 +500,17 @@ function FinancialEditForm({ profile, onClose, hidden, setHidden }: {
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
 
-  const handleSave = () => {
-    // TODO: call updateFinancialProfile(form) mutation
+  const handleSave = async () => {
+    const { data: { user } } = await import("../../../shared/lib/supabase").then(m => m.supabase.auth.getUser());
+    if (!user) return;
+    await import("../../../shared/lib/supabase").then(({ supabase }) =>
+      supabase.from("financial_profiles").update({
+        employment_status: form.employmentStatus,
+        monthly_income: form.monthlyIncome ? Number(form.monthlyIncome) : null,
+        total_net_worth: form.totalNetWorth ? Number(form.totalNetWorth) : null,
+        has_existing_loans: form.hasExistingLoans === "yes",
+      }).eq("user_id", user.id)
+    );
     onClose();
   };
 
