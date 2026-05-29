@@ -1,0 +1,284 @@
+// =============================================================
+// Ficium 3 — Institution Portal Hooks
+// All data fetching for the institution portal.
+// Uses TanStack React Query v5 + institution Supabase client.
+// Each hook = one concern. Add new hooks here as features grow.
+// =============================================================
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import institutionSupabase from '../lib/institutionSupabase'
+import type {
+  Institution,
+  InstitutionUser,
+  InstitutionBid,
+  MarketplaceRequest,
+  PendingAction,
+  InstitutionWebhook,
+  Product,
+  AuditEvent,
+  BidPayload,
+} from '../types/institution'
+
+// ─── Query keys (centralised — never inline strings) ──────────
+export const QK = {
+  institution:     ['institution'] as const,
+  institutionUsers:['institution', 'users'] as const,
+  marketplace:     ['marketplace'] as const,
+  myBids:          ['my-bids'] as const,
+  pendingActions:  ['pending-actions'] as const,
+  webhooks:        ['webhooks'] as const,
+  products:        ['products'] as const,
+  audit:           ['audit'] as const,
+} as const
+
+// ─── useMyInstitution ─────────────────────────────────────────
+export function useMyInstitution() {
+  return useQuery<Institution>({
+    queryKey: QK.institution,
+    queryFn: async () => {
+      // Get current user's institution via institution_users
+      const { data: { user } } = await institutionSupabase.auth.getUser()
+      if (!user) throw new Error('Not authenticated')
+
+      const { data: membership, error: mErr } = await institutionSupabase
+        .from('institution_users')
+        .select('institution_id')
+        .eq('user_id', user.id)
+        .single()
+
+      if (mErr) throw mErr
+
+      const { data, error } = await institutionSupabase
+        .from('institutions')
+        .select('*')
+        .eq('id', membership.institution_id)
+        .single()
+
+      if (error) throw error
+      return data as Institution
+    },
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
+// ─── useMyRole ────────────────────────────────────────────────
+export function useMyRole() {
+  return useQuery<InstitutionUser>({
+    queryKey: [...QK.institutionUsers, 'me'],
+    queryFn: async () => {
+      const { data: { user } } = await institutionSupabase.auth.getUser()
+      if (!user) throw new Error('Not authenticated')
+
+      const { data, error } = await institutionSupabase
+        .from('institution_users')
+        .select('*')
+        .eq('user_id', user.id)
+        .single()
+
+      if (error) throw error
+      return data as InstitutionUser
+    },
+    staleTime: 10 * 60 * 1000,
+  })
+}
+
+// ─── useMarketplace ───────────────────────────────────────────
+export function useMarketplace(productCode?: string) {
+  return useQuery<MarketplaceRequest[]>({
+    queryKey: [...QK.marketplace, productCode],
+    queryFn: async () => {
+      let query = institutionSupabase
+        .from('marketplace_requests')  // cross-schema view
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (productCode) {
+        query = query.eq('product_type', productCode)
+      }
+
+      const { data, error } = await query
+      if (error) throw error
+      return (data ?? []) as MarketplaceRequest[]
+    },
+    refetchInterval: 30 * 1000, // poll every 30s for new requests
+    staleTime: 15 * 1000,
+  })
+}
+
+// ─── useMyBids ────────────────────────────────────────────────
+export function useMyBids(status?: string) {
+  return useQuery<InstitutionBid[]>({
+    queryKey: [...QK.myBids, status],
+    queryFn: async () => {
+      let query = institutionSupabase
+        .from('my_bids')  // cross-schema view
+        .select('*')
+        .order('submitted_at', { ascending: false })
+
+      if (status) {
+        query = query.eq('status', status)
+      }
+
+      const { data, error } = await query
+      if (error) throw error
+      return (data ?? []) as InstitutionBid[]
+    },
+    staleTime: 30 * 1000,
+  })
+}
+
+// ─── useSubmitBid ─────────────────────────────────────────────
+// Goes through maker-checker: creates a pending_action row,
+// not a direct institution_bids insert.
+export function useSubmitBid() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: BidPayload) => {
+      const { data, error } = await institutionSupabase
+        .rpc('submit_for_approval', {
+          p_action_category: 'bid.submit',
+          p_resource_type:   'institution_bids',
+          p_resource_id:     null,
+          p_payload:         payload,
+        })
+      if (error) throw error
+      return data as string // returns pending_action id
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: QK.pendingActions })
+      qc.invalidateQueries({ queryKey: QK.myBids })
+    },
+  })
+}
+
+// ─── usePendingActions ────────────────────────────────────────
+export function usePendingActions() {
+  return useQuery<PendingAction[]>({
+    queryKey: QK.pendingActions,
+    queryFn: async () => {
+      const { data, error } = await institutionSupabase
+        .from('pending_actions')
+        .select('*')
+        .eq('action_status', 'pending')
+        .order('expires_at', { ascending: true })
+
+      if (error) throw error
+      return (data ?? []) as PendingAction[]
+    },
+    refetchInterval: 60 * 1000,
+  })
+}
+
+// ─── useApproveAction ─────────────────────────────────────────
+export function useApproveAction() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ actionId, note }: { actionId: string; note?: string }) => {
+      const { data, error } = await institutionSupabase
+        .rpc('approve_action', {
+          p_action_id: actionId,
+          p_note:      note ?? null,
+        })
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: QK.pendingActions })
+      qc.invalidateQueries({ queryKey: QK.myBids })
+      qc.invalidateQueries({ queryKey: QK.audit })
+    },
+  })
+}
+
+// ─── useRejectAction ──────────────────────────────────────────
+export function useRejectAction() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ actionId, note }: { actionId: string; note: string }) => {
+      const { data, error } = await institutionSupabase
+        .rpc('reject_action', {
+          p_action_id: actionId,
+          p_note:      note,
+        })
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: QK.pendingActions })
+      qc.invalidateQueries({ queryKey: QK.audit })
+    },
+  })
+}
+
+// ─── useWebhooks ──────────────────────────────────────────────
+export function useWebhooks() {
+  return useQuery<InstitutionWebhook[]>({
+    queryKey: QK.webhooks,
+    queryFn: async () => {
+      const { data, error } = await institutionSupabase
+        .from('institution_webhooks')
+        .select('*')
+        .order('created_at', { ascending: false })
+      if (error) throw error
+      return (data ?? []) as InstitutionWebhook[]
+    },
+  })
+}
+
+// ─── useProducts ──────────────────────────────────────────────
+export function useProducts() {
+  return useQuery<Product[]>({
+    queryKey: QK.products,
+    queryFn: async () => {
+      const { data, error } = await institutionSupabase
+        .from('products')
+        .select(`
+          *,
+          product_families ( label ),
+          product_rate_config ( * ),
+          product_sla_defaults ( * )
+        `)
+        .eq('active', true)
+        .order('sort_order')
+      if (error) throw error
+      return (data ?? []).map((p: Record<string, unknown>) => ({
+        ...p,
+        family_label: (p.product_families as { label: string } | null)?.label,
+        rate_config:  p.product_rate_config,
+        sla_defaults: p.product_sla_defaults,
+      })) as Product[]
+    },
+    staleTime: 60 * 60 * 1000, // catalogue rarely changes
+  })
+}
+
+// ─── useAuditEvents ───────────────────────────────────────────
+export function useAuditEvents(limit = 50) {
+  return useQuery<AuditEvent[]>({
+    queryKey: [...QK.audit, limit],
+    queryFn: async () => {
+      const { data, error } = await institutionSupabase
+        .from('audit_events')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(limit)
+      if (error) throw error
+      return (data ?? []) as AuditEvent[]
+    },
+    staleTime: 30 * 1000,
+  })
+}
+
+// ─── useInstitutionUsers ──────────────────────────────────────
+export function useInstitutionUsers() {
+  return useQuery<InstitutionUser[]>({
+    queryKey: QK.institutionUsers,
+    queryFn: async () => {
+      const { data, error } = await institutionSupabase
+        .from('institution_users')
+        .select('*')
+        .order('created_at')
+      if (error) throw error
+      return (data ?? []) as InstitutionUser[]
+    },
+  })
+}
