@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   LogOut, ShieldCheck, ShieldAlert, MapPin, Briefcase,
   TrendingUp, AlertCircle, CheckCircle2, Circle,
@@ -8,6 +9,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../../features/auth/context/AuthContext";
 import { useProfile, useBankReadiness } from "../hooks/useDashboard";
+import { supabase } from "../../../shared/lib/supabase";
 import { BottomNav } from "../../../shared/ui";
 
 /* ============================================================
@@ -106,33 +108,35 @@ export default function Profile() {
                 }}
               />
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-4">
-              {[
-                { label: "Account created",    done: true,                                       href: null },
-                { label: "Identity verified",  done: completion?.kycVerified ?? false,           href: "/onboarding/kyc" },
-                { label: "Proof of address",   done: completion?.proofOfAddressDone ?? false,    href: "/onboarding/kyc" },
-                { label: "Financial profile",  done: completion?.financialProfileDone ?? false,  href: "/onboarding/dossier" },
-                { label: "Source of wealth",   done: completion?.sourceOfWealthDone ?? false,    href: "/onboarding/dossier" },
-              ].map((m) => (
-                <div key={m.label} className={[
-                  "flex items-center gap-2 px-3 py-2.5 rounded-xl border",
-                  m.done
-                    ? "bg-emerald-500/20 border-emerald-400/30"
-                    : "bg-white/5 border-white/10",
-                ].join(" ")}>
-                  {m.done
-                    ? <CheckCircle2 size={13} className="text-emerald-400 flex-shrink-0" />
-                    : <Circle size={13} className="text-white/30 flex-shrink-0" />}
-                  <span className={[
-                    "text-[12px] font-semibold truncate",
-                    m.done ? "text-white" : "text-white/45",
-                  ].join(" ")}>
-                    {m.label}
-                  </span>
-                </div>
-              ))}
-            </div>
           </div>
+        </div>
+
+        {/* ── MILESTONES — on cream bg, always readable ── */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mb-5">
+          {[
+            { label: "Account created",   done: true },
+            { label: "Identity verified",  done: completion?.kycVerified ?? false },
+            { label: "Proof of address",   done: completion?.proofOfAddressDone ?? false },
+            { label: "Financial profile",  done: completion?.financialProfileDone ?? false },
+            { label: "Source of wealth",   done: completion?.sourceOfWealthDone ?? false },
+          ].map((m) => (
+            <div key={m.label} className={[
+              "flex items-center gap-2.5 px-3.5 py-3 rounded-[16px] border",
+              m.done
+                ? "bg-emerald-50 border-emerald-200"
+                : "bg-white border-ink/[0.08]",
+            ].join(" ")}>
+              {m.done
+                ? <CheckCircle2 size={14} className="text-emerald-500 flex-shrink-0" />
+                : <Circle size={14} className="text-ink/20 flex-shrink-0" />}
+              <span className={[
+                "text-[12px] font-semibold truncate",
+                m.done ? "text-emerald-800" : "text-muted",
+              ].join(" ")}>
+                {m.label}
+              </span>
+            </div>
+          ))}
         </div>
 
         {/* ── SCORE CARDS ── */}
@@ -392,26 +396,28 @@ function ScoreCard({ label, value, suffix, icon: Icon, gradient, light }: {
    IDENTITY EDIT FORM
    ============================================================ */
 function IdentityEditForm({ profile, onClose }: { profile: any; onClose: () => void }) {
+  const queryClient = useQueryClient();
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     firstName: profile?.firstName ?? "",
-    // lastName not in ProfileSummary
     phone: "",
-    country:   profile?.country   ?? "Mauritius",
+    country: profile?.country ?? "Mauritius",
   });
 
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const handleSave = async () => {
-    const { data: { user } } = await import("../../../shared/lib/supabase").then(m => m.supabase.auth.getUser());
-    if (!user) return;
-    await import("../../../shared/lib/supabase").then(({ supabase }) =>
-      supabase.from("profiles").update({
-        first_name: form.firstName,
-        country: form.country,
-        phone: form.phone || null,
-      }).eq("user_id", user.id)
-    );
+    setSaving(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setSaving(false); return; }
+    await supabase.from("profiles").update({
+      first_name: form.firstName,
+      country: form.country,
+      phone: form.phone || null,
+    }).eq("user_id", user.id);
+    await queryClient.invalidateQueries({ queryKey: ["profile"] });
+    setSaving(false);
     onClose();
   };
 
@@ -433,7 +439,7 @@ function IdentityEditForm({ profile, onClose }: { profile: any; onClose: () => v
             .map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
       </div>
-      <SaveBar onSave={handleSave} onCancel={onClose} />
+      <SaveBar onSave={handleSave} onCancel={onClose} saving={saving} />
     </div>
   );
 }
@@ -442,6 +448,8 @@ function IdentityEditForm({ profile, onClose }: { profile: any; onClose: () => v
    ADDRESS EDIT FORM
    ============================================================ */
 function AddressEditForm({ profile, onClose }: { profile: any; onClose: () => void }) {
+  const queryClient = useQueryClient();
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     addressLine1: profile?.addressLine1 ?? "",
     city:         profile?.city         ?? "",
@@ -452,15 +460,16 @@ function AddressEditForm({ profile, onClose }: { profile: any; onClose: () => vo
     setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const handleSave = async () => {
-    const { data: { user } } = await import("../../../shared/lib/supabase").then(m => m.supabase.auth.getUser());
-    if (!user) return;
-    await import("../../../shared/lib/supabase").then(({ supabase }) =>
-      supabase.from("profiles").update({
-        address_line_1: form.addressLine1,
-        city: form.city,
-        country: form.country,
-      }).eq("user_id", user.id)
-    );
+    setSaving(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setSaving(false); return; }
+    await supabase.from("profiles").update({
+      address_line_1: form.addressLine1,
+      city: form.city,
+      country: form.country,
+    }).eq("user_id", user.id);
+    await queryClient.invalidateQueries({ queryKey: ["profile"] });
+    setSaving(false);
     onClose();
   };
 
@@ -479,7 +488,7 @@ function AddressEditForm({ profile, onClose }: { profile: any; onClose: () => vo
             .map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
       </div>
-      <SaveBar onSave={handleSave} onCancel={onClose} />
+      <SaveBar onSave={handleSave} onCancel={onClose} saving={saving} />
     </div>
   );
 }
@@ -490,6 +499,8 @@ function AddressEditForm({ profile, onClose }: { profile: any; onClose: () => vo
 function FinancialEditForm({ profile, onClose, hidden, setHidden }: {
   profile: any; onClose: () => void; hidden: boolean; setHidden: (v: boolean) => void;
 }) {
+  const queryClient = useQueryClient();
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     employmentStatus: profile?.employmentStatus ?? "employed",
     monthlyIncome:    String(profile?.monthlyIncome ?? ""),
@@ -501,16 +512,17 @@ function FinancialEditForm({ profile, onClose, hidden, setHidden }: {
     setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const handleSave = async () => {
-    const { data: { user } } = await import("../../../shared/lib/supabase").then(m => m.supabase.auth.getUser());
-    if (!user) return;
-    await import("../../../shared/lib/supabase").then(({ supabase }) =>
-      supabase.from("financial_profiles").update({
-        employment_status: form.employmentStatus,
-        monthly_income: form.monthlyIncome ? Number(form.monthlyIncome) : null,
-        total_net_worth: form.totalNetWorth ? Number(form.totalNetWorth) : null,
-        has_existing_loans: form.hasExistingLoans === "yes",
-      }).eq("user_id", user.id)
-    );
+    setSaving(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setSaving(false); return; }
+    await supabase.from("financial_profiles").update({
+      employment_status: form.employmentStatus,
+      monthly_income: form.monthlyIncome ? Number(form.monthlyIncome) : null,
+      total_net_worth: form.totalNetWorth ? Number(form.totalNetWorth) : null,
+      has_existing_loans: form.hasExistingLoans === "yes",
+    }).eq("user_id", user.id);
+    await queryClient.invalidateQueries({ queryKey: ["profile"] });
+    setSaving(false);
     onClose();
   };
 
@@ -571,7 +583,7 @@ function FinancialEditForm({ profile, onClose, hidden, setHidden }: {
           ))}
         </div>
       </div>
-      <SaveBar onSave={handleSave} onCancel={onClose} />
+      <SaveBar onSave={handleSave} onCancel={onClose} saving={saving} />
     </div>
   );
 }
@@ -605,22 +617,28 @@ function EditField({ label, value, onChange, type = "text", readOnly }: {
   );
 }
 
-function SaveBar({ onSave, onCancel }: { onSave: () => void; onCancel: () => void }) {
+function SaveBar({ onSave, onCancel, saving }: { onSave: () => void; onCancel: () => void; saving?: boolean }) {
   return (
     <div className="flex gap-2.5 pt-1">
       <button
         type="button"
         onClick={onCancel}
-        className="flex-1 py-3 rounded-xl border border-ink/[0.10] text-[13px] font-bold text-muted hover:border-ink/25 transition-colors"
+        disabled={saving}
+        className="flex-1 py-3 rounded-xl border border-ink/[0.10] text-[13px] font-bold text-muted hover:border-ink/25 transition-colors disabled:opacity-40"
       >
         Cancel
       </button>
       <button
         type="button"
         onClick={onSave}
-        className="flex-1 py-3 rounded-xl bg-ficium text-white text-[13px] font-bold shadow-ficium hover:bg-ficium/90 transition-colors flex items-center justify-center gap-2"
+        disabled={saving}
+        className="flex-1 py-3 rounded-xl bg-ficium text-white text-[13px] font-bold shadow-ficium hover:bg-ficium/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-70"
       >
-        <Save size={13} /> Save changes
+        {saving ? (
+          <><div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" /> Saving…</>
+        ) : (
+          <><Save size={13} /> Save changes</>
+        )}
       </button>
     </div>
   );
