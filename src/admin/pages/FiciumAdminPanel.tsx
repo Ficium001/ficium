@@ -398,8 +398,7 @@ function AuditSection() {
       e.outcome,
       e.outcome_note ?? "",
     ]);
-    const csv = [headers, ...rows].map(r => r.map(v => JSON.stringify(v)).join(",")).join("
-");
+    const csv = [headers, ...rows].map(r => r.map(v => JSON.stringify(v)).join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement("a");
