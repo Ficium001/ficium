@@ -73,7 +73,7 @@ export default function RequestDetail() {
             <div>
               <div className="text-sm font-semibold">Bid accepted</div>
               <div className="text-[13px] text-muted mt-0.5">
-                You accepted {acceptedBid.institutionName}'s offer at {acceptedBid.rate.toFixed(2)}% APR.
+                You accepted {acceptedBid.institutionName}'s offer at {acceptedBid.source === "institution" ? (acceptedBid.rate * 100).toFixed(2) : acceptedBid.rate.toFixed(2)}% APR.
               </div>
             </div>
           </div>
@@ -179,13 +179,35 @@ function BidCard({
               )}
             </div>
             <div className="font-display text-2xl font-bold mt-0.5">
-              {bid.rate.toFixed(2)}%
-              <span className="text-sm font-normal text-muted ml-1">APR</span>
+              {bid.source === "institution" ? (bid.rate * 100).toFixed(2) : bid.rate.toFixed(2)}%
+              <span className="text-sm font-normal text-muted ml-1">{bid.rateType === "variable" ? "variable" : "fixed"} APR</span>
             </div>
+            {bid.source === "institution" && bid.amountOffered > 0 && (
+              <div className="flex gap-3 mt-2">
+                <div className="bg-cream rounded-lg px-3 py-1.5">
+                  <div className="text-[9px] text-muted uppercase tracking-wide">Offered</div>
+                  <div className="text-[12px] font-bold text-ink">MUR {Number(bid.amountOffered).toLocaleString()}</div>
+                </div>
+                {bid.termMonths > 0 && (
+                  <div className="bg-cream rounded-lg px-3 py-1.5">
+                    <div className="text-[9px] text-muted uppercase tracking-wide">Term</div>
+                    <div className="text-[12px] font-bold text-ink">{bid.termMonths}m</div>
+                  </div>
+                )}
+              </div>
+            )}
             {bid.terms && (
               <p className="text-xs text-muted mt-1 leading-relaxed">{bid.terms}</p>
             )}
-            <div className="text-xs text-muted mt-1">{formatDate(bid.createdAt)}</div>
+            {bid.conditions?.notes && (
+              <p className="text-xs text-muted mt-1 leading-relaxed bg-cream rounded-lg px-3 py-2">{String(bid.conditions.notes)}</p>
+            )}
+            <div className="flex items-center gap-2 mt-1">
+              <div className="text-xs text-muted">{formatDate(bid.submittedAt ?? bid.createdAt)}</div>
+              {bid.source === "institution" && (
+                <span className="text-[9px] font-bold bg-ficium/8 text-ficium px-2 py-0.5 rounded-full">Portal bid</span>
+              )}
+            </div>
           </div>
         </div>
 
