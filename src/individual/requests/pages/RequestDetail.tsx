@@ -199,8 +199,8 @@ function BidCard({
             {bid.terms && (
               <p className="text-xs text-muted mt-1 leading-relaxed">{bid.terms}</p>
             )}
-            {bid.conditions?.notes && (
-              <p className="text-xs text-muted mt-1 leading-relaxed bg-cream rounded-lg px-3 py-2">{String(bid.conditions.notes)}</p>
+            {typeof bid.conditions?.notes === "string" && bid.conditions.notes && (
+              <p className="text-xs text-muted mt-1 leading-relaxed bg-cream rounded-lg px-3 py-2">{bid.conditions.notes}</p>
             )}
             <div className="flex items-center gap-2 mt-1">
               <div className="text-xs text-muted">{formatDate(bid.submittedAt ?? bid.createdAt)}</div>
