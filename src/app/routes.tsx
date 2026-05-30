@@ -31,6 +31,7 @@ const Advisor             = lazy(() => import("../individual/advisor/pages/Advis
 const InstitutionPending      = lazy(() => import("../institution/auth/pages/InstitutionPending"));
 const InstitutionLogin        = lazy(() => import("../institution/auth/pages/InstitutionLogin"));
 const InstitutionOnboarding   = lazy(() => import("../institution/auth/pages/InstitutionOnboarding"));
+const FiciumAdminPanel        = lazy(() => import("../admin/pages/FiciumAdminPanel"));
 const InstitutionPortalShell  = lazy(() => import("../institution/components/InstitutionPortalShell"));
 const InstitutionDashboard    = lazy(() => import("../institution/dashboard/pages/InstitutionDashboard"));
 const InstitutionMarketplace  = lazy(() => import("../institution/marketplace/pages/InstitutionMarketplace"));
@@ -101,6 +102,16 @@ export const router = createBrowserRouter([
       { path: "audit",          element: <S><InstitutionAudit /></S>       },
       { path: "settings",       element: <S><InstitutionSettings /></S>    },
     ],
+  },
+
+  // ── Admin panel ─────────────────────────────────────────────
+  {
+    path: "/admin",
+    element: (
+      <PublicOnlyRoute>
+        <S><FiciumAdminPanel /></S>
+      </PublicOnlyRoute>
+    ),
   },
 
   // ── Fallback ────────────────────────────────────────────────
