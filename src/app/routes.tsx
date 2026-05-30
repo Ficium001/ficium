@@ -107,11 +107,7 @@ export const router = createBrowserRouter([
   // ── Admin panel ─────────────────────────────────────────────
   {
     path: "/admin",
-    element: (
-      <PublicOnlyRoute>
-        <S><FiciumAdminPanel /></S>
-      </PublicOnlyRoute>
-    ),
+    element: <S><FiciumAdminPanel /></S>,
   },
 
   // ── Fallback ────────────────────────────────────────────────
