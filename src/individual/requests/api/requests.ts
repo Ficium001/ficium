@@ -1,13 +1,8 @@
-import { supabase } from "../../../shared/lib/supabase";
-import { createClient } from "@supabase/supabase-js";
+import { supabase, institutionDb } from "../../../shared/lib/supabase";
 import { audit } from "../../../shared/lib/audit";
 
 /* ---------- Institution schema client (read-only for bids) ---------- */
-const instSupabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL  ?? "",
-  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "",
-  { db: { schema: "institution" } }
-);
+const instSupabase = institutionDb;
 
 /* ---------- Types ---------- */
 

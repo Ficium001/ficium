@@ -6,7 +6,7 @@
 // =============================================================
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import institutionSupabase from '../lib/institutionSupabase'
-import { createClient } from '@supabase/supabase-js'
+import { db } from '../../shared/lib/supabase'
 import type {
   Institution,
   InstitutionUser,
@@ -102,11 +102,7 @@ export function useMarketplace(productCode?: string) {
 
       // If institution schema query fails, try direct public.requests query
       if (error || !data?.length) {
-        const pubClient = createClient(
-          import.meta.env.VITE_SUPABASE_URL ?? '',
-          import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? '',
-          { db: { schema: 'public' } }
-        )
+        const pubClient = db("public")
         let pubQuery = pubClient
           .from('requests')
           .select('id, product_type, status, amount, purpose, preferred_term_months, decision_deadline, created_at, client_id')

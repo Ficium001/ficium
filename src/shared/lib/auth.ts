@@ -1,5 +1,4 @@
-import { supabase } from "./supabase";
-import { createClient } from "@supabase/supabase-js";
+import { supabase, institutionDb } from "./supabase";
 import { audit } from "./audit";
 
 /* ============================================================
@@ -158,14 +157,7 @@ export async function signUpInstitution(input: SignUpInstitutionInput): Promise<
   if (!data.user) return { ok: false, error: { code: "unknown", message: "Sign up did not return a user." } };
 
   // Step 2: Create institution row in institution schema
-  // Use service-role via RPC or direct insert with the new session
-  const instClient = createClient(
-    import.meta.env.VITE_SUPABASE_URL ?? "",
-    import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "",
-    { db: { schema: "institution" } }
-  );
-
-  const { data: instData, error: instError } = await instClient
+  const { data: instData, error: instError } = await institutionDb
     .from("institutions")
     .insert({
       name:                  institutionName,
@@ -194,7 +186,7 @@ export async function signUpInstitution(input: SignUpInstitutionInput): Promise<
   }
 
   // Step 3: Link user to institution as primary admin
-  await instClient
+  await institutionDb
     .from("institution_users")
     .insert({
       institution_id:   instData.id,
