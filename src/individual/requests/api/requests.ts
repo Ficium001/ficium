@@ -58,9 +58,11 @@ export type Bid = {
   rateType: "fixed" | "variable";
   amountOffered: number;
   termMonths: number;
+  terms: string | null;           // legacy field
   conditions: Record<string, unknown> | null;
   status: "submitted" | "accepted" | "rejected" | "expired" | "withdrawn";
   submittedAt: string;
+  createdAt: string;             // alias of submittedAt for legacy compatibility
   source: "legacy" | "institution"; // which schema the bid came from
 };
 
@@ -179,8 +181,10 @@ export async function getRequestBids(requestId: string): Promise<Bid[]> {
         amountOffered:   0,
         termMonths:      0,
         conditions:      null,
+        terms:           (b.terms as string | null) ?? null,
         status:          b.status as Bid["status"],
         submittedAt:     b.created_at as string,
+        createdAt:       b.created_at as string,
         source:          "legacy" as const,
       }))
     : [];
@@ -196,8 +200,10 @@ export async function getRequestBids(requestId: string): Promise<Bid[]> {
         amountOffered:   b.amount_offered as number,
         termMonths:      b.term_months as number,
         conditions:      b.conditions as Record<string, unknown> | null,
+        terms:           null,
         status:          "submitted" as const,
         submittedAt:     b.submitted_at as string,
+        createdAt:       b.submitted_at as string,
         source:          "institution" as const,
       }))
     : [];
