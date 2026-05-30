@@ -1,7 +1,7 @@
 
 import { Link } from "react-router-dom";
 import { Clock, CheckCircle, Building2, FileText, Zap, ArrowRight } from "lucide-react";
-import { useMyInstitution } from "../hooks/useInstitution";
+import { useMyInstitution } from "../../hooks/useInstitution";
 
 const STAGES = [
   { key: "registered",          label: "Application received",    desc: "Your application has been received."                      },
@@ -63,8 +63,7 @@ export default function InstitutionPending() {
             {STAGES.map((stage, idx) => {
               const done    = idx < currentIdx;
               const active  = idx === currentIdx;
-              const pending = idx > currentIdx;
-              return (
+                  return (
                 <div key={stage.key} className="flex items-start gap-4">
                   <div className="flex flex-col items-center">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
