@@ -124,14 +124,14 @@ export function useMarketplace(productCode?: string) {
           currency:             'MUR',
           term_months:          r.preferred_term_months,
           purpose:              r.purpose,
-          financial_snapshot:   null,
+          financial_snapshot:   undefined,
           bid_window_closes_at: r.decision_deadline ?? new Date(Date.now() + 24*60*60*1000).toISOString(),
           created_at:           r.created_at,
           client_ref:           String(r.client_id).slice(0, 8),
           client_type:          'individual',
-          product_id:           null,
+          product_id:           undefined,
           product_label:        String(r.product_type).replace(/_/g, ' '),
-          family_label:         null,
+          family_label:         undefined,
         })) as MarketplaceRequest[]
       }
 

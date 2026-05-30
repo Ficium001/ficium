@@ -79,7 +79,7 @@ export interface InstitutionBid {
   id: string
   request_id: string
   institution_id: string
-  product_id?: string
+  product_id?: string | null
   submitted_by?: string
   rate: number
   rate_type: 'fixed' | 'variable'
@@ -99,7 +99,7 @@ export interface InstitutionBid {
   currency?: string
   request_status?: string
   bid_window_closes_at?: string
-  product_label?: string
+  product_label?: string | null
 }
 
 export interface MarketplaceRequest {
@@ -110,14 +110,14 @@ export interface MarketplaceRequest {
   currency: string
   term_months?: number
   purpose?: string
-  financial_snapshot?: Record<string, unknown>
+  financial_snapshot?: Record<string, unknown> | null
   bid_window_closes_at: string
   created_at: string
   client_ref: string
   client_type: string
-  product_id?: string
-  product_label?: string
-  family_label?: string
+  product_id?: string | null
+  product_label?: string | null
+  family_label?: string | null
 }
 
 export interface PendingAction {
@@ -167,7 +167,7 @@ export interface Product {
   active: boolean
   sort_order: number
   // Joined
-  family_label?: string
+  family_label?: string | null
   rate_config?: ProductRateConfig
   sla_defaults?: ProductSlaDefaults
 }
