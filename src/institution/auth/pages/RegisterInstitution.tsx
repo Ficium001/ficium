@@ -65,7 +65,7 @@ export default function RegisterInstitution() {
   const navigate = useNavigate();
   const [step, setStep]         = useState(1);
   const [step1Data, setStep1]   = useState<Partial<Step1>>({});
-  const [step2Data, setStep2]   = useState<Partial<Step2>>({});
+  const [, setStep2]   = useState<Partial<Step2>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Step 1 form

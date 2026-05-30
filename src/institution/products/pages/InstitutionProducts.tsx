@@ -75,7 +75,7 @@ export default function InstitutionProducts() {
         <div className="space-y-3">
           {filtered.map(p => {
             const isOpen    = expanded === p.id;
-            const licensed  = modules.includes(p.required_module ?? "marketplace");
+            const licensed  = modules.includes("marketplace");
             const l         = getLimits(p.id);
             const rc        = p.rate_config as { min_rate: number | null; max_rate: number | null; min_amount: number | null; max_amount: number | null } | undefined;
 
@@ -141,7 +141,7 @@ export default function InstitutionProducts() {
 
                 {isOpen && !licensed && (
                   <div className="border-t border-ink/[0.07] px-5 py-4 bg-cream/40 text-[13px] text-muted">
-                    This product requires the <code className="font-mono text-ficium">{p.required_module ?? "marketplace"}</code> module.
+                    This product requires the <code className="font-mono text-ficium">marketplace</code> module.
                     Contact your Ficium account manager to upgrade.
                   </div>
                 )}
