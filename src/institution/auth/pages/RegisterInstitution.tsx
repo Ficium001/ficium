@@ -4,10 +4,10 @@ import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowRight, ArrowLeft, Building2, Shield, CheckCircle } from "lucide-react";
+import { ArrowRight, ArrowLeft, CheckCircle } from "lucide-react";
 import { signUpInstitution } from "../../../shared/lib/auth";
 import { RegisterShell } from "../../../shared/components/RegisterShell";
-import { Button, Field, Input, Select } from "../../../shared/ui";
+import { Button, Field } from "../../../shared/ui";
 
 // ── Step schemas ──────────────────────────────────────────────
 const step1Schema = z.object({
