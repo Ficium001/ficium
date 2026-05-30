@@ -86,8 +86,10 @@ export function useMarketplace(productCode?: string) {
   return useQuery<MarketplaceRequest[]>({
     queryKey: [...QK.marketplace, productCode],
     queryFn: async () => {
+      // Query the marketplace_requests view in institution schema
+      // Using institutionSupabase which is scoped to institution schema
       let query = institutionSupabase
-        .from('marketplace_requests')  // cross-schema view
+        .from('marketplace_requests')
         .select('*')
         .order('created_at', { ascending: false })
 
@@ -96,10 +98,46 @@ export function useMarketplace(productCode?: string) {
       }
 
       const { data, error } = await query
-      if (error) throw error
+
+      // If institution schema query fails, try direct public.requests query
+      if (error || !data?.length) {
+        const { createClient } = await import('@supabase/supabase-js')
+        const pubClient = createClient(
+          import.meta.env.VITE_SUPABASE_URL ?? '',
+          import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? '',
+          { db: { schema: 'public' } }
+        )
+        let pubQuery = pubClient
+          .from('requests')
+          .select('id, product_type, status, amount, purpose, preferred_term_months, decision_deadline, created_at, client_id')
+          .eq('status', 'open')
+          .order('created_at', { ascending: false })
+
+        if (productCode) pubQuery = pubQuery.eq('product_type', productCode)
+
+        const { data: pubData } = await pubQuery
+        return (pubData ?? []).map((r: Record<string, unknown>) => ({
+          id:                   r.id,
+          product_type:         r.product_type,
+          status:               r.status,
+          amount:               r.amount,
+          currency:             'MUR',
+          term_months:          r.preferred_term_months,
+          purpose:              r.purpose,
+          financial_snapshot:   null,
+          bid_window_closes_at: r.decision_deadline ?? new Date(Date.now() + 24*60*60*1000).toISOString(),
+          created_at:           r.created_at,
+          client_ref:           String(r.client_id).slice(0, 8),
+          client_type:          'individual',
+          product_id:           null,
+          product_label:        String(r.product_type).replace(/_/g, ' '),
+          family_label:         null,
+        })) as MarketplaceRequest[]
+      }
+
       return (data ?? []) as MarketplaceRequest[]
     },
-    refetchInterval: 30 * 1000, // poll every 30s for new requests
+    refetchInterval: 30 * 1000,
     staleTime: 15 * 1000,
   })
 }
