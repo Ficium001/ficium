@@ -7,9 +7,9 @@ import { useState, useMemo } from "react";
 import {
   useAdminInstitutions, useApproveInstitution, useSuspendInstitution,
   useUpdateModules, useAdminProducts, useToggleProduct,
-  useAdminAudit, useAdminPendingApprovals, usePlatformConfig,
+  useAdminAudit, useAdminPendingApprovals,
 } from "../hooks/useAdminData";
-import type { AdminInstitution, AdminProduct } from "../hooks/useAdminData";
+import type { AdminInstitution } from "../hooks/useAdminData";
 
 const ALL_MODULES = ["marketplace", "credit", "ai_advisory", "analytics"];
 

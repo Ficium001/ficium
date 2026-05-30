@@ -4,7 +4,7 @@
 // Reads from institution.*, admin.*, and public.* schemas.
 // =============================================================
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { institutionDb, adminDb, publicDb } from "../lib/adminSupabase";
+import { institutionDb, adminDb } from "../lib/adminSupabase";
 
 // ── Query keys ────────────────────────────────────────────────
 export const AQK = {
