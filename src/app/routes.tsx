@@ -65,10 +65,10 @@ export const router = createBrowserRouter([
   { path: "/login",                  element: <PublicOnlyRoute><Login /></PublicOnlyRoute> },
   { path: "/forgot-password",        element: <S><ForgotPassword /></S> },
   { path: "/auth/reset-password",    element: <S><ResetPassword /></S> },
-  { path: "/register",               element: <PublicOnlyRoute><S><RegisterTypeSelect /></S></PublicOnlyRoute> },
-  { path: "/register/individual",    element: <PublicOnlyRoute><S><RegisterIndividual /></S></PublicOnlyRoute> },
-  { path: "/register/business",      element: <PublicOnlyRoute><S><RegisterBusiness /></S></PublicOnlyRoute> },
-  { path: "/register/institution",   element: <PublicOnlyRoute><S><RegisterInstitution /></S></PublicOnlyRoute> },
+  { path: "/register",               element: <S><RegisterTypeSelect /></S> },
+  { path: "/register/individual",    element: <S><RegisterIndividual /></S> },
+  { path: "/register/business",      element: <S><RegisterBusiness /></S> },
+  { path: "/register/institution",   element: <S><RegisterInstitution /></S> },
 
   // ── Individual (client) app ─────────────────────────────────
   { path: "/dashboard",              element: <ClientOnlyRoute><S><Dashboard /></S></ClientOnlyRoute> },
@@ -84,7 +84,7 @@ export const router = createBrowserRouter([
   // ── Institution app ─────────────────────────────────────────
   // Public institution routes
   { path: "/institution/login",        element: <S><InstitutionLogin /></S> },
-  { path: "/institution/register",     element: <PublicOnlyRoute><S><RegisterInstitution /></S></PublicOnlyRoute> },
+  { path: "/institution/register",     element: <S><RegisterInstitution /></S> },
   { path: "/institution/pending",      element: <S><InstitutionPending /></S> },
   { path: "/institution/onboarding",   element: <S><InstitutionOnboarding /></S> },
 
