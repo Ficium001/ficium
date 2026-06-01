@@ -1,34 +1,25 @@
 // =============================================================
-// Ficium 3 — Institution Portal Hooks
-// All data fetching for the institution portal.
-// Uses TanStack React Query v5 + institution Supabase client.
-// Each hook = one concern. Add new hooks here as features grow.
+// Ficium 3 — Institution Portal Hooks (V2)
+// V2: institution_users → institution_members (auth_user_id not user_id)
 // =============================================================
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import institutionSupabase from '../lib/institutionSupabase'
 import { db } from '../../shared/lib/supabase'
 import type {
-  Institution,
-  InstitutionUser,
-  InstitutionBid,
-  MarketplaceRequest,
-  PendingAction,
-  InstitutionWebhook,
-  Product,
-  AuditEvent,
-  BidPayload,
+  Institution, InstitutionUser, InstitutionBid,
+  MarketplaceRequest, PendingAction, InstitutionWebhook,
+  Product, AuditEvent, BidPayload,
 } from '../types/institution'
 
-// ─── Query keys (centralised — never inline strings) ──────────
 export const QK = {
-  institution:     ['institution'] as const,
-  institutionUsers:['institution', 'users'] as const,
-  marketplace:     ['marketplace'] as const,
-  myBids:          ['my-bids'] as const,
-  pendingActions:  ['pending-actions'] as const,
-  webhooks:        ['webhooks'] as const,
-  products:        ['products'] as const,
-  audit:           ['audit'] as const,
+  institution:      ['institution'] as const,
+  institutionUsers: ['institution', 'users'] as const,
+  marketplace:      ['marketplace'] as const,
+  myBids:           ['my-bids'] as const,
+  pendingActions:   ['pending-actions'] as const,
+  webhooks:         ['webhooks'] as const,
+  products:         ['products'] as const,
+  audit:            ['audit'] as const,
 } as const
 
 // ─── useMyInstitution ─────────────────────────────────────────
@@ -36,14 +27,15 @@ export function useMyInstitution() {
   return useQuery<Institution>({
     queryKey: QK.institution,
     queryFn: async () => {
-      // Get current user's institution via institution_users
       const { data: { user } } = await institutionSupabase.auth.getUser()
       if (!user) throw new Error('Not authenticated')
 
+      // V2: use institution_members (auth_user_id instead of user_id)
       const { data: membership, error: mErr } = await institutionSupabase
-        .from('institution_users')
+        .from('institution_members')
         .select('institution_id')
-        .eq('user_id', user.id)
+        .eq('auth_user_id', user.id)
+        .eq('active', true)
         .single()
 
       if (mErr) throw mErr
@@ -69,10 +61,12 @@ export function useMyRole() {
       const { data: { user } } = await institutionSupabase.auth.getUser()
       if (!user) throw new Error('Not authenticated')
 
+      // V2: institution_members with auth_user_id
       const { data, error } = await institutionSupabase
-        .from('institution_users')
+        .from('institution_members')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('auth_user_id', user.id)
+        .eq('active', true)
         .single()
 
       if (error) throw error
@@ -87,20 +81,15 @@ export function useMarketplace(productCode?: string) {
   return useQuery<MarketplaceRequest[]>({
     queryKey: [...QK.marketplace, productCode],
     queryFn: async () => {
-      // Query the marketplace_requests view in institution schema
-      // Using institutionSupabase which is scoped to institution schema
       let query = institutionSupabase
         .from('marketplace_requests')
         .select('*')
         .order('created_at', { ascending: false })
 
-      if (productCode) {
-        query = query.eq('product_type', productCode)
-      }
+      if (productCode) query = query.eq('product_type', productCode)
 
       const { data, error } = await query
 
-      // If institution schema query fails, try direct public.requests query
       if (error || !data?.length) {
         const pubClient = db("public")
         let pubQuery = pubClient
@@ -113,21 +102,15 @@ export function useMarketplace(productCode?: string) {
 
         const { data: pubData } = await pubQuery
         return (pubData ?? []).map((r: Record<string, unknown>) => ({
-          id:                   r.id,
-          product_type:         r.product_type,
-          status:               r.status,
-          amount:               r.amount,
-          currency:             'MUR',
-          term_months:          r.preferred_term_months,
-          purpose:              r.purpose,
-          financial_snapshot:   undefined,
+          id: r.id, product_type: r.product_type, status: r.status,
+          amount: r.amount, currency: 'MUR', term_months: r.preferred_term_months,
+          purpose: r.purpose, financial_snapshot: undefined,
           bid_window_closes_at: r.decision_deadline ?? new Date(Date.now() + 24*60*60*1000).toISOString(),
-          created_at:           r.created_at,
-          client_ref:           String(r.client_id).slice(0, 8),
-          client_type:          'individual',
-          product_id:           undefined,
-          product_label:        String(r.product_type).replace(/_/g, ' '),
-          family_label:         undefined,
+          created_at: r.created_at,
+          client_ref: String(r.client_id).slice(0, 8),
+          client_type: 'individual', product_id: undefined,
+          product_label: String(r.product_type).replace(/_/g, ' '),
+          family_label: undefined,
         })) as MarketplaceRequest[]
       }
 
@@ -144,13 +127,11 @@ export function useMyBids(status?: string) {
     queryKey: [...QK.myBids, status],
     queryFn: async () => {
       let query = institutionSupabase
-        .from('my_bids')  // cross-schema view
+        .from('my_bids')
         .select('*')
         .order('submitted_at', { ascending: false })
 
-      if (status) {
-        query = query.eq('status', status)
-      }
+      if (status) query = query.eq('status', status)
 
       const { data, error } = await query
       if (error) throw error
@@ -161,8 +142,6 @@ export function useMyBids(status?: string) {
 }
 
 // ─── useSubmitBid ─────────────────────────────────────────────
-// Goes through maker-checker: creates a pending_action row,
-// not a direct institution_bids insert.
 export function useSubmitBid() {
   const qc = useQueryClient()
   return useMutation({
@@ -175,7 +154,7 @@ export function useSubmitBid() {
           p_payload:         payload,
         })
       if (error) throw error
-      return data as string // returns pending_action id
+      return data as string
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: QK.pendingActions })
@@ -208,10 +187,7 @@ export function useApproveAction() {
   return useMutation({
     mutationFn: async ({ actionId, note }: { actionId: string; note?: string }) => {
       const { data, error } = await institutionSupabase
-        .rpc('approve_action', {
-          p_action_id: actionId,
-          p_note:      note ?? null,
-        })
+        .rpc('approve_action', { p_action_id: actionId, p_note: note ?? null })
       if (error) throw error
       return data
     },
@@ -229,10 +205,7 @@ export function useRejectAction() {
   return useMutation({
     mutationFn: async ({ actionId, note }: { actionId: string; note: string }) => {
       const { data, error } = await institutionSupabase
-        .rpc('reject_action', {
-          p_action_id: actionId,
-          p_note:      note,
-        })
+        .rpc('reject_action', { p_action_id: actionId, p_note: note })
       if (error) throw error
       return data
     },
@@ -265,23 +238,18 @@ export function useProducts() {
     queryFn: async () => {
       const { data, error } = await institutionSupabase
         .from('products')
-        .select(`
-          *,
-          product_families ( label ),
-          product_rate_config ( * ),
-          product_sla_defaults ( * )
-        `)
+        .select(`*, product_families ( label ), product_rate_config ( * ), product_sla_defaults ( * )`)
         .eq('active', true)
         .order('sort_order')
       if (error) throw error
       return (data ?? []).map((p: Record<string, unknown>) => ({
         ...p,
         family_label: (p.product_families as { label: string } | null)?.label,
-        rate_config:  p.product_rate_config,
+        rate_config: p.product_rate_config,
         sla_defaults: p.product_sla_defaults,
       })) as Product[]
     },
-    staleTime: 60 * 60 * 1000, // catalogue rarely changes
+    staleTime: 60 * 60 * 1000,
   })
 }
 
@@ -303,13 +271,15 @@ export function useAuditEvents(limit = 50) {
 }
 
 // ─── useInstitutionUsers ──────────────────────────────────────
+// V2: reads from institution_members (auth_user_id instead of user_id)
 export function useInstitutionUsers() {
   return useQuery<InstitutionUser[]>({
     queryKey: QK.institutionUsers,
     queryFn: async () => {
       const { data, error } = await institutionSupabase
-        .from('institution_users')
+        .from('institution_members')
         .select('*')
+        .eq('active', true)
         .order('created_at')
       if (error) throw error
       return (data ?? []) as InstitutionUser[]
