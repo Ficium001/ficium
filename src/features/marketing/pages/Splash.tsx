@@ -14,6 +14,10 @@ import {
   HandCoins,
   PiggyBank,
   Check,
+  Briefcase,
+  CreditCard,
+  BarChart2,
+  Banknote,
 } from "lucide-react";
 
 /* ---------- Types ---------- */
@@ -566,6 +570,17 @@ function Products() {
           metricValue="0.4%"
         />
       </div>
+
+      {/* Secondary product types */}
+      <div className="mt-5 lg:mt-6">
+        <p className="text-[12px] font-semibold text-muted uppercase tracking-widest mb-4">Also available</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <SecondaryProductCard icon={<Briefcase size={18} />} label="Leasing" desc="Asset & equipment lease" productType="leasing" />
+          <SecondaryProductCard icon={<CreditCard size={18} />} label="Overdrafts" desc="Flexible credit lines" productType="overdraft" />
+          <SecondaryProductCard icon={<BarChart2 size={18} />} label="SME Loans" desc="Dedicated SME financing" productType="sme_loan" />
+          <SecondaryProductCard icon={<Banknote size={18} />} label="Business Loans" desc="Corporate & growth credit" productType="business_loan" />
+        </div>
+      </div>
     </section>
   );
 }
@@ -605,6 +620,30 @@ function ProductCard({
         </div>
       </div>
     </div>
+  );
+}
+
+function SecondaryProductCard({
+  icon, label, desc, productType,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  desc: string;
+  productType: string;
+}) {
+  return (
+    <Link
+      to={`/register?product=${productType}`}
+      className="group flex items-start gap-3 bg-white border border-ink/[0.08] hover:border-ficium/30 hover:shadow-sm rounded-2xl px-4 py-3.5 transition-all"
+    >
+      <div className="w-8 h-8 rounded-xl bg-ficium/8 text-ficium flex items-center justify-center flex-shrink-0 group-hover:bg-ficium group-hover:text-white transition-colors">
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <div className="text-[13px] font-bold text-ink leading-tight">{label}</div>
+        <div className="text-[11px] text-muted mt-0.5 leading-tight">{desc}</div>
+      </div>
+    </Link>
   );
 }
 

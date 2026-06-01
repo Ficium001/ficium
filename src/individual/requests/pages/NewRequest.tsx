@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -12,7 +12,7 @@ import { Button, Card, Field, Input, Select } from "../../../shared/ui";
 
 const schema = z.object({
   productType: z.enum(
-    ["sme_loan", "personal_loan", "mortgage", "fixed_deposit", "savings_account", "credit_card", "business_account", "investment_account"],
+    ["sme_loan", "personal_loan", "mortgage", "fixed_deposit", "savings_account", "credit_card", "business_account", "investment_account", "leasing", "overdraft", "business_loan"],
     { message: "Choose a product" }
   ),
   amount: z.number({ message: "Enter an amount in MUR" }).min(1000, "Amount must be at least MUR 1,000").max(1_000_000_000, "Amount looks unrealistic"),
@@ -105,6 +105,9 @@ export default function NewRequest() {
                 <option value="credit_card">Credit Card</option>
                 <option value="business_account">Business Account</option>
                 <option value="investment_account">Investment Account</option>
+                <option value="leasing">Leasing</option>
+                <option value="overdraft">Overdraft</option>
+                <option value="business_loan">Business Loan</option>
               </Select>
             </Field>
 

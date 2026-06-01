@@ -111,6 +111,13 @@ export function useMarketplace(productCode?: string) {
           client_type: 'individual', product_id: undefined,
           product_label: String(r.product_type).replace(/_/g, ' '),
           family_label: undefined,
+          client_country: (r.client_country as string) ?? null,
+          client_monthly_income: (r.client_monthly_income as number) ?? null,
+          client_net_worth: (r.client_net_worth as number) ?? null,
+          client_health_score: (r.client_health_score as number) ?? null,
+          client_risk_score: (r.client_risk_score as number) ?? null,
+          client_affordability_score: (r.client_affordability_score as number) ?? null,
+          client_employment_status: (r.client_employment_status as string) ?? null,
         })) as MarketplaceRequest[]
       }
 

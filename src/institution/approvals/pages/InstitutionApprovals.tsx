@@ -1,19 +1,21 @@
 // =============================================================
 // Ficium 3 — Institution Approvals (Maker-Checker)
 // Ficium light theme.
+// Payload is hidden. Approver sees action summary + client dossier.
 // =============================================================
 import { useState } from "react";
-import { Clock, CheckCircle, XCircle, AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
+import { Clock, CheckCircle, XCircle, AlertTriangle, ChevronDown, ChevronUp, FileText, User } from "lucide-react";
 import { usePendingActions, useApproveAction, useRejectAction } from "../../hooks/useInstitution";
 import { formatDistanceToNow } from "../../lib/utils";
+import type { PendingAction } from "../../types/institution";
 
 export default function InstitutionApprovals() {
   const { data: actions = [], isLoading } = usePendingActions();
   const approveAction = useApproveAction();
   const rejectAction  = useRejectAction();
-  const [expanded,   setExpanded]   = useState<string | null>(null);
-  const [rejectNote, setRejectNote] = useState("");
-  const [rejectingId,setRejectingId] = useState<string | null>(null);
+  const [expanded,    setExpanded]    = useState<string | null>(null);
+  const [rejectNote,  setRejectNote]  = useState("");
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
 
   const inputCls = "w-full bg-white border border-ink/[0.12] rounded-xl px-4 py-2.5 text-[14px] outline-none focus:border-ficium focus:ring-2 focus:ring-ficium/20 transition-all";
 
@@ -89,21 +91,9 @@ export default function InstitutionApprovals() {
               </div>
 
               {isExpanded && (
-                <div className="border-t border-ink/[0.07] px-6 py-4 bg-cream/40 space-y-3">
-                  <div>
-                    <div className="text-[11px] font-semibold text-muted uppercase tracking-wider mb-2">Payload</div>
-                    <pre className="bg-white border border-ink/[0.08] rounded-xl p-4 text-[12px] text-ink/70 overflow-auto max-h-40 font-mono">
-                      {JSON.stringify(action.payload, null, 2)}
-                    </pre>
-                  </div>
-                  {action.payload_before && (
-                    <div>
-                      <div className="text-[11px] font-semibold text-muted uppercase tracking-wider mb-2">Before</div>
-                      <pre className="bg-white border border-ink/[0.08] rounded-xl p-4 text-[12px] text-muted overflow-auto max-h-32 font-mono">
-                        {JSON.stringify(action.payload_before, null, 2)}
-                      </pre>
-                    </div>
-                  )}
+                <div className="border-t border-ink/[0.07] px-6 py-5 bg-cream/40 space-y-5">
+                  <ActionSummary action={action} />
+                  <ClientDossier action={action} />
                 </div>
               )}
 
@@ -154,6 +144,109 @@ export default function InstitutionApprovals() {
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+// ─── Action Summary (replaces raw payload) ───────────────────
+function ActionSummary({ action }: { action: PendingAction }) {
+  const p = action.payload as Record<string, unknown>;
+
+  const rows: { label: string; value: string }[] = [];
+
+  if (action.action_category === "bid.submit") {
+    if (p.amount_offered) rows.push({ label: "Amount offered", value: `MUR ${Number(p.amount_offered).toLocaleString()}` });
+    if (p.rate)           rows.push({ label: "Rate",            value: `${(Number(p.rate) * 100).toFixed(2)}%` });
+    if (p.rate_type)      rows.push({ label: "Rate type",       value: String(p.rate_type) });
+    if (p.term_months)    rows.push({ label: "Term",            value: `${p.term_months} months` });
+    if (p.conditions && (p.conditions as Record<string,unknown>)?.notes) {
+      rows.push({ label: "Conditions", value: String((p.conditions as Record<string,unknown>).notes) });
+    }
+  } else {
+    // Generic: show top-level keys that are safe to display (no nested objects)
+    for (const [k, v] of Object.entries(p)) {
+      if (typeof v !== "object" && v != null) {
+        rows.push({ label: k.replace(/_/g, " "), value: String(v) });
+      }
+    }
+  }
+
+  if (rows.length === 0) return null;
+
+  return (
+    <div>
+      <div className="flex items-center gap-1.5 mb-3">
+        <FileText className="w-3.5 h-3.5 text-ficium" />
+        <span className="text-[11px] font-bold text-ficium uppercase tracking-wider">Action Summary</span>
+      </div>
+      <div className="bg-white border border-ink/[0.08] rounded-xl overflow-hidden">
+        {rows.map((row, i) => (
+          <div key={i} className={`flex items-center justify-between px-4 py-3 text-[13px] ${i < rows.length - 1 ? "border-b border-ink/[0.06]" : ""}`}>
+            <span className="text-muted capitalize">{row.label}</span>
+            <span className="font-semibold text-ink">{row.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Client Dossier (for bid actions) ────────────────────────
+function ClientDossier({ action }: { action: PendingAction }) {
+  if (!action.action_category.startsWith("bid.")) return null;
+
+  const p = action.payload as Record<string, unknown>;
+  const dossier = p.client_dossier as Record<string, unknown> | undefined;
+  const client  = p.client        as Record<string, unknown> | undefined;
+
+  if (!dossier && !client) return null;
+
+  const fmtMUR = (v: unknown) => typeof v === "number" && v > 0
+    ? (v >= 1_000_000 ? `MUR ${(v/1_000_000).toFixed(1)}M` : `MUR ${Number(v).toLocaleString()}`)
+    : "—";
+
+  const score = (v: unknown, max = 100) =>
+    typeof v === "number" ? `${v}/${max}` : "—";
+
+  const dossierRows = [
+    { label: "Monthly Income",   value: fmtMUR(dossier?.monthly_income) },
+    { label: "Net Worth",        value: fmtMUR(dossier?.total_net_worth) },
+    { label: "Employment",       value: dossier?.employment_status ? String(dossier.employment_status).replace(/_/g, " ") : "—" },
+    { label: "Credit Score",     value: score(dossier?.health_score) },
+    { label: "Affordability",    value: score(dossier?.affordability_score) },
+    { label: "Risk Score",       value: score(dossier?.risk_score) },
+    { label: "Tax Residency",    value: dossier?.tax_residency ? String(dossier.tax_residency) : "—" },
+    { label: "Existing Loans",   value: dossier?.has_existing_loans ? "Yes" : "No" },
+  ].filter(r => r.value !== "—");
+
+  const clientRows = [
+    { label: "Country",  value: client?.country  ? String(client.country)  : "—" },
+    { label: "KYC",      value: client?.kyc_status ? String(client.kyc_status).replace(/_/g, " ") : "—" },
+    { label: "Type",     value: client?.user_type ? String(client.user_type) : "—" },
+  ].filter(r => r.value !== "—");
+
+  const allRows = [...dossierRows, ...clientRows];
+  if (allRows.length === 0) return null;
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-1.5">
+          <User className="w-3.5 h-3.5 text-ficium" />
+          <span className="text-[11px] font-bold text-ficium uppercase tracking-wider">Client Dossier</span>
+        </div>
+        <span className="text-[10px] text-muted bg-ink/5 px-2 py-1 rounded-full">Anonymised · identity not disclosed</span>
+      </div>
+      <div className="bg-white border border-ink/[0.08] rounded-xl overflow-hidden">
+        <div className="grid grid-cols-2 divide-x divide-ink/[0.06]">
+          {allRows.map((row, i) => (
+            <div key={i} className={`px-4 py-3 text-[13px] ${i < allRows.length - 2 ? "border-b border-ink/[0.06]" : ""}`}>
+              <div className="text-[10px] text-muted mb-0.5 capitalize">{row.label}</div>
+              <div className="font-semibold text-ink capitalize">{row.value}</div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

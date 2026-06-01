@@ -118,6 +118,14 @@ export interface MarketplaceRequest {
   product_id?: string | null
   product_label?: string | null
   family_label?: string | null
+  // Anonymous client profile fields (visible to marker/checker only)
+  client_country?: string | null
+  client_monthly_income?: number | null
+  client_net_worth?: number | null
+  client_health_score?: number | null     // used as credit score proxy
+  client_risk_score?: number | null
+  client_affordability_score?: number | null
+  client_employment_status?: string | null
 }
 
 export interface PendingAction {
