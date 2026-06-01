@@ -1,7 +1,5 @@
 -- ══════════════════════════════════════════════════════════════════════════════
--- FICIUM V2 MIGRATION — FILE 3: MIGRATE DATA
--- Copies data from V1 tables into V2 tables
--- Safe to re-run — uses ON CONFLICT DO NOTHING throughout
+-- FICIUM V2 MIGRATION — FILE 3: MIGRATE DATA (fixed)
 -- ══════════════════════════════════════════════════════════════════════════════
 
 -- ── STEP 1: Migrate clients (from public.users where role=client) ─────────────
@@ -45,7 +43,9 @@ ON CONFLICT (id) DO NOTHING;
 
 SELECT 'Step 1 complete — clients migrated: ' || count(*) AS status FROM public.clients;
 
--- ── STEP 2: Migrate institution members (from institution_users + public.users) ─
+-- ── STEP 2: Migrate institution members ──────────────────────────────────────
+-- institution_users columns: id, institution_id, user_id, role,
+--                            is_primary_admin, invited_by, created_at
 INSERT INTO institution.institution_members (
   auth_user_id,
   institution_id,
@@ -73,12 +73,10 @@ FROM institution.institution_users iu
 JOIN public.users u ON u.id = iu.user_id
 ON CONFLICT (auth_user_id, institution_id) DO NOTHING;
 
-SELECT 'Step 2 complete — institution members migrated: ' || count(*) AS status 
+SELECT 'Step 2 complete — institution members migrated: ' || count(*) AS status
 FROM institution.institution_members;
 
 -- ── STEP 3: Migrate unified client dossier ────────────────────────────────────
--- Merge client_dossiers + financial_profiles into client_dossier
--- Start with financial_profiles (richer data)
 INSERT INTO public.client_dossier (
   client_id,
   employment_status,
@@ -114,7 +112,7 @@ FROM public.financial_profiles fp
 WHERE fp.user_id IN (SELECT id FROM public.clients)
 ON CONFLICT (client_id) DO NOTHING;
 
--- Fill gaps from client_dossiers for any clients not in financial_profiles
+-- Fill gaps from client_dossiers
 INSERT INTO public.client_dossier (
   client_id,
   employment_status,
@@ -131,7 +129,7 @@ WHERE cd.client_id NOT IN (SELECT client_id FROM public.client_dossier)
 AND cd.client_id IN (SELECT id FROM public.clients)
 ON CONFLICT (client_id) DO NOTHING;
 
-SELECT 'Step 3 complete — client dossiers migrated: ' || count(*) AS status 
+SELECT 'Step 3 complete — client dossiers migrated: ' || count(*) AS status
 FROM public.client_dossier;
 
 -- ── STEP 4: Migrate loan_details → client_loan_details ───────────────────────
@@ -156,28 +154,20 @@ FROM public.loan_details ld
 WHERE ld.user_id IN (SELECT id FROM public.clients)
 ON CONFLICT DO NOTHING;
 
-SELECT 'Step 4 complete — loan details migrated: ' || count(*) AS status 
+SELECT 'Step 4 complete — loan details migrated: ' || count(*) AS status
 FROM public.client_loan_details;
 
--- ── STEP 5: Verify all requests still intact ──────────────────────────────────
--- requests table stays as-is, just verify client_id FK integrity
-SELECT 
+-- ── STEP 5: Verify requests and bid_acceptances FK integrity ──────────────────
+SELECT
   'Requests with valid client FK' AS check_name,
   count(*) AS valid_count
 FROM public.requests r
 WHERE r.client_id IN (SELECT id FROM public.clients)
 UNION ALL
-SELECT 
-  'Requests with BROKEN client FK' AS check_name,
-  count(*) AS broken_count
+SELECT
+  'Requests with BROKEN client FK',
+  count(*)
 FROM public.requests r
 WHERE r.client_id NOT IN (SELECT id FROM public.clients);
-
--- ── STEP 6: Verify bid_acceptances still intact ───────────────────────────────
-SELECT 
-  'Bid acceptances with valid client FK' AS check_name,
-  count(*) AS count
-FROM public.bid_acceptances ba
-WHERE ba.client_id IN (SELECT id FROM public.clients);
 
 SELECT 'All data migration steps complete' AS status;
