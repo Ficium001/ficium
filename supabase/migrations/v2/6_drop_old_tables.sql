@@ -22,20 +22,20 @@ BEGIN
 END $$;
 
 -- ── DROP empty/duplicate tables (safe — verified 0 rows) ─────────────────────
-DROP TABLE IF EXISTS public.client_requests;  -- 0 rows, duplicate of requests
-DROP TABLE IF EXISTS public.bids;             -- 0 rows, legacy (replaced by institution_bids)
+DROP TABLE IF EXISTS public.client_requests CASCADE;  -- 0 rows, duplicate of requests
+DROP TABLE IF EXISTS public.bids CASCADE;             -- 0 rows, legacy (replaced by institution_bids)
 
 -- ── DROP V1 tables that have been fully migrated to V2 ───────────────────────
 
 -- financial_profiles → merged into public.client_dossier
-DROP TABLE IF EXISTS public.financial_profiles;
+DROP TABLE IF EXISTS public.financial_profiles CASCADE;
 
 -- loan_details → moved to public.client_loan_details
 -- Note: this was in public schema (user_id FK) not institution
-DROP TABLE IF EXISTS public.loan_details;
+DROP TABLE IF EXISTS public.loan_details CASCADE;
 
 -- bank_profiles → merged into institution.institution_members
-DROP TABLE IF EXISTS public.bank_profiles;
+DROP TABLE IF EXISTS public.bank_profiles CASCADE;
 
 -- institution_users → replaced by institution.institution_members
 -- Keep for now as fallback during transition — drop in Phase 2
