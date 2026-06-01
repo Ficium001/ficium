@@ -5,53 +5,19 @@ import { supabase } from "./supabase";
    ============================================================ */
 
 export type AuditEventType =
-  | "auth"
-  | "user"
-  | "financial"
-  | "document"
-  | "admin"
-  | "security"
-  | "api";
+  | "auth" | "user" | "financial" | "document" | "admin" | "security" | "api";
 
 export type AuditEventName =
-  // Auth
-  | "login"
-  | "logout"
-  | "login_failed"
-  | "password_reset_requested"
-  | "password_reset_completed"
-  | "session_revoked"
-  // User
-  | "user_created"
-  | "user_updated"
-  | "role_changed"
-  | "account_disabled"
-  | "kyc_submitted"
-  | "kyc_approved"
-  | "kyc_rejected"
-  // Financial
-  | "financial_profile_created"
-  | "financial_profile_updated"
-  | "request_created"
-  | "request_updated"
-  | "request_cancelled"
-  | "bid_placed"
-  | "bid_accepted"
-  | "bid_rejected"
-  // Document
-  | "document_uploaded"
-  | "document_accessed"
-  | "document_deleted"
-  // Admin
-  | "admin_login"
-  | "bank_approved"
-  | "bank_rejected"
-  | "settings_changed"
-  // Security
-  | "suspicious_login"
-  | "brute_force_detected"
-  | "permission_escalation_attempt"
-  | "invalid_token";
+  | "login" | "logout" | "login_failed" | "password_reset_requested"
+  | "password_reset_completed" | "session_revoked" | "user_created"
+  | "user_updated" | "role_changed" | "account_disabled" | "kyc_submitted"
+  | "kyc_approved" | "kyc_rejected" | "financial_profile_created"
+  | "financial_profile_updated" | "request_created" | "request_updated"
+  | "request_cancelled" | "bid_placed" | "bid_accepted" | "bid_rejected"
+  | "document_uploaded" | "document_accessed" | "document_deleted"
+  | "admin_login" | "bank_approved" | "bank_rejected" | "settings_changed"
+  | "suspicious_login" | "brute_force_detected"
+  | "permission_escalation_attempt" | "invalid_token";
 
 export type RiskLevel = "low" | "medium" | "high" | "critical";
 export type AuditStatus = "success" | "failed" | "blocked";
@@ -72,47 +38,23 @@ export type AuditEvent = {
 
 /* ============================================================
    RISK LEVEL MAP
-   Auto-assigns risk level if not provided
    ============================================================ */
 
 const RISK_MAP: Partial<Record<AuditEventName, RiskLevel>> = {
-  login: "low",
-  logout: "low",
-  login_failed: "medium",
-  password_reset_requested: "medium",
-  password_reset_completed: "medium",
-  session_revoked: "high",
-  user_created: "low",
-  user_updated: "low",
-  role_changed: "high",
-  account_disabled: "high",
-  kyc_submitted: "medium",
-  kyc_approved: "medium",
-  kyc_rejected: "medium",
-  financial_profile_created: "low",
-  financial_profile_updated: "low",
-  request_created: "low",
-  request_updated: "low",
-  request_cancelled: "low",
-  bid_placed: "low",
-  bid_accepted: "medium",
-  bid_rejected: "low",
-  document_uploaded: "medium",
-  document_accessed: "medium",
-  document_deleted: "high",
-  admin_login: "high",
-  bank_approved: "high",
-  bank_rejected: "high",
-  settings_changed: "high",
-  suspicious_login: "critical",
-  brute_force_detected: "critical",
-  permission_escalation_attempt: "critical",
-  invalid_token: "high",
+  login: "low", logout: "low", login_failed: "medium",
+  password_reset_requested: "medium", password_reset_completed: "medium",
+  session_revoked: "high", user_created: "low", user_updated: "low",
+  role_changed: "high", account_disabled: "high", kyc_submitted: "medium",
+  kyc_approved: "medium", kyc_rejected: "medium",
+  financial_profile_created: "low", financial_profile_updated: "low",
+  request_created: "low", request_updated: "low", request_cancelled: "low",
+  bid_placed: "low", bid_accepted: "medium", bid_rejected: "low",
+  document_uploaded: "medium", document_accessed: "medium",
+  document_deleted: "high", admin_login: "high", bank_approved: "high",
+  bank_rejected: "high", settings_changed: "high",
+  suspicious_login: "critical", brute_force_detected: "critical",
+  permission_escalation_attempt: "critical", invalid_token: "high",
 };
-
-/* ============================================================
-   DEVICE DETECTION
-   ============================================================ */
 
 function getDeviceType(): string {
   const ua = navigator.userAgent;
@@ -122,42 +64,75 @@ function getDeviceType(): string {
 }
 
 /* ============================================================
-   CORE LOG FUNCTION
+   ACTION CATEGORY MAPPING
+   Maps legacy event names to new action_category_type values
    ============================================================ */
 
-/**
- * logAudit — fire-and-forget audit event logger.
- * Never throws — audit failures must not break user flows.
- */
+function toActionCategory(eventName: AuditEventName): string {
+  const map: Partial<Record<AuditEventName, string>> = {
+    kyc_submitted:             "kyc.status_change",
+    kyc_approved:              "kyc.status_change",
+    kyc_rejected:              "kyc.status_change",
+    financial_profile_created: "request.submit",
+    financial_profile_updated: "request.submit",
+    request_created:           "request.submit",
+    request_cancelled:         "request.cancel",
+    bid_accepted:              "bid.accept",
+    bid_placed:                "bid.submit",
+    login:                     "request.submit",
+    logout:                    "request.submit",
+  };
+  return map[eventName] ?? "request.submit";
+}
+
+/* ============================================================
+   CORE LOG FUNCTION — V2
+   Writes to public.audit_events via write_client_audit() RPC
+   Falls back to direct insert if RPC unavailable
+   Never throws — audit failures must not break user flows
+   ============================================================ */
+
 export async function logAudit(event: AuditEvent): Promise<void> {
   try {
     const { data: authData } = await supabase.auth.getUser();
     const userId = authData.user?.id ?? null;
+    if (!userId) return; // not signed in — skip audit
 
-    // Get user role from metadata if available (avoids extra DB round-trip)
-    const userRole = authData.user?.user_metadata?.role ?? null;
+    const actionCategory = toActionCategory(event.eventName);
+    const eventLabel     = event.eventName.replace(/_/g, " ");
+    const outcome        = event.status === "failed" || event.status === "blocked"
+      ? "rejected" : "success";
 
-    const riskLevel = event.riskLevel ?? RISK_MAP[event.eventName] ?? "low";
-
-    await supabase.from("audit_logs").insert({
-      user_id: userId,
-      user_role: userRole,
-      event_type: event.eventType,
-      event_name: event.eventName,
-      entity_type: event.entityType ?? null,
-      entity_id: event.entityId ?? null,
-      old_value: event.oldValue ?? null,
-      new_value: event.newValue ?? null,
-      status: event.status ?? "success",
-      risk_level: riskLevel,
-      error_message: event.errorMessage ?? null,
-      endpoint: event.endpoint ?? null,
-      http_method: event.httpMethod ?? null,
-      user_agent: navigator.userAgent,
-      device_type: getDeviceType(),
+    // V2: use write_client_audit RPC → public.audit_events
+    const { error } = await supabase.rpc("write_client_audit", {
+      p_client_id:       userId,
+      p_action_category: actionCategory,
+      p_event_label:     eventLabel,
+      p_resource_type:   event.entityType ?? null,
+      p_resource_id:     event.entityId ?? null,
+      p_state_before:    event.oldValue ? JSON.stringify(event.oldValue) : null,
+      p_state_after:     event.newValue ? JSON.stringify(event.newValue) : null,
+      p_outcome:         outcome,
+      p_outcome_note:    event.errorMessage ?? null,
+      p_actor_device:    getDeviceType(),
     });
+
+    if (error) {
+      // Fallback: direct insert into public.audit_events
+      await supabase.from("audit_events").insert({
+        client_id:       userId,
+        actor_id:        userId,
+        actor_type:      "client_user",
+        actor_role:      "client",
+        action_category: actionCategory,
+        event_label:     eventLabel,
+        resource_type:   event.entityType ?? null,
+        outcome,
+        outcome_note:    event.errorMessage ?? null,
+        actor_device:    getDeviceType(),
+      });
+    }
   } catch {
-    // Silent fail — audit must never break user flows
     console.warn("[audit] Failed to log event:", event.eventName);
   }
 }
@@ -183,66 +158,52 @@ export const audit = {
     logAudit({ eventType: "auth", eventName: "password_reset_completed" }),
 
   kycSubmitted: (userId: string) =>
-    logAudit({ eventType: "user", eventName: "kyc_submitted", entityType: "user", entityId: userId }),
+    logAudit({ eventType: "user", eventName: "kyc_submitted", entityType: "clients", entityId: userId }),
 
   financialProfileCreated: (userId: string) =>
-    logAudit({ eventType: "financial", eventName: "financial_profile_created", entityType: "user", entityId: userId }),
+    logAudit({ eventType: "financial", eventName: "financial_profile_created", entityType: "client_dossier", entityId: userId }),
 
   financialProfileUpdated: (userId: string) =>
-    logAudit({ eventType: "financial", eventName: "financial_profile_updated", entityType: "user", entityId: userId }),
+    logAudit({ eventType: "financial", eventName: "financial_profile_updated", entityType: "client_dossier", entityId: userId }),
 
   requestCreated: (requestId: string, amount: number, productType: string) =>
     logAudit({
-      eventType: "financial",
-      eventName: "request_created",
-      entityType: "request",
-      entityId: requestId,
+      eventType: "financial", eventName: "request_created",
+      entityType: "requests", entityId: requestId,
       newValue: { amount, productType },
     }),
 
   bidPlaced: (bidId: string, requestId: string, rate: number) =>
     logAudit({
-      eventType: "financial",
-      eventName: "bid_placed",
-      entityType: "bid",
-      entityId: bidId,
+      eventType: "financial", eventName: "bid_placed",
+      entityType: "institution_bids", entityId: bidId,
       newValue: { requestId, rate },
     }),
 
   bidAccepted: (bidId: string, requestId: string) =>
     logAudit({
-      eventType: "financial",
-      eventName: "bid_accepted",
-      entityType: "bid",
-      entityId: bidId,
-      newValue: { requestId },
-      riskLevel: "medium",
+      eventType: "financial", eventName: "bid_accepted",
+      entityType: "bid_acceptances", entityId: bidId,
+      newValue: { requestId }, riskLevel: "medium",
     }),
 
   documentUploaded: (userId: string, docType: "id" | "selfie") =>
     logAudit({
-      eventType: "document",
-      eventName: "document_uploaded",
-      entityType: "document",
-      entityId: userId,
+      eventType: "document", eventName: "document_uploaded",
+      entityType: "document", entityId: userId,
       newValue: { docType },
     }),
 
   bankApproved: (bankUserId: string) =>
     logAudit({
-      eventType: "admin",
-      eventName: "bank_approved",
-      entityType: "bank",
-      entityId: bankUserId,
+      eventType: "admin", eventName: "bank_approved",
+      entityType: "institutions", entityId: bankUserId,
       riskLevel: "high",
     }),
 
   suspiciousLogin: (reason: string) =>
     logAudit({
-      eventType: "security",
-      eventName: "suspicious_login",
-      status: "blocked",
-      errorMessage: reason,
-      riskLevel: "critical",
+      eventType: "security", eventName: "suspicious_login",
+      status: "blocked", errorMessage: reason, riskLevel: "critical",
     }),
 };
