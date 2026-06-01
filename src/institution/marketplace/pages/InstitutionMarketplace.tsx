@@ -15,8 +15,7 @@ import {
   Send, Loader2, Download,
 } from "lucide-react";
 import {
-  useMarketplace, useProducts, useSubmitBid,
-  useMyInstitution, useMyRole,
+  useMarketplace, useProducts, useSubmitBid, useMyInstitution,
 } from "../../hooks/useInstitution";
 import institutionSupabase from "../../lib/institutionSupabase";
 import { formatDistanceToNow } from "../../lib/utils";
@@ -43,7 +42,6 @@ type BidForm = z.infer<typeof bidSchema>;
 
 export default function InstitutionMarketplace() {
   const { data: institution }                       = useMyInstitution();
-  const { data: myRole }                            = useMyRole();
   const { data: requests = [], isLoading, refetch } = useMarketplace();
   const { data: products  = [] }                    = useProducts();
   const submitBid                                   = useSubmitBid();
