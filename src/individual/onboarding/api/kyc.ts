@@ -84,9 +84,9 @@ export async function submitKyc(input: KycInput): Promise<KycResult> {
   });
   if (!verification.ok) return { ok: false, error: "We could not verify your ID. Please try again." };
 
-  // Update users row
+  // V2: update public.clients instead of public.users
   const { error } = await supabase
-    .from("users")
+    .from("clients")
     .update({
       id_document_type: input.documentType,
       id_document_number: input.documentNumber,
@@ -94,7 +94,6 @@ export async function submitKyc(input: KycInput): Promise<KycResult> {
       kyc_status: "verified",
       id_document_path: idUpload.path,
       selfie_path: selfieUpload.path,
-      proof_of_address_path: proofUpload.path,
       address_line_1: input.addressLine1,
       address_line_2: input.addressLine2 || null,
       city: input.city,
