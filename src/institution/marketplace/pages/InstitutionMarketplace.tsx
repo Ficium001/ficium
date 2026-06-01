@@ -54,8 +54,6 @@ export default function InstitutionMarketplace() {
   const filtered     = requests.filter(r => productFilter === "all" || r.product_type === productFilter);
   const productTypes = Array.from(new Set(requests.map(r => r.product_type)));
 
-  const canSeeProfile = !!institution; // all institution users see anonymous profile
-  // Show bid button to all approved institution users
   const canBid = !!institution;
 
   const handleBidSubmit = async (data: BidForm) => {
