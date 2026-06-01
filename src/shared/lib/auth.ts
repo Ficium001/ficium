@@ -187,12 +187,15 @@ export async function signUpInstitution(input: SignUpInstitutionInput): Promise<
 
   // Step 3: Link user to institution as primary admin
   await institutionDb
-    .from("institution_users")
+    .from("institution_members")
     .insert({
       institution_id:   instData.id,
-      user_id:          data.user.id,
+      auth_user_id:     data.user.id,
+      email:            email,
+      full_name:        fullName,
       role:             "admin",
       is_primary_admin: true,
+      active:           true,
     });
 
   return { ok: true, userId: data.user.id, needsEmailConfirmation: !data.session };
