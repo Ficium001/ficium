@@ -590,6 +590,7 @@ function LoanSimulator({ loanAmount, setLoanAmount, loanTerm, setLoanTerm, loanR
             min={50000} max={5000000} step={50000}
             onChange={setLoanAmount}
             display={`MUR ${new Intl.NumberFormat("en-IN").format(loanAmount)}`}
+            typeable
           />
           <SimulatorSlider
             label="Loan Term"
@@ -640,16 +641,29 @@ function LoanSimulator({ loanAmount, setLoanAmount, loanTerm, setLoanTerm, loanR
   );
 }
 
-function SimulatorSlider({ label, value, min, max, step, onChange, display }: {
+function SimulatorSlider({ label, value, min, max, step, onChange, display, typeable }: {
   label: string; value: number; min: number; max: number; step: number;
-  onChange: (v: number) => void; display: string;
+  onChange: (v: number) => void; display: string; typeable?: boolean;
 }) {
   const pct = ((value - min) / (max - min)) * 100;
   return (
     <div>
       <div className="flex items-center justify-between mb-2.5">
         <span className="text-[13px] text-muted font-semibold">{label}</span>
-        <span className="text-[14px] font-bold text-ink">{display}</span>
+        {typeable ? (
+          <input
+            type="number"
+            value={value}
+            min={min} max={max} step={step}
+            onChange={e => {
+              const v = Number(e.target.value);
+              if (!isNaN(v) && v >= min && v <= max) onChange(v);
+            }}
+            className="w-36 text-right text-[14px] font-bold text-ink bg-cream border border-ink/[0.10] rounded-lg px-2 py-1 outline-none focus:border-ficium transition-colors"
+          />
+        ) : (
+          <span className="text-[14px] font-bold text-ink">{display}</span>
+        )}
       </div>
       <div className="relative h-2.5 bg-ink/[0.08] rounded-pill">
         <div className="absolute h-2.5 rounded-pill bg-ficium transition-all" style={{ width: `${pct}%` }} />
@@ -807,7 +821,7 @@ function InvestmentSimulator() {
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
           <SimSlider label="Amount" value={amount} min={50000} max={5000000} step={50000}
-            display={fmt(amount)} onChange={setAmount} />
+            display={fmt(amount)} onChange={setAmount} typeable />
           <SimSlider label="Rate (% APR)" value={rate} min={3} max={20} step={0.25}
             display={`${rate.toFixed(2)}%`} onChange={setRate} />
           <SimSlider label="Term" value={term} min={6} max={360} step={6}
@@ -828,16 +842,29 @@ function InvestmentSimulator() {
   );
 }
 
-function SimSlider({ label, value, min, max, step, display, onChange }: {
+function SimSlider({ label, value, min, max, step, display, onChange, typeable }: {
   label: string; value: number; min: number; max: number; step: number;
-  display: string; onChange: (v: number) => void;
+  display: string; onChange: (v: number) => void; typeable?: boolean;
 }) {
   const pct = ((value - min) / (max - min)) * 100;
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
         <span className="text-[12px] text-muted font-medium">{label}</span>
-        <span className="text-[13px] font-bold text-ink">{display}</span>
+        {typeable ? (
+          <input
+            type="number"
+            value={value}
+            min={min} max={max} step={step}
+            onChange={e => {
+              const v = Number(e.target.value);
+              if (!isNaN(v) && v >= min && v <= max) onChange(v);
+            }}
+            className="w-32 text-right text-[13px] font-bold text-ink bg-cream border border-ink/[0.10] rounded-lg px-2 py-1 outline-none focus:border-ficium transition-colors"
+          />
+        ) : (
+          <span className="text-[13px] font-bold text-ink">{display}</span>
+        )}
       </div>
       <div className="relative h-6 flex items-center">
         <div className="absolute w-full h-1.5 bg-ink/10 rounded-full overflow-hidden">
