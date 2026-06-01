@@ -160,7 +160,9 @@ END; $$;
 
 -- ── STEP 10: Update marketplace_requests view ─────────────────────────────────
 
-CREATE OR REPLACE VIEW institution.marketplace_requests
+DROP VIEW IF EXISTS institution.marketplace_requests;
+
+CREATE VIEW institution.marketplace_requests
 WITH (security_invoker=false)
 AS
 SELECT
