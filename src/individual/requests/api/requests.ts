@@ -14,7 +14,10 @@ export type ProductType =
   | "savings_account"
   | "credit_card"
   | "business_account"
-  | "investment_account";
+  | "investment_account"
+  | "leasing"
+  | "overdraft"
+  | "business_loan";
 
 export type RequestStatus = "open" | "closed" | "cancelled";
 
