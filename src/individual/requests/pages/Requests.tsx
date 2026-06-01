@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Plus, ChevronRight, CheckCircle2, Clock, Zap,
@@ -154,6 +154,9 @@ export default function Requests() {
                 Open AI Analysis <ArrowRight size={13} />
               </Link>
             </div>
+
+            {/* Investment Simulator */}
+            <InvestmentSimulator />
 
             {/* Quick links */}
             <div className="bg-white rounded-[26px] border border-ink/[0.06] p-5 shadow-sm">
@@ -342,6 +345,115 @@ function EmptyState() {
       >
         <Plus size={16} /> New Request
       </Link>
+    </div>
+  );
+}
+
+/* ============================================================
+   INVESTMENT SIMULATOR
+   ============================================================ */
+function InvestmentSimulator() {
+  const [amount,  setAmount]  = useState(500000);
+  const [rate,    setRate]    = useState(8.5);
+  const [term,    setTerm]    = useState(36);
+  const [mode,    setMode]    = useState<"loan" | "deposit">("loan");
+
+  // Loan: monthly repayment
+  const monthlyRate = rate / 100 / 12;
+  const monthly = mode === "loan"
+    ? (amount * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -term))
+    : amount * (rate / 100) * (term / 12) / term;
+
+  const totalPaid    = monthly * term;
+  const totalInterest = mode === "loan" ? totalPaid - amount : totalPaid * term;
+  const depositReturn = amount * (rate / 100) * (term / 12);
+
+  const fmt = (v: number) => `MUR ${Math.round(v).toLocaleString()}`;
+
+  return (
+    <div className="bg-white rounded-[26px] border border-ink/[0.06] p-6 shadow-sm">
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-2">
+          <span className="text-[18px]">📊</span>
+          <span className="font-display text-[18px] font-bold">Simulator</span>
+        </div>
+        <div className="flex bg-cream rounded-xl p-1 gap-1">
+          {(["loan", "deposit"] as const).map(m => (
+            <button key={m} onClick={() => setMode(m)}
+              className={`text-[11px] font-bold px-3 py-1.5 rounded-lg capitalize transition-colors ${mode === m ? "bg-ficium text-white" : "text-muted hover:text-ink"}`}>
+              {m}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <SimSlider
+          label="Amount"
+          value={amount} min={50000} max={5000000} step={50000}
+          display={fmt(amount)}
+          onChange={setAmount}
+        />
+        <SimSlider
+          label="Rate (% APR)"
+          value={rate} min={3} max={20} step={0.25}
+          display={`${rate.toFixed(2)}%`}
+          onChange={setRate}
+        />
+        <SimSlider
+          label="Term"
+          value={term} min={6} max={360} step={6}
+          display={`${term} months`}
+          onChange={setTerm}
+        />
+      </div>
+
+      <div className="mt-5 grid grid-cols-2 gap-3">
+        <div className="bg-ficium/8 rounded-2xl p-4 text-center">
+          <div className="text-[10px] text-ficium font-bold uppercase tracking-widest mb-1">
+            {mode === "loan" ? "Monthly Payment" : "Monthly Yield"}
+          </div>
+          <div className="font-display text-[22px] font-extrabold text-ficium">
+            {fmt(monthly)}
+          </div>
+        </div>
+        <div className="bg-cream rounded-2xl p-4 text-center">
+          <div className="text-[10px] text-muted font-bold uppercase tracking-widest mb-1">
+            {mode === "loan" ? "Total Interest" : "Total Return"}
+          </div>
+          <div className="font-display text-[22px] font-extrabold text-ink">
+            {mode === "loan" ? fmt(totalInterest) : fmt(depositReturn)}
+          </div>
+        </div>
+      </div>
+
+      <p className="text-[10px] text-muted text-center mt-3">Indicative only · subject to bank approval</p>
+    </div>
+  );
+}
+
+function SimSlider({ label, value, min, max, step, display, onChange }: {
+  label: string; value: number; min: number; max: number; step: number;
+  display: string; onChange: (v: number) => void;
+}) {
+  const pct = ((value - min) / (max - min)) * 100;
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="text-[12px] text-muted font-medium">{label}</span>
+        <span className="text-[12px] font-bold text-ink">{display}</span>
+      </div>
+      <div className="relative">
+        <div className="h-1.5 bg-ink/10 rounded-full overflow-hidden">
+          <div className="h-full bg-ficium rounded-full transition-all" style={{ width: `${pct}%` }} />
+        </div>
+        <input
+          type="range" min={min} max={max} step={step} value={value}
+          onChange={e => onChange(Number(e.target.value))}
+          className="absolute inset-0 w-full opacity-0 cursor-pointer h-full"
+          style={{ margin: 0 }}
+        />
+      </div>
     </div>
   );
 }
