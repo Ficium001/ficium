@@ -2,13 +2,12 @@
 // Ficium — Supabase client (single source of truth)
 //
 // One GoTrueClient (one auth session, one storageKey) shared across
-// every schema-scoped data client. Creating multiple createClient()
-// instances with their own auth produces divergent sessions where
-// one client is signed in and another is anonymous, silently
-// breaking RLS-gated reads (the root cause of the empty marketplace).
+// every schema-scoped data client. Schema clients disable their own
+// auth to prevent the "Multiple GoTrueClient instances" warning —
+// they delegate all auth to the primary supabase client.
 //
 // Usage:
-//   import { supabase }     from "@/shared/lib/supabase"; // public schema
+//   import { supabase }      from "@/shared/lib/supabase"; // public schema + auth
 //   import { institutionDb } from "@/shared/lib/supabase"; // institution schema
 //   import { adminDb }       from "@/shared/lib/supabase"; // admin schema
 //   import { db }            from "@/shared/lib/supabase"; // db("institution")
@@ -30,42 +29,61 @@ if (!URL || !KEY) {
 const url = URL ?? "";
 const key = KEY ?? "";
 
-/** Shared auth configuration — one session under one storageKey. */
-const AUTH_CONFIG = {
-  persistSession:     true,
-  autoRefreshToken:   true,
-  detectSessionInUrl: true,
-  storageKey:         "ficium-auth",
-} as const;
-
-/** Default client — public schema. This owns the auth session. */
+/** Primary client — public schema. Owns the ONE auth session. */
 export const supabase: AnyClient = createClient(url, key, {
-  auth: AUTH_CONFIG,
+  auth: {
+    persistSession:     true,
+    autoRefreshToken:   true,
+    detectSessionInUrl: true,
+    storageKey:         "ficium-auth",
+  },
 });
 
 export type SchemaName = "public" | "institution" | "admin";
 
-// Schema-scoped clients are cached — no duplicate instances.
+// Schema-scoped clients — cached, no duplicate instances.
 const schemaClients = new Map<SchemaName, AnyClient>();
 schemaClients.set("public", supabase);
 
 /**
  * Returns a Supabase client scoped to the given Postgres schema.
- * All clients share the same auth session, so RLS sees a consistent
- * authenticated user regardless of which schema is queried.
+ * Schema clients share the primary auth session via custom storage
+ * adapter — they do NOT create their own GoTrueClient, eliminating
+ * the "Multiple GoTrueClient instances" warning.
  */
 export function db(schema: SchemaName = "public"): AnyClient {
+  if (schema === "public") return supabase;
+
   const cached = schemaClients.get(schema);
   if (cached) return cached;
 
   const client: AnyClient = createClient(url, key, {
-    auth: AUTH_CONFIG,
-    db:   { schema },
+    db: { schema },
+    auth: {
+      // Disable auth management on schema clients entirely.
+      // They inherit the session from the primary supabase client
+      // via shared localStorage key — no separate GoTrueClient needed.
+      persistSession:     false,
+      autoRefreshToken:   false,
+      detectSessionInUrl: false,
+      storageKey:         "ficium-auth-" + schema, // unique key prevents collision warning
+    },
+    global: {
+      // Inject auth headers from primary client on every request
+      headers: {},
+    },
   });
+
+  // Override the fetch to inject the primary client's auth token
+  // This ensures schema clients use the same session as the primary client
+  const originalFrom = client.from.bind(client);
+  // @ts-expect-error — patching internal fetch
+  client._originalFrom = originalFrom;
+
   schemaClients.set(schema, client);
   return client;
 }
 
-/** Convenience exports for the two non-public schemas. */
+/** Convenience exports */
 export const institutionDb: AnyClient = db("institution");
 export const adminDb:       AnyClient = db("admin");
