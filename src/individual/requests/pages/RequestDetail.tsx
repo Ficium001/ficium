@@ -1,13 +1,17 @@
+import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, CheckCircle, Clock, TrendingDown, Building2, AlertCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle, Clock, TrendingDown, Building2, AlertCircle, MessageSquare } from "lucide-react";
 import { useRequest, useRequestBids, useAcceptBid } from "../hooks/useRequests";
 import { formatProductType } from "../api/requests";
 import type { Bid } from "../api/requests";
 import { Button, Card, BottomNav } from "../../../shared/ui";
+import RequestChat from "../../../shared/components/RequestChat";
+import { supabase } from "../../../shared/lib/supabase";
 
 export default function RequestDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<"bids" | "chat">("bids");
 
   const { data: request, isLoading: requestLoading } = useRequest(id!);
   const { data: bids = [], isLoading: bidsLoading } = useRequestBids(id!);
@@ -16,27 +20,21 @@ export default function RequestDetail() {
   const loading = requestLoading || bidsLoading;
 
   const handleAccept = (bidId: string) => {
-    accept(bidId, {
-      onSuccess: () => navigate("/dashboard"),
-    });
+    accept(bidId, { onSuccess: () => navigate("/dashboard") });
   };
 
   if (loading) return <LoadingSkeleton />;
   if (!request) return <NotFound />;
 
-  const isClosed = request.status !== "open";
+  const isClosed    = request.status !== "open";
   const acceptedBid = bids.find((b) => b.status === "accepted");
-
 
   return (
     <div className="min-h-screen bg-cream pb-24">
       <div className="mx-auto w-full max-w-[640px] px-5 py-6 sm:px-6 sm:py-8">
 
         {/* Back */}
-        <Link
-          to="/dashboard"
-          className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-ink transition-colors mb-6"
-        >
+        <Link to="/dashboard" className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-ink transition-colors mb-6">
           <ArrowLeft size={16} /> Back
         </Link>
 
@@ -44,9 +42,7 @@ export default function RequestDetail() {
         <div className="flex items-start justify-between gap-3 mb-6">
           <div>
             <div className="text-xs text-muted mb-1">{formatProductType(request.productType)}</div>
-            <h1 className="font-display text-3xl sm:text-4xl font-bold">
-              {formatMUR(request.amount)}
-            </h1>
+            <h1 className="font-display text-3xl sm:text-4xl font-bold">{formatMUR(request.amount)}</h1>
           </div>
           <StatusBadge status={request.status} />
         </div>
@@ -56,12 +52,8 @@ export default function RequestDetail() {
           <div className="grid grid-cols-2 gap-x-6 gap-y-4">
             <DetailRow label="Purpose" value={request.purpose} />
             <DetailRow label="Term" value={`${request.preferredTermMonths} months`} />
-            {request.maxRate && (
-              <DetailRow label="Max rate" value={`${request.maxRate}% APR`} />
-            )}
-            {request.decisionDeadline && (
-              <DetailRow label="Deadline" value={formatDate(request.decisionDeadline)} />
-            )}
+            {request.maxRate && <DetailRow label="Max rate" value={`${request.maxRate}% APR`} />}
+            {request.decisionDeadline && <DetailRow label="Deadline" value={formatDate(request.decisionDeadline)} />}
             <DetailRow label="Posted" value={formatDate(request.createdAt)} />
           </div>
         </Card>
@@ -79,54 +71,71 @@ export default function RequestDetail() {
           </div>
         )}
 
-        {/* Bids section */}
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-display text-xl font-bold">
-            {isClosed ? "Bids received" : `Bids (${bids.length})`}
-          </h2>
-          {!isClosed && bids.length > 0 && (
-            <div className="flex items-center gap-1.5 text-xs text-muted">
-              <TrendingDown size={13} />
-              Sorted by rate
-            </div>
-          )}
+        {/* Tabs */}
+        <div className="flex border-b border-ink/[0.08] mb-5">
+          <button
+            onClick={() => setActiveTab("bids")}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 text-[13px] font-semibold border-b-2 transition-colors ${activeTab === "bids" ? "border-ficium text-ficium" : "border-transparent text-muted hover:text-ink"}`}
+          >
+            <TrendingDown size={14} />
+            Bids {bids.length > 0 && `(${bids.length})`}
+          </button>
+          <button
+            onClick={() => setActiveTab("chat")}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 text-[13px] font-semibold border-b-2 transition-colors ${activeTab === "chat" ? "border-ficium text-ficium" : "border-transparent text-muted hover:text-ink"}`}
+          >
+            <MessageSquare size={14} />
+            Chat
+          </button>
         </div>
 
-        {bids.length === 0 ? (
-          <Card className="text-center py-10">
-            <div className="w-12 h-12 rounded-2xl bg-ink/5 grid place-items-center mx-auto mb-3">
-              <Clock size={22} className="text-muted" />
-            </div>
-            <div className="font-semibold mb-1">Awaiting bids</div>
-            <div className="text-sm text-muted max-w-[240px] mx-auto">
-              Banks will start bidding once they review your request.
+        {/* Tab content */}
+        {activeTab === "bids" ? (
+          <>
+            {bids.length === 0 ? (
+              <Card className="text-center py-10">
+                <div className="w-12 h-12 rounded-2xl bg-ink/5 grid place-items-center mx-auto mb-3">
+                  <Clock size={22} className="text-muted" />
+                </div>
+                <div className="font-semibold mb-1">Awaiting bids</div>
+                <div className="text-sm text-muted max-w-[240px] mx-auto">
+                  Banks will start bidding once they review your request.
+                </div>
+              </Card>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {bids.map((bid, i) => (
+                  <BidCard
+                    key={bid.id} bid={bid} rank={i + 1}
+                    isBest={i === 0 && !isClosed} canAccept={!isClosed}
+                    isAccepting={accepting && acceptingBidId === bid.id}
+                    onAccept={() => handleAccept(bid.id)}
+                  />
+                ))}
+              </div>
+            )}
+
+            {isClosed && !acceptedBid && (
+              <div className="flex items-start gap-3 mt-5 px-4 py-3 bg-ink/[0.04] border border-ink/10 rounded-xl">
+                <AlertCircle size={18} className="text-muted flex-shrink-0 mt-0.5" />
+                <p className="text-[13px] text-muted">This request is closed.</p>
+              </div>
+            )}
+          </>
+        ) : (
+          <Card padded={false} className="overflow-hidden">
+            <div className="h-[480px] flex flex-col">
+              <RequestChat
+                requestId={id!}
+                senderType="client"
+                client={supabase}
+                height="flex-1"
+              />
             </div>
           </Card>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {bids.map((bid, i) => (
-              <BidCard
-                key={bid.id}
-                bid={bid}
-                rank={i + 1}
-                isBest={i === 0 && !isClosed}
-                canAccept={!isClosed}
-                isAccepting={accepting && acceptingBidId === bid.id}
-                onAccept={() => handleAccept(bid.id)}
-              />
-            ))}
-          </div>
         )}
 
-        {/* Closed notice */}
-        {isClosed && !acceptedBid && (
-          <div className="flex items-start gap-3 mt-5 px-4 py-3 bg-ink/[0.04] border border-ink/10 rounded-xl">
-            <AlertCircle size={18} className="text-muted flex-shrink-0 mt-0.5" />
-            <p className="text-[13px] text-muted">This request is closed.</p>
-          </div>
-        )}
       </div>
-
       <BottomNav />
     </div>
   );
