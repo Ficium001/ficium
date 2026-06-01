@@ -68,7 +68,7 @@ SELECT
   true,
   coalesce(iu.created_at, now()),
   coalesce(iu.created_at, now()),
-  coalesce(iu.updated_at, now())
+  now()
 FROM institution.institution_users iu
 JOIN public.users u ON u.id = iu.user_id
 ON CONFLICT (auth_user_id, institution_id) DO NOTHING;
