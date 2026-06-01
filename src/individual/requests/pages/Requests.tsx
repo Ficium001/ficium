@@ -155,9 +155,6 @@ export default function Requests() {
               </Link>
             </div>
 
-            {/* Investment Simulator */}
-            <InvestmentSimulator />
-
             {/* Quick links */}
             <div className="bg-white rounded-[26px] border border-ink/[0.06] p-5 shadow-sm">
               <div className="font-display text-[16px] font-bold mb-3">Quick actions</div>
@@ -211,7 +208,7 @@ function RequestCard({ request }: { request: RequestSummary }) {
 
   return (
     <div className="bg-white rounded-[28px] border border-ficium/10 transition-all duration-300 overflow-hidden shadow-sm hover:shadow-md">
-      <div className="p-6 sm:p-7">
+      <Link to={`/requests/${request.id}`} className="no-underline block p-6 sm:p-7 hover:bg-ink/[0.01] transition-colors">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-4 flex-1 min-w-0">
             <div className="w-12 h-12 rounded-2xl bg-ficium/10 text-ficium grid place-items-center flex-shrink-0">
@@ -249,7 +246,7 @@ function RequestCard({ request }: { request: RequestSummary }) {
             </span>
           </div>
         )}
-      </div>
+      </Link>
 
       {/* Expanded detail — always visible */}
       {true && (

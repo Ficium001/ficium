@@ -383,6 +383,11 @@ export default function Dashboard() {
         {actions.length > 0 && <NextActions actions={actions} />}
       </div>
 
+      {/* ── INVESTMENT SIMULATOR ── */}
+      <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-8 pb-6">
+        <InvestmentSimulator />
+      </div>
+
       {/* ── FAB ── */}
       {readyToRequest && (
         <Link to="/requests/new" className="fixed bottom-20 right-5 sm:right-8 z-30 inline-flex items-center gap-2 bg-ficium text-white px-5 py-3.5 rounded-pill shadow-ficium font-semibold no-underline">
@@ -765,4 +770,94 @@ function getGreeting(): string {
 function formatAmount(n: number): string {
   if (n === 0) return "0";
   return new Intl.NumberFormat("en-IN").format(n);
+}
+
+/* ── Investment Simulator ── */
+function InvestmentSimulator() {
+  const [amount, setAmount] = useState(500000);
+  const [rate,   setRate]   = useState(8.5);
+  const [term,   setTerm]   = useState(36);
+  const [mode,   setMode]   = useState<"loan" | "deposit">("loan");
+
+  const monthlyRate = rate / 100 / 12;
+  const monthly = mode === "loan"
+    ? (amount * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -term))
+    : amount * (rate / 100) * (term / 12) / term;
+  const totalInterest = (monthly * term) - amount;
+  const depositReturn = amount * (rate / 100) * (term / 12);
+  const fmt = (v: number) => `MUR ${Math.round(v).toLocaleString()}`;
+
+  return (
+    <div className="bg-white rounded-[26px] border border-ink/[0.06] shadow-sm overflow-hidden">
+      <div className="p-6 sm:p-8">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <div className="text-[11px] font-bold text-ficium uppercase tracking-widest mb-1">Tools</div>
+            <h2 className="font-display text-[22px] font-bold text-ink">Investment Simulator</h2>
+          </div>
+          <div className="flex bg-cream rounded-xl p-1 gap-1">
+            {(["loan", "deposit"] as const).map(m => (
+              <button key={m} onClick={() => setMode(m)}
+                className={`text-[12px] font-bold px-4 py-2 rounded-lg capitalize transition-colors ${mode === m ? "bg-ficium text-white shadow-sm" : "text-muted hover:text-ink"}`}>
+                {m}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+          <SimSlider label="Amount" value={amount} min={50000} max={5000000} step={50000}
+            display={fmt(amount)} onChange={setAmount} />
+          <SimSlider label="Rate (% APR)" value={rate} min={3} max={20} step={0.25}
+            display={`${rate.toFixed(2)}%`} onChange={setRate} />
+          <SimSlider label="Term" value={term} min={6} max={360} step={6}
+            display={term >= 12 ? `${Math.round(term/12)}y ${term%12 ? `${term%12}m` : ""}`.trim() : `${term}m`}
+            onChange={setTerm} />
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <ResultStat label={mode === "loan" ? "Monthly Payment" : "Monthly Yield"} value={fmt(monthly)} highlight />
+          <ResultStat label={mode === "loan" ? "Total Interest" : "Total Return"} value={mode === "loan" ? fmt(totalInterest) : fmt(depositReturn)} />
+          <ResultStat label="Total Amount" value={fmt(mode === "loan" ? monthly * term : amount + depositReturn)} />
+          <ResultStat label="Effective Rate" value={`${rate.toFixed(2)}% APR`} />
+        </div>
+
+        <p className="text-[11px] text-muted mt-4">Indicative only · figures depend on final bank approval and terms</p>
+      </div>
+    </div>
+  );
+}
+
+function SimSlider({ label, value, min, max, step, display, onChange }: {
+  label: string; value: number; min: number; max: number; step: number;
+  display: string; onChange: (v: number) => void;
+}) {
+  const pct = ((value - min) / (max - min)) * 100;
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-[12px] text-muted font-medium">{label}</span>
+        <span className="text-[13px] font-bold text-ink">{display}</span>
+      </div>
+      <div className="relative h-6 flex items-center">
+        <div className="absolute w-full h-1.5 bg-ink/10 rounded-full overflow-hidden">
+          <div className="h-full bg-ficium rounded-full" style={{ width: `${pct}%` }} />
+        </div>
+        <input type="range" min={min} max={max} step={step} value={value}
+          onChange={e => onChange(Number(e.target.value))}
+          className="absolute w-full opacity-0 cursor-pointer h-full" style={{ margin: 0 }} />
+        <div className="absolute w-4 h-4 bg-ficium rounded-full border-2 border-white shadow-md pointer-events-none"
+          style={{ left: `calc(${pct}% - 8px)` }} />
+      </div>
+    </div>
+  );
+}
+
+function ResultStat({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+  return (
+    <div className={`rounded-2xl p-4 ${highlight ? "bg-ficium/8 border border-ficium/15" : "bg-cream"}`}>
+      <div className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${highlight ? "text-ficium" : "text-muted"}`}>{label}</div>
+      <div className={`font-display text-[18px] font-extrabold ${highlight ? "text-ficium" : "text-ink"}`}>{value}</div>
+    </div>
+  );
 }
