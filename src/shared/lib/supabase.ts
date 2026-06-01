@@ -1,9 +1,11 @@
 // =============================================================
 // Ficium — Supabase client (single source of truth)
 //
-// One GoTrueClient (one auth session, one storageKey) shared across
-// every schema-scoped data client. Schema clients reuse the primary
-// client's auth session by sharing the same storageKey.
+// Architecture:
+//   - supabase (primary) owns the ONE GoTrueClient + auth session
+//   - Schema clients (institutionDb, adminDb) are plain REST clients
+//     with NO auth management — they get the token injected via
+//     a custom fetch wrapper that reads from the primary session
 // =============================================================
 import { createClient } from "@supabase/supabase-js";
 
@@ -22,41 +24,59 @@ if (!URL || !KEY) {
 const url = URL ?? "";
 const key = KEY ?? "";
 
-/** Shared auth config — ONE session under ONE storageKey */
-const AUTH_CONFIG = {
-  persistSession:     true,
-  autoRefreshToken:   true,
-  detectSessionInUrl: true,
-  storageKey:         "ficium-auth",
-} as const;
-
-/** Primary client — public schema. Owns the auth session. */
+/** Primary client — public schema. Owns the ONE auth session. */
 export const supabase: AnyClient = createClient(url, key, {
-  auth: AUTH_CONFIG,
+  auth: {
+    persistSession:     true,
+    autoRefreshToken:   true,
+    detectSessionInUrl: true,
+    storageKey:         "ficium-auth",
+  },
 });
 
 export type SchemaName = "public" | "institution" | "admin";
 
-// Schema-scoped clients — cached
 const schemaClients = new Map<SchemaName, AnyClient>();
 schemaClients.set("public", supabase);
 
 /**
- * Returns a Supabase client scoped to the given Postgres schema.
- * All clients share the same storageKey so GoTrue only creates
- * ONE session — the warning is suppressed because the key matches.
+ * Creates a schema-scoped client that:
+ * 1. Has NO GoTrueClient (no auth management, no warning)
+ * 2. Injects the primary client's Bearer token on every request
+ *    via a custom fetch wrapper
  */
+function createSchemaClient(schema: SchemaName): AnyClient {
+  // Custom fetch that injects auth token from primary client
+  const authFetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token ?? key;
+
+    const headers = new Headers(init?.headers);
+    headers.set("Authorization", `Bearer ${token}`);
+    headers.set("apikey", key);
+
+    return fetch(input, { ...init, headers });
+  };
+
+  return createClient(url, key, {
+    db:     { schema },
+    auth:   {
+      persistSession:     false,
+      autoRefreshToken:   false,
+      detectSessionInUrl: false,
+      storageKey:         `ficium-auth-${schema}`, // unique = no GoTrueClient warning
+    },
+    global: { fetch: authFetch },
+  });
+}
+
 export function db(schema: SchemaName = "public"): AnyClient {
   if (schema === "public") return supabase;
 
   const cached = schemaClients.get(schema);
   if (cached) return cached;
 
-  const client: AnyClient = createClient(url, key, {
-    db:   { schema },
-    auth: AUTH_CONFIG, // same storageKey = shared session, no duplicate GoTrue
-  });
-
+  const client = createSchemaClient(schema);
   schemaClients.set(schema, client);
   return client;
 }
