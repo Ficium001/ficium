@@ -160,8 +160,6 @@ export default function InstitutionMarketplace() {
       {detailRequest && (
         <RequestDetailDrawer
           request={detailRequest}
-          canSeeProfile={canSeeProfile}
-          canBid={canBid}
           onClose={() => setDetailRequest(null)}
           onBid={() => { setBiddingRequest(detailRequest); }}
         />
@@ -245,21 +243,16 @@ function RequestCard({
 }
 
 function RequestDetailDrawer({
-  request, canSeeProfile, canBid, onClose, onBid,
+  request, onClose, onBid,
 }: {
   request: MarketplaceRequest;
-  canSeeProfile: boolean;
-  canBid: boolean;
   onClose: () => void;
   onBid: () => void;
 }) {
   const [tab, setTab] = useState<"details" | "chat">("details");
-  const fmt     = (v: number) => v >= 1_000_000 ? `MUR ${(v/1_000_000).toFixed(1)}M` : `MUR ${Number(v).toLocaleString()}`;
-  const fmtDate = (s: string) => new Date(s).toLocaleDateString("en-MU", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
-  const fmtMoney = (v: number | null | undefined) =>
-    v != null && v > 0 ? fmt(v) : "—";
-
-  const hasProfile = canSeeProfile;
+  const fmt      = (v: number) => v >= 1_000_000 ? `MUR ${(v/1_000_000).toFixed(1)}M` : `MUR ${Number(v).toLocaleString()}`;
+  const fmtDate  = (s: string) => new Date(s).toLocaleDateString("en-MU", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  const fmtMoney = (v: number | null | undefined) => v != null && v > 0 ? fmt(v) : "—";
   const isUrgent = new Date(request.bid_window_closes_at).getTime() - Date.now() < 60 * 60 * 1000;
 
   const downloadPDF = () => {
@@ -329,15 +322,13 @@ function RequestDetailDrawer({
             <h2 className="font-display font-bold text-[20px] text-ink">{request.product_label ?? request.product_type}</h2>
           </div>
           <div className="flex items-center gap-2 mt-1">
-            {canSeeProfile && (
-              <button
+            <button
                 onClick={downloadPDF}
                 title="Download dossier as PDF"
                 className="flex items-center gap-1.5 text-[12px] font-medium text-muted hover:text-ficium border border-ink/10 hover:border-ficium/30 px-3 py-1.5 rounded-xl transition-colors"
               >
                 <Download className="w-3.5 h-3.5" />PDF
               </button>
-            )}
             <button onClick={onClose} className="text-muted hover:text-ink transition-colors">
               <X className="w-5 h-5" />
             </button>
@@ -397,8 +388,7 @@ function RequestDetailDrawer({
             )}
 
             {/* Anonymous client profile */}
-            {hasProfile && (
-              <div>
+            <div>
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-1.5">
                     <User className="w-3.5 h-3.5 text-ficium" />
@@ -422,7 +412,6 @@ function RequestDetailDrawer({
                 </div>
                 <p className="text-[10px] text-muted mt-2.5">Client identity is not disclosed at this stage.</p>
               </div>
-            )}
 
             {/* Amount guidance */}
             <div>
@@ -455,7 +444,7 @@ function RequestDetailDrawer({
         )}
 
         {/* Sticky CTA — only on details tab */}
-        {tab === "details" && canBid && (
+        {tab === "details" && (
           <div className="flex-shrink-0 bg-white border-t border-ink/[0.07] px-6 py-4">
             <button
               onClick={onBid}
