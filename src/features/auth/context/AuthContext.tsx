@@ -23,8 +23,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [unreadCount, setUnreadCount] = useState(0);
 
   async function fetchUserMeta(userId: string) {
-    const [{ data: userRow }, { count }] = await Promise.all([
-      supabase.from("users").select("role").eq("id", userId).single(),
+    // V2: use get_my_role() RPC — reads from correct schema per user type
+    // (public.clients, institution.institution_members, or admin.admin_users)
+    const [{ data: roleData }, { count }] = await Promise.all([
+      supabase.rpc("get_my_role"),
       supabase
         .from("notifications")
         .select("*", { count: "exact", head: true })
@@ -33,7 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ]);
 
     // Stale session detected — DB row gone. Force complete cleanup + reload.
-    if (!userRow) {
+    if (!roleData) {
       await supabase.auth.signOut();
       setSession(null);
       setRole(null);
@@ -42,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    setRole((userRow?.role as UserRole) ?? "client");
+    setRole((roleData as UserRole) ?? "client");
     setUnreadCount(count ?? 0);
   }
 
