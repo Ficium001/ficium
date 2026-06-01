@@ -5,21 +5,32 @@
 // - Anonymous client profile in drawer (marker/checker/admin)
 // - Date displayed on every card
 // =============================================================
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
   Zap, Filter, Clock, X, AlertTriangle, Calendar,
   User, FileText, TrendingUp, DollarSign, MessageSquare,
+  Send, Loader2,
 } from "lucide-react";
 import {
   useMarketplace, useProducts, useSubmitBid,
   useMyInstitution, useMyRole,
 } from "../../hooks/useInstitution";
+import institutionSupabase from "../../lib/institutionSupabase";
 import { formatDistanceToNow } from "../../lib/utils";
 import type { MarketplaceRequest } from "../../types/institution";
-import RequestChat from "../chat/pages/RequestChat";
+
+// ─── Chat types ───────────────────────────────────────────────
+interface ChatMessage {
+  id: string;
+  request_id: string;
+  sender_type: "institution" | "client";
+  sender_id: string;
+  body: string;
+  created_at: string;
+}
 
 const bidSchema = z.object({
   rate:           z.number().min(0.001).max(1),
@@ -395,7 +406,7 @@ function RequestDetailDrawer({
           </div>
         ) : (
           <div className="flex-1 flex flex-col overflow-hidden">
-            <RequestChat requestId={request.id} requestLabel={request.product_label ?? undefined} embedded={false} />
+          <RequestChatPanel requestId={request.id} />
           </div>
         )}
 
@@ -443,6 +454,102 @@ function ProfileStat({ label, value, accent }: { label: string; value: string; a
     <div className="bg-white rounded-xl p-2.5 border border-ink/[0.06]">
       <div className="text-[10px] text-muted mb-0.5">{label}</div>
       <div className={`text-[13px] ${accentCls} capitalize`}>{value}</div>
+    </div>
+  );
+}
+
+// ─── Request Chat Panel (inlined) ────────────────────────────
+function RequestChatPanel({ requestId }: { requestId: string }) {
+  const { data: institution } = useMyInstitution();
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [body, setBody]         = useState("");
+  const [sending, setSending]   = useState(false);
+  const [loading, setLoading]   = useState(true);
+  const bottomRef               = useRef<HTMLDivElement>(null);
+  const inputRef                = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!requestId) return;
+    setLoading(true);
+    institutionSupabase
+      .from("request_messages")
+      .select("*")
+      .eq("request_id", requestId)
+      .order("created_at", { ascending: true })
+      .then(({ data }) => { setMessages((data ?? []) as ChatMessage[]); setLoading(false); });
+  }, [requestId]);
+
+  useEffect(() => {
+    if (!requestId) return;
+    const channel = institutionSupabase
+      .channel(`request_chat:${requestId}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "request_messages", filter: `request_id=eq.${requestId}` },
+        (payload) => {
+          setMessages(prev => prev.find(m => m.id === payload.new.id) ? prev : [...prev, payload.new as ChatMessage]);
+        })
+      .subscribe();
+    return () => { institutionSupabase.removeChannel(channel); };
+  }, [requestId]);
+
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+
+  const send = async () => {
+    const text = body.trim();
+    if (!text || sending || !institution) return;
+    setSending(true);
+    setBody("");
+    const { data: { user } } = await institutionSupabase.auth.getUser();
+    if (!user) { setSending(false); return; }
+    const { error } = await institutionSupabase.from("request_messages").insert({
+      request_id: requestId, sender_type: "institution", sender_id: user.id, body: text,
+    });
+    if (error) console.error("Chat send error:", error);
+    setSending(false);
+    inputRef.current?.focus();
+  };
+
+  const handleKey = (e: React.KeyboardEvent) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } };
+  const fmtTime = (s: string) => new Date(s).toLocaleTimeString("en-MU", { hour: "2-digit", minute: "2-digit" });
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-ink/[0.07] flex-shrink-0">
+        <MessageSquare className="w-3.5 h-3.5 text-ficium" />
+        <span className="text-[11px] font-bold text-ficium uppercase tracking-wider">Chat with client</span>
+        <span className="ml-auto text-[10px] text-muted">Messages visible to both parties</span>
+      </div>
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-cream/30">
+        {loading ? (
+          <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-muted" /></div>
+        ) : messages.length === 0 ? (
+          <div className="text-center py-8">
+            <MessageSquare className="w-8 h-8 text-ink/15 mx-auto mb-2" />
+            <p className="text-[12px] text-muted">No messages yet. Start the conversation.</p>
+          </div>
+        ) : messages.map(msg => {
+          const isMe = msg.sender_type === "institution";
+          return (
+            <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
+              <div className={`max-w-[78%] flex flex-col gap-1 ${isMe ? "items-end" : "items-start"}`}>
+                <div className={`px-3.5 py-2.5 rounded-2xl text-[13px] leading-relaxed ${isMe ? "bg-ficium text-white rounded-br-sm" : "bg-white border border-ink/[0.08] text-ink rounded-bl-sm"}`}>
+                  {msg.body}
+                </div>
+                <span className="text-[10px] text-muted px-1">{fmtTime(msg.created_at)}</span>
+              </div>
+            </div>
+          );
+        })}
+        <div ref={bottomRef} />
+      </div>
+      <div className="flex items-center gap-2 px-3 py-3 border-t border-ink/[0.07] bg-white flex-shrink-0">
+        <input ref={inputRef} value={body} onChange={e => setBody(e.target.value)} onKeyDown={handleKey}
+          placeholder="Type a message…"
+          className="flex-1 bg-cream rounded-xl px-3.5 py-2.5 text-[13px] outline-none border border-transparent focus:border-ficium/30 transition-colors placeholder:text-muted" />
+        <button onClick={send} disabled={!body.trim() || sending}
+          className="w-9 h-9 bg-ficium hover:bg-ficium-deep disabled:opacity-40 text-white rounded-xl flex items-center justify-center transition-colors flex-shrink-0">
+          {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+        </button>
+      </div>
     </div>
   );
 }
