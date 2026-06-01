@@ -26,6 +26,7 @@ const NewRequest          = lazy(() => import("../individual/requests/pages/NewR
 const RequestDetail       = lazy(() => import("../individual/requests/pages/RequestDetail"));
 const Alerts              = lazy(() => import("../individual/alerts/pages/Alerts"));
 const Advisor             = lazy(() => import("../individual/advisor/pages/Advisor"));
+const ClientAudit         = lazy(() => import("../individual/audit/pages/ClientAudit"));
 
 // ── Institution app ───────────────────────────────────────────
 const InstitutionPending      = lazy(() => import("../institution/auth/pages/InstitutionPending"));
@@ -80,15 +81,14 @@ export const router = createBrowserRouter([
   { path: "/requests/:id",           element: <ClientOnlyRoute><S><RequestDetail /></S></ClientOnlyRoute> },
   { path: "/alerts",                 element: <ClientOnlyRoute><S><Alerts /></S></ClientOnlyRoute> },
   { path: "/advisor",                element: <ClientOnlyRoute><S><Advisor /></S></ClientOnlyRoute> },
+  { path: "/activity",               element: <ClientOnlyRoute><S><ClientAudit /></S></ClientOnlyRoute> },
 
   // ── Institution app ─────────────────────────────────────────
-  // Public institution routes
   { path: "/institution/login",        element: <S><InstitutionLogin /></S> },
   { path: "/institution/register",     element: <S><RegisterInstitution /></S> },
   { path: "/institution/pending",      element: <S><InstitutionPending /></S> },
   { path: "/institution/onboarding",   element: <S><InstitutionOnboarding /></S> },
 
-  // Protected institution portal — shell wraps all sub-routes
   {
     path: "/institution",
     element: <BankOnlyRoute><S><InstitutionPortalShell /></S></BankOnlyRoute>,
@@ -105,11 +105,8 @@ export const router = createBrowserRouter([
   },
 
   // ── Admin panel ─────────────────────────────────────────────
-  {
-    path: "/admin",
-    element: <S><FiciumAdminPanel /></S>,
-  },
+  { path: "/admin", element: <S><FiciumAdminPanel /></S> },
 
   // ── Fallback ────────────────────────────────────────────────
-  { path: "*",                   element: <S><NotFound /></S> },
+  { path: "*", element: <S><NotFound /></S> },
 ]);
