@@ -40,22 +40,6 @@ export type AuditEvent = {
    RISK LEVEL MAP
    ============================================================ */
 
-const RISK_MAP: Partial<Record<AuditEventName, RiskLevel>> = {
-  login: "low", logout: "low", login_failed: "medium",
-  password_reset_requested: "medium", password_reset_completed: "medium",
-  session_revoked: "high", user_created: "low", user_updated: "low",
-  role_changed: "high", account_disabled: "high", kyc_submitted: "medium",
-  kyc_approved: "medium", kyc_rejected: "medium",
-  financial_profile_created: "low", financial_profile_updated: "low",
-  request_created: "low", request_updated: "low", request_cancelled: "low",
-  bid_placed: "low", bid_accepted: "medium", bid_rejected: "low",
-  document_uploaded: "medium", document_accessed: "medium",
-  document_deleted: "high", admin_login: "high", bank_approved: "high",
-  bank_rejected: "high", settings_changed: "high",
-  suspicious_login: "critical", brute_force_detected: "critical",
-  permission_escalation_attempt: "critical", invalid_token: "high",
-};
-
 function getDeviceType(): string {
   const ua = navigator.userAgent;
   if (/tablet|ipad|playbook|silk/i.test(ua)) return "tablet";
