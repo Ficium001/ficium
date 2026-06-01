@@ -1,16 +1,25 @@
 // =============================================================
 // Ficium 3 — Institution Marketplace
-// Ficium light theme: cream bg, white cards, ficium blue.
-// Anonymous client profile shown to marker/checker on card expand.
+// - Bid button always shown (not gated on modules)
+// - Card click opens full request detail drawer
+// - Anonymous client profile in drawer (marker/checker/admin)
+// - Date displayed on every card
 // =============================================================
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Zap, Filter, Clock, X, AlertTriangle, ChevronDown, ChevronUp, User } from "lucide-react";
-import { useMarketplace, useProducts, useSubmitBid, useMyInstitution, useMyRole } from "../../hooks/useInstitution";
+import {
+  Zap, Filter, Clock, X, AlertTriangle, Calendar,
+  User, FileText, TrendingUp, DollarSign, MessageSquare,
+} from "lucide-react";
+import {
+  useMarketplace, useProducts, useSubmitBid,
+  useMyInstitution, useMyRole,
+} from "../../hooks/useInstitution";
 import { formatDistanceToNow } from "../../lib/utils";
 import type { MarketplaceRequest } from "../../types/institution";
+import RequestChat from "../chat/pages/RequestChat";
 
 const bidSchema = z.object({
   rate:           z.number().min(0.001).max(1),
@@ -28,22 +37,23 @@ export default function InstitutionMarketplace() {
   const { data: products  = [] }                    = useProducts();
   const submitBid                                   = useSubmitBid();
 
-  const [productFilter, setProductFilter]     = useState("all");
-  const [selectedRequest, setSelectedRequest] = useState<MarketplaceRequest | null>(null);
-  const [bidSuccess, setBidSuccess]           = useState<string | null>(null);
-  const [expandedProfile, setExpandedProfile] = useState<string | null>(null);
+  const [productFilter, setProductFilter]       = useState("all");
+  const [detailRequest, setDetailRequest]       = useState<MarketplaceRequest | null>(null);
+  const [biddingRequest, setBiddingRequest]     = useState<MarketplaceRequest | null>(null);
+  const [bidSuccess, setBidSuccess]             = useState<string | null>(null);
 
   const filtered     = requests.filter(r => productFilter === "all" || r.product_type === productFilter);
   const productTypes = Array.from(new Set(requests.map(r => r.product_type)));
 
-  // Marker and checker can see anonymous client profile
-  const canSeeProfile = myRole?.role === "admin" || myRole?.role === "compliance" || myRole?.role === "analyst";
+  const canSeeProfile = ["admin","compliance","analyst"].includes(myRole?.role ?? "");
+  // Show bid button to all approved institution users
+  const canBid = !!institution;
 
   const handleBidSubmit = async (data: BidForm) => {
-    if (!selectedRequest) return;
+    if (!biddingRequest) return;
     try {
       const id = await submitBid.mutateAsync({
-        request_id:     selectedRequest.id,
+        request_id:     biddingRequest.id,
         rate:           data.rate,
         rate_type:      data.rate_type,
         amount_offered: data.amount_offered,
@@ -52,7 +62,8 @@ export default function InstitutionMarketplace() {
         submitted_via:  "portal",
       });
       setBidSuccess(id as string);
-      setSelectedRequest(null);
+      setBiddingRequest(null);
+      setDetailRequest(null);
     } catch (e) { console.error(e); }
   };
 
@@ -129,18 +140,28 @@ export default function InstitutionMarketplace() {
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5">
           {filtered.map(req => (
             <RequestCard key={req.id} request={req}
-              canBid={!!institution?.modules.includes("marketplace")}
-              canSeeProfile={canSeeProfile}
-              profileExpanded={expandedProfile === req.id}
-              onToggleProfile={() => setExpandedProfile(expandedProfile === req.id ? null : req.id)}
-              onBid={() => setSelectedRequest(req)} />
+              canBid={canBid}
+              onOpen={() => setDetailRequest(req)}
+              onBid={() => setBiddingRequest(req)} />
           ))}
         </div>
       )}
 
-      {selectedRequest && (
-        <BidModal request={selectedRequest}
-          onClose={() => setSelectedRequest(null)}
+      {/* Request detail drawer */}
+      {detailRequest && (
+        <RequestDetailDrawer
+          request={detailRequest}
+          canSeeProfile={canSeeProfile}
+          canBid={canBid}
+          onClose={() => setDetailRequest(null)}
+          onBid={() => { setBiddingRequest(detailRequest); }}
+        />
+      )}
+
+      {/* Bid modal */}
+      {biddingRequest && (
+        <BidModal request={biddingRequest}
+          onClose={() => setBiddingRequest(null)}
           onSubmit={handleBidSubmit}
           isSubmitting={submitBid.isPending}
           error={submitBid.error?.message} />
@@ -149,21 +170,86 @@ export default function InstitutionMarketplace() {
   );
 }
 
+// ─── Request Card (click to open detail) ─────────────────────
 function RequestCard({
-  request, onBid, canBid, canSeeProfile, profileExpanded, onToggleProfile,
+  request, canBid, onOpen, onBid,
 }: {
   request: MarketplaceRequest;
-  onBid: () => void;
   canBid: boolean;
-  canSeeProfile: boolean;
-  profileExpanded: boolean;
-  onToggleProfile: () => void;
+  onOpen: () => void;
+  onBid: () => void;
 }) {
   const isUrgent = new Date(request.bid_window_closes_at).getTime() - Date.now() < 60 * 60 * 1000;
   const fmt = (v: number) => v >= 1_000_000 ? `MUR ${(v/1_000_000).toFixed(1)}M` : `MUR ${Number(v).toLocaleString()}`;
-  const fmtIncome = (v: number | null | undefined) => v ? (v >= 1_000_000 ? `MUR ${(v/1_000_000).toFixed(1)}M` : `MUR ${Number(v).toLocaleString()}`) : "—";
+  const fmtDate = (s: string) => new Date(s).toLocaleDateString("en-MU", { day: "numeric", month: "short", year: "numeric" });
 
-  // Determine if any profile data is available
+  return (
+    <div
+      onClick={onOpen}
+      className="bg-white rounded-2xl p-5 shadow-card hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer"
+    >
+      <div className="flex items-start justify-between mb-4">
+        <div>
+          <div className="text-[11px] font-bold text-ficium uppercase tracking-widest mb-1">{request.family_label ?? "Financial product"}</div>
+          <div className="font-display font-bold text-[16px] text-ink">{request.product_label ?? request.product_type}</div>
+        </div>
+        <span className="bg-green-50 text-green-700 border border-green-200 text-[11px] font-semibold px-2.5 py-1 rounded-full">Open</span>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <div className="bg-cream rounded-xl p-3">
+          <div className="text-[11px] text-muted mb-1">Amount</div>
+          <div className="font-bold text-ink text-[14px]">{fmt(Number(request.amount))}</div>
+        </div>
+        {request.term_months && (
+          <div className="bg-cream rounded-xl p-3">
+            <div className="text-[11px] text-muted mb-1">Term</div>
+            <div className="font-bold text-ink text-[14px]">{request.term_months} months</div>
+          </div>
+        )}
+      </div>
+
+      {request.purpose && <p className="text-[12px] text-muted mb-3 line-clamp-2">{request.purpose}</p>}
+
+      {/* Date submitted */}
+      <div className="flex items-center gap-1.5 text-[11px] text-muted mb-3">
+        <Calendar className="w-3 h-3" />
+        Submitted {fmtDate(request.created_at)}
+      </div>
+
+      <div className="flex items-center justify-between pt-3 border-t border-ink/[0.06]">
+        <div className={`flex items-center gap-1.5 text-[12px] ${isUrgent ? "text-red-500 font-semibold" : "text-muted"}`}>
+          <Clock className="w-3.5 h-3.5" />
+          {formatDistanceToNow(request.bid_window_closes_at)}
+        </div>
+        {canBid && (
+          <button
+            onClick={e => { e.stopPropagation(); onBid(); }}
+            className="flex items-center gap-1.5 bg-ficium text-white text-[12px] font-bold px-4 py-2 rounded-xl hover:bg-ficium-deep transition-colors"
+          >
+            <Zap className="w-3.5 h-3.5" />Place bid
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function RequestDetailDrawer({
+  request, canSeeProfile, canBid, onClose, onBid,
+}: {
+  request: MarketplaceRequest;
+  canSeeProfile: boolean;
+  canBid: boolean;
+  onClose: () => void;
+  onBid: () => void;
+}) {
+  const [tab, setTab] = useState<"details" | "chat">("details");
+  const fmt     = (v: number) => v >= 1_000_000 ? `MUR ${(v/1_000_000).toFixed(1)}M` : `MUR ${Number(v).toLocaleString()}`;
+  const fmtDate = (s: string) => new Date(s).toLocaleDateString("en-MU", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  const fmtMoney = (v: number | null | undefined) =>
+    v != null && v > 0 ? fmt(v) : "—";
+
   const hasProfile = canSeeProfile && (
     request.client_health_score != null ||
     request.client_monthly_income != null ||
@@ -171,90 +257,179 @@ function RequestCard({
     request.client_country != null
   );
 
+  const isUrgent = new Date(request.bid_window_closes_at).getTime() - Date.now() < 60 * 60 * 1000;
+
   return (
-    <div className="bg-white rounded-2xl overflow-hidden shadow-card hover:shadow-md transition-all hover:-translate-y-0.5">
-      <div className="p-5">
-        <div className="flex items-start justify-between mb-4">
+    <div className="fixed inset-0 z-50 flex">
+      {/* Backdrop */}
+      <div className="flex-1 bg-ink/40 backdrop-blur-sm" onClick={onClose} />
+
+      {/* Drawer */}
+      <div className="w-full max-w-[520px] bg-white h-full flex flex-col shadow-2xl">
+
+        {/* Header */}
+        <div className="flex items-start justify-between px-6 py-5 border-b border-ink/[0.07] flex-shrink-0">
           <div>
             <div className="text-[11px] font-bold text-ficium uppercase tracking-widest mb-1">{request.family_label ?? "Financial product"}</div>
-            <div className="font-display font-bold text-[16px] text-ink">{request.product_label ?? request.product_type}</div>
+            <h2 className="font-display font-bold text-[20px] text-ink">{request.product_label ?? request.product_type}</h2>
           </div>
-          <span className="bg-green-50 text-green-700 border border-green-200 text-[11px] font-semibold px-2.5 py-1 rounded-full">Open</span>
+          <button onClick={onClose} className="text-muted hover:text-ink transition-colors mt-1">
+            <X className="w-5 h-5" />
+          </button>
         </div>
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          <div className="bg-cream rounded-xl p-3">
-            <div className="text-[11px] text-muted mb-1">Amount</div>
-            <div className="font-bold text-ink text-[14px]">{fmt(Number(request.amount))}</div>
-          </div>
-          {request.term_months && (
-            <div className="bg-cream rounded-xl p-3">
-              <div className="text-[11px] text-muted mb-1">Term</div>
-              <div className="font-bold text-ink text-[14px]">{request.term_months} months</div>
-            </div>
-          )}
-        </div>
-        {request.purpose && <p className="text-[12px] text-muted mb-4 line-clamp-2">{request.purpose}</p>}
-        <div className="flex items-center justify-between pt-3 border-t border-ink/[0.06]">
-          <div className={`flex items-center gap-1.5 text-[12px] ${isUrgent ? "text-red-500 font-semibold" : "text-muted"}`}>
-            <Clock className="w-3.5 h-3.5" />
-            {formatDistanceToNow(request.bid_window_closes_at)}
-          </div>
-          <div className="flex items-center gap-2">
-            {hasProfile && (
-              <button
-                onClick={onToggleProfile}
-                className={`flex items-center gap-1.5 text-[12px] font-medium px-3 py-2 rounded-xl border transition-colors ${
-                  profileExpanded
-                    ? "bg-ficium/8 border-ficium/20 text-ficium"
-                    : "border-ink/10 text-muted hover:border-ficium/30 hover:text-ficium"
-                }`}
-              >
-                <User className="w-3.5 h-3.5" />
-                Profile
-                {profileExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-              </button>
-            )}
-            {canBid && (
-              <button onClick={onBid} className="flex items-center gap-1.5 bg-ficium text-white text-[12px] font-bold px-4 py-2 rounded-xl hover:bg-ficium-deep transition-colors">
-                <Zap className="w-3.5 h-3.5" />Place bid
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
 
-      {/* Anonymous client profile — marker/checker only */}
-      {hasProfile && profileExpanded && (
-        <div className="border-t border-ink/[0.07] bg-cream/50 px-5 py-4">
-          <div className="flex items-center gap-1.5 mb-3">
-            <User className="w-3.5 h-3.5 text-ficium" />
-            <span className="text-[11px] font-bold text-ficium uppercase tracking-wider">Anonymous Client Profile</span>
-          </div>
-          <div className="grid grid-cols-2 gap-2.5">
-            {request.client_health_score != null && (
-              <ProfileStat label="Credit Score" value={`${request.client_health_score}/100`}
-                accent={request.client_health_score >= 70 ? "green" : request.client_health_score >= 50 ? "amber" : "red"} />
-            )}
-            {request.client_affordability_score != null && (
-              <ProfileStat label="Affordability" value={`${request.client_affordability_score}/100`}
-                accent={request.client_affordability_score >= 70 ? "green" : request.client_affordability_score >= 50 ? "amber" : "red"} />
-            )}
-            {request.client_monthly_income != null && (
-              <ProfileStat label="Monthly Income" value={fmtIncome(request.client_monthly_income)} />
-            )}
-            {request.client_net_worth != null && (
-              <ProfileStat label="Net Worth" value={fmtIncome(request.client_net_worth)} />
-            )}
-            {request.client_country != null && (
-              <ProfileStat label="Residence" value={request.client_country} />
-            )}
-            {request.client_employment_status != null && (
-              <ProfileStat label="Employment" value={request.client_employment_status.replace(/_/g, " ")} />
-            )}
-          </div>
-          <p className="text-[10px] text-muted mt-3">Identity is anonymised — client name and contact are not disclosed at this stage.</p>
+        {/* Tabs */}
+        <div className="flex border-b border-ink/[0.07] flex-shrink-0">
+          {(["details", "chat"] as const).map(t => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 text-[13px] font-semibold transition-colors border-b-2 ${
+                tab === t
+                  ? "border-ficium text-ficium"
+                  : "border-transparent text-muted hover:text-ink"
+              }`}
+            >
+              {t === "chat" && <MessageSquare className="w-3.5 h-3.5" />}
+              {t === "details" && <FileText className="w-3.5 h-3.5" />}
+              {t.charAt(0).toUpperCase() + t.slice(1)}
+            </button>
+          ))}
         </div>
-      )}
+
+        {/* Tab content */}
+        {tab === "details" ? (
+          <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+
+            {/* Status + dates */}
+            <div className="grid grid-cols-2 gap-3">
+              <DetailStat label="Status">
+                <span className="bg-green-50 text-green-700 border border-green-200 text-[11px] font-semibold px-2.5 py-1 rounded-full">Open</span>
+              </DetailStat>
+              <DetailStat label="Submitted" value={fmtDate(request.created_at)} />
+              <DetailStat label="Amount" value={fmt(Number(request.amount))} bold />
+              {request.term_months && <DetailStat label="Term" value={`${request.term_months} months`} bold />}
+              {request.bid_window_closes_at && (
+                <DetailStat
+                  label="Bid window closes"
+                  value={fmtDate(request.bid_window_closes_at)}
+                  accent={isUrgent ? "red" : undefined}
+                />
+              )}
+              <DetailStat label="Ref" value={`#${request.client_ref?.slice(0,8)}`} />
+            </div>
+
+            {/* Purpose */}
+            {request.purpose && (
+              <div>
+                <div className="flex items-center gap-1.5 mb-2">
+                  <FileText className="w-3.5 h-3.5 text-ficium" />
+                  <span className="text-[11px] font-bold text-ficium uppercase tracking-wider">Purpose</span>
+                </div>
+                <p className="text-[14px] text-ink/80 bg-cream rounded-xl px-4 py-3 leading-relaxed">{request.purpose}</p>
+              </div>
+            )}
+
+            {/* Anonymous client profile */}
+            {hasProfile && (
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5 text-ficium" />
+                    <span className="text-[11px] font-bold text-ficium uppercase tracking-wider">Client Profile</span>
+                  </div>
+                  <span className="text-[10px] text-muted bg-ink/5 px-2 py-1 rounded-full">Anonymised</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2.5">
+                  {request.client_health_score != null && (
+                    <ProfileStat label="Credit Score" value={`${request.client_health_score}/100`}
+                      accent={request.client_health_score >= 70 ? "green" : request.client_health_score >= 50 ? "amber" : "red"} />
+                  )}
+                  {request.client_affordability_score != null && (
+                    <ProfileStat label="Affordability" value={`${request.client_affordability_score}/100`}
+                      accent={request.client_affordability_score >= 70 ? "green" : request.client_affordability_score >= 50 ? "amber" : "red"} />
+                  )}
+                  {request.client_risk_score != null && (
+                    <ProfileStat label="Risk Score" value={`${request.client_risk_score}/100`} />
+                  )}
+                  {request.client_monthly_income != null && (
+                    <ProfileStat label="Monthly Income" value={fmtMoney(request.client_monthly_income)} />
+                  )}
+                  {request.client_net_worth != null && (
+                    <ProfileStat label="Net Worth" value={fmtMoney(request.client_net_worth)} />
+                  )}
+                  {request.client_country != null && (
+                    <ProfileStat label="Country" value={request.client_country} />
+                  )}
+                  {request.client_employment_status != null && (
+                    <ProfileStat label="Employment" value={request.client_employment_status.replace(/_/g, " ")} />
+                  )}
+                </div>
+                <p className="text-[10px] text-muted mt-2.5">Client identity is not disclosed at this stage.</p>
+              </div>
+            )}
+
+            {/* Amount guidance */}
+            <div>
+              <div className="flex items-center gap-1.5 mb-2">
+                <DollarSign className="w-3.5 h-3.5 text-ficium" />
+                <span className="text-[11px] font-bold text-ficium uppercase tracking-wider">Requested amount</span>
+              </div>
+              <div className="bg-cream rounded-xl px-4 py-3">
+                <div className="font-display font-bold text-[22px] text-ink">{fmt(Number(request.amount))}</div>
+                {request.term_months && <div className="text-[13px] text-muted mt-0.5">over {request.term_months} months</div>}
+              </div>
+            </div>
+
+            {/* Rate guidance */}
+            <div>
+              <div className="flex items-center gap-1.5 mb-2">
+                <TrendingUp className="w-3.5 h-3.5 text-ficium" />
+                <span className="text-[11px] font-bold text-ficium uppercase tracking-wider">Rate guidance</span>
+              </div>
+              <div className="bg-cream rounded-xl px-4 py-3 text-[13px] text-ink/70">
+                Submit your most competitive rate. Clients compare all bids and are not shown your institution name until they choose to connect.
+              </div>
+            </div>
+
+          </div>
+        ) : (
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <RequestChat requestId={request.id} requestLabel={request.product_label ?? undefined} embedded={false} />
+          </div>
+        )}
+
+        {/* Sticky CTA — only on details tab */}
+        {tab === "details" && canBid && (
+          <div className="flex-shrink-0 bg-white border-t border-ink/[0.07] px-6 py-4">
+            <button
+              onClick={onBid}
+              className="w-full flex items-center justify-center gap-2 bg-ficium hover:bg-ficium-deep text-white font-bold py-3.5 rounded-2xl transition-colors text-[15px]"
+            >
+              <Zap className="w-5 h-5" />
+              Place bid on this request
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DetailStat({
+  label, value, children, bold, accent,
+}: {
+  label: string;
+  value?: string;
+  children?: React.ReactNode;
+  bold?: boolean;
+  accent?: "red" | "amber" | "green";
+}) {
+  const accentCls = accent === "red" ? "text-red-500" : accent === "amber" ? "text-amber-600" : accent === "green" ? "text-green-600" : "";
+  return (
+    <div className="bg-cream rounded-xl px-3 py-2.5">
+      <div className="text-[10px] text-muted mb-0.5">{label}</div>
+      {children ?? <div className={`text-[13px] ${bold ? "font-bold text-ink" : `font-medium text-ink/80 ${accentCls}`}`}>{value}</div>}
     </div>
   );
 }
@@ -272,6 +447,7 @@ function ProfileStat({ label, value, accent }: { label: string; value: string; a
   );
 }
 
+// ─── Bid Modal ────────────────────────────────────────────────
 function BidModal({ request, onClose, onSubmit, isSubmitting, error }: {
   request: MarketplaceRequest; onClose: () => void;
   onSubmit: (d: BidForm) => void; isSubmitting: boolean; error?: string;
@@ -285,7 +461,7 @@ function BidModal({ request, onClose, onSubmit, isSubmitting, error }: {
   const fmt = (v: number) => v >= 1_000_000 ? `MUR ${(v/1_000_000).toFixed(1)}M` : `MUR ${Number(v).toLocaleString()}`;
 
   return (
-    <div className="fixed inset-0 bg-ink/40 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-ink/40 backdrop-blur-sm flex items-center justify-center z-[60] p-4" onClick={onClose}>
       <div className="bg-white rounded-2xl w-full max-w-md shadow-xl" onClick={e => e.stopPropagation()}>
         <div className="flex items-start justify-between p-6 border-b border-ink/[0.07]">
           <div>

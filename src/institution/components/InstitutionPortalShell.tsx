@@ -8,7 +8,7 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Store, FileText, Clock,
   Webhook, Package, ScrollText, Settings,
-  LogOut, ChevronRight, Bell, Building2,
+  LogOut, ChevronRight, Bell,
 } from "lucide-react";
 import { useMyInstitution, useMyRole, usePendingActions } from "../hooks/useInstitution";
 import institutionSupabase from "../lib/institutionSupabase";
@@ -67,17 +67,16 @@ export default function InstitutionPortalShell() {
       {/* ── Sidebar ─────────────────────────────────────────── */}
       <aside className="w-60 bg-white border-r border-ink/[0.07] flex flex-col flex-shrink-0 shadow-sm">
 
-        {/* Logo — matches individual app header style */}
+        {/* Logo */}
         <div className="px-5 py-5 border-b border-ink/[0.07]">
           <div className="flex items-center gap-3">
             <FLogo size={26} className="text-ficium" />
-            <div>
+            <div className="min-w-0">
               <span className="font-display text-[15px] font-bold text-ink tracking-tight">
                 Ficium
               </span>
-              <div className="text-[10px] text-muted mt-0.5 flex items-center gap-1.5">
-                <Building2 className="w-2.5 h-2.5" />
-                <span>{institution?.name ?? "Institution"}</span>
+              <div className="text-[11px] font-semibold text-ficium truncate mt-0.5">
+                {institution?.name ?? "Institution"}
               </div>
             </div>
           </div>
@@ -117,16 +116,16 @@ export default function InstitutionPortalShell() {
         {/* User footer */}
         <div className="border-t border-ink/[0.07] p-4">
           <div className="flex items-center gap-2.5 mb-3">
-            <div className="w-7 h-7 rounded-full bg-ficium/10 flex items-center justify-center flex-shrink-0">
-              <span className="text-[11px] font-bold text-ficium">
-                {institution?.name?.[0]?.toUpperCase() ?? "I"}
+            <div className="w-8 h-8 rounded-full bg-ficium flex items-center justify-center flex-shrink-0">
+              <span className="text-[12px] font-bold text-white">
+                {(institution?.primary_contact_name ?? institution?.name ?? "I")[0].toUpperCase()}
               </span>
             </div>
-            <div className="min-w-0">
-              <div className="text-[12px] font-semibold text-ink truncate">
-                {institution?.primary_contact_name ?? institution?.name}
+            <div className="min-w-0 flex-1">
+              <div className="text-[13px] font-semibold text-ink truncate">
+                {institution?.primary_contact_name ?? institution?.name ?? "User"}
               </div>
-              <div className="text-[10px] text-muted capitalize">{role?.role}</div>
+              <div className="text-[10px] text-muted capitalize">{role?.role ?? "member"}</div>
             </div>
           </div>
           <button

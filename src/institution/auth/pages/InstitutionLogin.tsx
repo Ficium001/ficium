@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -9,8 +9,9 @@ import { signIn } from "../../../shared/lib/auth";
 import { Button, Field } from "../../../shared/ui";
 
 const schema = z.object({
-  email:    z.string().trim().toLowerCase().email("Enter a valid email address"),
-  password: z.string().min(1, "Password is required"),
+  email:      z.string().trim().toLowerCase().email("Enter a valid email address"),
+  password:   z.string().min(1, "Password is required"),
+  rememberMe: z.boolean().optional(),
 });
 type FormData = z.infer<typeof schema>;
 
@@ -31,21 +32,34 @@ export default function InstitutionLogin() {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
     mode: "onTouched",
-    defaultValues: { email: "", password: "" },
+    defaultValues: { email: "", password: "", rememberMe: false },
   });
+
+  useEffect(() => {
+    const remembered = localStorage.getItem("ficium_institution_remembered_email");
+    if (remembered) {
+      setValue("email", remembered.trim().toLowerCase());
+      setValue("rememberMe", true);
+    }
+  }, [setValue]);
 
   const onSubmit = async (data: FormData) => {
     setSubmitError(null);
+    if (data.rememberMe) {
+      localStorage.setItem("ficium_institution_remembered_email", data.email.trim().toLowerCase());
+    } else {
+      localStorage.removeItem("ficium_institution_remembered_email");
+    }
     const result = await signIn(data.email.trim().toLowerCase(), data.password, false);
     if (!result.ok) {
       setSubmitError("Incorrect email or password. Please try again.");
       return;
     }
-    // Auth context will read role and redirect to /institution
     navigate("/institution", { replace: true });
   };
 
@@ -205,6 +219,12 @@ export default function InstitutionLogin() {
                       {submitError}
                     </div>
                   )}
+
+                  {/* Remember me */}
+                  <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                    <input type="checkbox" {...register("rememberMe")} className="w-4 h-4 accent-ficium rounded" />
+                    <span className="text-[13px] text-muted">Remember my email</span>
+                  </label>
 
                   <Button
                     type="submit"
