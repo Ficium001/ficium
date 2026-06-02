@@ -19,10 +19,12 @@ function getEnv(key: string): string {
 }
 
 export const Env = {
-  anthropicApiKey:       () => getEnv("ANTHROPIC_API_KEY"),
-  supabaseUrl:           () => getEnv("VITE_SUPABASE_URL") || getEnv("SUPABASE_URL"),
-  supabaseServiceKey:    () => getEnv("SUPABASE_SERVICE_ROLE_KEY"),
-  isProduction:          () => getEnv("NODE_ENV") === "production",
+  anthropicApiKey:    () => getEnv("ANTHROPIC_API_KEY"),
+  supabaseUrl:        () => getEnv("VITE_SUPABASE_URL") || getEnv("SUPABASE_URL"),
+  supabaseServiceKey: () => getEnv("SUPABASE_SERVICE_ROLE_KEY"),
+  resendApiKey:       () => getEnv("RESEND_API_KEY"),
+  googleVisionKey:    () => getEnv("VITE_GOOGLE_VISION_KEY") || getEnv("GOOGLE_VISION_KEY"),
+  isProduction:       () => getEnv("NODE_ENV") === "production",
 } as const;
 
 /** Throws at startup if a required var is missing — fail fast, fail loud */

@@ -42,11 +42,11 @@ export interface KycQueueItem {
 }
 
 export interface KycStats {
-  total:          number;
-  pending:        number;
-  verified:       number;
-  rejected:       number;
-  avgRiskScore:   number | null;
+  total:        number;
+  pending:      number;
+  verified:     number;
+  rejected:     number;
+  avgRiskScore: number | null;
 }
 
 /* ---------- Signed URL helper ---------- */
@@ -57,6 +57,25 @@ export async function getSignedUrl(path: string | null): Promise<string | null> 
     .from("kyc-documents")
     .createSignedUrl(path, 60 * 10); // 10 min expiry
   return data?.signedUrl ?? null;
+}
+
+/* ---------- Email notification ---------- */
+
+async function sendKycEmail(
+  userId:   string,
+  decision: "approved" | "rejected",
+  note?:    string
+): Promise<void> {
+  try {
+    await fetch("/api/kyc-notify", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ userId, decision, note }),
+    });
+  } catch (err) {
+    // Email failure should never block the admin action
+    console.error("[KYC] Email notification failed:", err);
+  }
 }
 
 /* ---------- Hooks ---------- */
@@ -131,6 +150,9 @@ export function useApproveKyc() {
         })
         .eq("id", userId);
       if (error) throw error;
+
+      // Send approval email (non-blocking)
+      await sendKycEmail(userId, "approved", note);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KQK.queue });
@@ -152,6 +174,9 @@ export function useRejectKyc() {
         })
         .eq("id", userId);
       if (error) throw error;
+
+      // Send rejection email with reason (non-blocking)
+      await sendKycEmail(userId, "rejected", reason);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KQK.queue });
