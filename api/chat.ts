@@ -9,7 +9,6 @@ import Anthropic          from "@anthropic-ai/sdk";
 import { Env }            from "./_lib/env";
 import { IntelligenceService } from "./_lib/intelligence-service";
 import { Response }       from "./_lib/response";
-import { captureApiError } from "./_lib/monitor";
 
 export const config = { runtime: "nodejs" };
 
