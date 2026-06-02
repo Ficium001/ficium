@@ -4,9 +4,9 @@
 // it available to Claude prompts across the app.
 // =============================================================
 import { useState, useEffect, useRef } from "react";
-import type { FiciumIntelligence } from "../../api/intelligence";
+import type { FiciumIntelligence, MarketRate, RequestPattern, AcceptanceIntel, MarketCompetitiveness } from "./intelligence-types";
 
-export type { FiciumIntelligence };
+export type { FiciumIntelligence, MarketRate, RequestPattern, AcceptanceIntel, MarketCompetitiveness };
 
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 min
 

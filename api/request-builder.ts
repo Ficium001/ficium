@@ -6,7 +6,7 @@ export const config = { runtime: "nodejs" };
 type Message = { role: "user" | "assistant"; content: string };
 type Body    = { messages: Message[]; profile?: Record<string, unknown> };
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const anthropic = new Anthropic({ apiKey: (globalThis as any).process?.env?.ANTHROPIC_API_KEY });
 
 const BASE_SYSTEM = `
 You are Ficium's Request Builder — a conversational AI that helps clients in Mauritius post financial requests to the Ficium marketplace, where banks and fintechs bid for their business.
@@ -30,8 +30,8 @@ Rules:
 
 async function fetchIntelligenceSummary(): Promise<string> {
   try {
-    const url = process.env.VITE_SUPABASE_URL ?? process.env.SUPABASE_URL ?? "";
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
+    const url = (globalThis as any).process?.env?.VITE_SUPABASE_URL ?? (globalThis as any).process?.env?.SUPABASE_URL ?? "";
+    const key = (globalThis as any).process?.env?.SUPABASE_SERVICE_ROLE_KEY ?? "";
     if (!url || !key) return "";
 
     const db = createClient(url, key, { auth: { persistSession: false } });
@@ -57,7 +57,7 @@ async function fetchIntelligenceSummary(): Promise<string> {
 
 export default async function handler(req: any, res: any) {
   if (req.method !== "POST") return res.status(405).end();
-  if (!process.env.ANTHROPIC_API_KEY) return res.status(500).json({ error: "API key missing" });
+  if (!(globalThis as any).process?.env?.ANTHROPIC_API_KEY) return res.status(500).json({ error: "API key missing" });
 
   const body: Body = req.body;
   if (!body.messages?.length) return res.status(400).json({ error: "messages required" });
