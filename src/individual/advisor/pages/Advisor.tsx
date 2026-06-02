@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { useProfile } from "../../dashboard/hooks/useDashboard";
 import { BottomNav } from "../../../shared/ui";
+import { askClaude, type ClaudeMessage } from "../../../lib/claude";
 
 /* ============================================================
    TYPES
@@ -87,35 +88,6 @@ function buildGreeting(firstName: string): ChatMessage {
 }
 
 /* ============================================================
-   MOCK AI RESPONSES (replace with Claude API call)
-   ============================================================ */
-const MOCK_RESPONSES: Record<string, string> = {
-  "Compare personal loans":
-    "Based on your profile, you qualify for personal loans between MUR 200,000 and MUR 2,000,000. Current market rates range from 7.9% to 10.5% p.a. MCB and SBM are currently offering the most competitive rates for your income bracket. Would you like me to post a request and let banks bid for you?",
-  "Best investment opportunities":
-    "Your liquidity ratio and risk profile suggest you're suited for a balanced portfolio. Unit trusts currently yield 9–14% p.a., while fixed deposits offer 5.2–5.6%. Given your net worth trajectory, I'd recommend allocating 60% to growth assets and 40% to income-generating instruments.",
-  "High-yield deposits":
-    "The best deposit rates available right now in Mauritius range from 5.1% to 5.6% p.a. for 12-month fixed deposits. AfrAsia Bank and SBM are leading the market. I can post a deposit request and let institutions compete with their best rates.",
-  "Improve my financial health":
-    "Your financial health score is currently at 72/100. The top 3 improvements I'd recommend are: (1) Reduce your credit utilisation below 30%, (2) Build a 3-month emergency fund, and (3) Consolidate any high-interest debt. Implementing these could push your score to 85+ within 3 months.",
-  "Grow my net worth":
-    "Your net worth grew 1.7% this month — strong foundation. To accelerate growth: consider refinancing any existing loans at lower rates, maximise deposit returns by switching to higher-yield accounts, and start a monthly investment plan. I estimate a 12–18% net worth increase is achievable in 12 months.",
-  "Which bank fits me?":
-    "Based on your profile, income, and financial behaviour, MCB and AfrAsia are your best fits for lending products, while SBM offers the strongest deposit rates for your segment. For investments, Axa and Swan Financial have products well-matched to your risk profile.",
-};
-
-function getMockResponse(input: string): string {
-  const key = Object.keys(MOCK_RESPONSES).find((k) =>
-    input.toLowerCase().includes(k.toLowerCase())
-  );
-  return (
-    key
-      ? MOCK_RESPONSES[key]
-      : "I'm analyzing your query against your financial profile. Based on current market conditions and your personal data, let me pull the most relevant insights for you. This will take just a moment."
-  );
-}
-
-/* ============================================================
    MAIN COMPONENT
    ============================================================ */
 export default function Advisor() {
@@ -148,18 +120,30 @@ export default function Advisor() {
     setInput("");
     setThinking(true);
 
-    /* Simulate API latency — replace with real Claude API call */
-    await new Promise((r) => setTimeout(r, 1400));
+    // Build history for Claude
+    const history: ClaudeMessage[] = [...messages, userMsg].map((m) => ({
+      role:    m.role === "ai" ? "assistant" : "user",
+      content: m.text ?? "",
+    }));
 
-    const aiMsg: ChatMessage = {
-      id: (Date.now() + 1).toString(),
-      role: "ai",
-      text: getMockResponse(text),
-    };
-    setMessages((prev) => [...prev, aiMsg]);
-    setThinking(false);
-    inputRef.current?.focus();
-  }, [thinking]);
+    try {
+      const reply = await askClaude(history);
+      setMessages((prev) => [...prev, {
+        id:   (Date.now() + 1).toString(),
+        role: "ai",
+        text: reply,
+      }]);
+    } catch {
+      setMessages((prev) => [...prev, {
+        id:   (Date.now() + 1).toString(),
+        role: "ai",
+        text: "Sorry, I couldn't connect right now. Please try again in a moment.",
+      }]);
+    } finally {
+      setThinking(false);
+      inputRef.current?.focus();
+    }
+  }, [thinking, messages]);
 
   const handleChip = (chip: string) => sendMessage(chip);
 
