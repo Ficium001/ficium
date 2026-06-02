@@ -11,6 +11,7 @@
  */
 import { Component, type ReactNode, type ErrorInfo } from "react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
+import { captureError } from "./sentry";
 
 type Props = {
   children: ReactNode;
@@ -28,8 +29,10 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
-    // TODO: replace with your error tracking service (Sentry, Datadog, etc.)
-    console.error(`[ErrorBoundary:${this.props.name ?? "unknown"}]`, error, info);
+    captureError(error, {
+      boundary:     this.props.name ?? "unknown",
+      componentStack: info.componentStack ?? "",
+    });
   }
 
   reset = (): void => {

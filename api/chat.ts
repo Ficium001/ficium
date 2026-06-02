@@ -9,6 +9,7 @@ import Anthropic          from "@anthropic-ai/sdk";
 import { Env }            from "./_lib/env";
 import { IntelligenceService } from "./_lib/intelligence-service";
 import { Response }       from "./_lib/response";
+import { captureApiError } from "./_lib/monitor";
 
 export const config = { runtime: "nodejs" };
 
@@ -90,6 +91,7 @@ export default async function handler(req: any, res: any) { // eslint-disable-li
       },
     });
   } catch (e: unknown) {
+    await captureApiError(e, { route: "/api/chat", method: req.method });
     const msg = e instanceof Error ? e.message : "AI temporarily unavailable";
     return Response.error(res, msg, 503, "AI_ERROR");
   }

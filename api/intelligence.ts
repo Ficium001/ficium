@@ -7,6 +7,7 @@
  */
 import { IntelligenceService } from "./_lib/intelligence-service";
 import { Response }            from "./_lib/response";
+import { captureApiError }     from "./_lib/monitor";
 
 export const config = { runtime: "nodejs" };
 
@@ -22,7 +23,7 @@ export default async function handler(req: any, res: any) { // eslint-disable-li
     const data = await IntelligenceService.fetch();
     return Response.ok(res, data);
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : "Intelligence unavailable";
+    await captureApiError(e, { route: "/api/intelligence", method: req.method });
     // Return empty shell — never a 500, frontend degrades gracefully
     return Response.ok(res, {
       generatedAt:     new Date().toISOString(),
