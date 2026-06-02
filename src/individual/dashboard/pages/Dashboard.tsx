@@ -59,28 +59,34 @@ export default function Dashboard() {
     : profile.healthScore >= 50 ? { label: "Fair", color: "#d97706" }
     : { label: "Low", color: "#dc2626" };
 
-  // Build live insights from market intelligence, fall back to static
+  // Build live insights from market intelligence — pure SQL data, zero Claude
   const liveInsights = intel?.marketRates?.length
     ? [
         ...intel.marketRates.slice(0, 2).map((r) => ({
           icon:  BarChart2,
           color: "#4f46e5",
           bg:    "rgba(79,70,229,0.12)",
-          text:  `${r.product_type.replace(/_/g," ")} rates on Ficium: avg ${r.avg_rate_pct}% APR — ${r.bid_count} competing bids`,
+          text:  `${r.product_type.replace(/_/g, " ")} on Ficium: avg ${r.avg_rate_pct}% APR — ${r.bid_count} competing bids across ${r.request_count} requests`,
           type:  "info",
         })),
-        ...(intel.acceptanceIntel?.slice(0,1).map((a) => ({
+        ...(intel.acceptanceIntel?.slice(0, 1).map((a) => ({
           icon:  TrendingUp,
           color: "#16a34a",
           bg:    "rgba(22,163,74,0.12)",
-          text:  `Winning bids for ${a.product_type.replace(/_/g," ")} average ${a.avg_winning_rate_pct}% — ${a.total_acceptances} deals closed recently`,
+          text:  `Winning bids for ${a.product_type.replace(/_/g, " ")} average ${a.avg_winning_rate_pct}% — ${a.total_acceptances} deals closed in the last 90 days`,
           type:  "positive",
         })) ?? []),
-        { icon: AlertTriangle, color: "#d97706", bg: "rgba(217,119,6,0.12)", text: "You may be overpaying on your current loan — compare rates now", type: "warning" },
-      ]
+        ...(intel.requestPatterns?.slice(0, 1).map((p) => ({
+          icon:  AlertTriangle,
+          color: "#d97706",
+          bg:    "rgba(217,119,6,0.12)",
+          text:  `${p.open_requests} ${p.product_type.replace(/_/g, " ")} requests open now — avg amount MUR ${Number(p.avg_amount).toLocaleString()}`,
+          type:  "warning",
+        })) ?? []),
+      ].filter(Boolean)
     : FALLBACK_INSIGHTS;
 
-  const AI_INSIGHTS = liveInsights;
+  const AI_INSIGHTS = liveInsights.length ? liveInsights : FALLBACK_INSIGHTS;
 
   /* Cycle through insights */
   useEffect(() => {

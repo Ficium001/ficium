@@ -1,375 +1,465 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+// =============================================================
+// Ficium — New Request (Smart Stepped Wizard)
+// Zero Claude calls. SQL-powered market hints from intelligence.
+// Steps: product → amount/term → purpose → review → submit
+// =============================================================
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
-  ArrowLeft, Send, Brain, Lock, CheckCircle2,
-  Loader2, AlertCircle, RotateCcw, Sparkles,
+  ArrowLeft, ArrowRight, Lock, CheckCircle2,
+  Loader2, AlertCircle, HandCoins, Building2,
+  PiggyBank, LineChart, CreditCard, Briefcase,
+  Banknote, Home, Car, BarChart2,
 } from "lucide-react";
 import { useProfile } from "../../dashboard/hooks/useDashboard";
-import { createRequest } from "../api/requests";
-import { streamClaude } from "../../../lib/claude";
+import { createRequest, type ProductType } from "../api/requests";
+import { useIntelligence } from "../../../lib/intelligence";
 import { BottomNav } from "../../../shared/ui";
 
-/* ─── Types ─────────────────────────────────────────────── */
-type Msg = { id: string; role: "user" | "assistant"; text: string; thinking?: boolean };
-
-type ParsedRequest = {
-  productType: string;
-  amount: number;
-  purpose: string;
-  preferredTermMonths: number;
-  maxRate: number | null;
-  decisionDeadline: string | null;
+/* ─── Product catalogue ─────────────────────────────────── */
+type Product = {
+  type: ProductType;
+  label: string;
+  icon: React.ElementType;
+  color: string;
+  iconBg: string;
+  hint: string;
+  minAmount: number;
+  maxAmount: number;
+  minTerm: number;
+  maxTerm: number;
+  defaultTerm: number;
+  defaultAmount: number;
 };
 
-/* ─── Chip sets ─────────────────────────────────────────── */
-const STARTER_CHIPS = [
-  "I need a personal loan",
-  "I want a fixed deposit",
-  "SME / business funding",
-  "I'm looking at a mortgage",
-  "Investment account",
+const PRODUCTS: Product[] = [
+  { type: "personal_loan",     label: "Personal Loan",     icon: HandCoins,  color: "text-ficium",      iconBg: "bg-ficium/10",     hint: "For personal expenses, travel, education or debt consolidation", minAmount: 50_000,     maxAmount: 2_000_000,  minTerm: 12, maxTerm: 84,  defaultTerm: 36,  defaultAmount: 300_000   },
+  { type: "sme_loan",          label: "SME Loan",          icon: Building2,  color: "text-violet-600",  iconBg: "bg-violet-50",     hint: "Working capital, equipment or growth funding for your business",   minAmount: 200_000,    maxAmount: 10_000_000, minTerm: 12, maxTerm: 120, defaultTerm: 60,  defaultAmount: 1_000_000 },
+  { type: "mortgage",          label: "Mortgage",          icon: Home,       color: "text-amber-600",   iconBg: "bg-amber-50",      hint: "Finance your property purchase or construction",                   minAmount: 500_000,    maxAmount: 20_000_000, minTerm: 60, maxTerm: 360, defaultTerm: 240, defaultAmount: 3_000_000 },
+  { type: "fixed_deposit",     label: "Fixed Deposit",     icon: PiggyBank,  color: "text-emerald-600", iconBg: "bg-emerald-50",    hint: "Lock in your savings and let banks compete for your deposit",      minAmount: 50_000,     maxAmount: 10_000_000, minTerm: 3,  maxTerm: 60,  defaultTerm: 12,  defaultAmount: 500_000   },
+  { type: "investment_account",label: "Investment",        icon: LineChart,  color: "text-sky-600",     iconBg: "bg-sky-50",        hint: "Managed investment portfolios — banks pitch their best product",    minAmount: 100_000,    maxAmount: 10_000_000, minTerm: 12, maxTerm: 60,  defaultTerm: 24,  defaultAmount: 500_000   },
+  { type: "business_loan",     label: "Business Loan",     icon: Briefcase,  color: "text-indigo-600",  iconBg: "bg-indigo-50",     hint: "Corporate credit, expansion or acquisition financing",              minAmount: 500_000,    maxAmount: 50_000_000, minTerm: 12, maxTerm: 120, defaultTerm: 60,  defaultAmount: 2_000_000 },
+  { type: "credit_card",       label: "Credit Card",       icon: CreditCard, color: "text-pink-600",    iconBg: "bg-pink-50",       hint: "Compare card offers — cashback, rewards, travel benefits",          minAmount: 10_000,     maxAmount: 500_000,    minTerm: 12, maxTerm: 36,  defaultTerm: 12,  defaultAmount: 50_000    },
+  { type: "leasing",           label: "Vehicle Leasing",   icon: Car,        color: "text-orange-600",  iconBg: "bg-orange-50",     hint: "Lease a car or commercial vehicle — banks compete on rates",        minAmount: 100_000,    maxAmount: 5_000_000,  minTerm: 12, maxTerm: 60,  defaultTerm: 36,  defaultAmount: 500_000   },
+  { type: "overdraft",         label: "Overdraft",         icon: Banknote,   color: "text-red-600",     iconBg: "bg-red-50",        hint: "Flexible revolving credit facility for short-term needs",           minAmount: 20_000,     maxAmount: 2_000_000,  minTerm: 6,  maxTerm: 24,  defaultTerm: 12,  defaultAmount: 100_000   },
 ];
 
-/* ─── Parse READY block from Claude's text ──────────────── */
-function extractReady(text: string): ParsedRequest | null {
-  const match = text.match(/READY:(\{.*?\})/s);
-  if (!match) return null;
-  try { return JSON.parse(match[1]) as ParsedRequest; }
-  catch { return null; }
+/* ─── Steps ──────────────────────────────────────────────── */
+type Step = "product" | "details" | "purpose" | "review";
+
+const STEPS: Step[] = ["product", "details", "purpose", "review"];
+const STEP_LABELS = ["Product", "Amount & Term", "Purpose", "Review"];
+
+/* ─── Helpers ────────────────────────────────────────────── */
+function fmtMUR(n: number) {
+  return `MUR ${new Intl.NumberFormat("en-MU").format(n)}`;
 }
 
-/* ─── Strip READY block from display text ───────────────── */
-function stripReady(text: string): string {
-  return text.replace(/READY:\{.*?\}/s, "").trim();
-}
-
-/* ─── Main page ─────────────────────────────────────────── */
+/* ─── Main wizard ────────────────────────────────────────── */
 export default function NewRequest() {
-  const navigate   = useNavigate();
-  const bottomRef  = useRef<HTMLDivElement>(null);
-  const inputRef   = useRef<HTMLInputElement>(null);
-
+  const navigate = useNavigate();
   const { data: profile, isLoading: profileLoading } = useProfile();
+  const { intel } = useIntelligence();
 
-  /* Gate: KYC + dossier */
+  /* Gate */
   useEffect(() => {
     if (profileLoading || !profile) return;
-    if (profile.kycStatus !== "verified") { navigate("/onboarding/kyc", { replace: true }); return; }
+    if (profile.kycStatus !== "verified") { navigate("/onboarding/kyc",      { replace: true }); return; }
     if (!profile.hasDossier)               { navigate("/onboarding/dossier", { replace: true }); }
   }, [profile, profileLoading, navigate]);
 
-  const firstName = profile?.firstName ?? profile?.fullName?.split(" ")[0] ?? "there";
-
-  const GREETING: Msg = {
-    id: "0",
-    role: "assistant",
-    text: `Hi ${firstName}! I'm Ficium AI — I'll help you post a request so banks can compete with their best offers.\n\nWhat are you looking for today? You can tell me in your own words, or pick one below.`,
-  };
-
-  const [messages,    setMessages]    = useState<Msg[]>([GREETING]);
-  const [input,       setInput]       = useState("");
-  const [streaming,   setStreaming]   = useState(false);
-  const [parsed,      setParsed]      = useState<ParsedRequest | null>(null);
+  const [step,        setStep]        = useState<Step>("product");
+  const [product,     setProduct]     = useState<Product | null>(null);
+  const [amount,      setAmount]      = useState(0);
+  const [termMonths,  setTermMonths]  = useState(0);
+  const [maxRate,     setMaxRate]     = useState<number | "">("");
+  const [deadline,    setDeadline]    = useState("");
+  const [purpose,     setPurpose]     = useState("");
   const [submitting,  setSubmitting]  = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [error,       setError]       = useState<string | null>(null);
   const [submitted,   setSubmitted]   = useState(false);
 
-  /* Scroll to bottom on new messages */
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, streaming]);
+  const stepIdx = STEPS.indexOf(step);
 
-  const profileContext = profile ? {
-    monthlyIncome: profile.totalNetWorth,
-    netWorth:      profile.totalNetWorth,
-    healthScore:   profile.healthScore,
-  } : undefined;
+  const selectProduct = (p: Product) => {
+    setProduct(p);
+    setAmount(p.defaultAmount);
+    setTermMonths(p.defaultTerm);
+    setStep("details");
+  };
 
-  /* Send a message to Claude */
-  const send = useCallback(async (text: string) => {
-    if (!text.trim() || streaming) return;
-
-    const userMsg: Msg = { id: Date.now().toString(), role: "user", text };
-    const aiId = (Date.now() + 1).toString();
-
-    setMessages(prev => [...prev, userMsg, { id: aiId, role: "assistant", text: "", thinking: true }]);
-    setInput("");
-    setStreaming(true);
-
-    const history = [...messages, userMsg].map(m => ({
-      role:    m.role === "assistant" ? "assistant" as const : "user" as const,
-      content: m.text,
-    }));
-
-    let full = "";
-
-    await streamClaude(
-      "/api/request-builder",
-      { messages: history, profile: profileContext },
-      {
-        onToken: (token) => {
-          full += token;
-          setMessages(prev => prev.map(m =>
-            m.id === aiId ? { ...m, text: stripReady(full), thinking: false } : m
-          ));
-        },
-        onDone: (complete) => {
-          const ready = extractReady(complete);
-          if (ready) setParsed(ready);
-          setMessages(prev => prev.map(m =>
-            m.id === aiId ? { ...m, text: stripReady(complete), thinking: false } : m
-          ));
-          setStreaming(false);
-          inputRef.current?.focus();
-        },
-        onError: (err) => {
-          setMessages(prev => prev.map(m =>
-            m.id === aiId ? { ...m, text: `Sorry, something went wrong: ${err}`, thinking: false } : m
-          ));
-          setStreaming(false);
-        },
-      }
-    );
-  }, [messages, streaming, profileContext]);
-
-  /* Submit the parsed request to Supabase */
-  const submitRequest = async () => {
-    if (!parsed) return;
+  const submit = async () => {
+    if (!product) return;
     setSubmitting(true);
-    setSubmitError(null);
-
+    setError(null);
     const result = await createRequest({
-      productType:         parsed.productType as any,
-      amount:              parsed.amount,
-      purpose:             parsed.purpose,
-      preferredTermMonths: parsed.preferredTermMonths,
-      maxRate:             parsed.maxRate ?? undefined,
-      decisionDeadline:    parsed.decisionDeadline ?? undefined,
+      productType:         product.type,
+      amount,
+      purpose,
+      preferredTermMonths: termMonths,
+      maxRate:             maxRate !== "" ? Number(maxRate) : undefined,
+      decisionDeadline:    deadline || undefined,
     });
-
-    if (!result.ok) {
-      setSubmitError(result.error);
-      setSubmitting(false);
-      return;
-    }
+    if (!result.ok) { setError(result.error); setSubmitting(false); return; }
     setSubmitted(true);
     setTimeout(() => navigate("/dashboard"), 2000);
   };
 
-  const reset = () => {
-    setMessages([GREETING]);
-    setParsed(null);
-    setSubmitError(null);
-    setSubmitted(false);
-    setInput("");
-  };
-
   if (profileLoading) return null;
 
-  /* ── Success screen ── */
-  if (submitted) {
-    return (
-      <div className="min-h-screen bg-cream flex items-center justify-center px-5">
-        <div className="text-center">
-          <div className="w-20 h-20 rounded-full bg-emerald-100 grid place-items-center mx-auto mb-6">
-            <CheckCircle2 size={40} className="text-emerald-500" />
-          </div>
-          <h2 className="font-display text-3xl font-bold text-ink mb-2">Request posted!</h2>
-          <p className="text-muted text-[15px]">Banks are already reviewing your request. You'll be notified when bids arrive.</p>
-          <p className="text-muted text-[13px] mt-2">Redirecting to dashboard…</p>
+  /* ── Success ── */
+  if (submitted) return (
+    <div className="min-h-screen bg-cream flex items-center justify-center px-5">
+      <div className="text-center">
+        <div className="w-20 h-20 rounded-full bg-emerald-100 grid place-items-center mx-auto mb-6">
+          <CheckCircle2 size={40} className="text-emerald-500" />
         </div>
+        <h2 className="font-display text-3xl font-bold text-ink mb-2">Request posted!</h2>
+        <p className="text-muted text-[15px]">Banks are already reviewing your request. You'll be notified when bids arrive.</p>
+        <p className="text-muted text-[13px] mt-2">Redirecting to dashboard…</p>
       </div>
-    );
-  }
+    </div>
+  );
 
   return (
-    <div className="min-h-screen flex flex-col bg-cream">
+    <div className="min-h-screen bg-cream flex flex-col">
 
-      {/* ── Top gradient ── */}
-      <div className="absolute top-0 left-0 right-0 h-[180px] overflow-hidden pointer-events-none">
+      {/* Top gradient */}
+      <div className="absolute top-0 left-0 right-0 h-[160px] overflow-hidden pointer-events-none">
         <div className="absolute inset-0 bg-gradient-to-br from-[#0f0c29] via-[#1a1040] to-[#302b63]" />
         <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-cream to-transparent" />
       </div>
 
-      {/* ── Header ── */}
-      <div className="relative z-10 max-w-[720px] mx-auto w-full px-5 pt-6 pb-2">
-        <div className="flex items-center justify-between">
+      {/* Header */}
+      <div className="relative z-10 max-w-[680px] mx-auto w-full px-5 pt-6">
+        <div className="flex items-center justify-between mb-6">
           <Link to="/dashboard" className="inline-flex items-center gap-1.5 text-[13px] text-white/60 hover:text-white transition-colors no-underline">
             <ArrowLeft size={15} /> Back
           </Link>
-          <button onClick={reset} title="Start over" className="w-9 h-9 rounded-full bg-white/10 border border-white/10 grid place-items-center text-white/60 hover:text-white hover:bg-white/15 transition-colors">
-            <RotateCcw size={14} />
-          </button>
-        </div>
-
-        <div className="mt-4 mb-5">
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-6 h-6 rounded-lg bg-ficium grid place-items-center">
-              <Brain size={13} className="text-white" />
-            </div>
-            <span className="text-[11px] font-bold text-white/50 uppercase tracking-widest">Ficium AI</span>
+          {/* Privacy pill */}
+          <div className="flex items-center gap-1.5 bg-white/[0.08] border border-white/10 rounded-pill px-3 py-1.5">
+            <Lock size={11} className="text-white/50" />
+            <span className="text-[11px] text-white/50 font-medium">Anonymous to banks</span>
           </div>
-          <h1 className="font-display text-[28px] font-extrabold text-white leading-tight">Request Builder</h1>
         </div>
 
-        {/* Privacy note */}
-        <div className="flex items-center gap-2 bg-white/[0.08] border border-white/10 rounded-xl px-3.5 py-2.5 mb-2">
-          <Lock size={13} className="text-white/50 flex-shrink-0" />
-          <p className="text-[12px] text-white/50">Your identity stays anonymous. Banks only see your request details.</p>
+        <h1 className="font-display text-[28px] font-extrabold text-white leading-tight mb-6">
+          New request
+        </h1>
+
+        {/* Step progress */}
+        <div className="flex items-center gap-2 mb-8">
+          {STEPS.map((s, i) => (
+            <div key={s} className="flex items-center gap-2 flex-1">
+              <div className={[
+                "w-6 h-6 rounded-full grid place-items-center text-[11px] font-bold flex-shrink-0 transition-all",
+                i < stepIdx  ? "bg-emerald-500 text-white" :
+                i === stepIdx ? "bg-ficium text-white" :
+                "bg-white/15 text-white/40"
+              ].join(" ")}>
+                {i < stepIdx ? <CheckCircle2 size={13} /> : i + 1}
+              </div>
+              <span className={`text-[11px] font-semibold hidden sm:block ${i === stepIdx ? "text-white" : "text-white/40"}`}>
+                {STEP_LABELS[i]}
+              </span>
+              {i < STEPS.length - 1 && (
+                <div className={`flex-1 h-px mx-1 ${i < stepIdx ? "bg-emerald-500/60" : "bg-white/15"}`} />
+              )}
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* ── Chat messages ── */}
-      <div className="flex-1 overflow-y-auto max-w-[720px] mx-auto w-full px-5 py-4 space-y-4 relative z-10">
-        {messages.map((msg) => (
-          <ChatBubble key={msg.id} msg={msg} />
-        ))}
+      {/* Content */}
+      <div className="relative z-10 flex-1 max-w-[680px] mx-auto w-full px-5 pb-32">
 
-        {/* ── Parsed confirmation card ── */}
-        {parsed && !submitted && (
-          <div className="bg-white rounded-[22px] border border-ficium/20 shadow-ficium overflow-hidden">
-            <div className="bg-gradient-to-r from-ficium to-ficium-deep px-5 py-4 flex items-center gap-2">
-              <Sparkles size={15} className="text-white" />
-              <span className="text-[13px] font-bold text-white">Ready to post</span>
-            </div>
-            <div className="px-5 py-4 space-y-2.5">
-              <RequestRow label="Product"    value={parsed.productType.replace(/_/g, " ")} />
-              <RequestRow label="Amount"     value={`MUR ${parsed.amount.toLocaleString("en-MU")}`} />
-              <RequestRow label="Purpose"    value={parsed.purpose} />
-              <RequestRow label="Term"       value={`${parsed.preferredTermMonths} months`} />
-              {parsed.maxRate && <RequestRow label="Max rate" value={`${parsed.maxRate}% APR`} />}
-              {parsed.decisionDeadline && <RequestRow label="Deadline" value={parsed.decisionDeadline} />}
-            </div>
-
-            {submitError && (
-              <div className="mx-5 mb-3 flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-3.5 py-2.5">
-                <AlertCircle size={14} className="text-red-500 flex-shrink-0" />
-                <p className="text-[13px] text-red-600">{submitError}</p>
-              </div>
-            )}
-
-            <div className="px-5 pb-5 flex gap-3">
-              <button
-                onClick={submitRequest}
-                disabled={submitting}
-                className="flex-1 flex items-center justify-center gap-2 bg-ficium hover:bg-ficium-deep text-white font-bold py-3.5 rounded-2xl transition-colors text-[14px] disabled:opacity-60 shadow-ficium"
-              >
-                {submitting
-                  ? <><Loader2 size={16} className="animate-spin" /> Posting…</>
-                  : <><CheckCircle2 size={16} /> Post request</>
-                }
-              </button>
-              <button
-                onClick={() => { setParsed(null); send("Let me change something"); }}
-                disabled={submitting}
-                className="px-5 py-3.5 rounded-2xl border border-ink/10 text-[13px] font-semibold text-muted hover:bg-ink/[0.03] transition-colors"
-              >
-                Edit
-              </button>
+        {/* ── Step 1: Product ── */}
+        {step === "product" && (
+          <div>
+            <p className="text-[14px] text-muted mb-5">What are you looking for?</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {PRODUCTS.map((p) => {
+                const rates = intel?.marketRates.find(r => r.product_type === p.type);
+                const Icon  = p.icon;
+                return (
+                  <button
+                    key={p.type}
+                    onClick={() => selectProduct(p)}
+                    className="bg-white border border-ink/[0.06] rounded-2xl p-5 text-left hover:border-ficium/30 hover:shadow-md transition-all group"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className={`w-10 h-10 rounded-xl grid place-items-center ${p.iconBg}`}>
+                        <Icon size={18} className={p.color} />
+                      </div>
+                      {rates && (
+                        <div className="flex items-center gap-1 bg-ficium/[0.06] px-2 py-1 rounded-pill">
+                          <BarChart2 size={10} className="text-ficium" />
+                          <span className="text-[10px] font-bold text-ficium">{rates.avg_rate_pct}% avg</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="font-display text-[16px] font-bold text-ink mb-1">{p.label}</div>
+                    <div className="text-[12px] text-muted leading-snug">{p.hint}</div>
+                    <div className="mt-3 flex items-center gap-1 text-[12px] font-semibold text-ficium opacity-0 group-hover:opacity-100 transition-opacity">
+                      Select <ArrowRight size={12} />
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
 
-        <div ref={bottomRef} />
-      </div>
+        {/* ── Step 2: Amount & Term ── */}
+        {step === "details" && product && (
+          <div className="bg-white rounded-2xl border border-ink/[0.06] shadow-sm p-6 space-y-6">
 
-      {/* ── Starter chips (only when on first message) ── */}
-      {messages.length === 1 && !streaming && (
-        <div className="max-w-[720px] mx-auto w-full px-5 pb-3 relative z-10">
-          <div className="flex gap-2 flex-wrap">
-            {STARTER_CHIPS.map((chip) => (
-              <button
-                key={chip}
-                onClick={() => send(chip)}
-                className="px-3.5 py-2 bg-white border border-ink/[0.08] rounded-pill text-[12px] font-semibold text-ink/70 hover:border-ficium/30 hover:text-ficium transition-colors shadow-sm"
-              >
-                {chip}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+            {/* Market rate hint */}
+            {(() => {
+              const rates = intel?.marketRates.find(r => r.product_type === product.type);
+              const wins  = intel?.acceptanceIntel.find(a => a.product_type === product.type);
+              if (!rates) return null;
+              return (
+                <div className="flex items-start gap-3 bg-ficium/[0.04] border border-ficium/[0.12] rounded-xl px-4 py-3.5">
+                  <BarChart2 size={15} className="text-ficium flex-shrink-0 mt-0.5" />
+                  <div className="text-[13px] text-ink/75 leading-relaxed">
+                    <span className="font-semibold text-ficium">Market data: </span>
+                    Current {product.label.toLowerCase()} rates on Ficium average{" "}
+                    <span className="font-bold text-ink">{rates.avg_rate_pct}%</span> APR
+                    (range {rates.min_rate_pct}–{rates.max_rate_pct}%).
+                    {wins && ` Winning bids average ${wins.avg_winning_rate_pct}% over ${wins.avg_winning_term_months} months.`}
+                  </div>
+                </div>
+              );
+            })()}
 
-      {/* ── Input bar ── */}
-      {!parsed && (
-        <div className="max-w-[720px] mx-auto w-full px-5 pb-6 pt-2 relative z-10">
-          <form
-            onSubmit={(e) => { e.preventDefault(); send(input); }}
-            className="flex items-center gap-3 bg-white rounded-[18px] border border-ink/[0.10] px-4 py-3 shadow-sm focus-within:border-ficium/30 focus-within:ring-2 focus-within:ring-ficium/10 transition-all"
-          >
-            <input
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Tell me what you need…"
-              className="flex-1 text-[15px] text-ink placeholder:text-ink/35 outline-none bg-transparent"
-              disabled={streaming}
-              autoComplete="off"
+            {/* Amount slider */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <label className="text-[13px] font-semibold text-ink">Amount (MUR)</label>
+                <span className="font-display text-[16px] font-bold text-ficium">{fmtMUR(amount)}</span>
+              </div>
+              <input
+                type="range"
+                min={product.minAmount}
+                max={product.maxAmount}
+                step={product.minAmount}
+                value={amount}
+                onChange={e => setAmount(Number(e.target.value))}
+                className="w-full"
+              />
+              <div className="flex justify-between text-[11px] text-muted mt-1">
+                <span>{fmtMUR(product.minAmount)}</span>
+                <span>{fmtMUR(product.maxAmount)}</span>
+              </div>
+              {/* Manual input */}
+              <input
+                type="number"
+                value={amount}
+                onChange={e => {
+                  const v = Math.min(product.maxAmount, Math.max(product.minAmount, Number(e.target.value)));
+                  setAmount(v);
+                }}
+                className="mt-2 w-full bg-cream border border-ink/10 rounded-xl px-4 py-2.5 text-[14px] font-bold text-ink outline-none focus:border-ficium transition-colors"
+              />
+            </div>
+
+            {/* Term slider */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <label className="text-[13px] font-semibold text-ink">Term</label>
+                <span className="font-display text-[16px] font-bold text-ficium">
+                  {termMonths >= 12
+                    ? `${Math.floor(termMonths / 12)}y${termMonths % 12 ? ` ${termMonths % 12}m` : ""}`
+                    : `${termMonths}m`}
+                </span>
+              </div>
+              <input
+                type="range"
+                min={product.minTerm}
+                max={product.maxTerm}
+                step={product.minTerm <= 6 ? 3 : 12}
+                value={termMonths}
+                onChange={e => setTermMonths(Number(e.target.value))}
+                className="w-full"
+              />
+              <div className="flex justify-between text-[11px] text-muted mt-1">
+                <span>{product.minTerm}mo</span>
+                <span>{product.maxTerm}mo</span>
+              </div>
+            </div>
+
+            {/* Optional: max rate */}
+            <div>
+              <label className="text-[13px] font-semibold text-ink block mb-1.5">
+                Max acceptable rate % <span className="text-muted font-normal">(optional)</span>
+              </label>
+              <p className="text-[12px] text-muted mb-2">Banks won't bid above this. Leave blank for no limit.</p>
+              <input
+                type="number"
+                step="0.1"
+                placeholder="e.g. 12"
+                value={maxRate}
+                onChange={e => setMaxRate(e.target.value === "" ? "" : Number(e.target.value))}
+                className="w-full bg-cream border border-ink/10 rounded-xl px-4 py-2.5 text-[14px] text-ink outline-none focus:border-ficium transition-colors"
+              />
+            </div>
+
+            {/* Optional: deadline */}
+            <div>
+              <label className="text-[13px] font-semibold text-ink block mb-1.5">
+                Decision deadline <span className="text-muted font-normal">(optional)</span>
+              </label>
+              <input
+                type="date"
+                value={deadline}
+                onChange={e => setDeadline(e.target.value)}
+                min={new Date().toISOString().split("T")[0]}
+                className="w-full bg-cream border border-ink/10 rounded-xl px-4 py-2.5 text-[14px] text-ink outline-none focus:border-ficium transition-colors"
+              />
+            </div>
+
+            <StepNav
+              onBack={() => setStep("product")}
+              onNext={() => setStep("purpose")}
+              nextDisabled={!amount || !termMonths}
             />
-            <button
-              type="submit"
-              disabled={!input.trim() || streaming}
-              className="w-9 h-9 rounded-xl bg-ficium text-white grid place-items-center disabled:opacity-40 hover:bg-ficium-deep transition-all flex-shrink-0"
-            >
-              {streaming ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
-            </button>
-          </form>
-          <p className="text-center text-[11px] text-muted mt-2">
-            Ficium AI · Powered by Claude · Not financial advice
-          </p>
-        </div>
-      )}
+          </div>
+        )}
+
+        {/* ── Step 3: Purpose ── */}
+        {step === "purpose" && product && (
+          <div className="bg-white rounded-2xl border border-ink/[0.06] shadow-sm p-6 space-y-5">
+            <div>
+              <label className="text-[13px] font-semibold text-ink block mb-1.5">
+                What's this for?
+              </label>
+              <p className="text-[12px] text-muted mb-3">
+                Banks see this — not your name. Be specific to attract better bids.
+              </p>
+              <textarea
+                value={purpose}
+                onChange={e => setPurpose(e.target.value)}
+                rows={4}
+                placeholder={
+                  product.type === "personal_loan"  ? "e.g. Consolidate existing credit card debt and fund home renovation" :
+                  product.type === "sme_loan"       ? "e.g. Expand restaurant kitchen equipment for second branch opening" :
+                  product.type === "fixed_deposit"  ? "e.g. Park 12-month savings at best available rate" :
+                  product.type === "mortgage"       ? "e.g. Purchase 3-bedroom property in Tamarin" :
+                  "Describe what you need this for…"
+                }
+                maxLength={500}
+                className="w-full bg-cream border border-ink/10 rounded-xl px-4 py-3 text-[14px] text-ink placeholder:text-muted/60 outline-none focus:border-ficium focus:ring-2 focus:ring-ficium/10 resize-none transition-all"
+              />
+              <div className="flex justify-end mt-1">
+                <span className={`text-[11px] ${purpose.length > 450 ? "text-amber-500" : "text-muted"}`}>
+                  {purpose.length}/500
+                </span>
+              </div>
+            </div>
+
+            <StepNav
+              onBack={() => setStep("details")}
+              onNext={() => setStep("review")}
+              nextDisabled={purpose.trim().length < 10}
+            />
+          </div>
+        )}
+
+        {/* ── Step 4: Review ── */}
+        {step === "review" && product && (
+          <div className="space-y-4">
+            <div className="bg-white rounded-2xl border border-ink/[0.06] shadow-sm overflow-hidden">
+              {/* Header */}
+              <div className="bg-gradient-to-r from-ficium to-ficium-deep px-6 py-5">
+                <div className="text-[11px] font-bold text-white/50 uppercase tracking-widest mb-1">Ready to post</div>
+                <div className="font-display text-[22px] font-bold text-white">{product.label}</div>
+              </div>
+
+              {/* Details */}
+              <div className="px-6 py-5 space-y-3">
+                <ReviewRow label="Amount"   value={fmtMUR(amount)} />
+                <ReviewRow label="Term"     value={`${termMonths} months`} />
+                <ReviewRow label="Purpose"  value={purpose} />
+                {maxRate !== "" && <ReviewRow label="Max rate" value={`${maxRate}% APR`} />}
+                {deadline && <ReviewRow label="Deadline" value={new Date(deadline).toLocaleDateString("en-MU", { day: "numeric", month: "short", year: "numeric" })} />}
+              </div>
+
+              {/* Privacy note */}
+              <div className="mx-6 mb-5 flex items-start gap-2.5 bg-ficium/[0.04] border border-ficium/[0.12] rounded-xl px-4 py-3">
+                <Lock size={13} className="text-ficium flex-shrink-0 mt-0.5" />
+                <p className="text-[12px] text-ink/70 leading-relaxed">
+                  Your identity stays private. Banks see only the details above and bid anonymously.
+                </p>
+              </div>
+
+              {error && (
+                <div className="mx-6 mb-5 flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                  <AlertCircle size={14} className="text-red-500 flex-shrink-0" />
+                  <p className="text-[13px] text-red-600">{error}</p>
+                </div>
+              )}
+
+              <div className="px-6 pb-6 flex gap-3">
+                <button
+                  onClick={submit}
+                  disabled={submitting}
+                  className="flex-1 flex items-center justify-center gap-2 bg-ficium hover:bg-ficium-deep text-white font-bold py-3.5 rounded-2xl transition-colors text-[15px] disabled:opacity-60 shadow-ficium"
+                >
+                  {submitting
+                    ? <><Loader2 size={16} className="animate-spin" /> Posting…</>
+                    : <><CheckCircle2 size={16} /> Post request</>
+                  }
+                </button>
+                <button
+                  onClick={() => setStep("purpose")}
+                  disabled={submitting}
+                  className="px-5 py-3.5 rounded-2xl border border-ink/10 text-[13px] font-semibold text-muted hover:bg-ink/[0.03] transition-colors"
+                >
+                  Edit
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
 
       <BottomNav />
     </div>
   );
 }
 
-/* ─── Chat bubble ─────────────────────────────────────────── */
-function ChatBubble({ msg }: { msg: Msg }) {
-  const isAI = msg.role === "assistant";
+/* ─── Sub-components ─────────────────────────────────────── */
 
-  if (!isAI) {
-    return (
-      <div className="flex justify-end">
-        <div className="max-w-[80%] bg-ficium text-white px-4 py-3 rounded-[18px] rounded-tr-md text-[14px] leading-relaxed font-medium shadow-ficium">
-          {msg.text}
-        </div>
-      </div>
-    );
-  }
-
+function StepNav({ onBack, onNext, nextDisabled }: {
+  onBack: () => void;
+  onNext: () => void;
+  nextDisabled?: boolean;
+}) {
   return (
-    <div className="flex gap-3 items-start">
-      <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#0f0c29] to-[#302b63] grid place-items-center flex-shrink-0 border border-ficium/20 shadow-sm">
-        <Brain size={15} className="text-white" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="bg-white rounded-[22px] rounded-tl-md border border-ink/[0.06] px-5 py-4 shadow-sm">
-          {msg.thinking ? (
-            <div className="flex items-center gap-2">
-              {[0,1,2].map((i) => (
-                <div key={i} className="w-2 h-2 rounded-full bg-ficium/40 animate-bounce" style={{ animationDelay: `${i * 150}ms` }} />
-              ))}
-            </div>
-          ) : (
-            <p className="text-[15px] text-ink/85 leading-relaxed whitespace-pre-line m-0">
-              {msg.text}
-            </p>
-          )}
-        </div>
-        <p className="text-[11px] text-muted mt-1 ml-1">Ficium AI · Powered by Claude</p>
-      </div>
+    <div className="flex gap-3 pt-2">
+      <button
+        onClick={onBack}
+        className="px-5 py-3 rounded-2xl border border-ink/10 text-[13px] font-semibold text-muted hover:bg-ink/[0.03] transition-colors"
+      >
+        Back
+      </button>
+      <button
+        onClick={onNext}
+        disabled={nextDisabled}
+        className="flex-1 flex items-center justify-center gap-2 bg-ficium hover:bg-ficium-deep text-white font-bold py-3 rounded-2xl transition-colors text-[14px] disabled:opacity-40 shadow-ficium"
+      >
+        Continue <ArrowRight size={15} />
+      </button>
     </div>
   );
 }
 
-/* ─── Request detail row ──────────────────────────────────── */
-function RequestRow({ label, value }: { label: string; value: string }) {
+function ReviewRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-start justify-between gap-4">
-      <span className="text-[12px] text-muted font-medium capitalize w-24 flex-shrink-0">{label}</span>
-      <span className="text-[13px] font-semibold text-ink text-right capitalize">{value}</span>
+    <div className="flex items-start justify-between gap-4 py-2 border-b border-ink/[0.05] last:border-0">
+      <span className="text-[12px] text-muted font-medium w-20 flex-shrink-0">{label}</span>
+      <span className="text-[13px] font-semibold text-ink text-right">{value}</span>
     </div>
   );
 }

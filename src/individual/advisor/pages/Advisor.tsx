@@ -90,6 +90,19 @@ function buildGreeting(firstName: string): ChatMessage {
 /* ============================================================
    MAIN COMPONENT
    ============================================================ */
+const FREE_LIMIT = 3; // messages per month for free users
+const STORAGE_KEY = `ficium_ai_msgs_${new Date().getFullYear()}_${new Date().getMonth()}`;
+
+function getUsedMessages(): number {
+  try { return parseInt(localStorage.getItem(STORAGE_KEY) ?? "0", 10); }
+  catch { return 0; }
+}
+function incrementUsedMessages(): number {
+  const next = getUsedMessages() + 1;
+  try { localStorage.setItem(STORAGE_KEY, String(next)); } catch {}
+  return next;
+}
+
 export default function Advisor() {
   const { data: profile } = useProfile();
   const firstName = profile?.firstName ?? profile?.fullName?.split(" ")[0] ?? "there";
@@ -97,10 +110,14 @@ export default function Advisor() {
   const [messages, setMessages] = useState<ChatMessage[]>([
     buildGreeting(firstName),
   ]);
-  const [input, setInput] = useState("");
-  const [thinking, setThinking] = useState(false);
+  const [input,     setInput]    = useState("");
+  const [thinking,  setThinking] = useState(false);
+  const [usedMsgs,  setUsedMsgs] = useState(getUsedMessages);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef  = useRef<HTMLInputElement>(null);
+
+  const isFreeTierExhausted = usedMsgs >= FREE_LIMIT;
+  const remaining = Math.max(0, FREE_LIMIT - usedMsgs);
 
   /* Update greeting when profile loads */
   useEffect(() => {
@@ -113,12 +130,15 @@ export default function Advisor() {
   }, [messages, thinking]);
 
   const sendMessage = useCallback(async (text: string) => {
-    if (!text.trim() || thinking) return;
+    if (!text.trim() || thinking || isFreeTierExhausted) return;
 
     const userMsg: ChatMessage = { id: Date.now().toString(), role: "user", text };
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setThinking(true);
+
+    const used = incrementUsedMessages();
+    setUsedMsgs(used);
 
     // Build history for Claude
     const history: ClaudeMessage[] = [...messages, userMsg].map((m) => ({
@@ -277,28 +297,73 @@ export default function Advisor() {
               ))}
             </div>
 
-            <form onSubmit={handleSubmit} className="flex items-center gap-3 bg-white rounded-[18px] border border-ink/[0.10] px-4 py-3 shadow-sm focus-within:border-ficium/30 focus-within:ring-2 focus-within:ring-ficium/10 transition-all">
-              <input
-                ref={inputRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask me anything about your finances…"
-                className="flex-1 text-[15px] text-ink placeholder:text-ink/35 outline-none bg-transparent"
-                autoComplete="off"
-                autoCorrect="off"
-                autoCapitalize="none"
-              />
-              <button
-                type="submit"
-                disabled={!input.trim() || thinking}
-                className="w-9 h-9 rounded-xl bg-ficium text-white grid place-items-center disabled:opacity-40 disabled:cursor-not-allowed hover:bg-ficium/90 transition-all flex-shrink-0"
-              >
-                <Send size={15} />
-              </button>
-            </form>
-            <p className="text-center text-[11px] text-muted mt-2">
-              Ficium AI analyses your real profile data · Not financial advice
-            </p>
+          {/* Input */}
+          <div className="pt-3 pb-2">
+            {/* Mobile chips */}
+            {!isFreeTierExhausted && (
+              <div className="flex gap-2 overflow-x-auto pb-3 lg:hidden scrollbar-hide">
+                {QUICK_CHIPS.map((chip) => (
+                  <button
+                    key={chip}
+                    onClick={() => handleChip(chip)}
+                    className="flex-shrink-0 px-3.5 py-2 bg-white border border-ink/[0.08] rounded-pill text-[12px] font-semibold text-ink/70 hover:border-ficium/30 hover:text-ficium transition-colors shadow-sm"
+                  >
+                    {chip}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Free tier exhausted wall */}
+            {isFreeTierExhausted ? (
+              <div className="bg-white rounded-[22px] border border-ink/[0.08] p-6 text-center shadow-sm">
+                <div className="w-12 h-12 rounded-full bg-ficium/10 grid place-items-center mx-auto mb-4">
+                  <Brain size={22} className="text-ficium" />
+                </div>
+                <div className="font-display text-[18px] font-bold text-ink mb-1">
+                  {FREE_LIMIT} free messages used
+                </div>
+                <p className="text-[13px] text-muted mb-5 max-w-[280px] mx-auto leading-relaxed">
+                  Upgrade to Ficium Premium for unlimited AI coaching, deeper financial analysis, and priority insights.
+                </p>
+                <div className="flex flex-col gap-2">
+                  <button className="w-full bg-ficium text-white font-bold py-3.5 rounded-2xl text-[14px] shadow-ficium hover:bg-ficium-deep transition-colors">
+                    Upgrade — MUR 199/month
+                  </button>
+                  <p className="text-[11px] text-muted">Resets on the 1st of each month</p>
+                </div>
+              </div>
+            ) : (
+              <>
+                <form onSubmit={handleSubmit} className="flex items-center gap-3 bg-white rounded-[18px] border border-ink/[0.10] px-4 py-3 shadow-sm focus-within:border-ficium/30 focus-within:ring-2 focus-within:ring-ficium/10 transition-all">
+                  <input
+                    ref={inputRef}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder="Ask me anything about your finances…"
+                    className="flex-1 text-[15px] text-ink placeholder:text-ink/35 outline-none bg-transparent"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="none"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!input.trim() || thinking}
+                    className="w-9 h-9 rounded-xl bg-ficium text-white grid place-items-center disabled:opacity-40 disabled:cursor-not-allowed hover:bg-ficium/90 transition-all flex-shrink-0"
+                  >
+                    <Send size={15} />
+                  </button>
+                </form>
+                <div className="flex items-center justify-between mt-2 px-1">
+                  <p className="text-[11px] text-muted">
+                    Ficium AI · Not financial advice
+                  </p>
+                  <p className={`text-[11px] font-semibold ${remaining === 1 ? "text-amber-500" : "text-muted"}`}>
+                    {remaining} free message{remaining !== 1 ? "s" : ""} left this month
+                  </p>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
