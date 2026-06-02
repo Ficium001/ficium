@@ -238,6 +238,9 @@ function RequestDetailDrawer({
   onBid: () => void;
 }) {
   const [tab, setTab] = useState<"details" | "chat">("details");
+  const [markerComment,   setMarkerComment]   = useState("");
+  const [approverComment, setApproverComment] = useState("");
+
   const fmt      = (v: number) => v >= 1_000_000 ? `MUR ${(v/1_000_000).toFixed(1)}M` : `MUR ${Number(v).toLocaleString()}`;
   const fmtDate  = (s: string) => new Date(s).toLocaleDateString("en-MU", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
   const fmtMoney = (v: number | null | undefined) => v != null && v > 0 ? fmt(v) : "—";
@@ -266,11 +269,12 @@ function RequestDetailDrawer({
     lines.push(`Net Worth:      ${fmtMoney(request.client_net_worth)}`);
     lines.push(`Country:        ${request.client_country ?? "—"}`);
     lines.push(`Employment:     ${request.client_employment_status?.replace(/_/g, " ") ?? "—"}`);
+    if (markerComment)   lines.push(`\nMarker note:    ${markerComment}`);
+    if (approverComment) lines.push(`Approver note:  ${approverComment}`);
     lines.push(`${"─".repeat(48)}`);
     lines.push(`CONFIDENTIAL — For internal use only. Client identity not disclosed.`);
 
     const content = lines.join("\n");
-    // Build a simple printable HTML and open in new window
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
       <title>Ficium Request Dossier #${request.client_ref?.slice(0,8)}</title>
       <style>
@@ -296,154 +300,208 @@ function RequestDetailDrawer({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex">
-      {/* Backdrop */}
-      <div className="flex-1 bg-ink/40 backdrop-blur-sm" onClick={onClose} />
+    /* ── Full-screen backdrop ── */
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8 bg-ink/50 backdrop-blur-sm" onClick={onClose}>
 
-      {/* Drawer */}
-      <div className="w-full max-w-[520px] bg-white h-full flex flex-col shadow-2xl">
+      {/* ── Modal ── */}
+      <div
+        className="relative bg-white rounded-3xl shadow-[0_32px_80px_rgba(10,10,26,0.28)] w-full max-w-3xl max-h-[92vh] flex flex-col overflow-hidden"
+        onClick={e => e.stopPropagation()}
+      >
 
-        {/* Header */}
-        <div className="flex items-start justify-between px-6 py-5 border-b border-ink/[0.07] flex-shrink-0">
+        {/* ── Modal header ── */}
+        <div className="flex items-start justify-between px-8 py-6 border-b border-ink/[0.07] flex-shrink-0">
           <div>
-            <div className="text-[11px] font-bold text-ficium uppercase tracking-widest mb-1">{request.family_label ?? "Financial product"}</div>
-            <h2 className="font-display font-bold text-[20px] text-ink">{request.product_label ?? request.product_type}</h2>
+            <div className="text-[11px] font-bold text-ficium uppercase tracking-widest mb-1">
+              {request.family_label ?? "Financial product"}
+            </div>
+            <h2 className="font-display font-bold text-[24px] text-ink leading-tight">
+              {request.product_label ?? request.product_type}
+            </h2>
           </div>
           <div className="flex items-center gap-2 mt-1">
             <button
-                onClick={downloadPDF}
-                title="Download dossier as PDF"
-                className="flex items-center gap-1.5 text-[12px] font-medium text-muted hover:text-ficium border border-ink/10 hover:border-ficium/30 px-3 py-1.5 rounded-xl transition-colors"
-              >
-                <Download className="w-3.5 h-3.5" />PDF
-              </button>
-            <button onClick={onClose} className="text-muted hover:text-ink transition-colors">
-              <X className="w-5 h-5" />
+              onClick={downloadPDF}
+              title="Download dossier"
+              className="flex items-center gap-1.5 text-[12px] font-semibold text-muted hover:text-ficium border border-ink/10 hover:border-ficium/30 px-3.5 py-2 rounded-xl transition-colors"
+            >
+              <Download className="w-3.5 h-3.5" /> PDF
+            </button>
+            <button
+              onClick={onClose}
+              className="w-9 h-9 rounded-xl bg-ink/[0.05] hover:bg-ink/10 grid place-items-center text-muted hover:text-ink transition-colors"
+            >
+              <X className="w-4.5 h-4.5" />
             </button>
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex border-b border-ink/[0.07] flex-shrink-0">
+        {/* ── Tabs ── */}
+        <div className="flex border-b border-ink/[0.07] flex-shrink-0 px-8">
           {(["details", "chat"] as const).map(t => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 text-[13px] font-semibold transition-colors border-b-2 ${
-                tab === t
-                  ? "border-ficium text-ficium"
-                  : "border-transparent text-muted hover:text-ink"
+              className={`flex items-center gap-2 py-3.5 mr-6 text-[13px] font-semibold transition-colors border-b-2 ${
+                tab === t ? "border-ficium text-ficium" : "border-transparent text-muted hover:text-ink"
               }`}
             >
-              {t === "chat" && <MessageSquare className="w-3.5 h-3.5" />}
-              {t === "details" && <FileText className="w-3.5 h-3.5" />}
+              {t === "details" ? <FileText className="w-3.5 h-3.5" /> : <MessageSquare className="w-3.5 h-3.5" />}
               {t.charAt(0).toUpperCase() + t.slice(1)}
             </button>
           ))}
         </div>
 
-        {/* Tab content */}
+        {/* ── Scrollable body ── */}
         {tab === "details" ? (
-          <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+          <div className="flex-1 overflow-y-auto">
+            <div className="px-8 py-6 space-y-7">
 
-            {/* Status + dates */}
-            <div className="grid grid-cols-2 gap-3">
-              <DetailStat label="Status">
-                <span className="bg-green-50 text-green-700 border border-green-200 text-[11px] font-semibold px-2.5 py-1 rounded-full">Open</span>
-              </DetailStat>
-              <DetailStat label="Submitted" value={fmtDate(request.created_at)} />
-              <DetailStat label="Amount" value={fmt(Number(request.amount))} bold />
-              {request.term_months && <DetailStat label="Term" value={`${request.term_months} months`} bold />}
-              {request.bid_window_closes_at && (
-                <DetailStat
-                  label="Bid window closes"
-                  value={fmtDate(request.bid_window_closes_at)}
-                  accent={isUrgent ? "red" : undefined}
-                />
+              {/* Status grid */}
+              <div className="grid grid-cols-3 gap-3">
+                <DetailStat label="Status">
+                  <span className="bg-green-50 text-green-700 border border-green-200 text-[11px] font-semibold px-2.5 py-1 rounded-full">Open</span>
+                </DetailStat>
+                <DetailStat label="Submitted" value={fmtDate(request.created_at)} />
+                <DetailStat label="Ref" value={`#${request.client_ref?.slice(0,8)}`} />
+                <DetailStat label="Amount" value={fmt(Number(request.amount))} bold />
+                {request.term_months && <DetailStat label="Term" value={`${request.term_months} months`} bold />}
+                {request.bid_window_closes_at && (
+                  <DetailStat
+                    label="Bid window closes"
+                    value={fmtDate(request.bid_window_closes_at)}
+                    accent={isUrgent ? "red" : undefined}
+                  />
+                )}
+              </div>
+
+              {/* Purpose */}
+              {request.purpose && (
+                <div>
+                  <SectionLabel icon={<FileText className="w-3.5 h-3.5" />} text="Purpose" />
+                  <p className="text-[14px] text-ink/80 bg-cream rounded-xl px-4 py-3 leading-relaxed">{request.purpose}</p>
+                </div>
               )}
-              <DetailStat label="Ref" value={`#${request.client_ref?.slice(0,8)}`} />
-            </div>
 
-            {/* Purpose */}
-            {request.purpose && (
-              <div>
-                <div className="flex items-center gap-1.5 mb-2">
-                  <FileText className="w-3.5 h-3.5 text-ficium" />
-                  <span className="text-[11px] font-bold text-ficium uppercase tracking-wider">Purpose</span>
-                </div>
-                <p className="text-[14px] text-ink/80 bg-cream rounded-xl px-4 py-3 leading-relaxed">{request.purpose}</p>
-              </div>
-            )}
+              {/* Two-col: client profile + amount/rate */}
+              <div className="grid grid-cols-2 gap-6">
 
-            {/* Anonymous client profile */}
-            <div>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-1.5">
-                    <User className="w-3.5 h-3.5 text-ficium" />
-                    <span className="text-[11px] font-bold text-ficium uppercase tracking-wider">Client Profile</span>
+                {/* Client profile */}
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <SectionLabel icon={<User className="w-3.5 h-3.5" />} text="Client Profile" />
+                    <span className="text-[10px] text-muted bg-ink/5 px-2 py-1 rounded-full">Anonymised</span>
                   </div>
-                  <span className="text-[10px] text-muted bg-ink/5 px-2 py-1 rounded-full">Anonymised</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <ProfileStat label="Credit Score"
+                      value={request.client_health_score != null ? `${request.client_health_score}/100` : "—"}
+                      accent={request.client_health_score != null ? (request.client_health_score >= 70 ? "green" : request.client_health_score >= 50 ? "amber" : "red") : undefined} />
+                    <ProfileStat label="Affordability"
+                      value={request.client_affordability_score != null ? `${request.client_affordability_score}/100` : "—"}
+                      accent={request.client_affordability_score != null ? (request.client_affordability_score >= 70 ? "green" : request.client_affordability_score >= 50 ? "amber" : "red") : undefined} />
+                    <ProfileStat label="Risk Score" value={request.client_risk_score != null ? `${request.client_risk_score}/100` : "—"} />
+                    <ProfileStat label="Monthly Income" value={fmtMoney(request.client_monthly_income)} />
+                    <ProfileStat label="Net Worth"      value={fmtMoney(request.client_net_worth)} />
+                    <ProfileStat label="Country"        value={request.client_country ?? "—"} />
+                    <ProfileStat label="Employment"     value={request.client_employment_status?.replace(/_/g, " ") ?? "—"} />
+                  </div>
+                  <p className="text-[10px] text-muted mt-2">Client identity not disclosed at this stage.</p>
                 </div>
-                <div className="grid grid-cols-2 gap-2.5">
-                  <ProfileStat label="Credit Score"
-                    value={request.client_health_score != null ? `${request.client_health_score}/100` : "—"}
-                    accent={request.client_health_score != null ? (request.client_health_score >= 70 ? "green" : request.client_health_score >= 50 ? "amber" : "red") : undefined} />
-                  <ProfileStat label="Affordability"
-                    value={request.client_affordability_score != null ? `${request.client_affordability_score}/100` : "—"}
-                    accent={request.client_affordability_score != null ? (request.client_affordability_score >= 70 ? "green" : request.client_affordability_score >= 50 ? "amber" : "red") : undefined} />
-                  <ProfileStat label="Risk Score"
-                    value={request.client_risk_score != null ? `${request.client_risk_score}/100` : "—"} />
-                  <ProfileStat label="Monthly Income" value={fmtMoney(request.client_monthly_income)} />
-                  <ProfileStat label="Net Worth"      value={fmtMoney(request.client_net_worth)} />
-                  <ProfileStat label="Country"        value={request.client_country ?? "—"} />
-                  <ProfileStat label="Employment"     value={request.client_employment_status?.replace(/_/g, " ") ?? "—"} />
+
+                {/* Amount + rate guidance */}
+                <div className="space-y-4">
+                  <div>
+                    <SectionLabel icon={<DollarSign className="w-3.5 h-3.5" />} text="Requested Amount" />
+                    <div className="bg-cream rounded-xl px-4 py-3">
+                      <div className="font-display font-bold text-[24px] text-ink">{fmt(Number(request.amount))}</div>
+                      {request.term_months && <div className="text-[13px] text-muted mt-0.5">over {request.term_months} months</div>}
+                    </div>
+                  </div>
+                  <div>
+                    <SectionLabel icon={<TrendingUp className="w-3.5 h-3.5" />} text="Rate Guidance" />
+                    <div className="bg-cream rounded-xl px-4 py-3 text-[13px] text-ink/70 leading-relaxed">
+                      Submit your most competitive rate. Clients compare all bids and are not shown your institution name until they choose to connect.
+                    </div>
+                  </div>
                 </div>
-                <p className="text-[10px] text-muted mt-2.5">Client identity is not disclosed at this stage.</p>
               </div>
 
-            {/* Amount guidance */}
-            <div>
-              <div className="flex items-center gap-1.5 mb-2">
-                <DollarSign className="w-3.5 h-3.5 text-ficium" />
-                <span className="text-[11px] font-bold text-ficium uppercase tracking-wider">Requested amount</span>
+              {/* ── Maker-checker comment boxes ── */}
+              <div className="grid grid-cols-2 gap-4 pt-2">
+
+                {/* Marker */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-5 h-5 rounded-md bg-ficium/10 grid place-items-center">
+                      <MessageSquare className="w-3 h-3 text-ficium" />
+                    </div>
+                    <span className="text-[11px] font-bold text-ficium uppercase tracking-wider">Marker Comment</span>
+                  </div>
+                  <textarea
+                    value={markerComment}
+                    onChange={e => setMarkerComment(e.target.value)}
+                    rows={4}
+                    placeholder="Add your analysis or notes before submitting for approval…"
+                    className="w-full bg-white border border-ink/[0.10] focus:border-ficium focus:ring-2 focus:ring-ficium/15 rounded-2xl px-4 py-3 text-[13px] text-ink placeholder:text-muted/60 outline-none resize-none transition-all"
+                  />
+                </div>
+
+                {/* Approver */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-5 h-5 rounded-md bg-amber-100 grid place-items-center">
+                      <MessageSquare className="w-3 h-3 text-amber-600" />
+                    </div>
+                    <span className="text-[11px] font-bold text-amber-600 uppercase tracking-wider">Approver Comment</span>
+                  </div>
+                  <textarea
+                    value={approverComment}
+                    onChange={e => setApproverComment(e.target.value)}
+                    rows={4}
+                    placeholder="Approver review notes — reasons for approval or rejection…"
+                    className="w-full bg-white border border-ink/[0.10] focus:border-amber-400 focus:ring-2 focus:ring-amber-400/15 rounded-2xl px-4 py-3 text-[13px] text-ink placeholder:text-muted/60 outline-none resize-none transition-all"
+                  />
+                </div>
+
               </div>
-              <div className="bg-cream rounded-xl px-4 py-3">
-                <div className="font-display font-bold text-[22px] text-ink">{fmt(Number(request.amount))}</div>
-                {request.term_months && <div className="text-[13px] text-muted mt-0.5">over {request.term_months} months</div>}
-              </div>
+
             </div>
-
-            {/* Rate guidance */}
-            <div>
-              <div className="flex items-center gap-1.5 mb-2">
-                <TrendingUp className="w-3.5 h-3.5 text-ficium" />
-                <span className="text-[11px] font-bold text-ficium uppercase tracking-wider">Rate guidance</span>
-              </div>
-              <div className="bg-cream rounded-xl px-4 py-3 text-[13px] text-ink/70">
-                Submit your most competitive rate. Clients compare all bids and are not shown your institution name until they choose to connect.
-              </div>
-            </div>
-
           </div>
         ) : (
           <div className="flex-1 flex flex-col overflow-hidden">
-          <RequestChat requestId={request.id} senderType="institution" client={institutionSupabase} />
+            <RequestChat requestId={request.id} senderType="institution" client={institutionSupabase} />
           </div>
         )}
 
-        {/* Sticky CTA — only on details tab */}
+        {/* ── Sticky footer CTA ── */}
         {tab === "details" && (
-          <div className="flex-shrink-0 bg-white border-t border-ink/[0.07] px-6 py-4">
+          <div className="flex-shrink-0 bg-white border-t border-ink/[0.07] px-8 py-5 flex items-center gap-4">
             <button
               onClick={onBid}
-              className="w-full flex items-center justify-center gap-2 bg-ficium hover:bg-ficium-deep text-white font-bold py-3.5 rounded-2xl transition-colors text-[15px]"
+              className="flex-1 flex items-center justify-center gap-2 bg-ficium hover:bg-ficium-deep text-white font-bold py-3.5 rounded-2xl transition-colors text-[15px] shadow-ficium"
             >
               <Zap className="w-5 h-5" />
               Place bid on this request
             </button>
+            <button
+              onClick={onClose}
+              className="px-6 py-3.5 rounded-2xl border border-ink/10 text-muted text-[14px] font-semibold hover:bg-ink/[0.03] transition-colors"
+            >
+              Close
+            </button>
           </div>
         )}
+
       </div>
+    </div>
+  );
+}
+
+function SectionLabel({ icon, text }: { icon: React.ReactNode; text: string }) {
+  return (
+    <div className="flex items-center gap-1.5 mb-2">
+      <span className="text-ficium">{icon}</span>
+      <span className="text-[11px] font-bold text-ficium uppercase tracking-wider">{text}</span>
     </div>
   );
 }
