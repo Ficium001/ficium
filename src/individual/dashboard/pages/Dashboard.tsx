@@ -38,7 +38,7 @@ export default function Dashboard() {
   const { data: requests = [], isLoading: requestsLoading } = useMyRequests();
   const { actions } = useNextActions();
   const { score: bankReadiness } = useBankReadiness();
-  const { intel, topProducts } = useIntelligence();
+  const { intel } = useIntelligence();
 
   const loading = profileLoading || requestsLoading;
   const handleSignOut = async () => { await signOut(); navigate("/"); };
@@ -60,7 +60,9 @@ export default function Dashboard() {
     : { label: "Low", color: "#dc2626" };
 
   // Build live insights from market intelligence — pure SQL data, zero Claude
-  const liveInsights = intel?.marketRates?.length
+  type Insight = { icon: React.ElementType; color: string; bg: string; text: string; type: string };
+
+  const liveInsights: Insight[] = intel?.marketRates?.length
     ? [
         ...intel.marketRates.slice(0, 2).map((r) => ({
           icon:  BarChart2,
@@ -83,16 +85,16 @@ export default function Dashboard() {
           text:  `${p.open_requests} ${p.product_type.replace(/_/g, " ")} requests open now — avg amount MUR ${Number(p.avg_amount).toLocaleString()}`,
           type:  "warning",
         })) ?? []),
-      ].filter(Boolean)
+      ]
     : FALLBACK_INSIGHTS;
 
-  const AI_INSIGHTS = liveInsights.length ? liveInsights : FALLBACK_INSIGHTS;
+  const dashboardInsights: Insight[] = liveInsights.length ? liveInsights : FALLBACK_INSIGHTS;
 
   /* Cycle through insights */
   useEffect(() => {
-    const t = setInterval(() => setInsightIdx((i) => (i + 1) % AI_INSIGHTS.length), 5000);
+    const t = setInterval(() => setInsightIdx((i) => (i + 1) % dashboardInsights.length), 5000);
     return () => clearInterval(t);
-  }, [AI_INSIGHTS.length]);
+  }, [dashboardInsights.length]);
 
   return (
     <div className="min-h-screen pb-28 relative">
@@ -300,7 +302,7 @@ export default function Dashboard() {
         {/* ═══════ CREAM ZONE ═══════ */}
 
         {/* ── SMART INSIGHTS FEED ── */}
-        <SmartInsightsFeed insights={AI_INSIGHTS} activeIdx={insightIdx} onNext={() => setInsightIdx((i) => (i + 1) % AI_INSIGHTS.length)} />
+        <SmartInsightsFeed insights={dashboardInsights} activeIdx={insightIdx} onNext={() => setInsightIdx((i) => (i + 1) % dashboardInsights.length)} />
 
         {/* ── I NEED SECTION ── */}
         <div className="mb-8">
@@ -414,8 +416,10 @@ export default function Dashboard() {
    SMART INSIGHTS FEED
    ============================================================ */
 
+type InsightItem = { icon: React.ElementType; color: string; bg: string; text: string; type: string };
+
 function SmartInsightsFeed({ insights, activeIdx, onNext }: {
-  insights: typeof AI_INSIGHTS;
+  insights: InsightItem[];
   activeIdx: number;
   onNext: () => void;
 }) {
@@ -436,7 +440,7 @@ function SmartInsightsFeed({ insights, activeIdx, onNext }: {
 
       {/* Insight cards */}
       <div className="flex gap-3 overflow-x-auto pb-2 lg:overflow-visible lg:grid lg:grid-cols-3 scrollbar-hide">
-        {insights.map((insight, i) => {
+        {insights.map((insight: InsightItem, i: number) => {
           const Icon = insight.icon;
           const isActive = i === activeIdx;
           return (
@@ -466,7 +470,7 @@ function SmartInsightsFeed({ insights, activeIdx, onNext }: {
 
       {/* Dots */}
       <div className="flex justify-center gap-1.5 mt-3 lg:hidden">
-        {insights.map((_, i) => (
+        {insights.map((_: InsightItem, i: number) => (
           <div key={i} className={["h-1.5 rounded-pill transition-all duration-300", i === activeIdx ? "bg-ficium w-5" : "bg-ink/20 w-1.5"].join(" ")} />
         ))}
       </div>
