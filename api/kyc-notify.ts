@@ -104,7 +104,7 @@ export default async function handler(req: any, res: any) {
     method:  "POST",
     headers: { "Authorization": `Bearer ${resendKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      from:    "Ficium <noreply@ficium.net>",
+      from:    "Ficium <onboarding@resend.dev>",
       to:      [email],
       subject: isApproved ? "✓ Your identity has been verified — Ficium" : "Your identity verification — action required",
       html:    isApproved ? approvedHtml(name, note) : rejectedHtml(name, note ?? "Documents could not be verified. Please resubmit with clearer photos."),
