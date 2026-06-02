@@ -5,10 +5,10 @@
  * Uses connection pooling config for high concurrency.
  * Never exposed to the browser — service key stays server-side.
  */
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createClient } from "@supabase/supabase-js";
 import { Env } from "./env";
 
-export type ServiceDb = SupabaseClient;
+export type ServiceDb = ReturnType<typeof createClient>;
 
 /**
  * Returns a service-role Supabase client.
@@ -27,10 +27,7 @@ export function getServiceDb(): ServiceDb {
     auth: { persistSession: false, autoRefreshToken: false },
     db:   { schema: "public" },
     global: {
-      headers: {
-        // Identifies server-side requests in Supabase logs
-        "x-ficium-source": "api-server",
-      },
+      headers: { "x-ficium-source": "api-server" },
     },
   });
 }

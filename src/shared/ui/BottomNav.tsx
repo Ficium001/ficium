@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { Home, FileText, Sparkles, Bell, User } from "lucide-react";
 import { useAuth } from "../../features/auth/context/AuthContext";
+import { useUnreadCount } from "../../modules/notifications/hooks";
 
 const tabs = [
   { to: "/dashboard", label: "Home",     icon: Home,     key: "home"     },
@@ -12,7 +13,8 @@ const tabs = [
 
 export function BottomNav() {
   const { pathname } = useLocation();
-  const { unreadCount, role } = useAuth();
+  const { user, role } = useAuth();
+  const unreadCount = useUnreadCount(user?.id ?? null);
 
   // BottomNav is client-only — banks have a different UI
   if (role !== "client") return null;

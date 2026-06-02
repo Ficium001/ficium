@@ -6,7 +6,8 @@
  * Cached at the edge via Cache-Control headers + in-process TTL cache.
  */
 import { IntelligenceService } from "./_lib/intelligence-service";
-import { Response }            from "./_lib/response";
+import { Response }       from "./_lib/response";
+import { captureApiError } from "./_lib/monitor";
 
 export const config = { runtime: "nodejs" };
 

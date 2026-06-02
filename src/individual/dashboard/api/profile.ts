@@ -25,7 +25,7 @@ export type ProfileSummary = ProfileCore & ProfileScores & {
 
 export type RequestSummary = {
   id: string; productType: string; amount: number;
-  status: "open" | "closed" | "accepted" | "expired";
+  status: "open" | "closed" | "accepted" | "expired" | "cancelled";
   createdAt: string; bidCount: number; bestRate: number | null;
 };
 

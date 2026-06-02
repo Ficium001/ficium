@@ -12,9 +12,10 @@
  * components directly — they only poll when mounted and visible.
  */
 import { createContext, useContext, useEffect, useState } from "react";
-import type { ReactNode }   from "react";
+import type { ReactNode }     from "react";
 import type { Session, User } from "@supabase/supabase-js";
-import { supabase }         from "../../../shared/lib/supabase";
+import { supabase }           from "../../../shared/lib/supabase";
+import { identifyUser, clearUser } from "../../../core/sentry";
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -55,6 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Satisfy TypeScript — userId is used as a stable dep in callers
     void userId;
     setRole((roleData as UserRole) ?? "client");
+    identifyUser(userId, (roleData as UserRole) ?? "client");
   }
 
   useEffect(() => {
@@ -84,6 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = async (): Promise<void> => {
+    clearUser();
     await supabase.auth.signOut();
   };
 
