@@ -1,34 +1,40 @@
+/**
+ * src/individual/dashboard/hooks/useDashboard.ts
+ * ─────────────────────────────────────────────────────────────
+ * Dashboard data hooks — profile + derived computations.
+ * Requests are now in their own module (src/modules/requests/hooks.ts).
+ *
+ * Re-exports useMyRequests from the requests module for backward
+ * compatibility — existing consumers don't need to change.
+ */
 import { useQuery } from "@tanstack/react-query";
-
 import {
   getProfileSummary,
-  getMyRequests,
   computeNextActions,
   computeBankReadiness,
   computeHealthRecommendations,
 } from "../api/profile";
 
-/* ── Profile (from client_profile_view) ── */
+// Re-export from requests module — single source of truth
+export { useMyRequests } from "../../../modules/requests/hooks";
+
+// ── Query keys ───────────────────────────────────────────────
+
+export const DashboardQueryKeys = {
+  profile: ["profile"] as const,
+} as const;
+
+// ── Profile ──────────────────────────────────────────────────
 
 export function useProfile() {
   return useQuery({
-    queryKey: ["profile"],
-    queryFn: getProfileSummary,
-    staleTime: 2 * 60 * 1000,
+    queryKey: DashboardQueryKeys.profile,
+    queryFn:  getProfileSummary,
+    staleTime: 2 * 60 * 1000, // 2 min — profile rarely changes mid-session
   });
 }
 
-/* ── Requests ── */
-
-export function useMyRequests() {
-  return useQuery({
-    queryKey: ["my-requests"],
-    queryFn: getMyRequests,
-    staleTime: 60 * 1000,
-  });
-}
-
-/* ── Derived: next actions ── */
+// ── Derived (computed client-side from profile — no extra DB calls) ──
 
 export function useNextActions() {
   const { data: profile } = useProfile();
@@ -38,22 +44,18 @@ export function useNextActions() {
   };
 }
 
-/* ── Derived: bank readiness ── */
-
 export function useBankReadiness() {
   const { data: profile } = useProfile();
   return {
-    score: profile ? computeBankReadiness(profile) : null,
+    score:   profile ? computeBankReadiness(profile) : null,
     isReady: !!profile,
   };
 }
-
-/* ── Derived: health recommendations ── */
 
 export function useHealthRecommendations() {
   const { data: profile } = useProfile();
   return {
     recommendations: profile ? computeHealthRecommendations(profile) : [],
-    isReady: !!profile,
+    isReady:         !!profile,
   };
 }

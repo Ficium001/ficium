@@ -1,55 +1,64 @@
+/**
+ * src/features/auth/context/AuthContext.tsx
+ * ─────────────────────────────────────────────────────────────
+ * Authentication context — session, role, sign out.
+ *
+ * REMOVED: Supabase Realtime WebSocket for notifications.
+ * REPLACED: useUnreadCount hook with smart polling (see notifications module).
+ *   At 10M concurrent users, WebSockets require dedicated infrastructure.
+ *   Smart polling is free, scales infinitely, and has near-identical UX.
+ *
+ * The unreadCount is now driven by useUnreadCount() in the BottomNav/header
+ * components directly — they only poll when mounted and visible.
+ */
 import { createContext, useContext, useEffect, useState } from "react";
-import type { ReactNode } from "react";
+import type { ReactNode }   from "react";
 import type { Session, User } from "@supabase/supabase-js";
-import { supabase } from "../../../shared/lib/supabase";
+import { supabase }         from "../../../shared/lib/supabase";
+
+// ── Types ────────────────────────────────────────────────────
 
 type UserRole = "client" | "bank" | "admin";
 
 type AuthContextValue = {
-  user: User | null;
-  session: Session | null;
-  role: UserRole | null;
+  user:      User    | null;
+  session:   Session | null;
+  role:      UserRole | null;
   isLoading: boolean;
-  unreadCount: number;
-  signOut: () => Promise<void>;
+  signOut:   () => Promise<void>;
 };
+
+// ── Context ──────────────────────────────────────────────────
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+// ── Provider ─────────────────────────────────────────────────
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null);
-  const [role, setRole] = useState<UserRole | null>(null);
+  const [session,   setSession]   = useState<Session | null>(null);
+  const [role,      setRole]      = useState<UserRole | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [unreadCount, setUnreadCount] = useState(0);
 
-  async function fetchUserMeta(userId: string) {
-    // V2: use get_my_role() RPC — reads from correct schema per user type
-    // (public.clients, institution.institution_members, or admin.admin_users)
-    const [{ data: roleData }, { count }] = await Promise.all([
-      supabase.rpc("get_my_role"),
-      supabase
-        .from("notifications")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", userId)
-        .is("read_at", null),
-    ]);
+  async function fetchUserMeta(userId: string): Promise<void> {
+    // Single RPC call — reads correct schema based on user type
+    const { data: roleData } = await supabase.rpc("get_my_role");
 
-    // Stale session detected — DB row gone. Force complete cleanup + reload.
     if (!roleData) {
+      // Stale session: DB row gone — force clean logout
       await supabase.auth.signOut();
       setSession(null);
       setRole(null);
-      setUnreadCount(0);
       window.location.href = "/";
       return;
     }
 
+    // Satisfy TypeScript — userId is used as a stable dep in callers
+    void userId;
     setRole((roleData as UserRole) ?? "client");
-    setUnreadCount(count ?? 0);
   }
 
   useEffect(() => {
-    // 1. Hydrate session
+    // Hydrate session on mount
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
       if (data.session?.user) {
@@ -59,75 +68,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    // 2. Auth state changes
-    const { data: { subscription: authSub } } = supabase.auth.onAuthStateChange(
+    // Subscribe to auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, newSession) => {
         setSession(newSession);
         if (newSession?.user) {
           fetchUserMeta(newSession.user.id);
         } else {
           setRole(null);
-          setUnreadCount(0);
         }
       }
     );
 
-    return () => authSub.unsubscribe();
+    return () => subscription.unsubscribe();
   }, []);
 
-  // 3. Realtime notifications
-  useEffect(() => {
-    if (!session?.user) return;
-    const userId = session.user.id;
-
-    const channel = supabase
-      .channel(`notifications:${userId}`)
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
-        () => setUnreadCount((prev) => prev + 1)
-      )
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
-        () => {
-          supabase
-            .from("notifications")
-            .select("*", { count: "exact", head: true })
-            .eq("user_id", userId)
-            .is("read_at", null)
-            .then(({ count }) => setUnreadCount(count ?? 0));
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [session?.user?.id]);
-
-  const signOut = async () => {
+  const signOut = async (): Promise<void> => {
     await supabase.auth.signOut();
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user: session?.user ?? null,
-        session,
-        role,
-        isLoading,
-        unreadCount,
-        signOut,
-      }}
-    >
+    <AuthContext.Provider value={{ user: session?.user ?? null, session, role, isLoading, signOut }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
+// ── Hook ─────────────────────────────────────────────────────
+
 export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within an AuthProvider");
+  if (!ctx) throw new Error("useAuth must be used inside <AuthProvider>");
   return ctx;
 }

@@ -1,89 +1,92 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { createClient } from "@supabase/supabase-js";
+/**
+ * api/request-builder.ts
+ * ─────────────────────────────────────────────────────────────
+ * POST /api/request-builder
+ * Streaming SSE endpoint powering the conversational request builder.
+ * Intelligence injected from cache — zero extra DB queries per stream.
+ */
+import Anthropic          from "@anthropic-ai/sdk";
+import { Env }            from "./_lib/env";
+import { IntelligenceService } from "./_lib/intelligence-service";
+import { Response }       from "./_lib/response";
 
 export const config = { runtime: "nodejs" };
 
-type Message = { role: "user" | "assistant"; content: string };
-type Body    = { messages: Message[]; profile?: Record<string, unknown> };
+// ── Types ────────────────────────────────────────────────────
+type Message    = { role: "user" | "assistant"; content: string };
+type ClientProfile = {
+  healthScore?:   number | null;
+  monthlyIncome?: number | null;
+  netWorth?:      number | null;
+  employment?:    string | null;
+};
+type RequestBody = { messages: Message[]; profile?: ClientProfile };
 
-const anthropic = new Anthropic({ apiKey: (globalThis as any).process?.env?.ANTHROPIC_API_KEY });
-
-const BASE_SYSTEM = `
-You are Ficium's Request Builder — a conversational AI that helps clients in Mauritius post financial requests to the Ficium marketplace, where banks and fintechs bid for their business.
+// ── System prompt ────────────────────────────────────────────
+const BASE_SYSTEM = `\
+You are Ficium's Request Builder — a conversational AI that helps clients in \
+Mauritius post financial requests to the Ficium marketplace, where banks and \
+fintechs compete with bids.
 
 Collect these fields through natural conversation (one question at a time):
-- productType: personal_loan | sme_loan | mortgage | fixed_deposit | savings_account | credit_card | business_account | investment_account | leasing | overdraft | business_loan
-- amount: MUR (min 1,000)
-- purpose: short description (3–500 chars)
+- productType: personal_loan | sme_loan | mortgage | fixed_deposit | \
+savings_account | credit_card | business_account | investment_account | \
+leasing | overdraft | business_loan
+- amount: MUR (minimum 1,000)
+- purpose: short description (3–500 chars) — banks see this, not the client's name
 - preferredTermMonths: integer 1–360
 - maxRate (optional): max acceptable APR %
-- decisionDeadline (optional): ISO date
+- decisionDeadline (optional): ISO date string YYYY-MM-DD
 
 Rules:
-- One question at a time. Be warm and conversational.
-- Use live market data (injected below) to give rate guidance and benchmarks as you collect info. E.g. "Personal loans on Ficium are currently averaging 8.5% — want to set a max rate?"
-- When all REQUIRED fields are gathered, summarise and ask "Shall I post this now?"
-- Only after user confirms (yes/post/go), output EXACTLY this on its own line: READY:{"productType":"...","amount":0,"purpose":"...","preferredTermMonths":0,"maxRate":null,"decisionDeadline":null}
-- Never reveal PII. Never guarantee approval.
-- Responses under 80 words unless explaining a product.
-`.trim();
+- One question at a time. Be warm and conversational. Under 80 words per response.
+- Use live market data (injected below) to give rate guidance as you collect info.
+- When all REQUIRED fields collected, summarise and ask "Shall I post this now?"
+- Only after the user confirms (yes/post/go/submit), output EXACTLY on its own line:
+  READY:{"productType":"...","amount":0,"purpose":"...","preferredTermMonths":0,"maxRate":null,"decisionDeadline":null}
+- Never output READY until user explicitly confirms.
+- Never ask for personal identity. Never guarantee approval.`;
 
-async function fetchIntelligenceSummary(): Promise<string> {
-  try {
-    const url = (globalThis as any).process?.env?.VITE_SUPABASE_URL ?? (globalThis as any).process?.env?.SUPABASE_URL ?? "";
-    const key = (globalThis as any).process?.env?.SUPABASE_SERVICE_ROLE_KEY ?? "";
-    if (!url || !key) return "";
+// ── Handler ──────────────────────────────────────────────────
+export default async function handler(req: any, res: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+  if (req.method !== "POST") return Response.methodNotAllowed(res, ["POST"]);
 
-    const db = createClient(url, key, { auth: { persistSession: false } });
+  const apiKey = Env.anthropicApiKey();
+  if (!apiKey) return Response.error(res, "AI service not configured", 503, "NO_API_KEY");
 
-    const [{ data: rates = [] }, { data: wins = [] }] = await Promise.all([
-      db.from("v_market_rates").select("product_type,avg_rate_pct,min_rate_pct,max_rate_pct,bid_count"),
-      db.from("v_acceptance_intelligence").select("product_type,avg_winning_rate_pct,avg_winning_term_months,avg_winning_amount"),
-    ]);
-
-    if (!rates?.length) return "";
-
-    const lines = ["\n=== LIVE MARKET DATA FOR GUIDANCE ==="];
-    for (const r of rates as any[]) {
-      const win = (wins as any[]).find(w => w.product_type === r.product_type);
-      lines.push(
-        `${r.product_type.replace(/_/g," ")}: market avg ${r.avg_rate_pct}% | range ${r.min_rate_pct}–${r.max_rate_pct}%` +
-        (win ? ` | winning bids avg ${win.avg_winning_rate_pct}% / ${win.avg_winning_term_months}mo` : "")
-      );
-    }
-    return lines.join("\n");
-  } catch { return ""; }
-}
-
-export default async function handler(req: any, res: any) {
-  if (req.method !== "POST") return res.status(405).end();
-  if (!(globalThis as any).process?.env?.ANTHROPIC_API_KEY) return res.status(500).json({ error: "API key missing" });
-
-  const body: Body = req.body;
-  if (!body.messages?.length) return res.status(400).json({ error: "messages required" });
-
-  const messages = body.messages.slice(-30).map((m) => ({
-    role:    m.role === "assistant" ? ("assistant" as const) : ("user" as const),
-    content: String(m.content).slice(0, 3000),
-  }));
-
-  const intelligenceSummary = await fetchIntelligenceSummary();
-
-  let system = BASE_SYSTEM + intelligenceSummary;
-
-  if (body.profile) {
-    system += `\n\nClient context (private — do not reveal):
-Health score: ${body.profile.healthScore ?? "unknown"}/100
-Employment: ${body.profile.employment ?? "unknown"}
-Use this to suggest suitable products and realistic amounts.`;
+  const body = req.body as RequestBody;
+  if (!body?.messages?.length) {
+    return Response.error(res, "messages array required", 400, "INVALID_BODY");
   }
 
-  res.setHeader("Content-Type", "text/event-stream");
-  res.setHeader("Cache-Control", "no-cache");
-  res.setHeader("Connection", "keep-alive");
+  const messages = body.messages.slice(-30).map((m) => ({
+    role:    (m.role === "assistant" ? "assistant" : "user") as "assistant" | "user",
+    content: String(m.content ?? "").slice(0, 3_000),
+  }));
+
+  // Build system prompt — intelligence from cache
+  let system = BASE_SYSTEM;
+  try {
+    const summary = await IntelligenceService.getSummary();
+    if (summary) system += `\n\n${summary}`;
+  } catch { /* degrade gracefully */ }
+
+  // Inject client profile context (never revealed back to client)
+  if (body.profile) {
+    const p = body.profile;
+    system += `\n\nClient context (private):
+Health score: ${p.healthScore ?? "unknown"}/100
+Monthly income: ${p.monthlyIncome ? `MUR ${p.monthlyIncome.toLocaleString()}` : "unknown"}
+Employment: ${p.employment ?? "unknown"}
+Use this to suggest suitable products and realistic amounts only.`;
+  }
+
+  // Stream response
+  Response.sseStart(res);
 
   try {
-    const stream = await anthropic.messages.stream({
+    const anthropic = new Anthropic({ apiKey });
+    const stream    = await anthropic.messages.stream({
       model:      "claude-sonnet-4-6",
       max_tokens: 600,
       system,
@@ -91,14 +94,17 @@ Use this to suggest suitable products and realistic amounts.`;
     });
 
     for await (const event of stream) {
-      if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-        res.write(`data: ${JSON.stringify({ text: event.delta.text })}\n\n`);
+      if (
+        event.type === "content_block_delta" &&
+        event.delta.type === "text_delta"
+      ) {
+        Response.sseWrite(res, { text: event.delta.text });
       }
     }
-    res.write("data: [DONE]\n\n");
-    res.end();
-  } catch (e: any) {
-    res.write(`data: ${JSON.stringify({ error: e.message })}\n\n`);
-    res.end();
+
+    Response.sseDone(res);
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "AI temporarily unavailable";
+    Response.sseError(res, msg);
   }
 }

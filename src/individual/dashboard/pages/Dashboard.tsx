@@ -7,7 +7,7 @@ import {
   FileText, ArrowRight, Brain, RefreshCw,
   CheckCircle2, AlertTriangle, BarChart2,
 } from "lucide-react";
-import { useAuth } from "../../../features/auth/context/AuthContext";
+import { useAuth }         from "../../../features/auth/context/AuthContext";
 import {
   useProfile, useMyRequests, useNextActions,
   useBankReadiness,
@@ -15,6 +15,7 @@ import {
 import type { NextAction } from "../api/profile";
 import { Card, BottomNav } from "../../../shared/ui";
 import { useIntelligence } from "../../../lib/intelligence";
+import { ErrorBoundary }   from "../../../core/error-boundary";
 
 const SPARK_HEALTH   = [30, 35, 32, 40, 38, 44, 46];
 const SPARK_NETWORTH = [20, 22, 21, 24, 25, 27, 28];
@@ -302,7 +303,9 @@ export default function Dashboard() {
         {/* ═══════ CREAM ZONE ═══════ */}
 
         {/* ── SMART INSIGHTS FEED ── */}
-        <SmartInsightsFeed insights={dashboardInsights} activeIdx={insightIdx} onNext={() => setInsightIdx((i) => (i + 1) % dashboardInsights.length)} />
+        <ErrorBoundary name="Smart Insights">
+          <SmartInsightsFeed insights={dashboardInsights} activeIdx={insightIdx} onNext={() => setInsightIdx((i) => (i + 1) % dashboardInsights.length)} />
+        </ErrorBoundary>
 
         {/* ── I NEED SECTION ── */}
         <div className="mb-8">
@@ -339,65 +342,37 @@ export default function Dashboard() {
         </div>
 
         {/* ── BANKS COMPETE FOR YOU ── */}
-        <div className="mb-8">
-          <div className="flex items-end justify-between mb-4">
-            <div>
-              <div className="text-[12px] font-bold text-muted uppercase tracking-widest mb-1">Marketplace</div>
-              <h2 className="font-display text-[22px] sm:text-[26px] font-bold text-ink leading-tight">Banks compete <span className="text-ficium">for you</span></h2>
+        <ErrorBoundary name="Marketplace Tiles">
+          <div className="mb-8">
+            <div className="flex items-end justify-between mb-4">
+              <div>
+                <div className="text-[12px] font-bold text-muted uppercase tracking-widest mb-1">Marketplace</div>
+                <h2 className="font-display text-[22px] sm:text-[26px] font-bold text-ink leading-tight">Banks compete <span className="text-ficium">for you</span></h2>
+              </div>
+              <Link to="/requests" className="text-[13px] text-muted font-semibold no-underline flex items-center gap-0.5 hover:text-ink transition-colors pb-1">
+                All <ChevronRight size={13} />
+              </Link>
             </div>
-            <Link to="/requests" className="text-[13px] text-muted font-semibold no-underline flex items-center gap-0.5 hover:text-ink transition-colors pb-1">
-              All <ChevronRight size={13} />
-            </Link>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+              <MarketTile icon={<HandCoins size={17} />} label="Personal"    title="Loans that compete for you"    metric="Best rate"    metricValue="8.2%" bg="bg-ficium"       href="/requests/new" />
+              <MarketTile icon={<CreditCard size={17} />} label="Credit Card" title="Card offers tailored to you"   metric="Top cashback" metricValue="3.5%" bg="bg-violet-600"   href="/requests/new" />
+              <MarketTile icon={<PiggyBank size={17} />}  label="Deposits"   title="Deposits with real yield"      metric="Top yield"    metricValue="5.4%" bg="bg-amber-400"    dark href="/requests/new" />
+              <MarketTile icon={<LineChart size={17} />}  label="Wealth"     title="Investments that find you"     metric="Fee saving"   metricValue="0.4%" bg="bg-emerald-300"  dark href="/requests/new" />
+            </div>
           </div>
-          {/* ── Desktop: 4-col grid; Mobile: 2-col ── */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
-            <MarketTile
-              icon={<HandCoins size={17} />}
-              label="Personal"
-              title="Loans that compete for you"
-              metric="Best rate"
-              metricValue="8.2%"
-              bg="bg-ficium"
-              href="/requests/new"
-            />
-            {/* ── CHANGED: SME (ink) → Credit Card Offer ── */}
-            <MarketTile
-              icon={<CreditCard size={17} />}
-              label="Credit Card"
-              title="Card offers tailored to you"
-              metric="Top cashback"
-              metricValue="3.5%"
-              bg="bg-violet-600"
-              href="/requests/new"
-            />
-            <MarketTile
-              icon={<PiggyBank size={17} />}
-              label="Deposits"
-              title="Deposits with real yield"
-              metric="Top yield"
-              metricValue="5.4%"
-              bg="bg-amber-400"
-              dark
-              href="/requests/new"
-            />
-            <MarketTile
-              icon={<LineChart size={17} />}
-              label="Wealth"
-              title="Investments that find you"
-              metric="Fee saving"
-              metricValue="0.4%"
-              bg="bg-emerald-300"
-              dark
-              href="/requests/new"
-            />
-          </div>
-        </div>
+        </ErrorBoundary>
 
         {/* ── FINANCIAL TOOLS ── */}
-        <FinancialToolsSection />
+        <ErrorBoundary name="Financial Tools">
+          <FinancialToolsSection />
+        </ErrorBoundary>
 
         {/* ── NEXT ACTIONS ── */}
-        {actions.length > 0 && <NextActions actions={actions} />}
+        {actions.length > 0 && (
+          <ErrorBoundary name="Next Actions">
+            <NextActions actions={actions} />
+          </ErrorBoundary>
+        )}
       </div>
 
       {/* ── FAB ── */}

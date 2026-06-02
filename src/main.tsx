@@ -1,22 +1,22 @@
-import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
-import { RouterProvider } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { router } from "./app/routes";
-import { AuthProvider } from "./features/auth/context/AuthContext";
+/**
+ * src/main.tsx
+ * ─────────────────────────────────────────────────────────────
+ * Application entry point.
+ * All infrastructure is imported from core/ — one place to configure.
+ */
+import { StrictMode }        from "react";
+import { createRoot }        from "react-dom/client";
+import { RouterProvider }    from "react-router-dom";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { router }            from "./app/routes";
+import { AuthProvider }      from "./features/auth/context/AuthContext";
+import { queryClient }       from "./core/query-client";   // ← centralised config
 import "./index.css";
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60 * 2,        // 2 min before refetch
-      retry: 1,                          // 1 retry on failure
-      refetchOnWindowFocus: true,        // refresh when tab regains focus
-    },
-  },
-});
+const root = document.getElementById("root");
+if (!root) throw new Error("Root element #root not found in index.html");
 
-createRoot(document.getElementById("root")!).render(
+createRoot(root).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
