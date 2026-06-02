@@ -4,7 +4,7 @@ import {
   Plus, LogOut, Activity, ShieldAlert, Sparkles,
   BookOpen, ChevronRight, TrendingUp, Zap, Bell, Eye, EyeOff,
   HandCoins, CreditCard, PiggyBank, LineChart,
-  FileText, ArrowRight, Brain, Calculator, RefreshCw,
+  FileText, ArrowRight, Brain, RefreshCw,
   CheckCircle2, AlertTriangle,
 } from "lucide-react";
 import { useAuth } from "../../../features/auth/context/AuthContext";
@@ -31,9 +31,6 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [hidden, setHidden] = useState(false);
   const [flipped, setFlipped] = useState<Record<string, boolean>>({});
-  const [loanAmount, setLoanAmount] = useState(500000);
-  const [loanTerm, setLoanTerm] = useState(36);
-  const [loanRate, setLoanRate] = useState(8.5);
   const [insightIdx, setInsightIdx] = useState(0);
 
   const { data: profile, isLoading: profileLoading } = useProfile();
@@ -59,12 +56,6 @@ export default function Dashboard() {
     : profile.healthScore >= 70 ? { label: "Good", color: "#16a34a" }
     : profile.healthScore >= 50 ? { label: "Fair", color: "#d97706" }
     : { label: "Low", color: "#dc2626" };
-
-  /* Loan simulator calc */
-  const monthlyRate = loanRate / 100 / 12;
-  const monthlyPayment = loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, loanTerm)) / (Math.pow(1 + monthlyRate, loanTerm) - 1);
-  const totalPayment = monthlyPayment * loanTerm;
-  const totalInterest = totalPayment - loanAmount;
 
   /* Cycle through insights */
   useEffect(() => {
@@ -369,23 +360,8 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* ── LOAN SIMULATOR ── */}
-        <LoanSimulator
-          loanAmount={loanAmount} setLoanAmount={setLoanAmount}
-          loanTerm={loanTerm} setLoanTerm={setLoanTerm}
-          loanRate={loanRate} setLoanRate={setLoanRate}
-          monthlyPayment={monthlyPayment}
-          totalInterest={totalInterest}
-          totalPayment={totalPayment}
-        />
-
         {/* ── NEXT ACTIONS ── */}
         {actions.length > 0 && <NextActions actions={actions} />}
-      </div>
-
-      {/* ── INVESTMENT SIMULATOR ── */}
-      <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-8 pb-6">
-        <InvestmentSimulator />
       </div>
 
       {/* ── FAB ── */}
@@ -551,131 +527,7 @@ function AIFinancialCoach() {
   );
 }
 
-/* ============================================================
-   LOAN SIMULATOR
-   ============================================================ */
 
-function LoanSimulator({ loanAmount, setLoanAmount, loanTerm, setLoanTerm, loanRate, setLoanRate, monthlyPayment, totalInterest, totalPayment }: {
-  loanAmount: number; setLoanAmount: (v: number) => void;
-  loanTerm: number; setLoanTerm: (v: number) => void;
-  loanRate: number; setLoanRate: (v: number) => void;
-  monthlyPayment: number; totalInterest: number; totalPayment: number;
-}) {
-  return (
-    <div className="rounded-[22px] bg-white border border-ink/[0.06] overflow-hidden mb-8 shadow-sm">
-      {/* Header */}
-      <div className="px-5 py-5 border-b border-ink/[0.06]">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-amber-50 grid place-items-center flex-shrink-0">
-              <Calculator size={20} className="text-amber-600" />
-            </div>
-            <div>
-              <div className="text-[11px] font-bold text-muted uppercase tracking-widest mb-0.5">Loan Simulator</div>
-              <div className="font-display text-[18px] font-bold text-ink leading-tight">See what you'd pay — before you commit</div>
-            </div>
-          </div>
-          <Link to="/requests/new" className="text-[12px] font-bold text-ficium no-underline hover:underline flex items-center gap-1 flex-shrink-0 pt-2">
-            Get real bids <ArrowRight size={11} />
-          </Link>
-        </div>
-      </div>
-
-      <div className="p-5 lg:grid lg:grid-cols-2 lg:gap-8">
-        {/* Sliders */}
-        <div className="space-y-5 mb-6 lg:mb-0">
-          <SimulatorSlider
-            label="Loan Amount"
-            value={loanAmount}
-            min={50000} max={5000000} step={50000}
-            onChange={setLoanAmount}
-            display={`MUR ${new Intl.NumberFormat("en-IN").format(loanAmount)}`}
-            typeable
-          />
-          <SimulatorSlider
-            label="Loan Term"
-            value={loanTerm}
-            min={6} max={120} step={6}
-            onChange={setLoanTerm}
-            display={`${loanTerm} months`}
-          />
-          <SimulatorSlider
-            label="Interest Rate (p.a.)"
-            value={loanRate}
-            min={4} max={24} step={0.5}
-            onChange={setLoanRate}
-            display={`${loanRate.toFixed(1)}%`}
-          />
-        </div>
-
-        {/* Result */}
-        <div className="rounded-2xl bg-gradient-to-br from-ficium to-[#302b63] p-5 sm:p-6 text-white flex flex-col justify-between">
-          <div>
-            <div className="text-[12px] text-white/60 font-bold uppercase tracking-widest mb-1">Monthly Repayment</div>
-            <div className="font-display text-[42px] sm:text-5xl font-extrabold tracking-tight mb-1 leading-none">
-              {isNaN(monthlyPayment) ? "—" : `${new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(monthlyPayment)}`}
-            </div>
-            <div className="text-[13px] text-white/50 font-medium">MUR / month for {loanTerm} months</div>
-          </div>
-          <div className="h-px bg-white/10 my-5" />
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <div className="text-[11px] text-white/50 font-bold uppercase tracking-widest mb-1">Total Interest</div>
-              <div className="font-display text-[22px] font-bold text-amber-300">
-                {isNaN(totalInterest) ? "—" : `MUR ${new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(totalInterest)}`}
-              </div>
-            </div>
-            <div>
-              <div className="text-[11px] text-white/50 font-bold uppercase tracking-widest mb-1">Total Repaid</div>
-              <div className="font-display text-[22px] font-bold text-white">
-                {isNaN(totalPayment) ? "—" : `MUR ${new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(totalPayment)}`}
-              </div>
-            </div>
-          </div>
-          <Link to="/requests/new" className="mt-5 block text-center bg-white/15 hover:bg-white/25 transition-colors rounded-xl py-3 text-[14px] font-bold text-white no-underline">
-            Post a request — banks compete ↗
-          </Link>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function SimulatorSlider({ label, value, min, max, step, onChange, display, typeable }: {
-  label: string; value: number; min: number; max: number; step: number;
-  onChange: (v: number) => void; display: string; typeable?: boolean;
-}) {
-  const pct = ((value - min) / (max - min)) * 100;
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-2.5">
-        <span className="text-[13px] text-muted font-semibold">{label}</span>
-        {typeable ? (
-          <input
-            type="number"
-            value={value}
-            min={min} max={max} step={step}
-            onChange={e => {
-              const v = Number(e.target.value);
-              if (!isNaN(v) && v >= min && v <= max) onChange(v);
-            }}
-            className="w-36 text-right text-[14px] font-bold text-ink bg-cream border border-ink/[0.10] rounded-lg px-2 py-1 outline-none focus:border-ficium transition-colors"
-          />
-        ) : (
-          <span className="text-[14px] font-bold text-ink">{display}</span>
-        )}
-      </div>
-      <div className="relative h-2.5 bg-ink/[0.08] rounded-pill">
-        <div className="absolute h-2.5 rounded-pill bg-ficium transition-all" style={{ width: `${pct}%` }} />
-        <input
-          type="range" min={min} max={max} step={step} value={value}
-          onChange={(e) => onChange(Number(e.target.value))}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-        />
-      </div>
-    </div>
-  );
-}
 
 /* ============================================================
    MINI SPARKLINE
@@ -786,105 +638,3 @@ function formatAmount(n: number): string {
   return new Intl.NumberFormat("en-IN").format(n);
 }
 
-/* ── Investment Simulator ── */
-function InvestmentSimulator() {
-  const [amount, setAmount] = useState(500000);
-  const [rate,   setRate]   = useState(8.5);
-  const [term,   setTerm]   = useState(36);
-  const [mode,   setMode]   = useState<"loan" | "deposit">("loan");
-
-  const monthlyRate = rate / 100 / 12;
-  const monthly = mode === "loan"
-    ? (amount * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -term))
-    : amount * (rate / 100) * (term / 12) / term;
-  const totalInterest = (monthly * term) - amount;
-  const depositReturn = amount * (rate / 100) * (term / 12);
-  const fmt = (v: number) => `MUR ${Math.round(v).toLocaleString()}`;
-
-  return (
-    <div className="bg-white rounded-[26px] border border-ink/[0.06] shadow-sm overflow-hidden">
-      <div className="p-6 sm:p-8">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <div className="text-[11px] font-bold text-ficium uppercase tracking-widest mb-1">Tools</div>
-            <h2 className="font-display text-[22px] font-bold text-ink">Investment Simulator</h2>
-          </div>
-          <div className="flex bg-cream rounded-xl p-1 gap-1">
-            {(["loan", "deposit"] as const).map(m => (
-              <button key={m} onClick={() => setMode(m)}
-                className={`text-[12px] font-bold px-4 py-2 rounded-lg capitalize transition-colors ${mode === m ? "bg-ficium text-white shadow-sm" : "text-muted hover:text-ink"}`}>
-                {m}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
-          <SimSlider label="Amount" value={amount} min={50000} max={5000000} step={50000}
-            display={fmt(amount)} onChange={setAmount} typeable />
-          <SimSlider label="Rate (% APR)" value={rate} min={3} max={20} step={0.25}
-            display={`${rate.toFixed(2)}%`} onChange={setRate} />
-          <SimSlider label="Term" value={term} min={6} max={360} step={6}
-            display={term >= 12 ? `${Math.round(term/12)}y ${term%12 ? `${term%12}m` : ""}`.trim() : `${term}m`}
-            onChange={setTerm} />
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <ResultStat label={mode === "loan" ? "Monthly Payment" : "Monthly Yield"} value={fmt(monthly)} highlight />
-          <ResultStat label={mode === "loan" ? "Total Interest" : "Total Return"} value={mode === "loan" ? fmt(totalInterest) : fmt(depositReturn)} />
-          <ResultStat label="Total Amount" value={fmt(mode === "loan" ? monthly * term : amount + depositReturn)} />
-          <ResultStat label="Effective Rate" value={`${rate.toFixed(2)}% APR`} />
-        </div>
-
-        <p className="text-[11px] text-muted mt-4">Indicative only · figures depend on final bank approval and terms</p>
-      </div>
-    </div>
-  );
-}
-
-function SimSlider({ label, value, min, max, step, display, onChange, typeable }: {
-  label: string; value: number; min: number; max: number; step: number;
-  display: string; onChange: (v: number) => void; typeable?: boolean;
-}) {
-  const pct = ((value - min) / (max - min)) * 100;
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-[12px] text-muted font-medium">{label}</span>
-        {typeable ? (
-          <input
-            type="number"
-            value={value}
-            min={min} max={max} step={step}
-            onChange={e => {
-              const v = Number(e.target.value);
-              if (!isNaN(v) && v >= min && v <= max) onChange(v);
-            }}
-            className="w-32 text-right text-[13px] font-bold text-ink bg-cream border border-ink/[0.10] rounded-lg px-2 py-1 outline-none focus:border-ficium transition-colors"
-          />
-        ) : (
-          <span className="text-[13px] font-bold text-ink">{display}</span>
-        )}
-      </div>
-      <div className="relative h-6 flex items-center">
-        <div className="absolute w-full h-1.5 bg-ink/10 rounded-full overflow-hidden">
-          <div className="h-full bg-ficium rounded-full" style={{ width: `${pct}%` }} />
-        </div>
-        <input type="range" min={min} max={max} step={step} value={value}
-          onChange={e => onChange(Number(e.target.value))}
-          className="absolute w-full opacity-0 cursor-pointer h-full" style={{ margin: 0 }} />
-        <div className="absolute w-4 h-4 bg-ficium rounded-full border-2 border-white shadow-md pointer-events-none"
-          style={{ left: `calc(${pct}% - 8px)` }} />
-      </div>
-    </div>
-  );
-}
-
-function ResultStat({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
-  return (
-    <div className={`rounded-2xl p-4 ${highlight ? "bg-ficium/8 border border-ficium/15" : "bg-cream"}`}>
-      <div className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${highlight ? "text-ficium" : "text-muted"}`}>{label}</div>
-      <div className={`font-display text-[18px] font-extrabold ${highlight ? "text-ficium" : "text-ink"}`}>{value}</div>
-    </div>
-  );
-}
