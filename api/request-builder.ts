@@ -9,7 +9,6 @@ import Anthropic          from "@anthropic-ai/sdk";
 import { Env }            from "./_lib/env";
 import { IntelligenceService } from "./_lib/intelligence-service";
 import { Response }       from "./_lib/response";
-import { captureApiError } from "./_lib/monitor";
 
 export const config = { runtime: "nodejs" };
 
@@ -105,7 +104,6 @@ Use this to suggest suitable products and realistic amounts only.`;
 
     Response.sseDone(res);
   } catch (e: unknown) {
-    await captureApiError(e, { route: "/api/request-builder", method: req.method });
     const msg = e instanceof Error ? e.message : "AI temporarily unavailable";
     Response.sseError(res, msg);
   }

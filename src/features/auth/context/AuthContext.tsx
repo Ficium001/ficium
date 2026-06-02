@@ -15,7 +15,6 @@ import { createContext, useContext, useEffect, useState } from "react";
 import type { ReactNode }   from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase }         from "../../../shared/lib/supabase";
-import { identifyUser, clearUser } from "../../../core/sentry";
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -56,9 +55,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Satisfy TypeScript — userId is used as a stable dep in callers
     void userId;
     setRole((roleData as UserRole) ?? "client");
-
-    // Identify user in Sentry — userId only, no PII
-    identifyUser(userId, (roleData as UserRole) ?? "client");
   }
 
   useEffect(() => {
@@ -88,7 +84,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = async (): Promise<void> => {
-    clearUser(); // clear Sentry identity before session ends
     await supabase.auth.signOut();
   };
 

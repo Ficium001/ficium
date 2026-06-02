@@ -2,23 +2,17 @@
  * src/main.tsx
  * ─────────────────────────────────────────────────────────────
  * Application entry point.
- * Sentry is initialised FIRST — before React — so it captures
- * any errors that occur during app startup.
+ * All infrastructure is imported from core/ — one place to configure.
  */
-import { StrictMode }           from "react";
-import { createRoot }           from "react-dom/client";
-import { RouterProvider }       from "react-router-dom";
-import { QueryClientProvider }  from "@tanstack/react-query";
-import { router }               from "./app/routes";
-import { AuthProvider }         from "./features/auth/context/AuthContext";
-import { queryClient }          from "./core/query-client";
-import { initSentry }           from "./core/sentry";
+import { StrictMode }        from "react";
+import { createRoot }        from "react-dom/client";
+import { RouterProvider }    from "react-router-dom";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { router }            from "./app/routes";
+import { AuthProvider }      from "./features/auth/context/AuthContext";
+import { queryClient }       from "./core/query-client";   // ← centralised config
 import "./index.css";
 
-// ── 1. Init Sentry before anything else ──────────────────────
-initSentry();
-
-// ── 2. Mount React ───────────────────────────────────────────
 const root = document.getElementById("root");
 if (!root) throw new Error("Root element #root not found in index.html");
 
