@@ -197,6 +197,6 @@ export default async function handler(req: any, res: any) { // eslint-disable-li
     return res.status(502).json({ error: "Email delivery failed" });
   }
 
-  const result = await sendRes.json();
+  const result = await sendRes.json() as { id?: string };
   return res.status(200).json({ ok: true, emailId: result.id });
 }
