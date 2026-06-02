@@ -20,6 +20,7 @@ const NotFound            = lazy(() => import("../shared/pages/NotFound"));
 const Dashboard           = lazy(() => import("../individual/dashboard/pages/Dashboard"));
 const Profile             = lazy(() => import("../individual/dashboard/pages/Profile"));
 const Kyc                 = lazy(() => import("../individual/onboarding/pages/Kyc"));
+const KycPending          = lazy(() => import("../individual/onboarding/pages/KycPending"));
 const Dossier             = lazy(() => import("../individual/onboarding/pages/Dossier"));
 const Requests            = lazy(() => import("../individual/requests/pages/Requests"));
 const NewRequest          = lazy(() => import("../individual/requests/pages/NewRequest"));
@@ -76,6 +77,7 @@ export const router = createBrowserRouter([
   { path: "/dashboard",              element: <ClientOnlyRoute><S><Dashboard /></S></ClientOnlyRoute> },
   { path: "/profile",                element: <ClientOnlyRoute><S><Profile /></S></ClientOnlyRoute> },
   { path: "/onboarding/kyc",         element: <ClientOnlyRoute><S><Kyc /></S></ClientOnlyRoute> },
+  { path: "/onboarding/kyc-pending", element: <ClientOnlyRoute><S><KycPending /></S></ClientOnlyRoute> },
   { path: "/onboarding/dossier",     element: <ClientOnlyRoute><S><Dossier /></S></ClientOnlyRoute> },
   { path: "/requests",               element: <ClientOnlyRoute><S><Requests /></S></ClientOnlyRoute> },
   { path: "/requests/new",           element: <ClientOnlyRoute><S><NewRequest /></S></ClientOnlyRoute> },

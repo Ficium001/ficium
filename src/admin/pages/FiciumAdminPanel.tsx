@@ -10,6 +10,7 @@ import {
   useAdminAudit, useAdminPendingApprovals,
 } from "../hooks/useAdminData";
 import type { AdminInstitution } from "../hooks/useAdminData";
+import KycSection from "../kyc/KycSection";
 
 const ALL_MODULES = ["marketplace", "credit", "ai_advisory", "analytics"];
 
@@ -500,6 +501,7 @@ function AuditSection() {
 // ── Nav items ─────────────────────────────────────────────────
 const NAV = [
   { key: "institutions", label: "Institutions",     icon: "⬡" },
+  { key: "kyc",          label: "KYC Review",        icon: "◉" },
   { key: "products",     label: "Product catalogue", icon: "◈" },
   { key: "audit",        label: "Audit log",         icon: "▣" },
 ];
@@ -511,6 +513,7 @@ export default function FiciumAdminPanel() {
 
   const titles: Record<string, string> = {
     institutions: "Institution management",
+    kyc:          "KYC review",
     products:     "Product catalogue",
     audit:        "Audit log",
   };
@@ -575,6 +578,7 @@ export default function FiciumAdminPanel() {
         {/* Content */}
         <main className="flex-1 overflow-auto p-6 lg:p-8">
           {section === "institutions" && <InstitutionsSection />}
+          {section === "kyc"          && <KycSection />}
           {section === "products"     && <ProductsSection />}
           {section === "audit"        && <AuditSection />}
         </main>

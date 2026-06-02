@@ -70,7 +70,8 @@ export default function Kyc() {
     });
 
     if (!result.ok) { setSubmitError(result.error); return; }
-    navigate("/onboarding/dossier");
+    // If needsReview, show a "pending" screen instead of going straight through
+    navigate(result.needsReview ? "/onboarding/kyc-pending" : "/onboarding/dossier");
   };
 
   return (
