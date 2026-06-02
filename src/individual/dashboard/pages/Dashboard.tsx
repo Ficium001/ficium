@@ -5,7 +5,7 @@ import {
   BookOpen, ChevronRight, TrendingUp, Zap, Bell, Eye, EyeOff,
   HandCoins, CreditCard, PiggyBank, LineChart,
   FileText, ArrowRight, Brain, RefreshCw,
-  CheckCircle2, AlertTriangle,
+  CheckCircle2, AlertTriangle, BarChart2,
 } from "lucide-react";
 import { useAuth } from "../../../features/auth/context/AuthContext";
 import {
@@ -14,15 +14,16 @@ import {
 } from "../hooks/useDashboard";
 import type { NextAction } from "../api/profile";
 import { Card, BottomNav } from "../../../shared/ui";
+import { useIntelligence } from "../../../lib/intelligence";
 
-const SPARK_HEALTH = [30, 35, 32, 40, 38, 44, 46];
+const SPARK_HEALTH   = [30, 35, 32, 40, 38, 44, 46];
 const SPARK_NETWORTH = [20, 22, 21, 24, 25, 27, 28];
 const SPARK_REQUESTS = [0, 0, 0, 1, 1, 1, 1];
 
-/* ── Static AI insights (replace with live API call in production) ── */
-const AI_INSIGHTS = [
-  { icon: TrendingUp, color: "#16a34a", bg: "rgba(22,163,74,0.12)", text: "Your debt ratio improved 8% this month", type: "positive" },
-  { icon: CheckCircle2, color: "#4f46e5", bg: "rgba(79,70,229,0.12)", text: "Your liquidity is above average for your income bracket", type: "info" },
+/* ── Static fallback insights (shown when intelligence hasn't loaded) ── */
+const FALLBACK_INSIGHTS = [
+  { icon: TrendingUp,    color: "#16a34a", bg: "rgba(22,163,74,0.12)",  text: "Your debt ratio improved 8% this month",                   type: "positive" },
+  { icon: CheckCircle2, color: "#4f46e5", bg: "rgba(79,70,229,0.12)",  text: "Your liquidity is above average for your income bracket",  type: "info"     },
   { icon: AlertTriangle, color: "#d97706", bg: "rgba(217,119,6,0.12)", text: "You may be overpaying on your current loan — compare rates now", type: "warning" },
 ];
 
@@ -37,6 +38,7 @@ export default function Dashboard() {
   const { data: requests = [], isLoading: requestsLoading } = useMyRequests();
   const { actions } = useNextActions();
   const { score: bankReadiness } = useBankReadiness();
+  const { intel, topProducts } = useIntelligence();
 
   const loading = profileLoading || requestsLoading;
   const handleSignOut = async () => { await signOut(); navigate("/"); };
@@ -57,11 +59,34 @@ export default function Dashboard() {
     : profile.healthScore >= 50 ? { label: "Fair", color: "#d97706" }
     : { label: "Low", color: "#dc2626" };
 
+  // Build live insights from market intelligence, fall back to static
+  const liveInsights = intel?.marketRates?.length
+    ? [
+        ...intel.marketRates.slice(0, 2).map((r) => ({
+          icon:  BarChart2,
+          color: "#4f46e5",
+          bg:    "rgba(79,70,229,0.12)",
+          text:  `${r.product_type.replace(/_/g," ")} rates on Ficium: avg ${r.avg_rate_pct}% APR — ${r.bid_count} competing bids`,
+          type:  "info",
+        })),
+        ...(intel.acceptanceIntel?.slice(0,1).map((a) => ({
+          icon:  TrendingUp,
+          color: "#16a34a",
+          bg:    "rgba(22,163,74,0.12)",
+          text:  `Winning bids for ${a.product_type.replace(/_/g," ")} average ${a.avg_winning_rate_pct}% — ${a.total_acceptances} deals closed recently`,
+          type:  "positive",
+        })) ?? []),
+        { icon: AlertTriangle, color: "#d97706", bg: "rgba(217,119,6,0.12)", text: "You may be overpaying on your current loan — compare rates now", type: "warning" },
+      ]
+    : FALLBACK_INSIGHTS;
+
+  const AI_INSIGHTS = liveInsights;
+
   /* Cycle through insights */
   useEffect(() => {
     const t = setInterval(() => setInsightIdx((i) => (i + 1) % AI_INSIGHTS.length), 5000);
     return () => clearInterval(t);
-  }, []);
+  }, [AI_INSIGHTS.length]);
 
   return (
     <div className="min-h-screen pb-28 relative">

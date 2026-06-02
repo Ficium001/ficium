@@ -12,6 +12,7 @@ import { z } from "zod";
 import {
   Zap, Filter, Clock, X, AlertTriangle, Calendar,
   User, FileText, TrendingUp, DollarSign, MessageSquare, Download,
+  BarChart2,
 } from "lucide-react";
 import {
   useMarketplace, useProducts, useSubmitBid, useMyInstitution,
@@ -20,6 +21,7 @@ import institutionSupabase from "../../lib/institutionSupabase";
 import RequestChat from "../../../shared/components/RequestChat";
 import { formatDistanceToNow } from "../../lib/utils";
 import type { MarketplaceRequest } from "../../types/institution";
+import { useIntelligence } from "../../../lib/intelligence";
 
 const bidSchema = z.object({
   rate:           z.number().min(0.001).max(1),
@@ -35,6 +37,7 @@ export default function InstitutionMarketplace() {
   const { data: requests = [], isLoading, refetch } = useMarketplace();
   const { data: products  = [] }                    = useProducts();
   const submitBid                                   = useSubmitBid();
+  const { intel }                                   = useIntelligence();
 
   const [productFilter, setProductFilter]       = useState("all");
   const [detailRequest, setDetailRequest]       = useState<MarketplaceRequest | null>(null);
@@ -91,6 +94,54 @@ export default function InstitutionMarketplace() {
           <span className="text-ficium font-semibold">Approvals</span> before submission.
         </p>
       </div>
+
+      {/* ── Live market intelligence panel ── */}
+      {intel?.marketRates && intel.marketRates.length > 0 && (
+        <div className="bg-white border border-ink/[0.06] rounded-2xl p-5 mb-6 shadow-sm">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-7 h-7 rounded-lg bg-ficium/10 grid place-items-center">
+              <BarChart2 className="w-3.5 h-3.5 text-ficium" />
+            </div>
+            <span className="text-[12px] font-bold text-ficium uppercase tracking-widest">Live Market Intelligence</span>
+            <div className="ml-auto flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[11px] text-muted font-medium">Updated every 5 min</span>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {intel.marketRates.slice(0, 4).map((r) => {
+              const win = intel.acceptanceIntel.find(a => a.product_type === r.product_type);
+              const comp = intel.competitiveness.find(c => c.product_type === r.product_type);
+              return (
+                <div key={r.product_type} className="bg-cream rounded-xl p-3.5">
+                  <div className="text-[10px] font-bold text-muted uppercase tracking-wider mb-2 capitalize">
+                    {r.product_type.replace(/_/g, " ")}
+                  </div>
+                  <div className="font-display text-[20px] font-extrabold text-ficium leading-none mb-1">
+                    {r.avg_rate_pct}%
+                  </div>
+                  <div className="text-[11px] text-muted">market avg APR</div>
+                  <div className="mt-2 pt-2 border-t border-ink/[0.06] space-y-0.5">
+                    <div className="text-[11px] text-ink/60">
+                      Range: <span className="font-semibold text-ink">{r.min_rate_pct}–{r.max_rate_pct}%</span>
+                    </div>
+                    {win && (
+                      <div className="text-[11px] text-ink/60">
+                        Win avg: <span className="font-semibold text-emerald-600">{win.avg_winning_rate_pct}%</span>
+                      </div>
+                    )}
+                    {comp && (
+                      <div className="text-[11px] text-ink/60">
+                        Avg bids/req: <span className="font-semibold text-ink">{comp.avg_bids_per_request}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Success toast */}
       {bidSuccess && (
