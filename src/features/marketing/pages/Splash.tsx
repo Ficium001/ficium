@@ -275,12 +275,12 @@ function Hero({ scene, sceneIndex, activeOffer }: { scene: Scene; sceneIndex: nu
             <Sparkles size={14} /> The reverse-banking marketplace
           </div>
           <h1 className="font-display font-bold text-ink m-0 text-[44px] leading-[0.95] sm:text-6xl md:text-7xl lg:text-[88px] xl:text-[96px]">
-            Loans, deposits,
+            Credit, savings,
             <br />
-            <span className="text-ficium">business funding</span> —
+            <span className="text-ficium">investment</span> &amp;
             <br />
             <span className="relative inline-block">
-              let banks
+              business
               <svg
                 className="absolute left-0 -bottom-2 w-full"
                 viewBox="0 0 400 14"
@@ -296,10 +296,14 @@ function Hero({ scene, sceneIndex, activeOffer }: { scene: Scene; sceneIndex: nu
               </svg>
             </span>
             <br />
-            come to you.
+            financing — let
+            <br />
+            the market
+            <br />
+            compete for you.
           </h1>
           <p className="text-base sm:text-lg lg:text-[19px] leading-snug text-muted mt-6 sm:mt-8 max-w-[480px]">
-            Post what you need once. Banks across Mauritius compete with their best offer. You pick. That's it.
+            Submit your financial requirement anonymously. Banks, fintechs, and other qualified financial providers compete with tailored offers. Compare options, stay in control, and connect only when you're ready.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 mt-8 sm:mt-10">
