@@ -284,21 +284,7 @@ export default function Advisor() {
 
           {/* Input */}
           <div className="pt-3 pb-2">
-            {/* Mobile chips — horizontal scroll */}
-            <div className="flex gap-2 overflow-x-auto pb-3 lg:hidden scrollbar-hide">
-              {QUICK_CHIPS.map((chip) => (
-                <button
-                  key={chip}
-                  onClick={() => handleChip(chip)}
-                  className="flex-shrink-0 px-3.5 py-2 bg-white border border-ink/[0.08] rounded-pill text-[12px] font-semibold text-ink/70 hover:border-ficium/30 hover:text-ficium transition-colors shadow-sm"
-                >
-                  {chip}
-                </button>
-              ))}
-            </div>
 
-          {/* Input */}
-          <div className="pt-3 pb-2">
             {/* Mobile chips */}
             {!isFreeTierExhausted && (
               <div className="flex gap-2 overflow-x-auto pb-3 lg:hidden scrollbar-hide">
@@ -355,18 +341,17 @@ export default function Advisor() {
                   </button>
                 </form>
                 <div className="flex items-center justify-between mt-2 px-1">
-                  <p className="text-[11px] text-muted">
-                    Ficium AI · Not financial advice
-                  </p>
+                  <p className="text-[11px] text-muted">Ficium AI · Not financial advice</p>
                   <p className={`text-[11px] font-semibold ${remaining === 1 ? "text-amber-500" : "text-muted"}`}>
                     {remaining} free message{remaining !== 1 ? "s" : ""} left this month
                   </p>
                 </div>
               </>
             )}
-          </div>
-        </div>
-      </div>
+
+          </div>{/* end input */}
+        </div>{/* end chat area */}
+      </div>{/* end desktop layout */}
 
       <BottomNav />
     </div>
