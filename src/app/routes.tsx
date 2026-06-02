@@ -26,6 +26,7 @@ const NewRequest          = lazy(() => import("../individual/requests/pages/NewR
 const RequestDetail       = lazy(() => import("../individual/requests/pages/RequestDetail"));
 const Alerts              = lazy(() => import("../individual/alerts/pages/Alerts"));
 const Advisor             = lazy(() => import("../individual/advisor/pages/Advisor"));
+const FinancialTools      = lazy(() => import("../individual/tools/pages/FinancialTools"));
 const ClientAudit         = lazy(() => import("../individual/audit/pages/ClientAudit"));
 
 // ── Institution app ───────────────────────────────────────────
@@ -81,6 +82,7 @@ export const router = createBrowserRouter([
   { path: "/requests/:id",           element: <ClientOnlyRoute><S><RequestDetail /></S></ClientOnlyRoute> },
   { path: "/alerts",                 element: <ClientOnlyRoute><S><Alerts /></S></ClientOnlyRoute> },
   { path: "/advisor",                element: <ClientOnlyRoute><S><Advisor /></S></ClientOnlyRoute> },
+  { path: "/tools",                  element: <ClientOnlyRoute><S><FinancialTools /></S></ClientOnlyRoute> },
   { path: "/activity",               element: <ClientOnlyRoute><S><ClientAudit /></S></ClientOnlyRoute> },
 
   // ── Institution app ─────────────────────────────────────────
