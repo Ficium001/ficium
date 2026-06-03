@@ -1,28 +1,26 @@
 /**
- * api/kyc-verify.ts
- * POST /api/kyc-verify
+ * api/kyc-verify.ts — Enterprise KYC Pipeline v3
  *
- * Enterprise KYC pipeline — Tier 1 + 2 + 3 checks:
- *
- * TIER 1 — Core checks
- *   1. DetectText on ID → doc number, DOB, name, country, expiry
+ * TIER 1 — Core biometric + document checks
+ *   1. DetectText on ID → OCR (doc number, DOB, name, country, expiry)
  *   2. DetectFaces on selfie → count + confidence
  *   3. CompareFaces (selfie vs ID) → face match %
- *   4. DetectFaces on ID doc → confirm face exists on document
- *   5. DetectLabels on selfie → targeted spoof detection
+ *   4. DetectFaces on ID doc → confirm face on document
+ *   5. DetectLabels on selfie → spoof detection
  *   6. DetectText on POA → address cross-check
- *   7. MRZ parse + checksum validation → document authenticity
+ *   7. MRZ parse + checksum validation
  *
  * TIER 2 — Fraud signals
- *   8. Velocity check → flag >3 submissions in 24h
- *   9. Document reuse → same doc number used by another account
- *   10. Duplicate face → selfie matches a previously verified client
+ *   8. Velocity check (>3 in 24h)
+ *   9. Document reuse (same doc number on another account)
+ *   10. Duplicate face search (Rekognition face collection)
  *
- * TIER 3 — Document classification
- *   11. DetectLabels on ID → confirm it looks like an ID/passport
+ * TIER 3 — ML + AI
+ *   11. Document classification (DetectLabels on ID)
+ *   12. Claude AI reasoning on OCR text — catches subtle inconsistencies
  *
- * Risk scoring: 0–100. Hard reject ≥55 with critical flag.
- * Review threshold: ≥30. Clean pass: <30.
+ * POST-VERIFY
+ *   13. Index verified face into collection (on clean pass)
  */
 
 import { createHmac, createHash } from "crypto";
@@ -32,11 +30,10 @@ export const config = { runtime: "nodejs" };
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const getEnv = (k: string) => (globalThis as any).process?.env?.[k] ?? "";
 
-/* ─────────────────────────────────────────────
-   AWS Sig v4
-───────────────────────────────────────────── */
+/* ── AWS Sig v4 ─────────────────────────────────────────────── */
 
-const AWS_REGION = "ap-south-1";
+const AWS_REGION    = "ap-south-1";
+const COLLECTION_ID = "ficium-kyc-faces";
 
 function hmac(key: Buffer | string, data: string): Buffer {
   return createHmac("sha256", key).update(data).digest();
@@ -47,7 +44,6 @@ function hashHex(data: string): string {
 function getSigningKey(secret: string, date: string, region: string, service: string): Buffer {
   return hmac(hmac(hmac(hmac("AWS4" + secret, date), region), service), "aws4_request");
 }
-
 async function awsPost(service: string, target: string, body: object): Promise<unknown> {
   const accessKey = getEnv("AWS_ACCESS_KEY_ID")     || getEnv("VITE_AWS_ACCESS_KEY_ID");
   const secretKey = getEnv("AWS_SECRET_ACCESS_KEY") || getEnv("VITE_AWS_SECRET_ACCESS_KEY");
@@ -57,245 +53,272 @@ async function awsPost(service: string, target: string, body: object): Promise<u
   const host      = `${service}.${AWS_REGION}.amazonaws.com`;
   const bodyStr   = JSON.stringify(body);
   const bodyHash  = hashHex(bodyStr);
-  const canonicalHeaders =
-    `content-type:application/x-amz-json-1.1\nhost:${host}\nx-amz-date:${amzDate}\nx-amz-target:${target}\n`;
-  const signedHeaders    = "content-type;host;x-amz-date;x-amz-target";
-  const canonicalRequest = ["POST", "/", "", canonicalHeaders, signedHeaders, bodyHash].join("\n");
-  const credentialScope  = `${dateStamp}/${AWS_REGION}/${service}/aws4_request`;
-  const stringToSign     = ["AWS4-HMAC-SHA256", amzDate, credentialScope, hashHex(canonicalRequest)].join("\n");
-  const signature        = hmac(getSigningKey(secretKey, dateStamp, AWS_REGION, service), stringToSign).toString("hex");
-  const authHeader       = `AWS4-HMAC-SHA256 Credential=${accessKey}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
+  const ch        = `content-type:application/x-amz-json-1.1\nhost:${host}\nx-amz-date:${amzDate}\nx-amz-target:${target}\n`;
+  const sh        = "content-type;host;x-amz-date;x-amz-target";
+  const cr        = ["POST", "/", "", ch, sh, bodyHash].join("\n");
+  const cs        = `${dateStamp}/${AWS_REGION}/${service}/aws4_request`;
+  const sts       = ["AWS4-HMAC-SHA256", amzDate, cs, hashHex(cr)].join("\n");
+  const sig       = hmac(getSigningKey(secretKey, dateStamp, AWS_REGION, service), sts).toString("hex");
+  const auth      = `AWS4-HMAC-SHA256 Credential=${accessKey}/${cs}, SignedHeaders=${sh}, Signature=${sig}`;
   const res = await fetch(`https://${host}/`, {
     method: "POST",
-    headers: { "Content-Type": "application/x-amz-json-1.1", "X-Amz-Date": amzDate, "X-Amz-Target": target, "Authorization": authHeader },
+    headers: { "Content-Type": "application/x-amz-json-1.1", "X-Amz-Date": amzDate, "X-Amz-Target": target, "Authorization": auth },
     body: bodyStr,
   });
-  if (!res.ok) { const text = await res.text(); throw new Error(`AWS ${service} ${target} error ${res.status}: ${text}`); }
+  if (!res.ok) { const t = await res.text(); throw new Error(`AWS ${service} ${target} ${res.status}: ${t}`); }
   return res.json();
 }
 
-/* ─────────────────────────────────────────────
-   Rekognition wrappers
-───────────────────────────────────────────── */
+/* ── Rekognition wrappers ───────────────────────────────────── */
 
 interface RekFace  { Confidence: number; BoundingBox: { Width: number; Height: number } }
 interface RekLabel { Name: string; Confidence: number }
 interface FaceMatch { Similarity: number }
 
-async function detectText(imageB64: string): Promise<string> {
-  const data = await awsPost("rekognition", "RekognitionService.DetectText", {
-    Image: { Bytes: imageB64 },
-  }) as { TextDetections?: Array<{ DetectedText: string; Type: string; Confidence: number }> };
-  return (data.TextDetections ?? []).filter(b => b.Type === "LINE" && b.Confidence > 50).map(b => b.DetectedText).join("\n");
+async function detectText(b64: string): Promise<string> {
+  const d = await awsPost("rekognition", "RekognitionService.DetectText", { Image: { Bytes: b64 } }) as
+    { TextDetections?: Array<{ DetectedText: string; Type: string; Confidence: number }> };
+  return (d.TextDetections ?? []).filter(b => b.Type === "LINE" && b.Confidence > 50).map(b => b.DetectedText).join("\n");
 }
-
-async function detectFaces(imageB64: string): Promise<RekFace[]> {
-  const data = await awsPost("rekognition", "RekognitionService.DetectFaces", {
-    Image: { Bytes: imageB64 }, Attributes: ["DEFAULT"],
-  }) as { FaceDetails?: RekFace[] };
-  return data.FaceDetails ?? [];
+async function detectFaces(b64: string): Promise<RekFace[]> {
+  const d = await awsPost("rekognition", "RekognitionService.DetectFaces", { Image: { Bytes: b64 }, Attributes: ["DEFAULT"] }) as { FaceDetails?: RekFace[] };
+  return d.FaceDetails ?? [];
 }
-
-async function detectLabels(imageB64: string): Promise<RekLabel[]> {
-  const data = await awsPost("rekognition", "RekognitionService.DetectLabels", {
-    Image: { Bytes: imageB64 }, MaxLabels: 30, MinConfidence: 70,
-  }) as { Labels?: RekLabel[] };
-  return data.Labels ?? [];
+async function detectLabels(b64: string): Promise<RekLabel[]> {
+  const d = await awsPost("rekognition", "RekognitionService.DetectLabels", { Image: { Bytes: b64 }, MaxLabels: 30, MinConfidence: 70 }) as { Labels?: RekLabel[] };
+  return d.Labels ?? [];
 }
-
-async function compareFaces(sourceB64: string, targetB64: string): Promise<number> {
+async function compareFaces(srcB64: string, tgtB64: string): Promise<number> {
   try {
-    const data = await awsPost("rekognition", "RekognitionService.CompareFaces", {
-      SourceImage: { Bytes: sourceB64 }, TargetImage: { Bytes: targetB64 }, SimilarityThreshold: 50,
+    const d = await awsPost("rekognition", "RekognitionService.CompareFaces", {
+      SourceImage: { Bytes: srcB64 }, TargetImage: { Bytes: tgtB64 }, SimilarityThreshold: 50,
     }) as { FaceMatches?: FaceMatch[] };
-    return data.FaceMatches && data.FaceMatches.length > 0 ? data.FaceMatches[0].Similarity : 0;
+    return d.FaceMatches?.length ? d.FaceMatches[0].Similarity : 0;
   } catch { return -1; }
 }
+async function searchFaceCollection(b64: string, clientId: string): Promise<{ duplicate: boolean; matchedClientId?: string; similarity?: number }> {
+  try {
+    const d = await awsPost("rekognition", "RekognitionService.SearchFacesByImage", {
+      CollectionId: COLLECTION_ID, Image: { Bytes: b64 }, MaxFaces: 5, FaceMatchThreshold: 90,
+    }) as { FaceMatches?: Array<{ Face: { ExternalImageId: string }; Similarity: number }> };
+    const matches = (d.FaceMatches ?? []).filter(m => m.Face.ExternalImageId !== clientId);
+    if (matches.length > 0) {
+      return { duplicate: true, matchedClientId: matches[0].Face.ExternalImageId, similarity: matches[0].Similarity };
+    }
+    return { duplicate: false };
+  } catch (err) {
+    if (String(err).includes("ResourceNotFoundException")) return { duplicate: false };
+    return { duplicate: false }; // fail open — don't block on collection errors
+  }
+}
+async function indexFace(b64: string, clientId: string): Promise<void> {
+  try {
+    await awsPost("rekognition", "RekognitionService.IndexFaces", {
+      CollectionId: COLLECTION_ID, Image: { Bytes: b64 },
+      ExternalImageId: clientId, MaxFaces: 1, QualityFilter: "AUTO", DetectionAttributes: [],
+    });
+  } catch (err) {
+    console.error("[kyc-verify] IndexFaces error:", err);
+  }
+}
 
-/* ─────────────────────────────────────────────
-   Supabase REST (fraud checks — server-side only)
-───────────────────────────────────────────── */
+/* ── Supabase helpers (fraud checks) ───────────────────────── */
 
 async function supabaseQuery(path: string): Promise<unknown[]> {
-  const url        = getEnv("VITE_SUPABASE_URL") || getEnv("SUPABASE_URL");
-  const serviceKey = getEnv("SUPABASE_SERVICE_ROLE_KEY");
-  if (!url || !serviceKey) return [];
+  const url = getEnv("VITE_SUPABASE_URL") || getEnv("SUPABASE_URL");
+  const key = getEnv("SUPABASE_SERVICE_ROLE_KEY");
+  if (!url || !key) return [];
   try {
-    const res = await fetch(`${url}/rest/v1/${path}`, {
-      headers: { "apikey": serviceKey, "Authorization": `Bearer ${serviceKey}`, "Accept": "application/json" },
+    const r = await fetch(`${url}/rest/v1/${path}`, {
+      headers: { "apikey": key, "Authorization": `Bearer ${key}`, "Accept": "application/json" },
     });
-    if (!res.ok) return [];
-    return res.json() as Promise<unknown[]>;
+    if (!r.ok) return [];
+    return r.json() as Promise<unknown[]>;
   } catch { return []; }
 }
-
-/* ─────────────────────────────────────────────
-   Tier 2 — Fraud checks
-───────────────────────────────────────────── */
-
 async function checkVelocity(clientId: string): Promise<{ tooMany: boolean; count: number }> {
-  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  const rows = await supabaseQuery(
-    `kyc_submissions?client_id=eq.${clientId}&submitted_at=gte.${since}&select=id`
-  ) as unknown[];
+  const since = new Date(Date.now() - 86400000).toISOString();
+  const rows  = await supabaseQuery(`kyc_submissions?client_id=eq.${clientId}&submitted_at=gte.${since}&select=id`);
   return { tooMany: rows.length >= 3, count: rows.length };
 }
-
-async function checkDocumentReuse(documentNumber: string, clientId: string): Promise<boolean> {
-  if (!documentNumber) return false;
-  const rows = await supabaseQuery(
-    `kyc_submissions?document_number=eq.${encodeURIComponent(documentNumber)}&client_id=neq.${clientId}&select=id&limit=1`
-  ) as unknown[];
+async function checkDocumentReuse(docNum: string, clientId: string): Promise<boolean> {
+  if (!docNum) return false;
+  const rows = await supabaseQuery(`kyc_submissions?document_number=eq.${encodeURIComponent(docNum)}&client_id=neq.${clientId}&select=id&limit=1`);
   return rows.length > 0;
 }
 
-/* ─────────────────────────────────────────────
-   MRZ parsing + checksum validation (Tier 3)
-───────────────────────────────────────────── */
+/* ── Claude AI reasoning ────────────────────────────────────── */
 
-const MRZ_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-const MRZ_WEIGHTS = [7, 3, 1];
-
-function mrzChecksum(str: string): number {
-  let total = 0;
-  for (let i = 0; i < str.length; i++) {
-    const c = str[i] === "<" ? 0 : MRZ_CHARS.indexOf(str[i]);
-    total += (c < 0 ? 0 : c) * MRZ_WEIGHTS[i % 3];
-  }
-  return total % 10;
+interface AiAnalysis {
+  suspicious:    boolean;
+  confidence:    "high" | "medium" | "low";
+  flags:         string[];
+  summary:       string;
 }
 
-interface MrzResult {
-  found: boolean;
-  valid: boolean;
-  docNumber?: string;
-  dob?: string;
-  expiry?: string;
-  expired?: boolean;
-  nationality?: string;
-  surname?: string;
-  givenNames?: string;
-}
+async function claudeAnalyzeOcr(
+  idText: string, poaText: string,
+  input: { documentNumber?: string; dateOfBirth?: string; country?: string; fullName?: string; city?: string }
+): Promise<AiAnalysis> {
+  const apiKey = getEnv("ANTHROPIC_API_KEY");
+  if (!apiKey) return { suspicious: false, confidence: "low", flags: [], summary: "AI analysis unavailable" };
 
-function parseMrz(text: string): MrzResult {
-  const lines = text.split("\n").map(l => l.trim().replace(/\s/g, ""));
-  // Find two consecutive MRZ lines (passport TD3 = 44 chars each)
-  let line1 = "", line2 = "";
-  for (let i = 0; i < lines.length - 1; i++) {
-    if (/^[A-Z0-9<]{44}$/.test(lines[i]) && /^[A-Z0-9<]{44}$/.test(lines[i + 1])) {
-      line1 = lines[i]; line2 = lines[i + 1]; break;
-    }
-  }
-  // Also try 30-char ID card MRZ (TD1)
-  if (!line1) {
-    for (let i = 0; i < lines.length - 1; i++) {
-      if (/^[A-Z0-9<]{30}$/.test(lines[i]) && /^[A-Z0-9<]{30}$/.test(lines[i + 1])) {
-        line1 = lines[i]; line2 = lines[i + 1]; break;
-      }
-    }
-  }
-  if (!line1) return { found: false, valid: false };
+  const prompt = `You are a KYC fraud detection expert. Analyze the following OCR text extracted from identity documents and flag any inconsistencies, anomalies, or signs of fraud.
+
+USER-PROVIDED DETAILS:
+- Full name: ${input.fullName ?? "not provided"}
+- Document number: ${input.documentNumber ?? "not provided"}
+- Date of birth: ${input.dateOfBirth ?? "not provided"}
+- Country: ${input.country ?? "not provided"}
+- City: ${input.city ?? "not provided"}
+
+ID DOCUMENT OCR TEXT:
+${idText.slice(0, 800)}
+
+PROOF OF ADDRESS OCR TEXT:
+${poaText.slice(0, 400)}
+
+Analyze for:
+1. Inconsistencies between user-provided details and OCR text
+2. Suspicious formatting or anomalies in the document text
+3. Mismatched names, dates, or addresses between documents
+4. Signs of document tampering or unusual patterns
+5. Geographic inconsistencies (e.g. city doesn't match country)
+
+Respond ONLY with a JSON object in this exact format (no markdown, no preamble):
+{"suspicious":false,"confidence":"high","flags":[],"summary":"Brief summary of findings"}
+
+confidence must be "high", "medium", or "low".
+flags is an array of specific issues found (empty if none).
+suspicious is true only if you found clear red flags.`;
 
   try {
-    const isPassport = line1.length === 44;
-    if (isPassport) {
-      // TD3 Passport: line2 = YYMMDD C YYMMDD C ... 
-      const docNum    = line2.slice(0, 9).replace(/<+$/, "");
-      const docCheck  = parseInt(line2[9]);
-      const dob       = line2.slice(13, 19);
-      const dobCheck  = parseInt(line2[19]);
-      const expiry    = line2.slice(21, 27);
-      const expCheck  = parseInt(line2[27]);
-      const nat       = line2.slice(10, 13).replace(/</g, "");
-      const names     = line1.slice(5).split("<<");
-      const surname   = (names[0] ?? "").replace(/</g, " ").trim();
-      const given     = (names[1] ?? "").replace(/</g, " ").trim();
+    const r = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type":      "application/json",
+        "x-api-key":         apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model:      "claude-sonnet-4-20250514",
+        max_tokens: 300,
+        messages:   [{ role: "user", content: prompt }],
+      }),
+    });
+    if (!r.ok) throw new Error(`Anthropic API ${r.status}`);
+    const data = await r.json() as { content: Array<{ type: string; text: string }> };
+    const text = data.content.find(c => c.type === "text")?.text ?? "{}";
+    return JSON.parse(text.replace(/```json|```/g, "").trim()) as AiAnalysis;
+  } catch (err) {
+    console.error("[kyc-verify] Claude AI error:", err);
+    return { suspicious: false, confidence: "low", flags: [], summary: "AI analysis failed" };
+  }
+}
 
-      const docValid  = mrzChecksum(line2.slice(0, 9)) === docCheck;
-      const dobValid  = mrzChecksum(dob) === dobCheck;
-      const expValid  = mrzChecksum(expiry) === expCheck;
-      const valid     = docValid && dobValid && expValid;
+/* ── MRZ parsing ────────────────────────────────────────────── */
 
-      // Parse expiry — YYMMDD
-      const expYear   = parseInt(expiry.slice(0, 2)) + (parseInt(expiry.slice(0, 2)) > 50 ? 1900 : 2000);
-      const expDate   = new Date(`${expYear}-${expiry.slice(2, 4)}-${expiry.slice(4, 6)}`);
-      const expired   = expDate < new Date();
-
-      return { found: true, valid, docNumber: docNum, dob, expiry, expired, nationality: nat, surname, givenNames: given };
+const MRZ_CHARS   = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const MRZ_WEIGHTS = [7, 3, 1];
+function mrzChecksum(str: string): number {
+  let t = 0;
+  for (let i = 0; i < str.length; i++) {
+    const c = str[i] === "<" ? 0 : MRZ_CHARS.indexOf(str[i]);
+    t += (c < 0 ? 0 : c) * MRZ_WEIGHTS[i % 3];
+  }
+  return t % 10;
+}
+interface MrzResult { found: boolean; valid: boolean; docNumber?: string; expiry?: string; expired?: boolean; nationality?: string; surname?: string; givenNames?: string }
+function parseMrz(text: string): MrzResult {
+  const lines = text.split("\n").map(l => l.trim().replace(/\s/g, ""));
+  for (let i = 0; i < lines.length - 1; i++) {
+    if (/^[A-Z0-9<]{44}$/.test(lines[i]) && /^[A-Z0-9<]{44}$/.test(lines[i + 1])) {
+      const l1 = lines[i], l2 = lines[i + 1];
+      try {
+        const docNum   = l2.slice(0, 9).replace(/<+$/, "");
+        const docCheck = parseInt(l2[9]);
+        const dob      = l2.slice(13, 19);
+        const dobCheck = parseInt(l2[19]);
+        const expiry   = l2.slice(21, 27);
+        const expCheck = parseInt(l2[27]);
+        const nat      = l2.slice(10, 13).replace(/</g, "");
+        const names    = l1.slice(5).split("<<");
+        const surname  = (names[0] ?? "").replace(/</g, " ").trim();
+        const given    = (names[1] ?? "").replace(/</g, " ").trim();
+        const valid    = mrzChecksum(l2.slice(0, 9)) === docCheck && mrzChecksum(dob) === dobCheck && mrzChecksum(expiry) === expCheck;
+        const expYear  = parseInt(expiry.slice(0, 2)) + (parseInt(expiry.slice(0, 2)) > 50 ? 1900 : 2000);
+        const expired  = new Date(`${expYear}-${expiry.slice(2, 4)}-${expiry.slice(4, 6)}`) < new Date();
+        return { found: true, valid, docNumber: docNum, expiry, expired, nationality: nat, surname, givenNames: given };
+      } catch { return { found: true, valid: false }; }
     }
-  } catch { /* fall through */ }
-
-  return { found: true, valid: false };
+  }
+  return { found: false, valid: false };
 }
 
-/* ─────────────────────────────────────────────
-   Name matching
-───────────────────────────────────────────── */
+/* ── DOB matching ───────────────────────────────────────────── */
 
-function nameMatchScore(ocrText: string, fullName?: string): number {
-  if (!fullName) return 100;
-  const t = ocrText.toLowerCase();
-  const parts = fullName.toLowerCase().trim().split(/\s+/);
-  const matched = parts.filter(p => p.length > 1 && t.includes(p));
-  return Math.round((matched.length / parts.length) * 100);
-}
-
-/* ─────────────────────────────────────────────
-   DOB matching
-───────────────────────────────────────────── */
-
-function dobFound(text: string, dateOfBirth: string): boolean {
+function dobFound(text: string, dob: string): boolean {
   const t = text.toLowerCase();
-  const [y, m, d] = dateOfBirth.split("-");
+  const [y, m, d] = dob.split("-");
   const my = parseInt(m, 10).toString();
   const md = parseInt(d, 10).toString();
   const MONTHS = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
-  const monthName = MONTHS[parseInt(m, 10) - 1];
-  const variants = [
-    `${d}/${m}/${y}`, `${d}-${m}-${y}`, `${d} ${m} ${y}`,
-    `${md}/${m}/${y}`, `${md}-${m}-${y}`,
-    `${m}/${d}/${y}`, `${m}-${d}-${y}`, `${m} ${d} ${y}`,
-    `${my}/${d}/${y}`, `${my}-${d}-${y}`,
-    `${y}-${m}-${d}`, `${y}/${m}/${d}`,
-    `${y.slice(2)}${m}${d}`,
-    `${md} ${monthName} ${y}`, `${d} ${monthName} ${y}`,
-    `${monthName} ${md}, ${y}`, `${monthName} ${d}, ${y}`,
-  ];
-  return variants.some(v => t.includes(v));
+  const mn = MONTHS[parseInt(m, 10) - 1];
+  return [
+    `${d}/${m}/${y}`,`${d}-${m}-${y}`,`${d} ${m} ${y}`,`${md}/${m}/${y}`,`${md}-${m}-${y}`,
+    `${m}/${d}/${y}`,`${m}-${d}-${y}`,`${m} ${d} ${y}`,`${my}/${d}/${y}`,`${my}-${d}-${y}`,
+    `${y}-${m}-${d}`,`${y}/${m}/${d}`,`${y.slice(2)}${m}${d}`,
+    `${md} ${mn} ${y}`,`${d} ${mn} ${y}`,`${mn} ${md}, ${y}`,`${mn} ${d}, ${y}`,
+  ].some(v => t.includes(v));
 }
 
-/* ─────────────────────────────────────────────
-   Spoof detection
-───────────────────────────────────────────── */
+/* ── Spoof detection ────────────────────────────────────────── */
 
 function scoreSpoofFromLabels(labels: RekLabel[]): { penalty: number; flag: string | null } {
-  const hardSpoof = ["monitor","screen","display","television","computer monitor","laptop","tablet","ipad","smartphone"];
-  const softSpoof = ["paper","poster","printed","printout","newspaper"];
+  const hard = ["monitor","screen","display","television","computer monitor","laptop","tablet","ipad","smartphone"];
+  const soft = ["paper","poster","printed","printout","newspaper"];
   for (const l of labels) {
     const n = l.Name.toLowerCase();
-    if (hardSpoof.some(k => n.includes(k)) && l.Confidence >= 75)
-      return { penalty: 40, flag: `Digital spoof detected: ${l.Name} (${l.Confidence.toFixed(0)}%)` };
-    if (softSpoof.some(k => n.includes(k)) && l.Confidence >= 85)
-      return { penalty: 20, flag: `Printed photo suspected: ${l.Name} (${l.Confidence.toFixed(0)}%)` };
+    if (hard.some(k => n.includes(k)) && l.Confidence >= 75) return { penalty: 40, flag: `Digital spoof: ${l.Name} (${l.Confidence.toFixed(0)}%)` };
+    if (soft.some(k => n.includes(k)) && l.Confidence >= 85) return { penalty: 20, flag: `Printed photo: ${l.Name} (${l.Confidence.toFixed(0)}%)` };
   }
   return { penalty: 0, flag: null };
 }
 
-/* ─────────────────────────────────────────────
-   Document classification (Tier 3)
-───────────────────────────────────────────── */
+/* ── Name match ─────────────────────────────────────────────── */
+
+function nameMatchScore(text: string, name?: string): number {
+  if (!name) return 100;
+  const t = text.toLowerCase();
+  const parts = name.toLowerCase().trim().split(/\s+/);
+  return Math.round(parts.filter(p => p.length > 1 && t.includes(p)).length / parts.length * 100);
+}
+
+/* ── POA OCR ────────────────────────────────────────────────── */
+
+function scorePoaOcr(text: string, city?: string, addr?: string): { penalty: number; flags: string[] } {
+  const t = text.toLowerCase();
+  const flags: string[] = [];
+  let p = 0;
+  if (city && !t.includes(city.toLowerCase())) { p += 10; flags.push("City not found in proof of address"); }
+  if (addr) {
+    const fw = addr.toLowerCase().split(" ")[0];
+    if (fw.length > 2 && !t.includes(fw)) { p += 10; flags.push("Address not found in proof of address"); }
+  }
+  return { penalty: p, flags };
+}
+
+/* ── Doc classification ─────────────────────────────────────── */
 
 function classifyIdDocument(labels: RekLabel[]): { isIdDoc: boolean; confidence: number } {
-  const idKeywords = ["passport","identity document","id card","driving license","driver's license","document","card","text"];
-  const matches = labels.filter(l => idKeywords.some(k => l.Name.toLowerCase().includes(k)));
-  if (matches.length === 0) return { isIdDoc: false, confidence: 0 };
-  const best = Math.max(...matches.map(l => l.Confidence));
+  const kw = ["passport","identity document","id card","driving license","driver's license","document","card","text"];
+  const m  = labels.filter(l => kw.some(k => l.Name.toLowerCase().includes(k)));
+  if (!m.length) return { isIdDoc: false, confidence: 0 };
+  const best = Math.max(...m.map(l => l.Confidence));
   return { isIdDoc: best >= 70, confidence: best };
 }
 
-/* ─────────────────────────────────────────────
-   POA OCR
-───────────────────────────────────────────── */
+/* ── Input type ─────────────────────────────────────────────── */
 
 interface KycInput {
   clientId?:       string;
@@ -310,127 +333,98 @@ interface KycInput {
   poaB64:          string;
   poaMimeType?:    string;
   poaFileName?:    string;
+  livenessSessionId?: string;
+  livenessConfidence?: number;
 }
 
-function scorePoaOcr(text: string, input: KycInput): { penalty: number; flags: string[] } {
-  const t = text.toLowerCase();
-  const flags: string[] = [];
-  let penalty = 0;
-  if (input.city && !t.includes(input.city.toLowerCase())) { penalty += 10; flags.push("City not found in proof of address"); }
-  if (input.addressLine1) {
-    const firstWord = input.addressLine1.toLowerCase().split(" ")[0];
-    if (firstWord.length > 2 && !t.includes(firstWord)) { penalty += 10; flags.push("Address not found in proof of address"); }
-  }
-  return { penalty, flags };
-}
-
-/* ─────────────────────────────────────────────
-   Handler
-───────────────────────────────────────────── */
+/* ── Handler ────────────────────────────────────────────────── */
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default async function handler(req: any, res: any) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
-
-  const accessKey = getEnv("AWS_ACCESS_KEY_ID") || getEnv("VITE_AWS_ACCESS_KEY_ID");
-  if (!accessKey) return res.status(503).json({ error: "AWS credentials not configured" });
+  if (!getEnv("AWS_ACCESS_KEY_ID") && !getEnv("VITE_AWS_ACCESS_KEY_ID"))
+    return res.status(503).json({ error: "AWS credentials not configured" });
 
   const input = req.body as KycInput;
   if (!input.idB64 || !input.selfieB64 || !input.poaB64)
     return res.status(400).json({ error: "idB64, selfieB64, poaB64 required" });
 
-  const poaIsPdf  = (input.poaMimeType ?? "").includes("pdf") || (input.poaFileName ?? "").endsWith(".pdf");
+  const poaIsPdf    = (input.poaMimeType ?? "").includes("pdf") || (input.poaFileName ?? "").endsWith(".pdf");
   const referenceId = `aws-${Date.now()}`;
 
   try {
-    // ── Run all AWS + fraud checks in parallel ────────────────────
+    // ── Run all AWS + fraud checks in parallel ────────────────
     const [
-      idText, poaText, selfieFaces, idFaces,
-      selfieLabels, idLabels, faceMatchScore,
+      idText, poaText,
+      selfieFaces, idFaces,
+      selfieLabels, idLabels,
+      faceMatchScore,
+      duplicateFaceResult,
       velocityResult, docReuseResult,
     ] = await Promise.all([
       detectText(input.idB64),
       poaIsPdf ? Promise.resolve("") : detectText(input.poaB64),
       detectFaces(input.selfieB64),
-      detectFaces(input.idB64),                                          // Tier 1: face on ID doc
+      detectFaces(input.idB64),
       detectLabels(input.selfieB64),
-      detectLabels(input.idB64),                                         // Tier 3: classify ID doc
+      detectLabels(input.idB64),
       compareFaces(input.selfieB64, input.idB64),
+      input.clientId
+        ? searchFaceCollection(input.selfieB64, input.clientId)
+        : Promise.resolve({ duplicate: false }),
       input.clientId ? checkVelocity(input.clientId) : Promise.resolve({ tooMany: false, count: 0 }),
       input.clientId && input.documentNumber
         ? checkDocumentReuse(input.documentNumber, input.clientId)
         : Promise.resolve(false),
     ]);
 
-    let riskScore = 0;
+    // ── Claude AI analysis (after OCR, uses results) ──────────
+    const aiAnalysis = await claudeAnalyzeOcr(idText, poaText, {
+      documentNumber: input.documentNumber,
+      dateOfBirth:    input.dateOfBirth,
+      country:        input.country,
+      fullName:       input.fullName,
+      city:           input.city,
+    });
+
+    const mrz       = parseMrz(idText);
+    let riskScore   = 0;
     const flags: string[] = [];
 
-    // ── MRZ parse (before OCR scoring — provides structured data) ──
-    const mrz = parseMrz(idText);
-
-    // ── 1. ID OCR ─────────────────────────────────────────────────
+    // ── 1. ID OCR ─────────────────────────────────────────────
     const idOcrFlags: string[] = [];
     let idOcrPenalty = 0;
     let idOcrPassed  = false;
-
     if (!idText || idText.trim().length < 20) {
       riskScore += 25; flags.push("ID document text unreadable");
     } else {
       const t = idText.toLowerCase();
-
-      // Document number
-      if (input.documentNumber && !t.includes(input.documentNumber.toLowerCase())) {
-        idOcrPenalty += 15; idOcrFlags.push("Document number not found in ID");
-      }
-      // DOB
-      if (input.dateOfBirth && !dobFound(idText, input.dateOfBirth)) {
-        idOcrPenalty += 8; idOcrFlags.push("Date of birth not found in ID");
-      }
-      // Country
+      if (input.documentNumber && !t.includes(input.documentNumber.toLowerCase()))
+        { idOcrPenalty += 15; idOcrFlags.push("Document number not found in ID"); }
+      if (input.dateOfBirth && !dobFound(idText, input.dateOfBirth))
+        { idOcrPenalty += 8;  idOcrFlags.push("Date of birth not found in ID"); }
       if (input.country) {
         const c = input.country.toLowerCase();
-        if (!t.includes(c) && !(c === "mauritius" && t.includes("maurit"))) {
-          idOcrPenalty += 5; idOcrFlags.push("Country not found in ID text");
-        }
+        if (!t.includes(c) && !(c === "mauritius" && t.includes("maurit")))
+          { idOcrPenalty += 5; idOcrFlags.push("Country not found in ID text"); }
       }
-      // Name match
-      const nmScore = nameMatchScore(idText, input.fullName);
-      if (nmScore < 50) {
-        idOcrPenalty += 10; idOcrFlags.push(`Name mismatch: ${nmScore}% match with ID`);
-      }
-      // MRZ bonus
+      const nm = nameMatchScore(idText, input.fullName);
+      if (nm < 50) { idOcrPenalty += 10; idOcrFlags.push(`Name mismatch: ${nm}% match with ID`); }
       if (mrz.found) idOcrPenalty = Math.max(0, idOcrPenalty - 5);
-
       idOcrPenalty = Math.min(idOcrPenalty, 30);
       idOcrPassed  = idOcrPenalty === 0;
       riskScore   += idOcrPenalty;
       flags.push(...idOcrFlags);
     }
 
-    // ── 2. Expiry check (from MRZ) ────────────────────────────────
-    let expiryResult = { checked: false, expired: false, expiry: "" };
-    if (mrz.found && mrz.expiry) {
-      expiryResult = { checked: true, expired: mrz.expired ?? false, expiry: mrz.expiry };
-      if (mrz.expired) {
-        riskScore += 40; flags.push(`ID document has expired (expiry: ${mrz.expiry})`);
-      }
-    }
+    // ── 2. Expiry (MRZ) ───────────────────────────────────────
+    if (mrz.found && mrz.expired) { riskScore += 40; flags.push(`ID document has expired (${mrz.expiry})`); }
+    if (mrz.found && !mrz.valid)  { riskScore += 20; flags.push("MRZ checksum invalid — possible tamper"); }
 
-    // ── 3. MRZ checksum validation ────────────────────────────────
-    let mrzResult = { found: mrz.found, valid: mrz.valid, docNumber: mrz.docNumber, nationality: mrz.nationality };
-    if (mrz.found && !mrz.valid) {
-      riskScore += 20; flags.push("MRZ checksum invalid — document may be tampered");
-    }
+    // ── 3. Face on ID doc ─────────────────────────────────────
+    if (idFaces.length === 0) { riskScore += 10; flags.push("No face detected on ID document"); }
 
-    // ── 4. Face on ID document ────────────────────────────────────
-    let idFaceResult = { count: idFaces.length, passed: false };
-    if (idFaces.length === 0) {
-      riskScore += 10; flags.push("No face detected on ID document");
-    } else {
-      idFaceResult = { count: idFaces.length, passed: true };
-    }
-
-    // ── 5. Selfie face detection ──────────────────────────────────
+    // ── 4. Selfie face detection ──────────────────────────────
     let faceDetectResult = { count: selfieFaces.length, confidence: 0, passed: false };
     if (selfieFaces.length === 0) {
       riskScore += 35; flags.push("No face detected in selfie");
@@ -444,100 +438,102 @@ export default async function handler(req: any, res: any) {
       faceDetectResult = { count: 1, confidence: selfieFaces[0].Confidence, passed: true };
     }
 
-    // ── 6. Face match: selfie vs ID ───────────────────────────────
+    // ── 5. Face match: selfie vs ID ───────────────────────────
     let faceMatchResult = { similarity: faceMatchScore, passed: false };
-    if (faceMatchScore === -1) {
-      riskScore += 15; flags.push("Could not detect face on ID document for comparison");
-    } else if (faceMatchScore === 0) {
-      riskScore += 40; flags.push("Selfie does not match face on ID document");
-    } else if (faceMatchScore < 80) {
-      riskScore += 20; flags.push(`Weak face match: selfie vs ID (${faceMatchScore.toFixed(0)}% similarity)`);
-    } else if (faceMatchScore < 90) {
-      riskScore += 8; flags.push(`Moderate face match (${faceMatchScore.toFixed(0)}% similarity)`);
-      faceMatchResult = { similarity: faceMatchScore, passed: true };
-    } else {
-      faceMatchResult = { similarity: faceMatchScore, passed: true };
+    if      (faceMatchScore === -1) { riskScore += 15; flags.push("Could not detect face on ID for comparison"); }
+    else if (faceMatchScore === 0)  { riskScore += 40; flags.push("Selfie does not match face on ID"); }
+    else if (faceMatchScore < 80)   { riskScore += 20; flags.push(`Weak face match (${faceMatchScore.toFixed(0)}%)`); }
+    else if (faceMatchScore < 90)   { riskScore += 8;  flags.push(`Moderate face match (${faceMatchScore.toFixed(0)}%)`); faceMatchResult = { similarity: faceMatchScore, passed: true }; }
+    else                            { faceMatchResult = { similarity: faceMatchScore, passed: true }; }
+
+    // ── 6. Liveness check (if session provided) ───────────────
+    let livenessResult = { checked: false, passed: false, confidence: 0 };
+    if (input.livenessSessionId) {
+      const lc = input.livenessConfidence ?? 0;
+      livenessResult = { checked: true, passed: lc >= 90, confidence: lc };
+      if (lc < 90) { riskScore += 25; flags.push(`Liveness check failed (confidence: ${lc.toFixed(0)}%)`); }
     }
 
-    // ── 7. Spoof detection ────────────────────────────────────────
+    // ── 7. Spoof detection ────────────────────────────────────
     const { penalty: sp, flag: sf } = scoreSpoofFromLabels(selfieLabels);
     riskScore += sp;
     if (sf) flags.push(sf);
-    const spoofResult = {
-      penalty: sp, passed: sp === 0,
-      labels: selfieLabels.slice(0, 8).map(l => `${l.Name} (${l.Confidence.toFixed(0)}%)`),
-    };
 
-    // ── 8. POA OCR ────────────────────────────────────────────────
+    // ── 8. POA OCR ────────────────────────────────────────────
     let poaOcrResult = { penalty: 0, flags: [] as string[], passed: false, skipped: false };
     if (poaIsPdf) {
       poaOcrResult = { penalty: 0, flags: [], passed: true, skipped: true };
-      flags.push("Proof of address is PDF — address cross-check skipped, manual review required");
+      flags.push("POA is PDF — cross-check skipped, manual review required");
       riskScore += 10;
     } else if (!poaText || poaText.trim().length < 20) {
       riskScore += 15; flags.push("Proof of address text unreadable");
     } else {
-      const { penalty, flags: f } = scorePoaOcr(poaText, input);
+      const { penalty, flags: f } = scorePoaOcr(poaText, input.city, input.addressLine1);
       riskScore += penalty; flags.push(...f);
       poaOcrResult = { penalty, flags: f, passed: penalty === 0, skipped: false };
     }
 
-    // ── 9. Tier 3: Document classification ───────────────────────
+    // ── 9. Doc classification ─────────────────────────────────
     const docClass = classifyIdDocument(idLabels);
-    let docClassResult = { isIdDoc: docClass.isIdDoc, confidence: docClass.confidence };
     if (!docClass.isIdDoc && idText.trim().length < 20) {
-      // Only penalise if OCR also failed — avoid false positives
       riskScore += 15; flags.push("Uploaded ID does not appear to be an identity document");
     }
 
-    // ── 10. Tier 2: Velocity check ────────────────────────────────
-    let velocityCheck = { count: velocityResult.count, flagged: velocityResult.tooMany };
+    // ── 10. Duplicate face (cross-user) ───────────────────────
+    if (duplicateFaceResult.duplicate) {
+      riskScore += 60; flags.push(`Face matches another account (${duplicateFaceResult.similarity?.toFixed(0)}% similarity)`);
+    }
+
+    // ── 11. Velocity ──────────────────────────────────────────
     if (velocityResult.tooMany) {
       riskScore += 20; flags.push(`High submission velocity: ${velocityResult.count} attempts in 24h`);
     }
 
-    // ── 11. Tier 2: Document reuse ────────────────────────────────
-    let docReuseCheck = { flagged: docReuseResult };
+    // ── 12. Document reuse ────────────────────────────────────
     if (docReuseResult) {
       riskScore += 50; flags.push("Document number already used by another account");
     }
 
-    // ── Final decision ────────────────────────────────────────────
+    // ── 13. Claude AI flags ───────────────────────────────────
+    if (aiAnalysis.suspicious) {
+      const aiPenalty = aiAnalysis.confidence === "high" ? 25 : aiAnalysis.confidence === "medium" ? 15 : 8;
+      riskScore += aiPenalty;
+      flags.push(...aiAnalysis.flags.map(f => `[AI] ${f}`));
+    }
+
+    // ── Final decision ────────────────────────────────────────
     riskScore = Math.min(riskScore, 100);
 
     const hardReject =
-      selfieFaces.length === 0 ||
-      faceMatchScore === 0     ||
-      sp >= 40                 ||
-      docReuseResult           ||
+      selfieFaces.length === 0   ||
+      faceMatchScore === 0        ||
+      sp >= 40                    ||
+      docReuseResult              ||
+      duplicateFaceResult.duplicate ||
       (mrz.found && mrz.expired === true);
 
+    const nm = nameMatchScore(idText, input.fullName);
+
     const details = {
-      idOcr: {
-        textExtracted: idText.slice(0, 600),
-        penalty: idOcrPenalty,
-        flags:   idOcrFlags,
-        passed:  idOcrPassed,
-        nameMatchScore: nameMatchScore(idText, input.fullName),
-      },
-      mrz: {
-        ...mrzResult,
-        expiry: expiryResult,
-      },
-      idFaceCheck:   idFaceResult,
-      faceDetection: faceDetectResult,
-      faceMatch:     faceMatchResult,
-      spoofCheck:    spoofResult,
-      docClassification: docClassResult,
-      poaOcr: {
-        textExtracted: poaText.slice(0, 400),
-        ...poaOcrResult,
-      },
-      fraudChecks: {
-        velocity:    velocityCheck,
-        documentReuse: docReuseCheck,
-      },
+      idOcr:          { textExtracted: idText.slice(0, 600), penalty: idOcrPenalty, flags: idOcrFlags, passed: idOcrPassed, nameMatchScore: nm },
+      mrz:            { found: mrz.found, valid: mrz.valid, docNumber: mrz.docNumber, nationality: mrz.nationality, expiry: { checked: mrz.found, expired: mrz.expired ?? false, expiry: mrz.expiry ?? "" } },
+      idFaceCheck:    { count: idFaces.length, passed: idFaces.length > 0 },
+      faceDetection:  faceDetectResult,
+      faceMatch:      faceMatchResult,
+      liveness:       livenessResult,
+      spoofCheck:     { penalty: sp, passed: sp === 0, labels: selfieLabels.slice(0, 8).map(l => `${l.Name} (${l.Confidence.toFixed(0)}%)`) },
+      poaOcr:         { textExtracted: poaText.slice(0, 400), ...poaOcrResult },
+      docClassification: docClass,
+      fraudChecks:    { velocity: velocityResult, documentReuse: { flagged: docReuseResult }, duplicateFace: duplicateFaceResult },
+      aiAnalysis,
     };
+
+    // ── Index face on clean/review pass (not hard reject) ─────
+    const needsReview = riskScore >= 30;
+    if (!hardReject && input.clientId && faceMatchScore >= 90) {
+      // Only index high-confidence matches to keep collection clean
+      indexFace(input.selfieB64, input.clientId).catch(() => {});
+    }
 
     if (hardReject && riskScore >= 55) {
       return res.status(200).json({
@@ -547,17 +543,12 @@ export default async function handler(req: any, res: any) {
     }
 
     return res.status(200).json({
-      ok:          true,
-      referenceId,
-      riskScore,
-      flags,
-      details,
-      needsReview: riskScore >= 30,
-      reason:      flags.length > 0 ? flags.join("; ") : undefined,
+      ok: true, referenceId, riskScore, flags, details, needsReview,
+      reason: flags.length > 0 ? flags.join("; ") : undefined,
     });
 
   } catch (err) {
-    console.error("[kyc-verify] AWS error:", err);
+    console.error("[kyc-verify] error:", err);
     return res.status(200).json({
       ok: true, referenceId, riskScore: 50, flags: [], details: null, needsReview: true,
       reason: "Automated check unavailable — queued for manual review.",
