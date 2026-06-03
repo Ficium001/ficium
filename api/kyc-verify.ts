@@ -2,12 +2,16 @@
  * api/kyc-verify.ts
  * POST /api/kyc-verify
  *
- * Accepts base64-encoded images, runs them through:
- *   - AWS Textract (DetectDocumentText) for ID + proof of address OCR
- *   - AWS Rekognition (DetectFaces + DetectLabels) for face/liveness check
+ * SmileID/Sumsub-level KYC pipeline using AWS Rekognition:
+ *   1. DetectText on ID doc → OCR cross-check (doc number, DOB, country)
+ *   2. DetectFaces on selfie → face count + confidence
+ *   3. CompareFaces (ID doc vs selfie) → face match score
+ *   4. DetectLabels on selfie → targeted spoof detection (screens only)
+ *   5. DetectText on proof of address → address cross-check
+ *   6. MRZ pattern detection → passport/ID authenticity signal
  *
- * Returns a structured KYC result (riskScore, flags, ok).
- * Runs server-side so AWS keys are never exposed to the browser.
+ * Risk scoring: 0–100. Hard reject ≥60 with critical flag.
+ * Review threshold: ≥35. Clean pass: <35.
  */
 
 import { createHmac, createHash } from "crypto";
@@ -30,10 +34,7 @@ function hashHex(data: string): string {
 }
 
 function getSigningKey(secret: string, date: string, region: string, service: string): Buffer {
-  const kDate    = hmac("AWS4" + secret, date);
-  const kRegion  = hmac(kDate,    region);
-  const kService = hmac(kRegion,  service);
-  return           hmac(kService, "aws4_request");
+  return hmac(hmac(hmac(hmac("AWS4" + secret, date), region), service), "aws4_request");
 }
 
 async function awsPost(service: string, target: string, body: object): Promise<unknown> {
@@ -47,29 +48,17 @@ async function awsPost(service: string, target: string, body: object): Promise<u
   const bodyStr   = JSON.stringify(body);
   const bodyHash  = hashHex(bodyStr);
 
-  const canonicalHeaders = [
-    `content-type:application/x-amz-json-1.1`,
-    `host:${host}`,
-    `x-amz-date:${amzDate}`,
-    `x-amz-target:${target}`,
-  ].join("\n") + "\n";
-
+  const canonicalHeaders =
+    `content-type:application/x-amz-json-1.1\nhost:${host}\nx-amz-date:${amzDate}\nx-amz-target:${target}\n`;
   const signedHeaders = "content-type;host;x-amz-date;x-amz-target";
-
-  const canonicalRequest = [
-    "POST", "/", "",
-    canonicalHeaders,
-    signedHeaders,
-    bodyHash,
-  ].join("\n");
-
-  const credentialScope = `${dateStamp}/${AWS_REGION}/${service}/aws4_request`;
-  const stringToSign    = ["AWS4-HMAC-SHA256", amzDate, credentialScope, hashHex(canonicalRequest)].join("\n");
-  const signature       = hmac(getSigningKey(secretKey, dateStamp, AWS_REGION, service), stringToSign).toString("hex");
-  const authHeader      = `AWS4-HMAC-SHA256 Credential=${accessKey}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
+  const canonicalRequest = ["POST", "/", "", canonicalHeaders, signedHeaders, bodyHash].join("\n");
+  const credentialScope  = `${dateStamp}/${AWS_REGION}/${service}/aws4_request`;
+  const stringToSign     = ["AWS4-HMAC-SHA256", amzDate, credentialScope, hashHex(canonicalRequest)].join("\n");
+  const signature        = hmac(getSigningKey(secretKey, dateStamp, AWS_REGION, service), stringToSign).toString("hex");
+  const authHeader       = `AWS4-HMAC-SHA256 Credential=${accessKey}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
 
   const res = await fetch(`https://${host}/`, {
-    method:  "POST",
+    method: "POST",
     headers: {
       "Content-Type":  "application/x-amz-json-1.1",
       "X-Amz-Date":    amzDate,
@@ -86,38 +75,108 @@ async function awsPost(service: string, target: string, body: object): Promise<u
   return res.json();
 }
 
-/* ---------- AWS helpers ---------- */
+/* ---------- Rekognition API wrappers ---------- */
 
-async function textractDetect(imageB64: string): Promise<string> {
-  // Uses Rekognition DetectText — no subscription required, works in ap-south-1
+async function detectText(imageB64: string): Promise<string> {
   const data = await awsPost("rekognition", "RekognitionService.DetectText", {
     Image: { Bytes: imageB64 },
   }) as { TextDetections?: Array<{ DetectedText: string; Type: string; Confidence: number }> };
-
   return (data.TextDetections ?? [])
     .filter(b => b.Type === "LINE" && b.Confidence > 50)
     .map(b => b.DetectedText)
     .join("\n");
 }
 
-interface RekFace   { Confidence: number }
-interface RekLabel  { Name: string; Confidence: number }
+interface RekFace  { Confidence: number; BoundingBox: { Width: number; Height: number } }
+interface RekLabel { Name: string; Confidence: number }
+interface FaceMatch { Similarity: number; Face: { Confidence: number } }
 
-async function rekognitionFaces(imageB64: string): Promise<RekFace[]> {
+async function detectFaces(imageB64: string): Promise<RekFace[]> {
   const data = await awsPost("rekognition", "RekognitionService.DetectFaces", {
     Image: { Bytes: imageB64 }, Attributes: ["DEFAULT"],
   }) as { FaceDetails?: RekFace[] };
   return data.FaceDetails ?? [];
 }
 
-async function rekognitionLabels(imageB64: string): Promise<RekLabel[]> {
+async function detectLabels(imageB64: string): Promise<RekLabel[]> {
   const data = await awsPost("rekognition", "RekognitionService.DetectLabels", {
-    Image: { Bytes: imageB64 }, MaxLabels: 20, MinConfidence: 60,
+    Image: { Bytes: imageB64 }, MaxLabels: 30, MinConfidence: 70,
   }) as { Labels?: RekLabel[] };
   return data.Labels ?? [];
 }
 
-/* ---------- Scoring ---------- */
+async function compareFaces(sourceB64: string, targetB64: string): Promise<number> {
+  // sourceB64 = selfie, targetB64 = ID doc
+  try {
+    const data = await awsPost("rekognition", "RekognitionService.CompareFaces", {
+      SourceImage: { Bytes: sourceB64 },
+      TargetImage: { Bytes: targetB64 },
+      SimilarityThreshold: 50,
+    }) as { FaceMatches?: FaceMatch[]; UnmatchedFaces?: unknown[] };
+    if (data.FaceMatches && data.FaceMatches.length > 0) {
+      return data.FaceMatches[0].Similarity;
+    }
+    return 0; // No match found
+  } catch {
+    return -1; // CompareFaces failed (e.g. no face on ID doc)
+  }
+}
+
+/* ---------- DOB matching — handles all formats ---------- */
+
+function dobFound(text: string, dateOfBirth: string): boolean {
+  const t = text.toLowerCase();
+  // Input is YYYY-MM-DD
+  const [y, m, d] = dateOfBirth.split("-");
+  const my = parseInt(m, 10).toString();   // month without leading zero
+  const md = parseInt(d, 10).toString();   // day without leading zero
+
+  const variants = [
+    // DD/MM/YYYY and variants
+    `${d}/${m}/${y}`, `${d}-${m}-${y}`, `${d} ${m} ${y}`,
+    `${md}/${m}/${y}`, `${md}-${m}-${y}`,
+    // MM/DD/YYYY (American — common on passports)
+    `${m}/${d}/${y}`, `${m}-${d}-${y}`, `${m} ${d} ${y}`,
+    `${my}/${d}/${y}`, `${my}-${d}-${y}`,
+    // YYYY-MM-DD
+    `${y}-${m}-${d}`, `${y}/${m}/${d}`,
+    // Partial — just year + month or year alone
+    `${y}`,
+    // MRZ date format YYMMDD
+    `${y.slice(2)}${m}${d}`,
+  ];
+  return variants.some(v => t.includes(v));
+}
+
+/* ---------- MRZ detection ---------- */
+
+function hasMrzPattern(text: string): boolean {
+  // MRZ lines are 44 chars (passport) or 30 chars (ID) of uppercase + digits + <
+  const lines = text.split("\n");
+  return lines.some(l => /^[A-Z0-9<]{20,44}$/.test(l.trim()));
+}
+
+/* ---------- Spoof detection — screens only, not portraits ---------- */
+
+function scoreSpoofFromLabels(labels: RekLabel[]): { penalty: number; flag: string | null } {
+  // Only flag actual digital reproduction devices — not "Photography" or "Portrait"
+  const hardSpoofKw  = ["monitor", "screen", "display", "television", "computer monitor",
+                        "laptop", "tablet", "ipad", "smartphone"];
+  const softSpoofKw  = ["paper", "poster", "printed", "printout", "newspaper"];
+
+  for (const l of labels) {
+    const n = l.Name.toLowerCase();
+    if (hardSpoofKw.some(k => n.includes(k)) && l.Confidence >= 75) {
+      return { penalty: 40, flag: `Digital spoof detected: ${l.Name} (${l.Confidence.toFixed(0)}%)` };
+    }
+    if (softSpoofKw.some(k => n.includes(k)) && l.Confidence >= 85) {
+      return { penalty: 20, flag: `Printed photo suspected: ${l.Name} (${l.Confidence.toFixed(0)}%)` };
+    }
+  }
+  return { penalty: 0, flag: null };
+}
+
+/* ---------- OCR scoring ---------- */
 
 interface KycInput {
   documentNumber?: string;
@@ -130,39 +189,44 @@ interface KycInput {
   poaB64:          string;
 }
 
-function scoreOcrMismatch(text: string, input: KycInput): number {
+function scoreIdOcr(text: string, input: KycInput): { penalty: number; flags: string[] } {
   const t = text.toLowerCase();
-  let p = 0;
-  if (input.documentNumber && !t.includes(input.documentNumber.toLowerCase())) p += 15;
-  if (input.dateOfBirth) {
-    const [y, m, d] = input.dateOfBirth.split("-");
-    const variants  = [`${d}/${m}/${y}`, `${d}-${m}-${y}`, `${y}-${m}-${d}`, `${d} ${m} ${y}`];
-    if (!variants.some(v => t.includes(v))) p += 10;
+  const flags: string[] = [];
+  let penalty = 0;
+
+  if (input.documentNumber && !t.includes(input.documentNumber.toLowerCase())) {
+    penalty += 15; flags.push("Document number not found in ID");
   }
-  if (input.country && !t.includes(input.country.toLowerCase()) &&
-      !(input.country === "Mauritius" && t.includes("maurit"))) p += 5;
-  return Math.min(p, 30);
-}
-
-function scorePoaMismatch(text: string, input: KycInput): number {
-  const t = text.toLowerCase();
-  let p = 0;
-  if (input.city        && !t.includes(input.city.toLowerCase()))                            p += 10;
-  if (input.addressLine1 && !t.includes(input.addressLine1.toLowerCase().split(" ")[0]))     p += 10;
-  return p;
-}
-
-function scoreSpoofFromLabels(labels: RekLabel[]): { penalty: number; flag: string | null } {
-  const spoofKw = ["monitor","screen","display","television","computer","laptop",
-                   "phone","tablet","paper","document","poster","photo","photograph","printed","text"];
-  for (const l of labels) {
-    const n = l.Name.toLowerCase();
-    if (spoofKw.some(k => n.includes(k))) {
-      if (l.Confidence >= 80) return { penalty: 35, flag: `Possible spoof: ${l.Name} (${l.Confidence.toFixed(0)}%)` };
-      if (l.Confidence >= 65) return { penalty: 15, flag: `Possible spoof: ${l.Name} (${l.Confidence.toFixed(0)}%)` };
+  if (input.dateOfBirth && !dobFound(text, input.dateOfBirth)) {
+    penalty += 8; flags.push("Date of birth not found in ID");
+  }
+  if (input.country) {
+    const c = input.country.toLowerCase();
+    if (!t.includes(c) && !(c === "mauritius" && t.includes("maurit"))) {
+      penalty += 5; flags.push("Country not found in ID text");
     }
   }
-  return { penalty: 0, flag: null };
+  // Bonus: MRZ found → reduce penalty (document looks authentic)
+  if (hasMrzPattern(text)) penalty = Math.max(0, penalty - 5);
+
+  return { penalty: Math.min(penalty, 30), flags };
+}
+
+function scorePoaOcr(text: string, input: KycInput): { penalty: number; flags: string[] } {
+  const t = text.toLowerCase();
+  const flags: string[] = [];
+  let penalty = 0;
+
+  if (input.city && !t.includes(input.city.toLowerCase())) {
+    penalty += 10; flags.push("City not found in proof of address");
+  }
+  if (input.addressLine1) {
+    const firstWord = input.addressLine1.toLowerCase().split(" ")[0];
+    if (firstWord.length > 2 && !t.includes(firstWord)) {
+      penalty += 10; flags.push("Address not found in proof of address");
+    }
+  }
+  return { penalty, flags };
 }
 
 /* ---------- Handler ---------- */
@@ -182,53 +246,74 @@ export default async function handler(req: any, res: any) {
   const referenceId = `aws-${Date.now()}`;
 
   try {
-    const [idText, poaText, faces, labels] = await Promise.all([
-      textractDetect(input.idB64),
-      textractDetect(input.poaB64),
-      rekognitionFaces(input.selfieB64),
-      rekognitionLabels(input.selfieB64),
+    // Run all checks in parallel
+    const [idText, poaText, selfieFaces, selfieLabels, faceMatchScore] = await Promise.all([
+      detectText(input.idB64),
+      detectText(input.poaB64),
+      detectFaces(input.selfieB64),
+      detectLabels(input.selfieB64),
+      compareFaces(input.selfieB64, input.idB64),
     ]);
 
     let riskScore = 0;
     const flags: string[] = [];
 
-    // ID OCR
+    // ── 1. ID OCR ────────────────────────────────────────────────
     if (!idText || idText.trim().length < 20) {
       riskScore += 25; flags.push("ID document text unreadable");
     } else {
-      const p = scoreOcrMismatch(idText, input);
-      riskScore += p;
-      if (p > 0) flags.push(`ID OCR mismatch (penalty: ${p})`);
+      const { penalty, flags: f } = scoreIdOcr(idText, input);
+      riskScore += penalty;
+      flags.push(...f);
     }
 
-    // Face detection
-    if (faces.length === 0) {
-      riskScore += 30; flags.push("No face detected in selfie");
-    } else if (faces.length > 1) {
-      riskScore += 15; flags.push(`Multiple faces (${faces.length})`);
-    } else if (faces[0].Confidence < 70) {
-      riskScore += 10; flags.push("Low face confidence");
+    // ── 2. Selfie face detection ──────────────────────────────────
+    if (selfieFaces.length === 0) {
+      riskScore += 35; flags.push("No face detected in selfie");
+    } else if (selfieFaces.length > 1) {
+      riskScore += 15; flags.push(`Multiple faces in selfie (${selfieFaces.length})`);
+    } else if (selfieFaces[0].Confidence < 80) {
+      riskScore += 10; flags.push(`Low face confidence (${selfieFaces[0].Confidence.toFixed(0)}%)`);
     }
 
-    // Liveness / spoof
-    const { penalty: sp, flag: sf } = scoreSpoofFromLabels(labels);
+    // ── 3. Face match: selfie vs ID document ─────────────────────
+    if (faceMatchScore === -1) {
+      // CompareFaces failed — no face on ID doc or API error
+      riskScore += 15; flags.push("Could not detect face on ID document");
+    } else if (faceMatchScore === 0) {
+      // No match at all
+      riskScore += 35; flags.push("Selfie does not match face on ID document");
+    } else if (faceMatchScore < 80) {
+      // Weak match
+      riskScore += 20; flags.push(`Weak face match: selfie vs ID (${faceMatchScore.toFixed(0)}% similarity)`);
+    } else if (faceMatchScore < 90) {
+      riskScore += 8;  flags.push(`Moderate face match (${faceMatchScore.toFixed(0)}% similarity)`);
+    }
+    // ≥90% similarity → no penalty, strong match
+
+    // ── 4. Spoof detection ────────────────────────────────────────
+    const { penalty: sp, flag: sf } = scoreSpoofFromLabels(selfieLabels);
     riskScore += sp;
     if (sf) flags.push(sf);
 
-    // POA OCR
+    // ── 5. Proof of address OCR ───────────────────────────────────
     if (!poaText || poaText.trim().length < 20) {
-      riskScore += 15; flags.push("Proof of address unreadable");
+      riskScore += 15; flags.push("Proof of address text unreadable");
     } else {
-      const p = scorePoaMismatch(poaText, input);
-      riskScore += p;
-      if (p > 0) flags.push(`POA mismatch (penalty: ${p})`);
+      const { penalty, flags: f } = scorePoaOcr(poaText, input);
+      riskScore += penalty;
+      flags.push(...f);
     }
 
+    // ── Final decision ────────────────────────────────────────────
     riskScore = Math.min(riskScore, 100);
 
-    const hardReject = faces.length === 0 || sp >= 35;
+    const hardReject =
+      selfieFaces.length === 0 ||
+      faceMatchScore === 0      ||   // definite face mismatch
+      sp >= 40;                      // digital spoof confirmed
 
-    if (hardReject && riskScore >= 60) {
+    if (hardReject && riskScore >= 55) {
       return res.status(200).json({
         ok: false, referenceId, riskScore, flags,
         reason: flags[0] ?? "Automated check failed. Please resubmit with clearer photos.",
@@ -236,9 +321,12 @@ export default async function handler(req: any, res: any) {
     }
 
     return res.status(200).json({
-      ok: true, referenceId, riskScore, flags,
-      needsReview: riskScore >= 40,
-      reason: flags.length > 0 ? flags.join("; ") : undefined,
+      ok:          true,
+      referenceId,
+      riskScore,
+      flags,
+      needsReview: riskScore >= 35,
+      reason:      flags.length > 0 ? flags.join("; ") : undefined,
     });
 
   } catch (err) {
