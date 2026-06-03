@@ -23,7 +23,8 @@ export const Env = {
   supabaseUrl:        () => getEnv("VITE_SUPABASE_URL") || getEnv("SUPABASE_URL"),
   supabaseServiceKey: () => getEnv("SUPABASE_SERVICE_ROLE_KEY"),
   resendApiKey:       () => getEnv("RESEND_API_KEY"),
-  googleVisionKey:    () => getEnv("VITE_GOOGLE_VISION_KEY") || getEnv("GOOGLE_VISION_KEY"),
+  awsAccessKeyId:     () => getEnv("VITE_AWS_ACCESS_KEY_ID")     || getEnv("AWS_ACCESS_KEY_ID"),
+  awsSecretAccessKey: () => getEnv("VITE_AWS_SECRET_ACCESS_KEY") || getEnv("AWS_SECRET_ACCESS_KEY"),
   isProduction:       () => getEnv("NODE_ENV") === "production",
 } as const;
 

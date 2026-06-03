@@ -1,59 +1,112 @@
 // =============================================================
-// Ficium KYC — In-House Provider (Google Vision)
+// Ficium KYC — In-House Provider (AWS Rekognition + Textract)
 //
 // Pipeline:
 //   1. Get signed URLs for all 3 uploaded files
-//   2. OCR: extract text from ID document → cross-check against form data
-//   3. OCR: extract name/address from proof of address → cross-check
-//   4. Liveness: Safe Search on selfie → detect printed/screen photos
-//   5. Face: detect exactly 1 face in selfie
+//   2. Textract: extract text from ID document → cross-check against form data
+//   3. Textract: extract text from proof of address → cross-check
+//   4. Rekognition: detect faces in selfie (count, confidence)
+//   5. Rekognition: detect labels to catch printed/screen photos (liveness)
 //   6. Auto-score 0–100 → flag for admin review if score ≥ 40
 //
-// Cost: ~$0.003 per KYC submission (3 Vision API calls).
+// Cost: ~$0.004 per KYC submission (2 Textract + 2 Rekognition calls).
+// Region: ap-south-1 (Mumbai)
 // =============================================================
 
 import { supabase } from "../../../../shared/lib/supabase";
 import type { KycProvider, KycVerifyInput, KycVerifyResult } from "./types";
 
-const VISION_API_URL = "https://vision.googleapis.com/v1/images:annotate";
+const AWS_REGION = "ap-south-1";
+const AWS_SERVICE_REKOGNITION = "rekognition";
+const AWS_SERVICE_TEXTRACT    = "textract";
 
-/* ---------- Types ---------- */
+/* ---------- AWS Signature v4 helpers ---------- */
 
-type Likelihood = "UNKNOWN" | "VERY_UNLIKELY" | "UNLIKELY" | "POSSIBLE" | "LIKELY" | "VERY_LIKELY";
-
-interface VisionAnnotateResponse {
-  responses: Array<{
-    textAnnotations?:       Array<{ description: string }>;
-    fullTextAnnotation?:    { text: string };
-    safeSearchAnnotation?:  {
-      adult:    Likelihood;
-      spoof:    Likelihood;
-      violence: Likelihood;
-    };
-    faceAnnotations?: Array<{
-      detectionConfidence: number;
-      joyLikelihood:       Likelihood;
-    }>;
-    error?: { message: string };
-  }>;
+async function hmac(key: ArrayBuffer, data: string): Promise<ArrayBuffer> {
+  const cryptoKey = await crypto.subtle.importKey(
+    "raw", key, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
+  );
+  return crypto.subtle.sign("HMAC", cryptoKey, new TextEncoder().encode(data));
 }
 
-/* ---------- Helpers ---------- */
-
-const LIKELIHOOD_SCORE: Record<Likelihood, number> = {
-  UNKNOWN:      0,
-  VERY_UNLIKELY: 0,
-  UNLIKELY:     1,
-  POSSIBLE:     2,
-  LIKELY:       3,
-  VERY_LIKELY:  4,
-};
-
-function likelihoodScore(l: Likelihood): number {
-  return LIKELIHOOD_SCORE[l] ?? 0;
+async function hash(data: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(data));
+  return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
-/** Fetch a signed URL for a Supabase Storage path (10 min expiry). */
+async function getSigningKey(
+  secret: string, date: string, region: string, service: string
+): Promise<ArrayBuffer> {
+  const kDate    = await hmac(new TextEncoder().encode("AWS4" + secret), date);
+  const kRegion  = await hmac(kDate,    region);
+  const kService = await hmac(kRegion,  service);
+  return         await hmac(kService, "aws4_request");
+}
+
+async function signedRequest(
+  service: string,
+  endpoint: string,
+  target: string,
+  body: object
+): Promise<Response> {
+  const accessKey = import.meta.env.VITE_AWS_ACCESS_KEY_ID as string;
+  const secretKey = import.meta.env.VITE_AWS_SECRET_ACCESS_KEY as string;
+
+  const now        = new Date();
+  const amzDate    = now.toISOString().replace(/[:\-]|\.\d{3}/g, "").slice(0, 15) + "Z";
+  const dateStamp  = amzDate.slice(0, 8);
+
+  const host       = `${service}.${AWS_REGION}.amazonaws.com`;
+  const url        = `https://${host}/${endpoint}`;
+  const bodyStr    = JSON.stringify(body);
+  const bodyHash   = await hash(bodyStr);
+
+  const headers = [
+    `content-type:application/x-amz-json-1.1`,
+    `host:${host}`,
+    `x-amz-date:${amzDate}`,
+    `x-amz-target:${target}`,
+  ].join("\n");
+
+  const signedHeaders = "content-type;host;x-amz-date;x-amz-target";
+
+  const canonicalRequest = [
+    "POST",
+    `/${endpoint}`,
+    "",
+    headers + "\n",
+    signedHeaders,
+    bodyHash,
+  ].join("\n");
+
+  const credentialScope = `${dateStamp}/${AWS_REGION}/${service}/aws4_request`;
+  const stringToSign = [
+    "AWS4-HMAC-SHA256",
+    amzDate,
+    credentialScope,
+    await hash(canonicalRequest),
+  ].join("\n");
+
+  const signingKey = await getSigningKey(secretKey, dateStamp, AWS_REGION, service);
+  const sigBytes   = await hmac(signingKey, stringToSign);
+  const signature  = Array.from(new Uint8Array(sigBytes)).map(b => b.toString(16).padStart(2, "0")).join("");
+
+  const authHeader = `AWS4-HMAC-SHA256 Credential=${accessKey}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
+
+  return fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type":    "application/x-amz-json-1.1",
+      "X-Amz-Date":      amzDate,
+      "X-Amz-Target":    target,
+      "Authorization":   authHeader,
+    },
+    body: bodyStr,
+  });
+}
+
+/* ---------- Supabase helpers ---------- */
+
 async function getSignedUrl(path: string): Promise<string | null> {
   const { data } = await supabase.storage
     .from("kyc-documents")
@@ -61,7 +114,6 @@ async function getSignedUrl(path: string): Promise<string | null> {
   return data?.signedUrl ?? null;
 }
 
-/** Fetch image bytes as base64 via a signed URL. */
 async function fetchAsBase64(signedUrl: string): Promise<string> {
   const res    = await fetch(signedUrl);
   const buffer = await res.arrayBuffer();
@@ -71,39 +123,77 @@ async function fetchAsBase64(signedUrl: string): Promise<string> {
   return btoa(binary);
 }
 
-/** Call Google Vision API with multiple requests in one batch. */
-async function callVision(
-  requests: object[]
-): Promise<VisionAnnotateResponse> {
-  const apiKey = import.meta.env.VITE_GOOGLE_VISION_KEY as string;
-  const res = await fetch(`${VISION_API_URL}?key=${apiKey}`, {
-    method:  "POST",
-    headers: { "Content-Type": "application/json" },
-    body:    JSON.stringify({ requests }),
-  });
-  if (!res.ok) throw new Error(`Vision API error: ${res.status}`);
-  return res.json();
+/* ---------- AWS API calls ---------- */
+
+/** Textract: extract raw text from a base64 image. */
+async function textractDetect(imageB64: string): Promise<string> {
+  const res = await signedRequest(
+    AWS_SERVICE_TEXTRACT,
+    "",
+    "Textract.DetectDocumentText",
+    { Document: { Bytes: imageB64 } }
+  );
+  if (!res.ok) throw new Error(`Textract error: ${res.status}`);
+  const data = await res.json();
+  const lines: string[] = (data.Blocks ?? [])
+    .filter((b: { BlockType: string; Text?: string }) => b.BlockType === "LINE" && b.Text)
+    .map((b: { Text: string }) => b.Text);
+  return lines.join("\n");
+}
+
+interface RekognitionFace {
+  Confidence: number;
+  BoundingBox: { Width: number; Height: number };
+}
+
+/** Rekognition: detect faces in image. */
+async function rekognitionDetectFaces(imageB64: string): Promise<RekognitionFace[]> {
+  const res = await signedRequest(
+    AWS_SERVICE_REKOGNITION,
+    "",
+    "RekognitionService.DetectFaces",
+    {
+      Image:      { Bytes: imageB64 },
+      Attributes: ["DEFAULT"],
+    }
+  );
+  if (!res.ok) throw new Error(`Rekognition DetectFaces error: ${res.status}`);
+  const data = await res.json();
+  return data.FaceDetails ?? [];
+}
+
+interface RekognitionLabel {
+  Name: string;
+  Confidence: number;
+}
+
+/** Rekognition: detect labels — used to catch screens/printed photos. */
+async function rekognitionDetectLabels(imageB64: string): Promise<RekognitionLabel[]> {
+  const res = await signedRequest(
+    AWS_SERVICE_REKOGNITION,
+    "",
+    "RekognitionService.DetectLabels",
+    {
+      Image:           { Bytes: imageB64 },
+      MaxLabels:       20,
+      MinConfidence:   60,
+    }
+  );
+  if (!res.ok) throw new Error(`Rekognition DetectLabels error: ${res.status}`);
+  const data = await res.json();
+  return data.Labels ?? [];
 }
 
 /* ---------- OCR cross-check ---------- */
 
-/**
- * Returns a score penalty (0–30) based on how poorly the OCR text
- * matches what the user entered in the form.
- */
 function scoreOcrMismatch(ocrText: string, input: KycVerifyInput): number {
   const text = ocrText.toLowerCase();
   let penalty = 0;
 
-  // Document number should appear in the ID text
-  if (
-    input.documentNumber &&
-    !text.includes(input.documentNumber.toLowerCase())
-  ) {
+  if (input.documentNumber && !text.includes(input.documentNumber.toLowerCase())) {
     penalty += 15;
   }
 
-  // Date of birth — try both DD/MM/YYYY and YYYY-MM-DD formats
   if (input.dateOfBirth) {
     const [year, month, day] = input.dateOfBirth.split("-");
     const dobVariants = [
@@ -112,11 +202,9 @@ function scoreOcrMismatch(ocrText: string, input: KycVerifyInput): number {
       `${year}-${month}-${day}`,
       `${day} ${month} ${year}`,
     ];
-    const dobFound = dobVariants.some((v) => text.includes(v));
-    if (!dobFound) penalty += 10;
+    if (!dobVariants.some((v) => text.includes(v))) penalty += 10;
   }
 
-  // Country name should appear somewhere
   if (
     input.country &&
     !text.includes(input.country.toLowerCase()) &&
@@ -128,34 +216,45 @@ function scoreOcrMismatch(ocrText: string, input: KycVerifyInput): number {
   return Math.min(penalty, 30);
 }
 
-/**
- * Returns a score penalty (0–20) if proof of address doesn't
- * contain the user's city or address line.
- */
 function scorePoaMismatch(ocrText: string, input: KycVerifyInput): number {
   const text = ocrText.toLowerCase();
   let penalty = 0;
 
-  if (input.city && !text.includes(input.city.toLowerCase())) {
-    penalty += 10;
-  }
+  if (input.city && !text.includes(input.city.toLowerCase())) penalty += 10;
   if (
     input.addressLine1 &&
     !text.includes(input.addressLine1.toLowerCase().split(" ")[0])
-  ) {
-    penalty += 10;
-  }
+  ) penalty += 10;
 
   return penalty;
+}
+
+/* ---------- Liveness heuristic via labels ---------- */
+
+/** Returns a spoof penalty (0–35) if labels suggest a screen or printed photo. */
+function scoreSpoofFromLabels(labels: RekognitionLabel[]): { penalty: number; flag: string | null } {
+  const spoofKeywords = ["monitor", "screen", "display", "television", "computer", "laptop",
+                         "phone", "tablet", "paper", "document", "poster", "photo", "photograph",
+                         "printed", "text"];
+  for (const label of labels) {
+    const name = label.Name.toLowerCase();
+    if (spoofKeywords.some(kw => name.includes(kw)) && label.Confidence >= 80) {
+      return { penalty: 35, flag: `Possible spoof — detected: ${label.Name} (${label.Confidence.toFixed(0)}%)` };
+    }
+    if (spoofKeywords.some(kw => name.includes(kw)) && label.Confidence >= 65) {
+      return { penalty: 15, flag: `Possible spoof — detected: ${label.Name} (${label.Confidence.toFixed(0)}%)` };
+    }
+  }
+  return { penalty: 0, flag: null };
 }
 
 /* ---------- Main provider ---------- */
 
 export const inhouseProvider: KycProvider = {
-  name: "inhouse_vision",
+  name: "inhouse_aws",
 
   async verify(input: KycVerifyInput): Promise<KycVerifyResult> {
-    const referenceId = `vision-${Date.now()}`;
+    const referenceId = `aws-${Date.now()}`;
 
     try {
       // 1. Get signed URLs
@@ -176,53 +275,28 @@ export const inhouseProvider: KycProvider = {
         fetchAsBase64(poaUrl),
       ]);
 
-      // 3. Send all 3 requests to Vision API in one batch call
-      const visionRes = await callVision([
-        // Request 0 — ID document OCR
-        {
-          image:    { content: idB64 },
-          features: [
-            { type: "DOCUMENT_TEXT_DETECTION", maxResults: 1 },
-          ],
-        },
-        // Request 1 — Selfie: face detection + safe search (liveness)
-        {
-          image:    { content: selfieB64 },
-          features: [
-            { type: "FACE_DETECTION",         maxResults: 5 },
-            { type: "SAFE_SEARCH_DETECTION",  maxResults: 1 },
-          ],
-        },
-        // Request 2 — Proof of address OCR
-        {
-          image:    { content: poaB64 },
-          features: [
-            { type: "DOCUMENT_TEXT_DETECTION", maxResults: 1 },
-          ],
-        },
+      // 3. Run all AWS calls in parallel
+      const [idText, poaText, faces, labels] = await Promise.all([
+        textractDetect(idB64),
+        textractDetect(poaB64),
+        rekognitionDetectFaces(selfieB64),
+        rekognitionDetectLabels(selfieB64),
       ]);
 
-      const [idRes, selfieRes, poaRes] = visionRes.responses;
-
-      // ── Score accumulator (0 = clean, 100 = very suspicious) ──
       let riskScore    = 0;
       const flags: string[] = [];
 
-      // ── OCR: ID document ──────────────────────────────────────
-      const idText = idRes?.fullTextAnnotation?.text ?? idRes?.textAnnotations?.[0]?.description ?? "";
-
+      // ── Textract: ID document ─────────────────────────────────
       if (!idText || idText.trim().length < 20) {
         riskScore += 25;
         flags.push("ID document text unreadable or too short");
       } else {
-        const ocrPenalty = scoreOcrMismatch(idText, input);
-        riskScore += ocrPenalty;
-        if (ocrPenalty > 0) flags.push(`ID OCR mismatch (penalty: ${ocrPenalty})`);
+        const penalty = scoreOcrMismatch(idText, input);
+        riskScore += penalty;
+        if (penalty > 0) flags.push(`ID OCR mismatch (penalty: ${penalty})`);
       }
 
-      // ── Selfie: face detection ────────────────────────────────
-      const faces = selfieRes?.faceAnnotations ?? [];
-
+      // ── Rekognition: face detection ───────────────────────────
       if (faces.length === 0) {
         riskScore += 30;
         flags.push("No face detected in selfie");
@@ -230,47 +304,31 @@ export const inhouseProvider: KycProvider = {
         riskScore += 15;
         flags.push(`Multiple faces detected (${faces.length})`);
       } else {
-        const face = faces[0];
-        if (face.detectionConfidence < 0.7) {
+        if (faces[0].Confidence < 70) {
           riskScore += 10;
           flags.push("Low face detection confidence");
         }
       }
 
-      // ── Selfie: liveness / spoof detection ───────────────────
-      const safeSearch = selfieRes?.safeSearchAnnotation;
-      if (safeSearch) {
-        const spoofScore = likelihoodScore(safeSearch.spoof);
-        if (spoofScore >= 3) {
-          // LIKELY or VERY_LIKELY spoof
-          riskScore += 35;
-          flags.push(`Selfie spoof detected (${safeSearch.spoof})`);
-        } else if (spoofScore === 2) {
-          // POSSIBLE spoof
-          riskScore += 15;
-          flags.push(`Possible selfie spoof (${safeSearch.spoof})`);
-        }
-      }
+      // ── Rekognition: liveness / spoof via labels ──────────────
+      const { penalty: spoofPenalty, flag: spoofFlag } = scoreSpoofFromLabels(labels);
+      riskScore += spoofPenalty;
+      if (spoofFlag) flags.push(spoofFlag);
 
-      // ── OCR: Proof of address ─────────────────────────────────
-      const poaText = poaRes?.fullTextAnnotation?.text ?? poaRes?.textAnnotations?.[0]?.description ?? "";
-
+      // ── Textract: Proof of address ────────────────────────────
       if (!poaText || poaText.trim().length < 20) {
         riskScore += 15;
         flags.push("Proof of address text unreadable");
       } else {
-        const poaPenalty = scorePoaMismatch(poaText, input);
-        riskScore += poaPenalty;
-        if (poaPenalty > 0) flags.push(`POA address mismatch (penalty: ${poaPenalty})`);
+        const penalty = scorePoaMismatch(poaText, input);
+        riskScore += penalty;
+        if (penalty > 0) flags.push(`POA address mismatch (penalty: ${penalty})`);
       }
 
       // ── Final decision ────────────────────────────────────────
       riskScore = Math.min(riskScore, 100);
 
-      // Hard reject: spoof almost certain or no face at all
-      const hardReject =
-        (safeSearch && likelihoodScore(safeSearch.spoof) >= 4) ||
-        faces.length === 0;
+      const hardReject = faces.length === 0 || spoofPenalty >= 35;
 
       if (hardReject && riskScore >= 60) {
         return {
@@ -281,20 +339,16 @@ export const inhouseProvider: KycProvider = {
         };
       }
 
-      // Flag for human review if score ≥ 40
-      const needsReview = riskScore >= 40;
-
       return {
         ok:          true,
         referenceId,
         riskScore,
-        needsReview,
+        needsReview: riskScore >= 40,
         reason:      flags.length > 0 ? flags.join("; ") : undefined,
       };
 
     } catch (err) {
-      // Vision API failure — fall back to manual review
-      console.error("[KYC inhouse] Vision API error:", err);
+      console.error("[KYC inhouse] AWS error:", err);
       return {
         ok:          true,
         referenceId,
