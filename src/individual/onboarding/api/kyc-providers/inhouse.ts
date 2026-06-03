@@ -45,7 +45,6 @@ async function getSigningKey(
 
 async function signedRequest(
   service: string,
-  endpoint: string,
   target: string,
   body: object
 ): Promise<Response> {
@@ -57,7 +56,7 @@ async function signedRequest(
   const dateStamp  = amzDate.slice(0, 8);
 
   const host       = `${service}.${AWS_REGION}.amazonaws.com`;
-  const url        = `https://${host}/${endpoint}`;
+  const url        = `https://${host}/`;
   const bodyStr    = JSON.stringify(body);
   const bodyHash   = await hash(bodyStr);
 
@@ -72,7 +71,7 @@ async function signedRequest(
 
   const canonicalRequest = [
     "POST",
-    `/${endpoint}`,
+    "/",
     "",
     headers + "\n",
     signedHeaders,
@@ -129,7 +128,6 @@ async function fetchAsBase64(signedUrl: string): Promise<string> {
 async function textractDetect(imageB64: string): Promise<string> {
   const res = await signedRequest(
     AWS_SERVICE_TEXTRACT,
-    "",
     "Textract.DetectDocumentText",
     { Document: { Bytes: imageB64 } }
   );
@@ -150,7 +148,6 @@ interface RekognitionFace {
 async function rekognitionDetectFaces(imageB64: string): Promise<RekognitionFace[]> {
   const res = await signedRequest(
     AWS_SERVICE_REKOGNITION,
-    "",
     "RekognitionService.DetectFaces",
     {
       Image:      { Bytes: imageB64 },
@@ -171,7 +168,6 @@ interface RekognitionLabel {
 async function rekognitionDetectLabels(imageB64: string): Promise<RekognitionLabel[]> {
   const res = await signedRequest(
     AWS_SERVICE_REKOGNITION,
-    "",
     "RekognitionService.DetectLabels",
     {
       Image:           { Bytes: imageB64 },
