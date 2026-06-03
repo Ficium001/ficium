@@ -97,6 +97,7 @@ export async function submitKyc(input: KycInput): Promise<KycResult> {
       risk_score:           verification.riskScore   ?? null,
       status:               kycStatus,
       flags:                verification.flags        ?? [],
+      details:              verification.details      ?? null,
       document_type:        input.documentType,
       document_number:      input.documentNumber,
       id_document_path:     idUpload.path,

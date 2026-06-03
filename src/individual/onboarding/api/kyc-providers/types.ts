@@ -34,6 +34,8 @@ export interface KycVerifyResult {
   needsReview?: boolean;
   /** List of specific flags raised during verification */
   flags?:       string[];
+  /** Full audit detail of each check performed */
+  details?:     Record<string, unknown>;
 }
 
 export interface KycProvider {

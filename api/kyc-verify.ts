@@ -259,50 +259,60 @@ export default async function handler(req: any, res: any) {
     const flags: string[] = [];
 
     // ── 1. ID OCR ────────────────────────────────────────────────
+    let idOcrResult = { penalty: 0, flags: [] as string[], passed: false };
     if (!idText || idText.trim().length < 20) {
       riskScore += 25; flags.push("ID document text unreadable");
     } else {
       const { penalty, flags: f } = scoreIdOcr(idText, input);
       riskScore += penalty;
       flags.push(...f);
+      idOcrResult = { penalty, flags: f, passed: penalty === 0 };
     }
 
     // ── 2. Selfie face detection ──────────────────────────────────
+    let faceDetectResult = { count: selfieFaces.length, confidence: 0, passed: false };
     if (selfieFaces.length === 0) {
       riskScore += 35; flags.push("No face detected in selfie");
     } else if (selfieFaces.length > 1) {
       riskScore += 15; flags.push(`Multiple faces in selfie (${selfieFaces.length})`);
+      faceDetectResult = { count: selfieFaces.length, confidence: selfieFaces[0].Confidence, passed: false };
     } else if (selfieFaces[0].Confidence < 80) {
       riskScore += 10; flags.push(`Low face confidence (${selfieFaces[0].Confidence.toFixed(0)}%)`);
+      faceDetectResult = { count: 1, confidence: selfieFaces[0].Confidence, passed: false };
+    } else {
+      faceDetectResult = { count: 1, confidence: selfieFaces[0].Confidence, passed: true };
     }
 
     // ── 3. Face match: selfie vs ID document ─────────────────────
+    let faceMatchResult = { similarity: faceMatchScore, passed: false };
     if (faceMatchScore === -1) {
-      // CompareFaces failed — no face on ID doc or API error
       riskScore += 15; flags.push("Could not detect face on ID document");
     } else if (faceMatchScore === 0) {
-      // No match at all
       riskScore += 35; flags.push("Selfie does not match face on ID document");
     } else if (faceMatchScore < 80) {
-      // Weak match
       riskScore += 20; flags.push(`Weak face match: selfie vs ID (${faceMatchScore.toFixed(0)}% similarity)`);
     } else if (faceMatchScore < 90) {
       riskScore += 8;  flags.push(`Moderate face match (${faceMatchScore.toFixed(0)}% similarity)`);
+      faceMatchResult = { similarity: faceMatchScore, passed: true };
+    } else {
+      faceMatchResult = { similarity: faceMatchScore, passed: true };
     }
-    // ≥90% similarity → no penalty, strong match
 
     // ── 4. Spoof detection ────────────────────────────────────────
     const { penalty: sp, flag: sf } = scoreSpoofFromLabels(selfieLabels);
     riskScore += sp;
     if (sf) flags.push(sf);
+    const spoofResult = { penalty: sp, passed: sp === 0, labels: selfieLabels.slice(0, 8).map(l => `${l.Name} (${l.Confidence.toFixed(0)}%)`) };
 
     // ── 5. Proof of address OCR ───────────────────────────────────
+    let poaOcrResult = { penalty: 0, flags: [] as string[], passed: false };
     if (!poaText || poaText.trim().length < 20) {
       riskScore += 15; flags.push("Proof of address text unreadable");
     } else {
       const { penalty, flags: f } = scorePoaOcr(poaText, input);
       riskScore += penalty;
       flags.push(...f);
+      poaOcrResult = { penalty, flags: f, passed: penalty === 0 };
     }
 
     // ── Final decision ────────────────────────────────────────────
@@ -310,12 +320,27 @@ export default async function handler(req: any, res: any) {
 
     const hardReject =
       selfieFaces.length === 0 ||
-      faceMatchScore === 0      ||   // definite face mismatch
-      sp >= 40;                      // digital spoof confirmed
+      faceMatchScore === 0      ||
+      sp >= 40;
+
+    const details = {
+      idOcr: {
+        textExtracted: idText.slice(0, 500),
+        hasMrz: hasMrzPattern(idText),
+        ...idOcrResult,
+      },
+      faceDetection: faceDetectResult,
+      faceMatch: faceMatchResult,
+      spoofCheck: spoofResult,
+      poaOcr: {
+        textExtracted: poaText.slice(0, 300),
+        ...poaOcrResult,
+      },
+    };
 
     if (hardReject && riskScore >= 55) {
       return res.status(200).json({
-        ok: false, referenceId, riskScore, flags,
+        ok: false, referenceId, riskScore, flags, details,
         reason: flags[0] ?? "Automated check failed. Please resubmit with clearer photos.",
       });
     }
@@ -325,6 +350,7 @@ export default async function handler(req: any, res: any) {
       referenceId,
       riskScore,
       flags,
+      details,
       needsReview: riskScore >= 35,
       reason:      flags.length > 0 ? flags.join("; ") : undefined,
     });
