@@ -36,7 +36,12 @@ export interface KycVerifyResult {
   /** List of specific flags raised during verification */
   flags?:       string[];
   /** Full audit detail of each check performed */
-  details?:     Record<string, unknown>;
+  details?: {
+    mrz?:          { valid?: boolean; expiry?: { expired?: boolean } };
+    faceMatch?:    { similarity?: number };
+    idOcr?:        { nameMatchScore?: number };
+    [key: string]: unknown;
+  };
 }
 
 export interface KycProvider {
