@@ -6,6 +6,7 @@
 
 export interface KycVerifyInput {
   userId:         string;
+  fullName?:      string;
   documentType:   "national_id" | "passport" | "drivers_license" | "other";
   documentNumber: string;
   dateOfBirth:    string;

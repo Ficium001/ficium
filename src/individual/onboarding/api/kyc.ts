@@ -54,6 +54,14 @@ export async function submitKyc(input: KycInput): Promise<KycResult> {
   const userId = authData.user?.id;
   if (!userId) return { ok: false, error: "Not signed in." };
 
+  // Fetch client's full name for name matching
+  const { data: clientData } = await supabase
+    .from("clients")
+    .select("full_name")
+    .eq("id", userId)
+    .single();
+  const fullName = clientData?.full_name ?? undefined;
+
   // 1. Upload all three documents in parallel
   const [idUpload, selfieUpload, proofUpload] = await Promise.all([
     uploadKycFile(userId, input.idFile,             "id"),
@@ -68,6 +76,7 @@ export async function submitKyc(input: KycInput): Promise<KycResult> {
   // 2. Run provider verification
   const verification = await activeProvider.verify({
     userId,
+    fullName,
     documentType:      input.documentType,
     documentNumber:    input.documentNumber,
     dateOfBirth:       input.dateOfBirth,

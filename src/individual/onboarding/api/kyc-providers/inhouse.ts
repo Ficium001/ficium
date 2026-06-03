@@ -67,6 +67,8 @@ export const inhouseProvider: KycProvider = {
           idB64,
           selfieB64,
           poaB64,
+          clientId:       input.userId,
+          fullName:       input.fullName,
           documentNumber: input.documentNumber,
           dateOfBirth:    input.dateOfBirth,
           country:        input.country,
