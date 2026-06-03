@@ -76,7 +76,8 @@ export const inhouseProvider: KycProvider = {
       });
 
       if (!res.ok) throw new Error(`kyc-verify endpoint error: ${res.status}`);
-      return res.json() as Promise<KycVerifyResult>;
+      const result = await res.json() as KycVerifyResult & { flags?: string[] };
+      return result;
 
     } catch (err) {
       console.error("[KYC inhouse] error:", err);

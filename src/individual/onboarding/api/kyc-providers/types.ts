@@ -32,6 +32,8 @@ export interface KycVerifyResult {
   riskScore?:   number;
   /** Whether the submission needs human review */
   needsReview?: boolean;
+  /** List of specific flags raised during verification */
+  flags?:       string[];
 }
 
 export interface KycProvider {

@@ -2,7 +2,8 @@
 // Ficium KYC — Orchestrator
 //
 // Handles: upload → provider.verify() → DB write → audit log.
-// Never knows which provider is active — see kyc-providers/index.ts.
+// Writes full KYC detail to kyc_submissions table.
+// Updates kyc_status summary on clients table.
 // =============================================================
 import { supabase } from "../../../shared/lib/supabase";
 import { audit }    from "../../../shared/lib/audit";
@@ -84,32 +85,42 @@ export async function submitKyc(input: KycInput): Promise<KycResult> {
     return { ok: false, error: verification.reason ?? "We could not verify your ID. Please try again." };
   }
 
-  // 3. Status: pending_review if human check needed, else verified
   const kycStatus = verification.needsReview ? "pending_review" : "verified";
 
-  // 4. Write to DB
-  const { error: dbError } = await supabase
+  // 3. Insert into kyc_submissions
+  const { error: submissionError } = await supabase
+    .from("kyc_submissions")
+    .insert({
+      client_id:            userId,
+      provider:             activeProvider.name,
+      reference_id:         verification.referenceId ?? null,
+      risk_score:           verification.riskScore   ?? null,
+      status:               kycStatus,
+      flags:                verification.flags        ?? [],
+      document_type:        input.documentType,
+      document_number:      input.documentNumber,
+      id_document_path:     idUpload.path,
+      selfie_path:          selfieUpload.path,
+      proof_of_address_path:proofUpload.path,
+    });
+
+  if (submissionError) return { ok: false, error: submissionError.message };
+
+  // 4. Update kyc_status summary + address on clients
+  const { error: clientError } = await supabase
     .from("clients")
     .update({
-      id_document_type:      input.documentType,
-      id_document_number:    input.documentNumber,
-      date_of_birth:         input.dateOfBirth,
-      kyc_status:            kycStatus,
-      kyc_provider:          activeProvider.name,
-      kyc_reference_id:      verification.referenceId ?? null,
-      kyc_risk_score:        verification.riskScore ?? null,
-      id_document_path:      idUpload.path,
-      selfie_path:           selfieUpload.path,
-      proof_of_address_path: proofUpload.path,
-      address_line_1:        input.addressLine1,
-      address_line_2:        input.addressLine2 || null,
-      city:                  input.city,
-      postal_code:           input.postalCode || null,
-      country:               input.country,
+      kyc_status:   kycStatus,
+      date_of_birth: input.dateOfBirth,
+      address_line_1: input.addressLine1,
+      address_line_2: input.addressLine2 || null,
+      city:           input.city,
+      postal_code:    input.postalCode   || null,
+      country:        input.country,
     })
     .eq("id", userId);
 
-  if (dbError) return { ok: false, error: dbError.message };
+  if (clientError) return { ok: false, error: clientError.message };
 
   await audit.kycSubmitted(userId);
   return { ok: true, needsReview: verification.needsReview ?? false };

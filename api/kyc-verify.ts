@@ -230,13 +230,13 @@ export default async function handler(req: any, res: any) {
 
     if (hardReject && riskScore >= 60) {
       return res.status(200).json({
-        ok: false, referenceId, riskScore,
+        ok: false, referenceId, riskScore, flags,
         reason: flags[0] ?? "Automated check failed. Please resubmit with clearer photos.",
       });
     }
 
     return res.status(200).json({
-      ok: true, referenceId, riskScore,
+      ok: true, referenceId, riskScore, flags,
       needsReview: riskScore >= 40,
       reason: flags.length > 0 ? flags.join("; ") : undefined,
     });
@@ -244,7 +244,7 @@ export default async function handler(req: any, res: any) {
   } catch (err) {
     console.error("[kyc-verify] AWS error:", err);
     return res.status(200).json({
-      ok: true, referenceId, riskScore: 50, needsReview: true,
+      ok: true, referenceId, riskScore: 50, flags: [], needsReview: true,
       reason: "Automated check unavailable — queued for manual review.",
     });
   }
