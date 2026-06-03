@@ -26,18 +26,18 @@ async function hmac(key: ArrayBuffer, data: string): Promise<ArrayBuffer> {
   const cryptoKey = await crypto.subtle.importKey(
     "raw", key, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
   );
-  return crypto.subtle.sign("HMAC", cryptoKey, new TextEncoder().encode(data));
+  return crypto.subtle.sign("HMAC", cryptoKey, new TextEncoder().encode(data).buffer as ArrayBuffer);
 }
 
 async function hash(data: string): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(data));
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(data).buffer as ArrayBuffer);
   return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
 async function getSigningKey(
   secret: string, date: string, region: string, service: string
 ): Promise<ArrayBuffer> {
-  const kDate    = await hmac(new TextEncoder().encode("AWS4" + secret), date);
+  const kDate    = await hmac(new TextEncoder().encode("AWS4" + secret).buffer as ArrayBuffer, date);
   const kRegion  = await hmac(kDate,    region);
   const kService = await hmac(kRegion,  service);
   return         await hmac(kService, "aws4_request");
