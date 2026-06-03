@@ -125,7 +125,7 @@ async function supabaseQuery(path: string): Promise<unknown[]> {
       headers: { "apikey": serviceKey, "Authorization": `Bearer ${serviceKey}`, "Accept": "application/json" },
     });
     if (!res.ok) return [];
-    return res.json();
+    return res.json() as Promise<unknown[]>;
   } catch { return []; }
 }
 
