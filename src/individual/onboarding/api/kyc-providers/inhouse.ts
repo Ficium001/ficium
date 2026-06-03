@@ -72,6 +72,7 @@ export const inhouseProvider: KycProvider = {
           country:        input.country,
           city:           input.city,
           addressLine1:   input.addressLine1,
+          poaFileName:    input.proofOfAddressPath.split("/").pop() ?? "",
         }),
       });
 

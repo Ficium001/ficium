@@ -187,6 +187,8 @@ interface KycInput {
   idB64:           string;
   selfieB64:       string;
   poaB64:          string;
+  poaMimeType?:    string;
+  poaFileName?:    string;
 }
 
 function scoreIdOcr(text: string, input: KycInput): { penalty: number; flags: string[] } {
@@ -243,13 +245,16 @@ export default async function handler(req: any, res: any) {
     return res.status(400).json({ error: "idB64, selfieB64, poaB64 required" });
   }
 
+  // Rekognition only supports JPEG/PNG — skip POA OCR if PDF
+  const poaIsPdf = (input.poaMimeType ?? "").includes("pdf") || (input.poaFileName ?? "").endsWith(".pdf");
+
   const referenceId = `aws-${Date.now()}`;
 
   try {
-    // Run all checks in parallel
+    // Run all checks in parallel — skip POA OCR if PDF
     const [idText, poaText, selfieFaces, selfieLabels, faceMatchScore] = await Promise.all([
       detectText(input.idB64),
-      detectText(input.poaB64),
+      poaIsPdf ? Promise.resolve("") : detectText(input.poaB64),
       detectFaces(input.selfieB64),
       detectLabels(input.selfieB64),
       compareFaces(input.selfieB64, input.idB64),
@@ -305,14 +310,19 @@ export default async function handler(req: any, res: any) {
     const spoofResult = { penalty: sp, passed: sp === 0, labels: selfieLabels.slice(0, 8).map(l => `${l.Name} (${l.Confidence.toFixed(0)}%)`) };
 
     // ── 5. Proof of address OCR ───────────────────────────────────
-    let poaOcrResult = { penalty: 0, flags: [] as string[], passed: false };
-    if (!poaText || poaText.trim().length < 20) {
+    let poaOcrResult = { penalty: 0, flags: [] as string[], passed: false, skipped: false };
+    if (poaIsPdf) {
+      // PDF uploaded — OCR skipped, flag for manual review only
+      poaOcrResult = { penalty: 0, flags: [], passed: true, skipped: true };
+      flags.push("Proof of address is PDF — address cross-check skipped, manual review required");
+      riskScore += 10;
+    } else if (!poaText || poaText.trim().length < 20) {
       riskScore += 15; flags.push("Proof of address text unreadable");
     } else {
       const { penalty, flags: f } = scorePoaOcr(poaText, input);
       riskScore += penalty;
       flags.push(...f);
-      poaOcrResult = { penalty, flags: f, passed: penalty === 0 };
+      poaOcrResult = { penalty, flags: f, passed: penalty === 0, skipped: false };
     }
 
     // ── Final decision ────────────────────────────────────────────
