@@ -96,7 +96,8 @@ async function compareFaces(srcB64: string, tgtB64: string): Promise<number> {
     return d.FaceMatches?.length ? d.FaceMatches[0].Similarity : 0;
   } catch { return -1; }
 }
-async function searchFaceCollection(b64: string, clientId: string): Promise<{ duplicate: boolean; matchedClientId?: string; similarity?: number }> {
+interface FaceCollectionResult { duplicate: boolean; matchedClientId?: string; similarity?: number }
+async function searchFaceCollection(b64: string, clientId: string): Promise<FaceCollectionResult> {
   try {
     const d = await awsPost("rekognition", "RekognitionService.SearchFacesByImage", {
       CollectionId: COLLECTION_ID, Image: { Bytes: b64 }, MaxFaces: 5, FaceMatchThreshold: 90,
@@ -371,7 +372,7 @@ export default async function handler(req: any, res: any) {
       compareFaces(input.selfieB64, input.idB64),
       input.clientId
         ? searchFaceCollection(input.selfieB64, input.clientId)
-        : Promise.resolve({ duplicate: false }),
+        : Promise.resolve({ duplicate: false } as FaceCollectionResult),
       input.clientId ? checkVelocity(input.clientId) : Promise.resolve({ tooMany: false, count: 0 }),
       input.clientId && input.documentNumber
         ? checkDocumentReuse(input.documentNumber, input.clientId)
