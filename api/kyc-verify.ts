@@ -89,13 +89,14 @@ async function awsPost(service: string, target: string, body: object): Promise<u
 /* ---------- AWS helpers ---------- */
 
 async function textractDetect(imageB64: string): Promise<string> {
-  const data = await awsPost("textract", "Textract.DetectDocumentText", {
-    Document: { Bytes: imageB64 },
-  }) as { Blocks?: Array<{ BlockType: string; Text?: string }> };
+  // Uses Rekognition DetectText — no subscription required, works in ap-south-1
+  const data = await awsPost("rekognition", "RekognitionService.DetectText", {
+    Image: { Bytes: imageB64 },
+  }) as { TextDetections?: Array<{ DetectedText: string; Type: string; Confidence: number }> };
 
-  return (data.Blocks ?? [])
-    .filter(b => b.BlockType === "LINE" && b.Text)
-    .map(b => b.Text!)
+  return (data.TextDetections ?? [])
+    .filter(b => b.Type === "LINE" && b.Confidence > 50)
+    .map(b => b.DetectedText)
     .join("\n");
 }
 
