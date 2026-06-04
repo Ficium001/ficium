@@ -7,10 +7,11 @@ import {
   Wallet, Activity, Zap, Edit3, X, Save, Eye, EyeOff,
   User, Mail, Globe, Building2, DollarSign,
 } from "lucide-react";
-import { useAuth } from "../../../features/auth/context/AuthContext";
-import { useProfile, useBankReadiness } from "../hooks/useDashboard";
-import { supabase } from "../../../shared/lib/supabase";
-import { BottomNav } from "../../../shared/ui";
+import { useAuth }                    from "@/features/auth/context/AuthContext";
+import { useProfile, useBankReadiness } from "@/individual/dashboard/hooks/useDashboard";
+import type { ProfileSummary }        from "@/individual/dashboard/api/profile";
+import { supabase }                   from "@/shared/lib/supabase";
+import { BottomNav }                  from "@/shared/ui";
 
 /* ============================================================
    TYPES
@@ -176,7 +177,7 @@ export default function Profile() {
           onClose={() => setEditing(null)}
         >
           {editing === "identity" ? (
-            <IdentityEditForm profile={profile} onClose={() => setEditing(null)} />
+            <IdentityEditForm profile={profile ?? null} onClose={() => setEditing(null)} />
           ) : (
             <div className="flex flex-col gap-0">
               <InfoRow icon={<User size={14} />}    label="Full name"  value={profile?.fullName ?? profile?.firstName ?? "—"} />
@@ -207,7 +208,7 @@ export default function Profile() {
           onClose={() => setEditing(null)}
         >
           {editing === "address" ? (
-            <AddressEditForm profile={profile} onClose={() => setEditing(null)} />
+            <AddressEditForm profile={profile ?? null} onClose={() => setEditing(null)} />
           ) : profile?.addressLine1 ? (
             <div className="flex flex-col gap-0">
               <InfoRow icon={<MapPin size={14} />}   label="Address"         value={profile.addressLine1} />
@@ -237,7 +238,7 @@ export default function Profile() {
           onClose={() => setEditing(null)}
         >
           {editing === "financial" ? (
-            <FinancialEditForm profile={profile} onClose={() => setEditing(null)} hidden={hidden} setHidden={setHidden} />
+            <FinancialEditForm profile={profile ?? null} onClose={() => setEditing(null)} hidden={hidden} setHidden={setHidden} />
           ) : profile?.hasDossier ? (
             <div className="flex flex-col gap-0">
               <InfoRow icon={<Briefcase size={14} />}    label="Employment"     value={formatEmployment(profile.employmentStatus)} />
@@ -395,7 +396,7 @@ function ScoreCard({ label, value, suffix, icon: Icon, gradient, light }: {
 /* ============================================================
    IDENTITY EDIT FORM
    ============================================================ */
-function IdentityEditForm({ profile, onClose }: { profile: any; onClose: () => void }) {
+function IdentityEditForm({ profile, onClose }: { profile: ProfileSummary | null; onClose: () => void }) {
   const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
@@ -446,7 +447,7 @@ function IdentityEditForm({ profile, onClose }: { profile: any; onClose: () => v
 /* ============================================================
    ADDRESS EDIT FORM
    ============================================================ */
-function AddressEditForm({ profile, onClose }: { profile: any; onClose: () => void }) {
+function AddressEditForm({ profile, onClose }: { profile: ProfileSummary | null; onClose: () => void }) {
   const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
@@ -496,7 +497,7 @@ function AddressEditForm({ profile, onClose }: { profile: any; onClose: () => vo
    FINANCIAL EDIT FORM
    ============================================================ */
 function FinancialEditForm({ profile, onClose, hidden, setHidden }: {
-  profile: any; onClose: () => void; hidden: boolean; setHidden: (v: boolean) => void;
+  profile: ProfileSummary | null; onClose: () => void; hidden: boolean; setHidden: (v: boolean) => void;
 }) {
   const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);

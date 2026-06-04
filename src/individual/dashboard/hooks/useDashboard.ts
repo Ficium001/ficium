@@ -13,10 +13,10 @@ import {
   computeNextActions,
   computeBankReadiness,
   computeHealthRecommendations,
-} from "../api/profile";
+} from "@/individual/dashboard/api/profile";
 
-// Re-export from requests module — single source of truth
-export { useMyRequests } from "../../../modules/requests/hooks";
+// Re-export from canonical requests module — single source of truth
+export { useMyRequests } from "@/individual/requests/hooks/useRequests";
 
 // ── Query keys ───────────────────────────────────────────────
 
