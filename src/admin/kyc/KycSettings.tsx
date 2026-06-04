@@ -5,7 +5,6 @@
 // =============================================================
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "../../shared/lib/supabase";
 
 /* ---------- Types ---------- */
 
@@ -115,14 +114,9 @@ function useKycSettings() {
   return useQuery({
     queryKey: ["kyc_settings"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("kyc_settings")
-        .select("*")
-        .order("id")
-        .limit(1)
-        .single();
-      if (error) throw error;
-      return data as KycSettings;
+      const res = await fetch("/api/kyc-settings");
+      if (!res.ok) throw new Error("Failed to load settings");
+      return res.json() as Promise<KycSettings>;
     },
   });
 }
@@ -131,11 +125,12 @@ function useUpdateKycSetting() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ key, value }: { key: string; value: boolean }) => {
-      const { error } = await supabase
-        .from("kyc_settings")
-        .update({ [key]: value, updated_at: new Date().toISOString() })
-        .eq("id", 1);
-      if (error) throw error;
+      const res = await fetch("/api/kyc-settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key, value }),
+      });
+      if (!res.ok) throw new Error("Failed to update setting");
     },
     onMutate: async ({ key, value }) => {
       await qc.cancelQueries({ queryKey: ["kyc_settings"] });
