@@ -112,6 +112,7 @@ export default function Kyc() {
   };
 
   return (
+    <>
     {verifyStep && (
       <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex flex-col items-center justify-center gap-6 px-8">
         <div className="w-14 h-14 rounded-full border-4 border-white/20 border-t-white animate-spin" />
@@ -297,6 +298,7 @@ export default function Kyc() {
         </Card>
       </div>
     </div>
+    </>
   );
 }
 
