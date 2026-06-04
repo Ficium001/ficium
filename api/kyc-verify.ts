@@ -396,7 +396,8 @@ export default async function handler(req: any, res: any) {
           { idOcrPenalty += 5; idOcrFlags.push("Country not found in ID text"); }
       }
       const nm = nameMatchScore(idText, input.fullName);
-      if (nm < 50) { idOcrPenalty += 10; idOcrFlags.push(`Name mismatch: ${nm}% match with ID`); }
+      if (nm === 0) { idOcrPenalty += 30; idOcrFlags.push('Name on ID does not match your details at all'); }
+      else if (nm < 50) { idOcrPenalty += 10; idOcrFlags.push(`Name mismatch: ${nm}% match with ID`); }
       if (mrz.found) idOcrPenalty = Math.max(0, idOcrPenalty - 5);
       idOcrPenalty = Math.min(idOcrPenalty, 30);
       idOcrPassed  = idOcrPenalty === 0;
@@ -491,13 +492,22 @@ export default async function handler(req: any, res: any) {
     // ── Final decision ────────────────────────────────────────
     riskScore = Math.min(riskScore, 100);
 
+    // AI-detected name mismatch = instant rejection (wrong person's ID)
+    const aiNameMismatch = aiAnalysis.suspicious && aiAnalysis.confidence === 'high' &&
+      aiAnalysis.flags.some((f) => f.toLowerCase().includes('name_mismatch') || f.toLowerCase().includes('name mismatch'));
+    // AI-detected address mismatch = instant rejection
+    const aiAddrMismatch = aiAnalysis.suspicious && aiAnalysis.confidence === 'high' &&
+      aiAnalysis.flags.some((f) => f.toLowerCase().includes('address') && f.toLowerCase().includes('mismatch'));
+
     const hardReject =
-      selfieFaces.length === 0   ||
-      faceMatchScore === 0        ||
-      sp >= 40                    ||
-      docReuseResult              ||
+      selfieFaces.length === 0      ||
+      faceMatchScore === 0          ||
+      sp >= 40                      ||
+      docReuseResult                ||
       duplicateFaceResult.duplicate ||
-      (mrz.found && mrz.expired === true);
+      (mrz.found && mrz.expired === true) ||
+      aiNameMismatch                ||
+      aiAddrMismatch;
 
     const nm = nameMatchScore(idText, input.fullName);
 
@@ -524,7 +534,20 @@ export default async function handler(req: any, res: any) {
       indexFace(input.selfieB64, input.clientId).catch(() => {});
     }
 
-    if (hardReject && riskScore >= 55) {
+    // Name/address mismatch: reject with a specific user-facing message
+    if (aiNameMismatch) {
+      return res.status(200).json({
+        ok: false, referenceId, riskScore, flags, details,
+        reason: "The name on your ID does not match the details you provided. Please ensure you are uploading your own ID document.",
+      });
+    }
+    if (aiAddrMismatch) {
+      return res.status(200).json({
+        ok: false, referenceId, riskScore, flags, details,
+        reason: "Your proof of address does not match the address you provided. Please upload a document showing your current address.",
+      });
+    }
+    if (hardReject) {
       return res.status(200).json({
         ok: false, referenceId, riskScore, flags, details,
         reason: flags[0] ?? "Automated check failed. Please resubmit with clearer photos.",
