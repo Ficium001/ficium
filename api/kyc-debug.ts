@@ -58,7 +58,7 @@ async function testAws(region: string): Promise<{ ok: boolean; error?: string; m
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export default async function handler(req: any, res: any) {
+export default async function handler(_req: any, res: any) {
   const accessKey = getEnv("AWS_ACCESS_KEY_ID")     || getEnv("VITE_AWS_ACCESS_KEY_ID");
   const secretKey = getEnv("AWS_SECRET_ACCESS_KEY") || getEnv("VITE_AWS_SECRET_ACCESS_KEY");
   const supabaseUrl = getEnv("VITE_SUPABASE_URL")   || getEnv("SUPABASE_URL");
