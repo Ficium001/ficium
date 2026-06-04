@@ -21,7 +21,7 @@ const schema = z.object({
     return age >= 18 && age <= 120;
   }, "You must be at least 18 years old"),
   // Nationality / residency
-  sameNationalityResidence: z.boolean().default(true),
+  sameNationalityResidence: z.boolean(),
   nationality: z.string().min(2, "Nationality is required"),
   residenceStatus: z.enum(["citizen", "permanent_resident", "work_permit", "student_permit", "other"]),
   // Address
