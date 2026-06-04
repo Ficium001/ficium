@@ -164,34 +164,10 @@ async function claudeAnalyzeOcr(
   const apiKey = getEnv("ANTHROPIC_API_KEY");
   if (!apiKey) return { suspicious: false, confidence: "low", flags: [], summary: "AI analysis unavailable" };
 
-  const prompt = `You are a KYC fraud detection expert. Analyze the following OCR text extracted from identity documents and flag any inconsistencies, anomalies, or signs of fraud.
-
-USER-PROVIDED DETAILS:
-- Full name: ${input.fullName ?? "not provided"}
-- Document number: ${input.documentNumber ?? "not provided"}
-- Date of birth: ${input.dateOfBirth ?? "not provided"}
-- Country: ${input.country ?? "not provided"}
-- City: ${input.city ?? "not provided"}
-
-ID DOCUMENT OCR TEXT:
-${idText.slice(0, 800)}
-
-PROOF OF ADDRESS OCR TEXT:
-${poaText.slice(0, 400)}
-
-Analyze for:
-1. Inconsistencies between user-provided details and OCR text
-2. Suspicious formatting or anomalies in the document text
-3. Mismatched names, dates, or addresses between documents
-4. Signs of document tampering or unusual patterns
-5. Geographic inconsistencies (e.g. city doesn't match country)
-
-Respond ONLY with a JSON object in this exact format (no markdown, no preamble):
-{"suspicious":false,"confidence":"high","flags":[],"summary":"Brief summary of findings"}
-
-confidence must be "high", "medium", or "low".
-flags is an array of specific issues found (empty if none).
-suspicious is true only if you found clear red flags.`;
+  const prompt = `KYC fraud check. User: name=${input.fullName??'?'} doc=${input.documentNumber??'?'} dob=${input.dateOfBirth??'?'} country=${input.country??'?'} city=${input.city??'?'}
+ID: ${idText.slice(0,250)}
+POA: ${poaText.slice(0,150)}
+Check for name/doc/dob mismatches and fraud. Reply ONLY JSON (no markdown): {"suspicious":false,"confidence":"high","flags":[],"summary":"one sentence"}`;
 
   try {
     const r = await fetch("https://api.anthropic.com/v1/messages", {
@@ -203,7 +179,7 @@ suspicious is true only if you found clear red flags.`;
       },
       body: JSON.stringify({
         model:      "claude-sonnet-4-6",
-        max_tokens: 600,
+        max_tokens: 300,
         messages:   [{ role: "user", content: prompt }],
       }),
     });
