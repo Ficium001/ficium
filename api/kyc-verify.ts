@@ -203,7 +203,7 @@ suspicious is true only if you found clear red flags.`;
       },
       body: JSON.stringify({
         model:      "claude-sonnet-4-6",
-        max_tokens: 300,
+        max_tokens: 600,
         messages:   [{ role: "user", content: prompt }],
       }),
     });
