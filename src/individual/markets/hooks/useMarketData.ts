@@ -1,0 +1,63 @@
+import { useState, useEffect, useCallback } from "react";
+import { fetchMarketData } from "../api";
+import { TICKER_CONFIGS, TICKER_ORDER } from "../config/tickers";
+import type { Ticker, MarketDataResult } from "../types";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// useMarketData
+// Assembles full Ticker objects (config + live reading) for the UI.
+// The page never calls fetch directly — all data logic lives here.
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface UseMarketDataReturn {
+  tickers: Ticker[];
+  isLoading: boolean;
+  isRefreshing: boolean;
+  error: string | null;
+  lastUpdated: Date | null;
+  refresh: () => void;
+}
+
+export function useMarketData(): UseMarketDataReturn {
+  const [result, setResult]         = useState<MarketDataResult | null>(null);
+  const [isLoading, setIsLoading]   = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [error, setError]           = useState<string | null>(null);
+
+  const load = useCallback(async (isManualRefresh = false) => {
+    if (isManualRefresh) setIsRefreshing(true);
+    setError(null);
+    try {
+      const data = await fetchMarketData();
+      setResult(data);
+    } catch (e) {
+      setError("Could not load market data. Please try again.");
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  }, []);
+
+  // Initial load
+  useEffect(() => { load(); }, [load]);
+
+  // Auto-refresh every 5 minutes
+  useEffect(() => {
+    const interval = setInterval(() => load(true), 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [load]);
+
+  const tickers: Ticker[] = TICKER_ORDER.map((id) => ({
+    ...TICKER_CONFIGS[id],
+    reading: result?.readings[id] ?? null,
+  }));
+
+  return {
+    tickers,
+    isLoading,
+    isRefreshing,
+    error,
+    lastUpdated: result?.fetchedAt ?? null,
+    refresh: () => load(true),
+  };
+}
