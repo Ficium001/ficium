@@ -393,7 +393,7 @@ export default async function handler(req: any, res: any) {
       cfg.ocr_name_match  ? detectFaces(input.idB64)                                        : Promise.resolve([]),
       detectLabels(input.selfieB64),
       detectLabels(input.idB64),
-      cfg.face_match      ? compareFaces(input.selfieB64, input.idB64)                      : Promise.resolve(0),
+      cfg.face_match      ? compareFaces(input.selfieB64, input.idB64)                      : Promise.resolve(-2),
       cfg.duplicate_face && input.clientId
         ? searchFaceCollection(input.selfieB64, input.clientId)
         : Promise.resolve({ duplicate: false } as FaceCollectionResult),
@@ -455,9 +455,9 @@ export default async function handler(req: any, res: any) {
         if (!t.includes(c) && !(c === "mauritius" && t.includes("maurit")))
           { idOcrPenalty += 5; idOcrFlags.push("Country not found in ID text"); }
       }
-      const nm = nameMatchScore(idText, input.fullName);
-      if (nm === 0) { idOcrPenalty += 30; idOcrFlags.push('Name on ID does not match your details at all'); }
-      else if (nm < 50) { idOcrPenalty += 10; idOcrFlags.push(`Name mismatch: ${nm}% match with ID`); }
+      const nm = cfg.ocr_name_match ? nameMatchScore(idText, input.fullName) : 100;
+      if (cfg.ocr_name_match && nm === 0) { idOcrPenalty += 30; idOcrFlags.push('Name on ID does not match your details at all'); }
+      else if (cfg.ocr_name_match && nm < 50) { idOcrPenalty += 10; idOcrFlags.push(`Name mismatch: ${nm}% match with ID`); }
       if (mrz.found) idOcrPenalty = Math.max(0, idOcrPenalty - 5);
       idOcrPenalty = Math.min(idOcrPenalty, 30);
       idOcrPassed  = idOcrPenalty === 0;
@@ -488,7 +488,8 @@ export default async function handler(req: any, res: any) {
 
     // ── 5. Face match: selfie vs ID ───────────────────────────
     let faceMatchResult = { similarity: faceMatchScore, passed: false };
-    if      (faceMatchScore === -1) { riskScore += 15; flags.push("Could not detect face on ID for comparison"); }
+    if      (faceMatchScore === -2) { /* face match disabled — skip */ }
+    else if (faceMatchScore === -1) { riskScore += 15; flags.push("Could not detect face on ID for comparison"); }
     else if (faceMatchScore === 0)  { riskScore += 40; flags.push("Selfie does not match face on ID"); }
     else if (faceMatchScore < 80)   { riskScore += 20; flags.push(`Weak face match (${faceMatchScore.toFixed(0)}%)`); }
     else if (faceMatchScore < 90)   { riskScore += 8;  flags.push(`Moderate face match (${faceMatchScore.toFixed(0)}%)`); faceMatchResult = { similarity: faceMatchScore, passed: true }; }
@@ -557,11 +558,11 @@ export default async function handler(req: any, res: any) {
     if (aiAddrFlag) { riskScore += 15; } // pushes toward pending_review but never hard rejects
 
     // AI-detected name mismatch = instant rejection (wrong person's ID)
-    const aiNameMismatch = aiAnalysis.suspicious && aiAnalysis.confidence === 'high' &&
+    const aiNameMismatch = cfg.ai_analysis && aiAnalysis.suspicious && aiAnalysis.confidence === 'high' &&
       aiAnalysis.flags.some((f) => f.toLowerCase().includes('name_mismatch') || f.toLowerCase().includes('name mismatch'));
     const hardReject =
       selfieFaces.length === 0      ||
-      faceMatchScore === 0          ||
+      (cfg.face_match && faceMatchScore === 0) ||
       sp >= 40                      ||
       docReuseResult                ||
       duplicateFaceResult.duplicate ||
