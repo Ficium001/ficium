@@ -531,13 +531,13 @@ export default async function handler(req: any, res: any) {
     // ── Final decision ────────────────────────────────────────
     riskScore = Math.min(riskScore, 100);
 
+    // AI address flag = soft flag only (too many false positives for hard reject)
+    const aiAddrFlag = aiAnalysis.flags.some((f) => f.toLowerCase().includes('address') && f.toLowerCase().includes('mismatch'));
+    if (aiAddrFlag) { riskScore += 15; } // pushes toward pending_review but never hard rejects
+
     // AI-detected name mismatch = instant rejection (wrong person's ID)
     const aiNameMismatch = aiAnalysis.suspicious && aiAnalysis.confidence === 'high' &&
       aiAnalysis.flags.some((f) => f.toLowerCase().includes('name_mismatch') || f.toLowerCase().includes('name mismatch'));
-    // AI-detected address mismatch = instant rejection
-    const aiAddrMismatch = aiAnalysis.suspicious && aiAnalysis.confidence === 'high' &&
-      aiAnalysis.flags.some((f) => f.toLowerCase().includes('address') && f.toLowerCase().includes('mismatch'));
-
     const hardReject =
       selfieFaces.length === 0      ||
       faceMatchScore === 0          ||
@@ -545,8 +545,7 @@ export default async function handler(req: any, res: any) {
       docReuseResult                ||
       duplicateFaceResult.duplicate ||
       (mrz.found && mrz.expired === true) ||
-      aiNameMismatch                ||
-      aiAddrMismatch;
+      aiNameMismatch;
 
     const nm = nameMatchScore(idText, input.fullName);
 
@@ -578,12 +577,6 @@ export default async function handler(req: any, res: any) {
       return res.status(200).json({
         ok: false, referenceId, riskScore, flags, details,
         reason: "The name on your ID does not match the details you provided. Please ensure you are uploading your own ID document.",
-      });
-    }
-    if (aiAddrMismatch) {
-      return res.status(200).json({
-        ok: false, referenceId, riskScore, flags, details,
-        reason: "Your proof of address does not match the address you provided. Please upload a document showing your current address.",
       });
     }
     if (hardReject) {
