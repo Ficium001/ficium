@@ -26,11 +26,11 @@ export function useMarketData(): UseMarketDataReturn {
 
   const load = useCallback(async (isManualRefresh = false) => {
     if (isManualRefresh) setIsRefreshing(true);
-    setError(null);
     try {
       const data = await fetchMarketData();
       setResult(data);
-    } catch (e) {
+      setError(null);
+    } catch {
       setError("Could not load market data. Please try again.");
     } finally {
       setIsLoading(false);
@@ -38,12 +38,25 @@ export function useMarketData(): UseMarketDataReturn {
     }
   }, []);
 
-  // Initial load
-  useEffect(() => { load(); }, [load]);
-
-  // Auto-refresh every 5 minutes
+  // Initial load — async work owned by the effect, with a cancellation guard
   useEffect(() => {
-    const interval = setInterval(() => load(true), 5 * 60 * 1000);
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await fetchMarketData();
+        if (!cancelled) { setResult(data); setError(null); }
+      } catch {
+        if (!cancelled) setError("Could not load market data. Please try again.");
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Auto-refresh every 5 minutes (interval callback runs outside the effect body)
+  useEffect(() => {
+    const interval = setInterval(() => void load(true), 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, [load]);
 

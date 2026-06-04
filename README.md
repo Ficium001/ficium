@@ -51,8 +51,11 @@ The complete A–Z technical reference lives in [`/docs`](./docs):
 |----------|----------|
 | `FICIUM_DOCUMENTATION.md` | Full reference: architecture, data dictionary, RLS, RPCs, flows, runbook, glossary (27 sections) |
 | `SCHEMA_REFERENCE.sql` | Executable schema reference + live-DB inspection queries |
+| `ARCHITECTURE_REVIEW.md` | Honest review against modularity / enterprise / scale / ease-of-change goals, with a prioritised action list |
+| `SCALING.md` | Staged growth plan and an honest discussion of the real bottlenecks |
+| `MODULE_PATTERN.md` | The canonical feature-module structure (reference: `markets/`) that all features should follow |
 
-Database migrations are in [`/database`](./database), run in numbered order.
+Database migrations are in [`/database`](./database) and [`/supabase/migrations`](./supabase/migrations), run in numbered order.
 
 ---
 
@@ -63,7 +66,7 @@ src/
   app/          route table + guards
   shared/       supabase factory, auth, ui primitives, design tokens
   features/     cross-cutting auth + marketing pages
-  individual/   client app (dashboard, requests, advisor, alerts)
+  individual/   client app (dashboard, requests, advisor, alerts, markets)
   business/     business registration
   institution/  institution portal (dashboard, marketplace, bids, ...)
   admin/        platform admin console
@@ -80,6 +83,12 @@ See `docs/FICIUM_DOCUMENTATION.md` §4 for the full annotated tree.
 
 - **Supabase clients:** import `supabase`, `institutionDb`, `adminDb`, or `db(schema)`
   from `src/shared/lib/supabase.ts`. One auth session is shared across all schemas.
+- **Imports:** use the `@/` alias for cross-folder imports (e.g.
+  `@/shared/lib/supabase`), configured in `tsconfig.app.json` + `vite.config.ts`.
+  Relative imports are only for siblings in the same folder.
+- **New features:** follow the module pattern in `docs/MODULE_PATTERN.md`
+  (types → config → api → hooks → components → thin page). `individual/markets/`
+  is the reference implementation.
 - **Institution types:** all in `src/institution/types/institution.ts` — never scatter.
 - **Maker-checker:** material actions call `submit_for_approval()`; a second admin
   approves via `approve_action()` (maker ≠ checker enforced).

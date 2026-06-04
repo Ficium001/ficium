@@ -14,10 +14,7 @@ interface TickerCardProps {
 }
 
 export function TickerCard({ ticker, isActive, onClick }: TickerCardProps) {
-  const { config: _, reading, label, color, icon: Icon } = {
-    ...ticker,
-    config: ticker,
-  };
+  const { reading, label, color, icon: Icon } = ticker;
 
   const isLoading = reading === null;
 

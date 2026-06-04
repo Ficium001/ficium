@@ -1,16 +1,16 @@
 import { useState }       from "react";
 import { Newspaper }      from "lucide-react";
-import { BottomNav }      from "../../../shared/ui";
-import { useMarketData }  from "../hooks";
-import { useMarketNews }  from "../hooks";
+import { BottomNav }      from "@/shared/ui";
+import { useMarketData }  from "@/individual/markets/hooks";
+import { useMarketNews }  from "@/individual/markets/hooks";
 import {
   MarketHeader,
   TickerStrip,
   StoryCallout,
   NewsCard,
   FiciumCTA,
-}                         from "../components";
-import type { TickerId }  from "../types";
+}                         from "@/individual/markets/components";
+import type { TickerId }  from "@/individual/markets/types";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Markets page — thin orchestrator only.
