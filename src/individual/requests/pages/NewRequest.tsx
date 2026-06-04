@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { useProfile } from "../../dashboard/hooks/useDashboard";
 import { createRequest, type ProductType } from "../api/requests";
-import { useIntelligence } from "../../../lib/intelligence";
+import { useIntelligence } from "@/shared/lib/intelligence";
 import { BottomNav } from "../../../shared/ui";
 
 /* ─── Product catalogue ─────────────────────────────────── */

@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { useProfile } from "../../dashboard/hooks/useDashboard";
 import { BottomNav } from "../../../shared/ui";
-import { askClaude, type ClaudeMessage } from "../../../lib/claude";
+import { askClaude, type ClaudeMessage } from "@/shared/lib/claude";
 
 /* ============================================================
    TYPES

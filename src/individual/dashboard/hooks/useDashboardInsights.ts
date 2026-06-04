@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { TrendingUp, AlertTriangle, BarChart2 } from "lucide-react";
-import { useIntelligence }    from "@/lib/intelligence";
+import { useIntelligence }    from "@/shared/lib/intelligence";
 import { FALLBACK_INSIGHTS }  from "@/individual/dashboard/config/dashboard";
 import type { InsightItem }   from "@/individual/dashboard/config/dashboard";
 

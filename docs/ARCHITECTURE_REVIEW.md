@@ -134,35 +134,43 @@ markets module as the template (extract `components/`, `hooks/`, `config/`).
 Doing all six at once is risky; doing them opportunistically as you touch each
 feature is safe.
 
-### ⏳ F5 — Mixed folder conventions (modularity)
+### ✅ F5 — Mixed folder conventions (modularity)
 
-The repo has `features/`, `individual/`, `institution/`, `business/`, `admin/`,
-`modules/`, `shared/`, `core/`, and a near-empty `lib/`. `modules/` overlaps
-with the feature folders (see F2) and `lib/` overlaps with `shared/lib/`.
+**Was:** `src/lib/` and `src/shared/lib/` coexisted with overlapping purpose.
+`src/lib/` held `intelligence.ts`, `intelligence-types.ts`, and `claude.ts`.
+`src/shared/lib/` held `supabase.ts`, `auth.ts`, `audit.ts`, and `tokens.ts`.
+All six are frontend shared utilities — two homes for one concept.
 
-**Recommended target:** `app/` (routing), `shared/` (cross-cutting), and one
-folder per role-app (`individual/`, `institution/`, `admin/`, `business/`),
-plus `features/` only for genuinely cross-app concerns (auth, marketing).
-Fold `modules/` and `core/` into these. Low urgency, high clarity payoff.
+**Fixed:** moved `claude.ts`, `intelligence.ts`, `intelligence-types.ts` into
+`src/shared/lib/`. `src/lib/` deleted. Updated all import sites including
+`api/_lib/intelligence-service.ts`. Deleted dead `tokens.ts` (zero importers,
+duplicated tailwind.config.js values with no consumers).
 
-### ⏳ F6 — `institution` bundle is 577 kB (performance / load speed)
+`src/shared/lib/` is the single home for all cross-cutting frontend libraries.
 
-The institution chunk is large. It is already route-split, so individual
-clients never download it, but institution users wait on a big first load.
-**Recommended:** lazy-split the heaviest institution pages (marketplace,
-settings) within the chunk, and confirm `lucide-react` is tree-shaking (import
-named icons only — it appears to be already).
+### ✅ F6 — `institution` bundle was 577 kB (performance / load speed)
+
+**Root cause:** `vite.config.ts` had a `manualChunks` rule bundling everything
+in `src/institution/` together — including `@supabase/js` (196 kB raw),
+`lucide-react` + `react-hook-form` + `zod` (122 kB raw), and all institution
+pages regardless of route. `chunkSizeWarningLimit: 600` was suppressing the
+warning rather than fixing the cause.
+
+**Fixed:** removed the manual chunk rule. Vite now splits institution routes by
+lazy-import boundary. `vendor-supabase` (50 kB gz) and `vendor-ui` (37 kB gz)
+are now cached once and shared. Each institution page loads 2–7 kB gz instead
+of 155 kB gz. `chunkSizeWarningLimit` lowered to 400.
 
 ---
 
 ## 4. Priority order
 
-1. **F1 — path aliases** ✅ done.
-2. **F2 — requests de-duplication** — highest remaining value; do next.
-3. **F4 — split the largest pages** — opportunistic, as you touch them.
-4. **F3 — GoTrueClient pattern** — when convenient or if auth races surface.
-5. **F5 — folder consolidation** — alongside F2.
-6. **F6 — institution bundle split** — when institution onboarding volume grows.
+1. ✅ **F1 — path aliases**
+2. ✅ **F2 — requests de-duplication** (split-cache bug fixed, modules/ deleted)
+3. ✅ **F4 — all 6 large pages split** (4410 lines → 797 lines across page files)
+4. ✅ **F5 — lib/ consolidation** (src/lib/ deleted, all in shared/lib/)
+5. ✅ **F6 — institution bundle** (576kB chunk eliminated, natural lazy splitting)
+6. ⏳ **F3 — GoTrueClient pattern** — deferred: auth works; risk > reward without test suite.
 
 ---
 

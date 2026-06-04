@@ -21,7 +21,7 @@ import type {
   RequestPattern,
   AcceptanceIntel,
   MarketCompetitiveness,
-} from "../../src/lib/intelligence-types";
+} from "../../src/shared/lib/intelligence-types";
 
 const CACHE_TTL_SECS = 300; // 5 minutes
 

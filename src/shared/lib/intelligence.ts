@@ -4,7 +4,7 @@
 // it available to Claude prompts across the app.
 // =============================================================
 import { useState, useEffect, useRef } from "react";
-import type { FiciumIntelligence, MarketRate, RequestPattern, AcceptanceIntel, MarketCompetitiveness } from "./intelligence-types";
+import type { FiciumIntelligence, MarketRate, RequestPattern, AcceptanceIntel, MarketCompetitiveness } from "@/shared/lib/intelligence-types";
 
 export type { FiciumIntelligence, MarketRate, RequestPattern, AcceptanceIntel, MarketCompetitiveness };
 

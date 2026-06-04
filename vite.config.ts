@@ -11,7 +11,7 @@ export default defineConfig({
   },
   build: {
     sourcemap: false,
-    chunkSizeWarningLimit: 600,
+    chunkSizeWarningLimit: 400,
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -21,7 +21,6 @@ export default defineConfig({
             if (id.includes("@supabase"))                                  return "vendor-supabase";
             if (id.includes("lucide") || id.includes("react-hook-form") || id.includes("zod")) return "vendor-ui";
           }
-          if (id.includes("src/institution")) return "institution";
         },
       },
     },

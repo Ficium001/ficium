@@ -3,7 +3,7 @@ import { Filter, AlertTriangle, X, BarChart2 } from "lucide-react";
 import {
   useMarketplace, useProducts, useSubmitBid, useMyInstitution,
 } from "@/institution/hooks/useInstitution";
-import { useIntelligence }   from "@/lib/intelligence";
+import { useIntelligence }   from "@/shared/lib/intelligence";
 import { RequestCard }       from "@/institution/marketplace/components/RequestCard";
 import { RequestDetailDrawer } from "@/institution/marketplace/components/RequestDetailDrawer";
 import { BidModal }          from "@/institution/marketplace/components/BidModal";
