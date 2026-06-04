@@ -186,7 +186,7 @@ export default function Dossier() {
   const hasLoans         = useWatch({ control, name: "hasExistingLoans" });
   const isPep            = useWatch({ control, name: "isPep" });
   const sourceOfWealth   = useWatch({ control, name: "sourceOfWealth" });
-  const watchedLoans     = useWatch({ control, name: "loans" }) ?? [];
+  
 
   const { fields: loanFields, append: appendLoan, remove: removeLoan } = useFieldArray({ control, name: "loans" });
 
