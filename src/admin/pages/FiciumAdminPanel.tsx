@@ -11,6 +11,7 @@ import {
 } from "../hooks/useAdminData";
 import type { AdminInstitution } from "../hooks/useAdminData";
 import KycSection from "../kyc/KycSection";
+import KycSettings from "../kyc/KycSettings";
 
 const ALL_MODULES = ["marketplace", "credit", "ai_advisory", "analytics"];
 
@@ -504,6 +505,7 @@ const NAV = [
   { key: "kyc",          label: "KYC Review",        icon: "◉" },
   { key: "products",     label: "Product catalogue", icon: "◈" },
   { key: "audit",        label: "Audit log",         icon: "▣" },
+  { key: "kyc_settings", label: "KYC Settings",       icon: "⚙" },
 ];
 
 // ── Main admin panel ──────────────────────────────────────────
@@ -516,6 +518,7 @@ export default function FiciumAdminPanel() {
     kyc:          "KYC review",
     products:     "Product catalogue",
     audit:        "Audit log",
+    kyc_settings: "KYC settings",
   };
 
   return (
@@ -581,6 +584,7 @@ export default function FiciumAdminPanel() {
           {section === "kyc"          && <KycSection />}
           {section === "products"     && <ProductsSection />}
           {section === "audit"        && <AuditSection />}
+          {section === "kyc_settings" && <KycSettings />}
         </main>
       </div>
     </div>

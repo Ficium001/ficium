@@ -137,6 +137,26 @@ async function supabaseQuery(path: string): Promise<unknown[]> {
     return r.json() as Promise<unknown[]>;
   } catch { return []; }
 }
+interface KycCheckSettings {
+  ai_analysis: boolean; face_match: boolean; duplicate_face: boolean;
+  ocr_name_match: boolean; proof_of_address: boolean; velocity_check: boolean;
+  document_reuse: boolean; liveness_check: boolean; mrz_validation: boolean;
+  permit_check: boolean;
+}
+const DEFAULT_SETTINGS: KycCheckSettings = {
+  ai_analysis: true, face_match: true, duplicate_face: true,
+  ocr_name_match: true, proof_of_address: true, velocity_check: true,
+  document_reuse: true, liveness_check: true, mrz_validation: true,
+  permit_check: true,
+};
+async function loadKycSettings(): Promise<KycCheckSettings> {
+  try {
+    const rows = await supabaseQuery("kyc_settings?id=eq.1&select=*&limit=1");
+    if (rows.length > 0) return { ...DEFAULT_SETTINGS, ...(rows[0] as KycCheckSettings) };
+  } catch { /* fall through to defaults */ }
+  return DEFAULT_SETTINGS;
+}
+
 async function checkVelocity(clientId: string): Promise<{ tooMany: boolean; count: number }> {
   const since = new Date(Date.now() - 86400000).toISOString();
   const rows  = await supabaseQuery(`kyc_submissions?client_id=eq.${clientId}&submitted_at=gte.${since}&select=id`);
@@ -357,6 +377,7 @@ export default async function handler(req: any, res: any) {
 
   try {
     console.log("[kyc-verify] start", { clientId: input.clientId, hasPermit: !!input.permitB64, residenceStatus: input.residenceStatus });
+    const cfg = await loadKycSettings();
     // ── Run all AWS + fraud checks in parallel ────────────────
     const [
       idText, poaText,
@@ -366,24 +387,24 @@ export default async function handler(req: any, res: any) {
       duplicateFaceResult,
       velocityResult, docReuseResult,
     ] = await Promise.all([
-      detectText(input.idB64),
-      poaIsPdf ? Promise.resolve("") : detectText(input.poaB64),
+      cfg.ocr_name_match  ? detectText(input.idB64)                                          : Promise.resolve(""),
+      cfg.proof_of_address && !poaIsPdf ? detectText(input.poaB64)                         : Promise.resolve(""),
       detectFaces(input.selfieB64),
-      detectFaces(input.idB64),
+      cfg.ocr_name_match  ? detectFaces(input.idB64)                                        : Promise.resolve([]),
       detectLabels(input.selfieB64),
       detectLabels(input.idB64),
-      compareFaces(input.selfieB64, input.idB64),
-      input.clientId
+      cfg.face_match      ? compareFaces(input.selfieB64, input.idB64)                      : Promise.resolve(0),
+      cfg.duplicate_face && input.clientId
         ? searchFaceCollection(input.selfieB64, input.clientId)
         : Promise.resolve({ duplicate: false } as FaceCollectionResult),
-      input.clientId ? checkVelocity(input.clientId) : Promise.resolve({ tooMany: false, count: 0 }),
-      input.clientId && input.documentNumber
+      cfg.velocity_check && input.clientId ? checkVelocity(input.clientId)                 : Promise.resolve({ tooMany: false, count: 0 }),
+      cfg.document_reuse && input.clientId && input.documentNumber
         ? checkDocumentReuse(input.documentNumber, input.clientId)
         : Promise.resolve(false),
     ]);
 
     // ── Claude AI analysis (after OCR, uses results + ID image) ─
-    const aiAnalysis = await claudeAnalyzeOcr(idText, poaText, {
+    const aiAnalysis = cfg.ai_analysis ? await claudeAnalyzeOcr(idText, poaText, {
       documentNumber: input.documentNumber,
       dateOfBirth:    input.dateOfBirth,
       country:        input.country,
@@ -393,14 +414,14 @@ export default async function handler(req: any, res: any) {
       nationality:             input.nationality,
       residenceStatus:         input.residenceStatus,
       sameNationalityResidence: input.sameNationalityResidence,
-    });
+    }) : { suspicious: false, confidence: "low" as const, flags: [], summary: "AI analysis disabled" };
 
-    const mrz       = parseMrz(idText);
+    const mrz       = cfg.mrz_validation ? parseMrz(idText) : { found: false, valid: false, expired: false, expiry: "", docNumber: "", nationality: "", surname: "", givenNames: "" };
     let riskScore   = 0;
     const flags: string[] = [];
 
     // ── Permit document check (if provided) ──────────────────────
-    if (input.permitB64) {
+    if (cfg.permit_check && input.permitB64) {
       const [permitText] = await Promise.all([detectText(input.permitB64 ?? "")]);
       if (!permitText || permitText.trim().length < 20) {
         flags.push("Permit document text unreadable"); riskScore += 15;
