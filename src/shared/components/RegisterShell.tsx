@@ -110,12 +110,8 @@ export function RegisterShell({ back, children }: Props) {
           {/* Form area */}
           <div className="flex-1 flex items-center justify-center px-5 py-8 lg:px-10 xl:px-16">
             <div className="w-full max-w-[480px]">
-              {/* Mobile: glass card */}
-              <div className="lg:hidden bg-white/[0.97] backdrop-blur-2xl rounded-3xl shadow-2xl p-6 mb-5">
-                {children}
-              </div>
-              {/* Desktop: plain white */}
-              <div className="hidden lg:block">
+              {/* Render children ONCE — mobile gets glass card styling, desktop gets plain white */}
+              <div className="bg-white/[0.97] lg:bg-transparent backdrop-blur-2xl lg:backdrop-blur-none rounded-3xl lg:rounded-none shadow-2xl lg:shadow-none p-6 lg:p-0 mb-5 lg:mb-0">
                 {children}
               </div>
 
