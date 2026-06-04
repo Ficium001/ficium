@@ -381,6 +381,23 @@ export default async function handler(req: any, res: any) {
         : Promise.resolve(false),
     ]);
 
+    // ── Claude AI analysis (after OCR, uses results + ID image) ─
+    const aiAnalysis = await claudeAnalyzeOcr(idText, poaText, {
+      documentNumber: input.documentNumber,
+      dateOfBirth:    input.dateOfBirth,
+      country:        input.country,
+      fullName:       input.fullName,
+      city:           input.city,
+    }, input.idB64, {
+      nationality:             input.nationality,
+      residenceStatus:         input.residenceStatus,
+      sameNationalityResidence: input.sameNationalityResidence,
+    });
+
+    const mrz       = parseMrz(idText);
+    let riskScore   = 0;
+    const flags: string[] = [];
+
     // ── Permit document check (if provided) ──────────────────────
     if (input.permitB64) {
       const [permitText] = await Promise.all([detectText(input.permitB64)]);
@@ -398,23 +415,6 @@ export default async function handler(req: any, res: any) {
         }
       }
     }
-
-    // ── Claude AI analysis (after OCR, uses results + ID image) ─
-    const aiAnalysis = await claudeAnalyzeOcr(idText, poaText, {
-      documentNumber: input.documentNumber,
-      dateOfBirth:    input.dateOfBirth,
-      country:        input.country,
-      fullName:       input.fullName,
-      city:           input.city,
-    }, input.idB64, {
-      nationality:             input.nationality,
-      residenceStatus:         input.residenceStatus,
-      sameNationalityResidence: input.sameNationalityResidence,
-    });
-
-    const mrz       = parseMrz(idText);
-    let riskScore   = 0;
-    const flags: string[] = [];
 
     // ── 1. ID OCR ─────────────────────────────────────────────
     const idOcrFlags: string[] = [];
