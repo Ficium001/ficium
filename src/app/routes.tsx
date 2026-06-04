@@ -27,6 +27,7 @@ const Requests            = lazy(() => import("../individual/requests/pages/Requ
 const NewRequest          = lazy(() => import("../individual/requests/pages/NewRequest"));
 const RequestDetail       = lazy(() => import("../individual/requests/pages/RequestDetail"));
 const Alerts              = lazy(() => import("../individual/alerts/pages/Alerts"));
+const Markets             = lazy(() => import("../individual/markets/pages/Markets"));
 const Advisor             = lazy(() => import("../individual/advisor/pages/Advisor"));
 const FinancialTools      = lazy(() => import("../individual/tools/pages/FinancialTools"));
 const ClientAudit         = lazy(() => import("../individual/audit/pages/ClientAudit"));
@@ -119,6 +120,7 @@ export const router = createBrowserRouter([
   { path: "/requests/new",           element: <ClientOnlyRoute><S><NewRequest /></S></ClientOnlyRoute> },
   { path: "/requests/:id",           element: <ClientOnlyRoute><S><RequestDetail /></S></ClientOnlyRoute> },
   { path: "/alerts",                 element: <ClientOnlyRoute><S><Alerts /></S></ClientOnlyRoute> },
+  { path: "/markets",               element: <ClientOnlyRoute><S><Markets /></S></ClientOnlyRoute> },
   { path: "/advisor",                element: <ClientOnlyRoute><S><Advisor /></S></ClientOnlyRoute> },
   { path: "/tools",                  element: <ClientOnlyRoute><S><FinancialTools /></S></ClientOnlyRoute> },
   { path: "/activity",               element: <ClientOnlyRoute><S><ClientAudit /></S></ClientOnlyRoute> },
