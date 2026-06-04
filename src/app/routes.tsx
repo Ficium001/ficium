@@ -1,4 +1,5 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, Component } from "react";
+import type { ReactNode, ErrorInfo } from "react";
 import { createBrowserRouter } from "react-router-dom";
 import { PublicOnlyRoute, ClientOnlyRoute, BankOnlyRoute } from "./ProtectedRoute";
 
@@ -53,8 +54,43 @@ function PageLoader() {
   );
 }
 
+// Catches chunk-load failures (stale cache after deploy) and auto-reloads once
+class ChunkErrorBoundary extends Component<{ children: ReactNode }, { errored: boolean }> {
+  state = { errored: false };
+  static getDerivedStateFromError() { return { errored: true }; }
+  componentDidCatch(err: Error, _info: ErrorInfo) {
+    const isChunkError = err.message.includes("Failed to fetch dynamically imported module")
+      || err.message.includes("Importing a module script failed")
+      || err.name === "ChunkLoadError";
+    if (isChunkError && !sessionStorage.getItem("chunk_reload")) {
+      sessionStorage.setItem("chunk_reload", "1");
+      window.location.reload();
+    }
+  }
+  render() {
+    if (this.state.errored) {
+      return (
+        <div className="min-h-screen bg-cream flex flex-col items-center justify-center gap-4 px-6 text-center">
+          <p className="text-ink font-semibold">Something went wrong loading this page.</p>
+          <button
+            onClick={() => { sessionStorage.removeItem("chunk_reload"); window.location.reload(); }}
+            className="px-4 py-2 bg-ficium text-white rounded-xl text-sm font-semibold"
+          >
+            Reload
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 function S({ children }: { children: React.ReactNode }) {
-  return <Suspense fallback={<PageLoader />}>{children}</Suspense>;
+  return (
+    <ChunkErrorBoundary>
+      <Suspense fallback={<PageLoader />}>{children}</Suspense>
+    </ChunkErrorBoundary>
+  );
 }
 
 export const router = createBrowserRouter([
