@@ -107,8 +107,37 @@ function KycReviewModal({ item, onClose }: { item: KycQueueItem; onClose: () => 
   const [rejectReason, setReject] = useState("");
   const [showReject, setShowReject] = useState(false);
 
-  const approve = useApproveKyc();
-  const reject  = useRejectKyc();
+  const approve    = useApproveKyc();
+  const reject     = useRejectKyc();
+  const [resetting, setResetting] = useState(false);
+  const [resetMsg,  setResetMsg]  = useState<string | null>(null);
+
+  const handleResetFace = async () => {
+    if (!confirm("Delete this user's KYC record and remove their face from the recognition system? They will need to resubmit.")) return;
+    setResetting(true);
+    setResetMsg(null);
+    try {
+      const adminSecret = import.meta.env.VITE_ADMIN_SECRET ?? "";
+      // Delete face from Rekognition collection
+      const faceRes = await fetch(`/api/kyc-admin-faces?clientId=${item.id}`, {
+        method: "DELETE",
+        headers: { "x-admin-secret": adminSecret },
+      });
+      const faceData = await faceRes.json() as { deleted?: number; message?: string; error?: string };
+      if (faceData.error) throw new Error(faceData.error);
+      // Delete KYC submissions from DB
+      const { createClient } = await import("@supabase/supabase-js");
+      const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY);
+      await supabase.from("kyc_submissions").delete().eq("client_id", item.id);
+      await supabase.from("clients").update({ kyc_status: "not_started" }).eq("id", item.id);
+      setResetMsg(`✓ Reset complete. Faces removed: ${faceData.deleted ?? 0}. User can resubmit KYC.`);
+      setTimeout(() => { onClose(); }, 2500);
+    } catch (err) {
+      setResetMsg(`Error: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setResetting(false);
+    }
+  };
 
   const handleApprove = async () => {
     await approve.mutateAsync({ userId: item.id, note });
@@ -267,6 +296,25 @@ function KycReviewModal({ item, onClose }: { item: KycQueueItem; onClose: () => 
               )}
             </div>
           )}
+
+          {/* Reset KYC — clears DB record + Rekognition face */}
+          <div className="pt-2 border-t border-ink/[0.07]">
+            <p className="text-[11px] text-muted mb-2">
+              Use this if the user needs to resubmit from scratch (e.g. wrong documents uploaded).
+            </p>
+            <button
+              onClick={handleResetFace}
+              disabled={resetting}
+              className="w-full bg-white border border-ink/20 hover:border-red-300 hover:text-red-600 text-muted font-semibold py-2.5 rounded-xl transition-colors text-[13px] disabled:opacity-50"
+            >
+              {resetting ? "Resetting…" : "⟳ Reset KYC & clear face record"}
+            </button>
+            {resetMsg && (
+              <p className={`text-[12px] mt-2 ${resetMsg.startsWith("✓") ? "text-green-600" : "text-red-600"}`}>
+                {resetMsg}
+              </p>
+            )}
+          </div>
         </div>
       </div>
     </div>
