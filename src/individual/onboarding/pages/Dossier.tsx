@@ -271,11 +271,11 @@ export default function Dossier() {
       {/* Sticky top bar */}
       <div className="sticky top-0 z-20 bg-cream/95 backdrop-blur-sm border-b border-ink/[0.06] px-5 py-3">
         <div className="mx-auto max-w-[600px] flex items-center gap-4">
-          {step > 1 && (
-            <button onClick={() => setStep(s=>s-1)} className="w-8 h-8 rounded-full bg-ink/[0.06] flex items-center justify-center flex-shrink-0">
-              <ArrowLeft size={15} />
-            </button>
-          )}
+          <button
+            onClick={() => step > 1 ? setStep(s=>s-1) : window.history.back()}
+            className="w-8 h-8 rounded-full bg-ink/[0.06] flex items-center justify-center flex-shrink-0">
+            <ArrowLeft size={15} />
+          </button>
           <div className="flex-1">
             <div className="flex gap-1.5 mb-1.5">
               {[1,2,3].map(i => (
