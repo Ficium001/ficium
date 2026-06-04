@@ -356,6 +356,7 @@ export default async function handler(req: any, res: any) {
   const referenceId = `aws-${Date.now()}`;
 
   try {
+    console.log("[kyc-verify] start", { clientId: input.clientId, hasPermit: !!input.permitB64, residenceStatus: input.residenceStatus });
     // ── Run all AWS + fraud checks in parallel ────────────────
     const [
       idText, poaText,
@@ -400,7 +401,7 @@ export default async function handler(req: any, res: any) {
 
     // ── Permit document check (if provided) ──────────────────────
     if (input.permitB64) {
-      const [permitText] = await Promise.all([detectText(input.permitB64)]);
+      const [permitText] = await Promise.all([detectText(input.permitB64 ?? "")]);
       if (!permitText || permitText.trim().length < 20) {
         flags.push("Permit document text unreadable"); riskScore += 15;
       } else {

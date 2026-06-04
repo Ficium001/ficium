@@ -108,7 +108,7 @@ export const inhouseProvider: KycProvider = {
       const res = await fetch("/api/kyc-verify", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+        body: JSON.stringify(Object.fromEntries(Object.entries({
           idB64,
           selfieB64,
           poaB64,
@@ -120,11 +120,12 @@ export const inhouseProvider: KycProvider = {
           city:           input.city,
           addressLine1:   input.addressLine1,
           poaFileName,
-          nationality:          input.nationality,
-          residenceStatus:      input.residenceStatus,
+          nationality:             input.nationality,
+          residenceStatus:         input.residenceStatus,
           sameNationalityResidence: input.sameNationalityResidence,
-          permitB64:            permitB64 ?? undefined,
-        }),
+          permitB64:               permitB64 ?? null,
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        }).filter(([_k, v]) => v !== null && v !== undefined))),
       });
 
       if (!res.ok) {
