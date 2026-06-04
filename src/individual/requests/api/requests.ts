@@ -1,5 +1,5 @@
-import { supabase, institutionDb } from "../../../shared/lib/supabase";
-import { audit } from "../../../shared/lib/audit";
+import { supabase, institutionDb, db } from "@/shared/lib/supabase";
+import { audit } from "@/shared/lib/audit";
 
 /* ---------- Institution schema client (read-only for bids) ---------- */
 const instSupabase = institutionDb;
@@ -19,7 +19,7 @@ export type ProductType =
   | "overdraft"
   | "business_loan";
 
-export type RequestStatus = "open" | "closed" | "cancelled";
+export type RequestStatus = "open" | "closed" | "cancelled" | "accepted" | "expired";
 
 export type CreateRequestInput = {
   productType: ProductType;
@@ -66,7 +66,69 @@ export type Bid = {
 
 export type AcceptBidResult = { ok: true } | { ok: false; error: string };
 
-/* ---------- Anonymized brief ---------- */
+/* ---------- Summary type (used by list views + dashboard) ---------- */
+
+export type RequestSummary = {
+  id:          string;
+  productType: string;
+  amount:      number;
+  status:      RequestStatus;
+  createdAt:   string;
+  bidCount:    number;
+  bestRate:    number | null;
+};
+
+/* ---------- Get my requests (list) ----------
+   One round-trip: requests + bids fetched separately then merged in memory.
+   Bids are filtered to status="submitted" so expired/withdrawn bids don't
+   inflate the count. This is the only implementation — dashboard, requests
+   page, and any future consumer all use this.
+------------------------------------------------ */
+
+export async function getMyRequests(): Promise<RequestSummary[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data: requests, error } = await supabase
+    .from("requests")
+    .select("id, product_type, amount, status, created_at")
+    .eq("client_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(20);
+
+  if (error || !requests?.length) return [];
+
+  const ids = requests.map((r) => r.id);
+  const { data: bids } = await db("institution")
+    .from("institution_bids")
+    .select("request_id, rate")
+    .in("request_id", ids)
+    .eq("status", "submitted"); // only active bids
+
+  // O(n) aggregation in memory
+  const bidMap = new Map<string, { count: number; bestRate: number | null }>();
+  for (const id of ids) bidMap.set(id, { count: 0, bestRate: null });
+  for (const bid of bids ?? []) {
+    const entry = bidMap.get(bid.request_id);
+    if (!entry) continue;
+    entry.count += 1;
+    if (entry.bestRate === null || bid.rate < entry.bestRate) {
+      entry.bestRate = bid.rate;
+    }
+  }
+
+  return requests.map((r) => ({
+    id:          r.id,
+    productType: r.product_type,
+    amount:      r.amount,
+    status:      r.status,
+    createdAt:   r.created_at,
+    bidCount:    bidMap.get(r.id)?.count    ?? 0,
+    bestRate:    bidMap.get(r.id)?.bestRate ?? null,
+  }));
+}
+
+/* ---------- Create request ---------- */
 
 function generateAnonymizedBrief(input: CreateRequestInput): string {
   const product = formatProductType(input.productType);

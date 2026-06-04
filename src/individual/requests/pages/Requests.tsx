@@ -8,7 +8,7 @@ import {
 import { useMyRequests, useBankReadiness } from "../../dashboard/hooks/useDashboard";
 import { formatMUR, formatProductType } from "../../dashboard/api/profile";
 import { BottomNav } from "../../../shared/ui";
-import type { RequestSummary } from "../../dashboard/api/profile";
+import type { RequestSummary } from "@/individual/requests/api/requests";
 
 /* ── Mock activity feed (replace with Supabase Realtime subscription) ── */
 const MOCK_ACTIVITY = [
@@ -249,8 +249,7 @@ function RequestCard({ request }: { request: RequestSummary }) {
       </Link>
 
       {/* Expanded detail — always visible */}
-      {true && (
-        <div className="px-6 sm:px-7 pb-7 border-t border-ink/[0.05]">
+      <div className="px-6 sm:px-7 pb-7 border-t border-ink/[0.05]">
 
           {/* Journey */}
           <div className="py-6">
@@ -318,7 +317,6 @@ function RequestCard({ request }: { request: RequestSummary }) {
             </div>
           )}
         </div>
-      )}
     </div>
   );
 }

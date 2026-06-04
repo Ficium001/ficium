@@ -1,5 +1,4 @@
-import { supabase } from "../../../shared/lib/supabase";
-import { db } from "../../../shared/lib/supabase";
+import { supabase } from "@/shared/lib/supabase";
 
 export type ProfileCompletion = {
   accountCreated: boolean; kycVerified: boolean; proofOfAddressDone: boolean;
@@ -21,12 +20,6 @@ export type ProfileCore = {
 export type ProfileSummary = ProfileCore & ProfileScores & {
   completion: ProfileCompletion;
   hasDossier: boolean;
-};
-
-export type RequestSummary = {
-  id: string; productType: string; amount: number;
-  status: "open" | "closed" | "accepted" | "expired" | "cancelled";
-  createdAt: string; bidCount: number; bestRate: number | null;
 };
 
 export async function getProfileSummary(): Promise<ProfileSummary | null> {
@@ -58,48 +51,6 @@ export async function getProfileSummary(): Promise<ProfileSummary | null> {
     affordabilityScore: data.affordability_score ?? null,
     completion, hasDossier: data.financial_profile_done ?? false,
   };
-}
-
-export async function getMyRequests(): Promise<RequestSummary[]> {
-  const { data: authData } = await supabase.auth.getUser();
-  const userId = authData.user?.id;
-  if (!userId) return [];
-
-  const { data: requests, error: reqError } = await supabase
-    .from("requests")
-    .select("id, product_type, amount, status, created_at")
-    .eq("client_id", userId)
-    .order("created_at", { ascending: false })
-    .limit(20);
-
-  if (reqError || !requests || requests.length === 0) return [];
-
-  const ids = requests.map((r) => r.id);
-
-  // V2: use institution_bids instead of dropped public.bids
-  const institutionDb = db("institution");
-  const { data: bids } = await institutionDb
-    .from("institution_bids")
-    .select("request_id, rate")
-    .in("request_id", ids);
-
-  const byRequest = new Map<string, { count: number; bestRate: number | null }>();
-  for (const id of ids) byRequest.set(id, { count: 0, bestRate: null });
-  for (const b of bids || []) {
-    const entry = byRequest.get(b.request_id);
-    if (!entry) continue;
-    entry.count += 1;
-    if (entry.bestRate === null || b.rate < entry.bestRate) {
-      entry.bestRate = b.rate;
-    }
-  }
-
-  return requests.map((r) => ({
-    id: r.id, productType: r.product_type, amount: r.amount,
-    status: r.status, createdAt: r.created_at,
-    bidCount: byRequest.get(r.id)?.count ?? 0,
-    bestRate: byRequest.get(r.id)?.bestRate ?? null,
-  }));
 }
 
 export function formatMUR(amount: number): string {

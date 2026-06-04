@@ -1,39 +1,14 @@
 /**
  * src/modules/requests/hooks.ts
  * ─────────────────────────────────────────────────────────────
- * React Query hooks for the Requests module.
- * Query keys are co-located with their module — easy to invalidate.
+ * SHIM — re-exports from the canonical location.
+ * This file exists only for backward compatibility.
+ * All new code should import from "@/individual/requests/hooks/useRequests".
+ *
+ * TODO: once useDashboard.ts and all consumers are updated to import
+ * directly from the canonical location, delete this file.
  */
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getMyRequests, createRequest, type CreateRequestInput } from "./api";
-
-// ── Query keys ───────────────────────────────────────────────
-// Co-located with the module. Prefix with "requests" to namespace.
-export const RequestQueryKeys = {
-  all:  ["requests"] as const,
-  mine: ["requests", "mine"] as const,
-} as const;
-
-// ── Queries ──────────────────────────────────────────────────
-
-export function useMyRequests() {
-  return useQuery({
-    queryKey: RequestQueryKeys.mine,
-    queryFn:  getMyRequests,
-    staleTime: 60 * 1000, // 1 min — bids can arrive at any time
-  });
-}
-
-// ── Mutations ────────────────────────────────────────────────
-
-export function useCreateRequest() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (input: CreateRequestInput) => createRequest(input),
-    onSuccess: () => {
-      // Invalidate the requests list so it refetches with the new entry
-      queryClient.invalidateQueries({ queryKey: RequestQueryKeys.mine });
-    },
-  });
-}
+export {
+  useMyRequests,
+  RequestQueryKeys,
+} from "@/individual/requests/hooks/useRequests";
