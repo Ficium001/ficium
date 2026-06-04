@@ -516,7 +516,9 @@ export default async function handler(req: any, res: any) {
     };
 
     // ── Index face on clean/review pass (not hard reject) ─────
-    const needsReview = riskScore >= 30;
+    // AI suspicious:true with medium/high confidence always forces review
+    const aiForceReview = aiAnalysis.suspicious && (aiAnalysis.confidence === 'high' || aiAnalysis.confidence === 'medium');
+    const needsReview = riskScore >= 30 || aiForceReview;
     if (!hardReject && input.clientId && faceMatchScore >= 90) {
       // Only index high-confidence matches to keep collection clean
       indexFace(input.selfieB64, input.clientId).catch(() => {});
