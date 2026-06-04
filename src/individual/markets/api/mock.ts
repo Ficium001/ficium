@@ -1,4 +1,4 @@
-import type { MarketDataResult, NewsResult, TickerId } from "../types";
+import type { MarketDataResult, NewsResult } from "../types";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Mock adapter — mimics the shape a live BOM / ExchangeRate API would return.

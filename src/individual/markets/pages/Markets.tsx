@@ -10,7 +10,6 @@ import {
   NewsCard,
   FiciumCTA,
 }                         from "../components";
-import { TICKER_CONFIGS } from "../config/tickers";
 import type { TickerId }  from "../types";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -20,7 +19,7 @@ import type { TickerId }  from "../types";
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function Markets() {
-  const { tickers, isLoading, isRefreshing, lastUpdated, refresh } = useMarketData();
+  const { tickers, isRefreshing, lastUpdated, refresh } = useMarketData();
   const { news } = useMarketNews();
   const [activeId, setActiveId] = useState<TickerId | null>(null);
 
