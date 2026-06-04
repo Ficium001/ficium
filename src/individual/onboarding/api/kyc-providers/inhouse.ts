@@ -125,14 +125,12 @@ export const inhouseProvider: KycProvider = {
       return result;
 
     } catch (err) {
-      console.error("[KYC inhouse] error:", err);
-      return {
-        ok:          true,
-        referenceId,
-        riskScore:   50,
-        needsReview: true,
-        reason:      "Automated check unavailable — queued for manual review.",
-      };
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("[KYC inhouse] error:", msg);
+      if (msg.includes("413") || msg.toLowerCase().includes("too large") || msg.toLowerCase().includes("payload")) {
+        return { ok: false, referenceId, reason: "Your photo files are too large. Please use smaller images and try again." };
+      }
+      return { ok: false, referenceId, reason: `Verification failed: ${msg}. Please try again or contact support.` };
     }
   },
 };
