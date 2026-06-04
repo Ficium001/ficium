@@ -10,7 +10,10 @@ const getEnv = (k: string) => (globalThis as any).process?.env?.[k] ?? "";
 
 async function supabase(method: "GET" | "PATCH", body?: object) {
   const url  = getEnv("VITE_SUPABASE_URL") || getEnv("SUPABASE_URL");
-  const key  = getEnv("SUPABASE_SERVICE_ROLE_KEY");
+  const key  = getEnv("SUPABASE_SERVICE_ROLE_KEY")
+            || getEnv("SUPABASE_SERVICE_KEY")
+            || getEnv("VITE_SUPABASE_SERVICE_ROLE_KEY");
+  console.log("[kyc-settings] url:", url?.slice(0,40), "key:", key ? key.slice(0,12)+"…" : "MISSING");
   const res  = await fetch(`${url}/rest/v1/kyc_settings?id=eq.1`, {
     method,
     headers: {
@@ -29,7 +32,7 @@ async function supabase(method: "GET" | "PATCH", body?: object) {
 export default async function handler(req: any, res: any) {
   if (req.method === "GET") {
     const r = await supabase("GET");
-    if (!r.ok) return res.status(500).json({ error: "Failed to load settings" });
+    if (!r.ok) return res.status(500).json({ error: "Failed to load settings", detail: r.data });
     const row = Array.isArray(r.data) ? r.data[0] : r.data;
     return res.status(200).json(row ?? null);
   }
