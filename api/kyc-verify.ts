@@ -346,9 +346,15 @@ export default async function handler(req: any, res: any) {
   if (!getEnv("AWS_ACCESS_KEY_ID") && !getEnv("VITE_AWS_ACCESS_KEY_ID"))
     return res.status(503).json({ error: "AWS credentials not configured" });
 
-  const input = req.body as KycInput;
-  if (!input.idB64 || !input.selfieB64 || !input.poaB64)
-    return res.status(400).json({ error: "idB64, selfieB64, poaB64 required" });
+  // Parse body — Vercel may pass it as a string if Content-Type header is missing
+  let input: KycInput;
+  try {
+    input = (typeof req.body === "string" ? JSON.parse(req.body) : req.body) as KycInput;
+  } catch {
+    return res.status(400).json({ error: "Invalid JSON body" });
+  }
+  if (!input || !input.idB64 || !input.selfieB64 || !input.poaB64)
+    return res.status(400).json({ error: "idB64, selfieB64, poaB64 required — body keys received: " + Object.keys(input ?? {}).join(", ") });
 
   const poaIsPdf    = (input.poaMimeType ?? "").includes("pdf") || (input.poaFileName ?? "").endsWith(".pdf");
   const referenceId = `aws-${Date.now()}`;
@@ -549,10 +555,11 @@ export default async function handler(req: any, res: any) {
     });
 
   } catch (err) {
-    console.error("[kyc-verify] error:", err);
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[kyc-verify] PIPELINE ERROR:", msg);
     return res.status(200).json({
-      ok: true, referenceId, riskScore: 50, flags: [], details: null, needsReview: true,
-      reason: "Automated check unavailable — queued for manual review.",
+      ok: false, referenceId, riskScore: 50, flags: [], details: null,
+      reason: `Pipeline error: ${msg}`,
     });
   }
 }
