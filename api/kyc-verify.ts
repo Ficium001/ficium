@@ -207,13 +207,17 @@ suspicious is true only if you found clear red flags.`;
         messages:   [{ role: "user", content: prompt }],
       }),
     });
-    if (!r.ok) throw new Error(`Anthropic API ${r.status}`);
+    if (!r.ok) {
+      const errBody = await r.text();
+      throw new Error(`Anthropic API ${r.status}: ${errBody.slice(0, 200)}`);
+    }
     const data = await r.json() as { content: Array<{ type: string; text: string }> };
     const text = data.content.find(c => c.type === "text")?.text ?? "{}";
     return JSON.parse(text.replace(/```json|```/g, "").trim()) as AiAnalysis;
   } catch (err) {
-    console.error("[kyc-verify] Claude AI error:", err);
-    return { suspicious: false, confidence: "low", flags: [], summary: "AI analysis failed" };
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[kyc-verify] Claude AI error:", msg);
+    return { suspicious: false, confidence: "low", flags: [], summary: `AI error: ${msg}` };
   }
 }
 
