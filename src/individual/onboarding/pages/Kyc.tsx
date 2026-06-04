@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowRight, ArrowLeft, Camera, Upload, ShieldCheck, MapPin, FileText } from "lucide-react";
+import { ArrowRight, ArrowLeft, Camera, Upload, ShieldCheck, MapPin, FileText, Globe } from "lucide-react";
 import { submitKyc } from "../api/kyc";
 import { Button, Card, Field, Input, Select } from "../../../shared/ui";
 
@@ -20,6 +20,11 @@ const schema = z.object({
     const age = (Date.now() - d.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
     return age >= 18 && age <= 120;
   }, "You must be at least 18 years old"),
+  // Nationality / residency
+  sameNationalityResidence: z.boolean().default(true),
+  nationality: z.string().min(2, "Nationality is required"),
+  residenceStatus: z.enum(["citizen", "permanent_resident", "work_permit", "student_permit", "other"]),
+  // Address
   addressLine1: z.string().trim().min(2, "Address is required").max(200),
   addressLine2: z.string().trim().max(200).optional().or(z.literal("")),
   city: z.string().trim().min(1, "City is required").max(100),
@@ -29,6 +34,12 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>;
 
+const COUNTRIES = [
+  "Mauritius", "Réunion", "Madagascar", "Seychelles", "Comoros",
+  "India", "South Africa", "France", "United Kingdom",
+  "United States", "Canada", "China", "Other",
+];
+
 /* ---------- Page ---------- */
 
 export default function Kyc() {
@@ -37,40 +48,51 @@ export default function Kyc() {
   const [idFile, setIdFile] = useState<File | null>(null);
   const [selfieFile, setSelfieFile] = useState<File | null>(null);
   const [proofFile, setProofFile] = useState<File | null>(null);
+  const [permitFile, setPermitFile] = useState<File | null>(null);
 
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
     mode: "onTouched",
-    defaultValues: { country: "Mauritius" },
+    defaultValues: {
+      country: "Mauritius",
+      nationality: "Mauritius",
+      sameNationalityResidence: true,
+      residenceStatus: "citizen",
+    },
   });
+
+  const sameNatRes     = useWatch({ control, name: "sameNationalityResidence" });
+  const residenceStatus = useWatch({ control, name: "residenceStatus" });
+  const needsPermit    = residenceStatus === "work_permit" || residenceStatus === "student_permit";
 
   const onSubmit = async (data: FormData) => {
     setSubmitError(null);
 
-    if (!idFile) { setSubmitError("Please upload an image of your ID document."); return; }
-    if (!selfieFile) { setSubmitError("Please take a selfie for verification."); return; }
+    if (!idFile)    { setSubmitError("Please upload an image of your ID document."); return; }
+    if (!selfieFile){ setSubmitError("Please take a selfie for verification."); return; }
     if (!proofFile) { setSubmitError("Please upload a proof of address document."); return; }
+    if (needsPermit && !permitFile) { setSubmitError("Please upload your work or student permit."); return; }
 
     const result = await submitKyc({
-      documentType: data.documentType,
-      documentNumber: data.documentNumber,
-      dateOfBirth: data.dateOfBirth,
+      documentType:       data.documentType,
+      documentNumber:     data.documentNumber,
+      dateOfBirth:        data.dateOfBirth,
       idFile,
       selfieFile,
       proofOfAddressFile: proofFile,
-      addressLine1: data.addressLine1,
-      addressLine2: data.addressLine2 || undefined,
-      city: data.city,
-      postalCode: data.postalCode || undefined,
-      country: data.country,
+      addressLine1:       data.addressLine1,
+      addressLine2:       data.addressLine2 || undefined,
+      city:               data.city,
+      postalCode:         data.postalCode   || undefined,
+      country:            data.country,
     });
 
     if (!result.ok) { setSubmitError(result.error); return; }
-    // If needsReview, show a "pending" screen instead of going straight through
     navigate(result.needsReview ? "/onboarding/kyc-pending" : "/onboarding/dossier");
   };
 
@@ -131,6 +153,50 @@ export default function Kyc() {
               hint="A clear front-facing photo of you, in good light."
               file={selfieFile} onFile={setSelfieFile} inputId="selfieFile" capture="user" />
 
+            {/* ── NATIONALITY & RESIDENCY ── */}
+            <div className="pt-2 -mb-1 text-xs font-bold tracking-[0.08em] uppercase text-muted flex items-center gap-1.5">
+              <Globe size={12} /> Nationality & residency
+            </div>
+
+            {/* Same nationality / residence toggle */}
+            <label className="flex items-center gap-3 cursor-pointer select-none">
+              <input type="checkbox" {...register("sameNationalityResidence")}
+                className="w-4 h-4 rounded border-ink/20 text-ficium focus:ring-ficium/30 cursor-pointer" />
+              <span className="text-sm text-ink">My nationality and country of residence are the same</span>
+            </label>
+
+            {/* Nationality — only shown when different */}
+            {!sameNatRes && (
+              <Field label="Nationality" htmlFor="nationality" error={errors.nationality?.message}>
+                <Select id="nationality" invalid={!!errors.nationality} {...register("nationality")}>
+                  {COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                </Select>
+              </Field>
+            )}
+
+            <Field label="Residence status" htmlFor="residenceStatus" error={errors.residenceStatus?.message}>
+              <Select id="residenceStatus" invalid={!!errors.residenceStatus} {...register("residenceStatus")}>
+                <option value="citizen">Citizen</option>
+                <option value="permanent_resident">Permanent Resident</option>
+                <option value="work_permit">Work Permit Holder</option>
+                <option value="student_permit">Student Permit Holder</option>
+                <option value="other">Other</option>
+              </Select>
+            </Field>
+
+            {/* Permit upload — conditional */}
+            {needsPermit && (
+              <UploadZone
+                icon={<FileText size={20} />}
+                title={residenceStatus === "work_permit" ? "Upload work permit" : "Upload student permit"}
+                hint="Clear photo or scan of your valid permit. JPG, PNG or PDF, max 5MB."
+                file={permitFile}
+                onFile={setPermitFile}
+                inputId="permitFile"
+                accept="image/jpeg,image/png,application/pdf"
+              />
+            )}
+
             {/* ── ADDRESS ── */}
             <div className="pt-2 -mb-1 text-xs font-bold tracking-[0.08em] uppercase text-muted flex items-center gap-1.5">
               <MapPin size={12} /> Address
@@ -156,16 +222,9 @@ export default function Kyc() {
               </Field>
             </div>
 
-            <Field label="Country" htmlFor="country" error={errors.country?.message}>
+            <Field label="Country of residence" htmlFor="country" error={errors.country?.message}>
               <Select id="country" invalid={!!errors.country} {...register("country")}>
-                <option value="Mauritius">Mauritius</option>
-                <option value="Reunion">Réunion</option>
-                <option value="Madagascar">Madagascar</option>
-                <option value="India">India</option>
-                <option value="South Africa">South Africa</option>
-                <option value="France">France</option>
-                <option value="United Kingdom">United Kingdom</option>
-                <option value="Other">Other</option>
+                {COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
               </Select>
             </Field>
 
@@ -177,7 +236,7 @@ export default function Kyc() {
             <UploadZone
               icon={<FileText size={20} />}
               title="Upload proof of address"
-              hint="Utility bill, bank statement or official letter. Dated within 3 months. JPG, PNG or PDF, max 5MB."
+              hint="Utility bill, bank statement or official letter dated within 3 months. If your utility bill is not in your name, use your bank statement instead. JPG, PNG or PDF, max 5MB."
               file={proofFile}
               onFile={setProofFile}
               inputId="proofFile"
