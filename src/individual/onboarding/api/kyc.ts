@@ -23,6 +23,10 @@ export type KycInput = {
   city:              string;
   postalCode?:       string;
   country:           string;
+  nationality?:      string;
+  residenceStatus?:  "citizen" | "permanent_resident" | "work_permit" | "student_permit" | "other";
+  sameNationalityResidence?: boolean;
+  permitFile?:       File;
 };
 
 export type KycResult =
@@ -73,6 +77,14 @@ export async function submitKyc(input: KycInput): Promise<KycResult> {
   if ("error" in selfieUpload)return { ok: false, error: `Selfie upload failed: ${selfieUpload.error}` };
   if ("error" in proofUpload) return { ok: false, error: `Proof upload failed: ${proofUpload.error}` };
 
+  // Upload permit if provided
+  let permitUpload: { path: string } | null = null;
+  if (input.permitFile) {
+    const r = await uploadKycFile(userId, input.permitFile, "permit" as "id");
+    if ("error" in r) return { ok: false, error: `Permit upload failed: ${r.error}` };
+    permitUpload = r;
+  }
+
   // 2. Run provider verification
   const verification = await activeProvider.verify({
     userId,
@@ -87,7 +99,11 @@ export async function submitKyc(input: KycInput): Promise<KycResult> {
     country:           input.country,
     idDocumentPath:    idUpload.path,
     selfiePath:        selfieUpload.path,
-    proofOfAddressPath:proofUpload.path,
+    proofOfAddressPath:   proofUpload.path,
+    nationality:          input.nationality,
+    residenceStatus:      input.residenceStatus,
+    sameNationalityResidence: input.sameNationalityResidence,
+    permitPath:           permitUpload?.path,
   });
 
   if (!verification.ok) {
@@ -116,6 +132,10 @@ export async function submitKyc(input: KycInput): Promise<KycResult> {
       id_document_path:     idUpload.path,
       selfie_path:          selfieUpload.path,
       proof_of_address_path:proofUpload.path,
+      nationality:          input.nationality          ?? null,
+      residence_status:     input.residenceStatus      ?? null,
+      same_nationality_residence: input.sameNationalityResidence ?? true,
+      permit_path:          permitUpload?.path         ?? null,
     });
 
   if (submissionError) return { ok: false, error: submissionError.message };
@@ -131,6 +151,8 @@ export async function submitKyc(input: KycInput): Promise<KycResult> {
       city:           input.city,
       postal_code:    input.postalCode   || null,
       country:        input.country,
+      nationality:    input.nationality    || null,
+      residence_status: input.residenceStatus || null,
     })
     .eq("id", userId);
 

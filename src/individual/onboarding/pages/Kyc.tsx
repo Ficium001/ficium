@@ -90,6 +90,10 @@ export default function Kyc() {
       city:               data.city,
       postalCode:         data.postalCode   || undefined,
       country:            data.country,
+      nationality:        data.sameNationalityResidence ? data.country : data.nationality,
+      residenceStatus:    data.residenceStatus,
+      sameNationalityResidence: data.sameNationalityResidence,
+      permitFile:         permitFile || undefined,
     });
 
     if (!result.ok) { setSubmitError(result.error); return; }

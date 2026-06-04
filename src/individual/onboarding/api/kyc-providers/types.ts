@@ -21,6 +21,14 @@ export interface KycVerifyInput {
   selfiePath:          string;
   /** Supabase Storage path for the uploaded proof of address */
   proofOfAddressPath:  string;
+  /** Nationality (country name) — may differ from country of residence */
+  nationality?:        string;
+  /** Residence status */
+  residenceStatus?:    "citizen" | "permanent_resident" | "work_permit" | "student_permit" | "other";
+  /** Whether nationality === country of residence */
+  sameNationalityResidence?: boolean;
+  /** Supabase Storage path for work/student permit (if applicable) */
+  permitPath?:         string;
 }
 
 export interface KycVerifyResult {

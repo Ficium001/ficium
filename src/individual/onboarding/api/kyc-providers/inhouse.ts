@@ -82,10 +82,11 @@ export const inhouseProvider: KycProvider = {
 
     try {
       // 1. Get signed URLs
-      const [idUrl, selfieUrl, poaUrl] = await Promise.all([
+      const [idUrl, selfieUrl, poaUrl, permitUrl] = await Promise.all([
         getSignedUrl(input.idDocumentPath),
         getSignedUrl(input.selfiePath),
         getSignedUrl(input.proofOfAddressPath),
+        input.permitPath ? getSignedUrl(input.permitPath) : Promise.resolve(null),
       ]);
 
       if (!idUrl || !selfieUrl || !poaUrl) {
@@ -95,10 +96,12 @@ export const inhouseProvider: KycProvider = {
       // 2. Fetch images as base64 (with compression for images, passthrough for PDF)
       const poaFileName = input.proofOfAddressPath.split("/").pop() ?? "";
       const poaIsPdf    = poaFileName.toLowerCase().endsWith(".pdf");
-      const [idB64, selfieB64, poaB64] = await Promise.all([
+      const permitIsPdf = (input.permitPath ?? "").toLowerCase().endsWith(".pdf");
+      const [idB64, selfieB64, poaB64, permitB64] = await Promise.all([
         fetchAsBase64(idUrl),
         fetchAsBase64(selfieUrl),
         fetchAsBase64(poaUrl, poaIsPdf),
+        permitUrl ? fetchAsBase64(permitUrl, permitIsPdf) : Promise.resolve(null),
       ]);
 
       // 3. Call server-side verify endpoint
@@ -117,6 +120,10 @@ export const inhouseProvider: KycProvider = {
           city:           input.city,
           addressLine1:   input.addressLine1,
           poaFileName,
+          nationality:          input.nationality,
+          residenceStatus:      input.residenceStatus,
+          sameNationalityResidence: input.sameNationalityResidence,
+          permitB64:            permitB64 ?? undefined,
         }),
       });
 

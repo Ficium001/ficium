@@ -159,8 +159,9 @@ interface AiAnalysis {
 
 async function claudeAnalyzeOcr(
   idText: string, poaText: string,
-  input: { documentNumber?: string; dateOfBirth?: string; country?: string; fullName?: string; city?: string },
-  idB64?: string
+  input: { documentNumber?: string; dateOfBirth?: string; country?: string; fullName?: string; city?: string; nationality?: string; residenceStatus?: string; sameNationalityResidence?: boolean },
+  idB64?: string,
+  residency?: { nationality?: string; residenceStatus?: string; sameNationalityResidence?: boolean }
 ): Promise<AiAnalysis> {
   const apiKey = getEnv("ANTHROPIC_API_KEY");
   if (!apiKey) return { suspicious: false, confidence: "low", flags: [], summary: "AI analysis unavailable" };
@@ -169,7 +170,8 @@ async function claudeAnalyzeOcr(
 ID OCR: ${idText.slice(0,250)}
 POA OCR: ${poaText.slice(0,150)}
 Also assess the ID document image for: tampering, fake/printed document, uneven fonts, photo substitution, glare obscuring fields, or poor quality that prevents verification.
-Check for name/doc/dob mismatches and fraud. Reply ONLY JSON (no markdown): {"suspicious":false,"confidence":"high","flags":[],"summary":"one sentence"}`;
+Residency: status=${residency?.residenceStatus??'citizen'} nationality=${residency?.nationality??input.country??'?'} sameAsResidence=${residency?.sameNationalityResidence??true}
+Check for name/doc/dob mismatches, nationality inconsistencies, and fraud. Reply ONLY JSON (no markdown): {"suspicious":false,"confidence":"high","flags":[],"summary":"one sentence"}`;
 
   // Build message content — include ID image if available
   const userContent: unknown[] = idB64
@@ -326,6 +328,10 @@ interface KycInput {
   poaFileName?:    string;
   livenessSessionId?: string;
   livenessConfidence?: number;
+  nationality?:        string;
+  residenceStatus?:    string;
+  sameNationalityResidence?: boolean;
+  permitB64?:          string;
 }
 
 /* ── Handler ────────────────────────────────────────────────── */
@@ -375,6 +381,24 @@ export default async function handler(req: any, res: any) {
         : Promise.resolve(false),
     ]);
 
+    // ── Permit document check (if provided) ──────────────────────
+    if (input.permitB64) {
+      const [permitText] = await Promise.all([detectText(input.permitB64)]);
+      if (!permitText || permitText.trim().length < 20) {
+        flags.push("Permit document text unreadable"); riskScore += 15;
+      } else {
+        const permitNameMatch = nameMatchScore(permitText, input.fullName);
+        if (permitNameMatch < 50) {
+          flags.push(`Name on permit does not match account holder (${permitNameMatch}% match)`);
+          riskScore += 20;
+        }
+        const pt = permitText.toLowerCase();
+        if (pt.includes("expired") || pt.includes("cancelled")) {
+          flags.push("Permit may be expired or cancelled"); riskScore += 30;
+        }
+      }
+    }
+
     // ── Claude AI analysis (after OCR, uses results + ID image) ─
     const aiAnalysis = await claudeAnalyzeOcr(idText, poaText, {
       documentNumber: input.documentNumber,
@@ -382,7 +406,11 @@ export default async function handler(req: any, res: any) {
       country:        input.country,
       fullName:       input.fullName,
       city:           input.city,
-    }, input.idB64);
+    }, input.idB64, {
+      nationality:             input.nationality,
+      residenceStatus:         input.residenceStatus,
+      sameNationalityResidence: input.sameNationalityResidence,
+    });
 
     const mrz       = parseMrz(idText);
     let riskScore   = 0;
