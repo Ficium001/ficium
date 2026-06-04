@@ -159,15 +159,25 @@ interface AiAnalysis {
 
 async function claudeAnalyzeOcr(
   idText: string, poaText: string,
-  input: { documentNumber?: string; dateOfBirth?: string; country?: string; fullName?: string; city?: string }
+  input: { documentNumber?: string; dateOfBirth?: string; country?: string; fullName?: string; city?: string },
+  idB64?: string
 ): Promise<AiAnalysis> {
   const apiKey = getEnv("ANTHROPIC_API_KEY");
   if (!apiKey) return { suspicious: false, confidence: "low", flags: [], summary: "AI analysis unavailable" };
 
-  const prompt = `KYC fraud check. User: name=${input.fullName??'?'} doc=${input.documentNumber??'?'} dob=${input.dateOfBirth??'?'} country=${input.country??'?'} city=${input.city??'?'}
-ID: ${idText.slice(0,250)}
-POA: ${poaText.slice(0,150)}
+  const textPrompt = `KYC fraud check. User: name=${input.fullName??'?'} doc=${input.documentNumber??'?'} dob=${input.dateOfBirth??'?'} country=${input.country??'?'} city=${input.city??'?'}
+ID OCR: ${idText.slice(0,250)}
+POA OCR: ${poaText.slice(0,150)}
+Also assess the ID document image for: tampering, fake/printed document, uneven fonts, photo substitution, glare obscuring fields, or poor quality that prevents verification.
 Check for name/doc/dob mismatches and fraud. Reply ONLY JSON (no markdown): {"suspicious":false,"confidence":"high","flags":[],"summary":"one sentence"}`;
+
+  // Build message content — include ID image if available
+  const userContent: unknown[] = idB64
+    ? [
+        { type: "image", source: { type: "base64", media_type: "image/jpeg", data: idB64 } },
+        { type: "text",  text: textPrompt },
+      ]
+    : [{ type: "text", text: textPrompt }];
 
   try {
     const r = await fetch("https://api.anthropic.com/v1/messages", {
@@ -180,7 +190,7 @@ Check for name/doc/dob mismatches and fraud. Reply ONLY JSON (no markdown): {"su
       body: JSON.stringify({
         model:      "claude-sonnet-4-6",
         max_tokens: 300,
-        messages:   [{ role: "user", content: prompt }],
+        messages:   [{ role: "user", content: userContent }],
       }),
     });
     if (!r.ok) {
@@ -365,14 +375,14 @@ export default async function handler(req: any, res: any) {
         : Promise.resolve(false),
     ]);
 
-    // ── Claude AI analysis (after OCR, uses results) ──────────
+    // ── Claude AI analysis (after OCR, uses results + ID image) ─
     const aiAnalysis = await claudeAnalyzeOcr(idText, poaText, {
       documentNumber: input.documentNumber,
       dateOfBirth:    input.dateOfBirth,
       country:        input.country,
       fullName:       input.fullName,
       city:           input.city,
-    });
+    }, input.idB64);
 
     const mrz       = parseMrz(idText);
     let riskScore   = 0;
