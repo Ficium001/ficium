@@ -49,6 +49,7 @@ export default function Kyc() {
   const [selfieFile, setSelfieFile] = useState<File | null>(null);
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [permitFile, setPermitFile] = useState<File | null>(null);
+  const [verifyStep, setVerifyStep] = useState<string | null>(null);
 
   const {
     register,
@@ -78,6 +79,15 @@ export default function Kyc() {
     if (!proofFile) { setSubmitError("Please upload a proof of address document."); return; }
     if (needsPermit && !permitFile) { setSubmitError("Please upload your work or student permit."); return; }
 
+    setVerifyStep("Uploading documents securely…");
+    await new Promise(r => setTimeout(r, 400));
+    setVerifyStep("Verifying identity document…");
+    await new Promise(r => setTimeout(r, 600));
+    setVerifyStep("Matching face to ID…");
+    await new Promise(r => setTimeout(r, 500));
+    setVerifyStep("Checking proof of address…");
+    await new Promise(r => setTimeout(r, 400));
+    setVerifyStep("Running fraud checks…");
     const result = await submitKyc({
       documentType:       data.documentType,
       documentNumber:     data.documentNumber,
@@ -96,11 +106,29 @@ export default function Kyc() {
       permitFile:         permitFile || undefined,
     });
 
+    setVerifyStep(null);
     if (!result.ok) { setSubmitError(result.error); return; }
     navigate(result.needsReview ? "/onboarding/kyc-pending" : "/onboarding/dossier");
   };
 
   return (
+    {verifyStep && (
+      <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex flex-col items-center justify-center gap-6 px-8">
+        <div className="w-14 h-14 rounded-full border-4 border-white/20 border-t-white animate-spin" />
+        <div className="text-center">
+          <p className="text-white font-semibold text-lg">{verifyStep}</p>
+          <p className="text-white/60 text-sm mt-1">This usually takes 10–20 seconds</p>
+        </div>
+        <div className="flex gap-2 mt-2">
+          {["Uploading", "Identity", "Face", "Address", "Fraud"].map((s, i) => (
+            <div key={i} className={[
+              "h-1.5 w-8 rounded-full transition-all duration-500",
+              verifyStep.toLowerCase().includes(s.toLowerCase()) ? "bg-white" : "bg-white/25"
+            ].join(" ")} />
+          ))}
+        </div>
+      </div>
+    )}
     <div className="min-h-screen bg-cream px-5 py-8 sm:px-6 sm:py-10">
       <div className="mx-auto w-full max-w-[520px]">
         <Link to="/dashboard" className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-ink transition-colors mb-6 sm:mb-8">
