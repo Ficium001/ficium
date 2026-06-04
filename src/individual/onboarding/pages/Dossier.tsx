@@ -1,26 +1,17 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm, useFieldArray, useWatch, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
-  ArrowRight,
-  ArrowLeft,
-  ShieldCheck,
-  Briefcase,
-  Wallet,
-  CreditCard,
-  Shield,
-  Trash2,
-  Plus,
-  TrendingUp,
+  ArrowRight, ArrowLeft, ShieldCheck, Briefcase, Wallet,
+  CreditCard, Shield, Trash2, Plus, TrendingUp, Users,
+  Sparkles, ChevronRight,
 } from "lucide-react";
 import { submitDossier } from "../api/dossier";
 import { Button, Card, Field, Input, Select } from "../../../shared/ui";
 
-/* ============================================================
-   SCHEMA — dynamic with conditional required fields
-   ============================================================ */
+/* ============================================================ SCHEMA ============================================================ */
 
 const employmentStatusEnum = z.enum([
   "employed", "self_employed", "business_owner", "freelance", "retired", "student", "unemployed",
@@ -38,8 +29,8 @@ const schema = z.object({
   employmentStatus: employmentStatusEnum,
   monthlyIncome: z.number().min(0).max(100_000_000),
   additionalIncome: z.number().min(0).max(100_000_000).default(0),
+  dependants: z.number().int().min(0).max(20).default(0),
 
-  // Employment conditional fields — all optional, validated by superRefine below
   employerName: z.string().max(150).optional().or(z.literal("")),
   industry: z.string().max(100).optional().or(z.literal("")),
   jobTitle: z.string().max(100).optional().or(z.literal("")),
@@ -71,7 +62,6 @@ const schema = z.object({
   monthlyAllowance: z.number().min(0).optional().or(z.nan().transform(() => undefined)),
   partTimeEmployment: z.boolean().default(false),
 
-  // Assets
   savings: z.number().min(0).max(10_000_000_000).default(0),
   investments: z.number().min(0).max(10_000_000_000).default(0),
   propertyValue: z.number().min(0).max(10_000_000_000).default(0),
@@ -79,11 +69,9 @@ const schema = z.object({
   businessAssets: z.number().min(0).max(10_000_000_000).default(0),
   otherAssets: z.number().min(0).max(10_000_000_000).default(0),
 
-  // Loans
   hasExistingLoans: z.boolean(),
   loans: z.array(loanSchema).default([]),
 
-  // Compliance
   sourceOfWealth: z.enum(["salary", "business", "investments", "inheritance", "property", "savings", "other"]).optional(),
   sourceOfWealthOther: z.string().max(200).optional().or(z.literal("")),
   isPep: z.boolean().default(false),
@@ -94,7 +82,6 @@ const schema = z.object({
   bankruptcy: z.boolean().default(false),
   legalDisputes: z.boolean().default(false),
 }).superRefine((data, ctx) => {
-  // Conditional required fields based on employment status
   if (data.employmentStatus === "employed") {
     if (!data.employerName?.trim()) ctx.addIssue({ code: "custom", path: ["employerName"], message: "Employer name required" });
     if (!data.jobTitle?.trim()) ctx.addIssue({ code: "custom", path: ["jobTitle"], message: "Job title required" });
@@ -121,66 +108,105 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>;
 
-/* ============================================================
-   PAGE
-   ============================================================ */
+/* ============================================================ HEALTH SCORE ============================================================ */
+
+function calcHealthScore(data: Partial<FormData>): { score: number; label: string; colour: string; insight: string; pct: number } {
+  let pts = 0;
+
+  // Income (30 pts)
+  const income = (Number(data.monthlyIncome) || 0) + (Number(data.additionalIncome) || 0);
+  if (income > 0)       pts += 10;
+  if (income >= 30_000) pts += 10;
+  if (income >= 80_000) pts += 10;
+
+  // Assets (20 pts)
+  const assets = [data.savings, data.investments, data.propertyValue, data.vehicleValue, data.businessAssets, data.otherAssets]
+    .reduce<number>((s, v) => s + (Number(v) || 0), 0);
+  if (assets > 0)          pts += 5;
+  if (assets >= 500_000)   pts += 8;
+  if (assets >= 2_000_000) pts += 7;
+
+  // DTI (20 pts)
+  const totalRepayment = (data.loans ?? []).reduce<number>((s, l) => s + (Number(l.monthlyRepayment) || 0), 0);
+  const dti = income > 0 ? totalRepayment / income : 0;
+  if (!data.hasExistingLoans || data.loans?.length === 0) pts += 20;
+  else if (dti < 0.2) pts += 20;
+  else if (dti < 0.35) pts += 12;
+  else if (dti < 0.5) pts += 5;
+
+  // Employment (15 pts)
+  if (data.employmentStatus) pts += 5;
+  if (data.employmentStatus === "employed" && data.employerName) pts += 10;
+  else if (data.employmentStatus === "business_owner" && data.businessName) pts += 10;
+  else if (data.employmentStatus && data.employmentStatus !== "unemployed") pts += 5;
+
+  // Compliance (15 pts)
+  if (data.sourceOfWealth) pts += 8;
+  if (data.taxResidency)   pts += 4;
+  if (!data.isPep && !data.missedRepayments && !data.blacklisted && !data.bankruptcy) pts += 3;
+
+  const pct = Math.min(100, pts);
+
+  let label = "Getting started";
+  let colour = "#94a3b8";
+  let insight = "Fill in your employment and income details to unlock bank bids.";
+
+  if (pct >= 80)      { label = "Excellent"; colour = "#10b981"; insight = "Your profile is highly attractive to banks. Expect competitive bids."; }
+  else if (pct >= 60) { label = "Strong";    colour = "#3D6EF5"; insight = "Good profile. Adding asset details could improve your bids further."; }
+  else if (pct >= 40) { label = "Good";      colour = "#f59e0b"; insight = "Banks can see you. Complete the assets section to strengthen your profile."; }
+  else if (pct >= 20) { label = "Fair";      colour = "#f97316"; insight = "Add your income and employment details to attract more banks."; }
+
+  return { score: pct, label, colour, insight, pct };
+}
+
+/* ============================================================ PAGE ============================================================ */
 
 export default function Dossier() {
   const navigate = useNavigate();
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const form = useForm<z.input<typeof schema>, any, FormData>({
+  const form = useForm<z.input<typeof schema>, unknown, FormData>({
     resolver: zodResolver(schema),
     mode: "onTouched",
     defaultValues: {
       employmentStatus: undefined,
-      monthlyIncome: 0,
-      additionalIncome: 0,
-      hasExistingLoans: false,
-      loans: [],
-      savings: 0,
-      investments: 0,
-      propertyValue: 0,
-      vehicleValue: 0,
-      businessAssets: 0,
-      otherAssets: 0,
-      taxResidency: "MU",
-      isPep: false,
-      partTimeEmployment: false,
-      missedRepayments: false,
-      blacklisted: false,
-      bankruptcy: false,
-      legalDisputes: false,
+      monthlyIncome: 0, additionalIncome: 0, dependants: 0,
+      hasExistingLoans: false, loans: [],
+      savings: 0, investments: 0, propertyValue: 0, vehicleValue: 0, businessAssets: 0, otherAssets: 0,
+      taxResidency: "MU", isPep: false, partTimeEmployment: false,
+      missedRepayments: false, blacklisted: false, bankruptcy: false, legalDisputes: false,
     },
   });
 
   const { register, handleSubmit, control, formState: { errors, isSubmitting } } = form;
 
-  // Watch fields that drive conditional rendering
   const employmentStatus = useWatch({ control, name: "employmentStatus" });
   const hasExistingLoans = useWatch({ control, name: "hasExistingLoans" });
-  const isPep = useWatch({ control, name: "isPep" });
-  const sourceOfWealth = useWatch({ control, name: "sourceOfWealth" });
+  const isPep            = useWatch({ control, name: "isPep" });
+  const sourceOfWealth   = useWatch({ control, name: "sourceOfWealth" });
 
-  // Watch for live calculations
-  const watchedAssets = useWatch({ control, name: ["savings", "investments", "propertyValue", "vehicleValue", "businessAssets", "otherAssets"] });
-  const watchedIncome = useWatch({ control, name: ["monthlyIncome", "additionalIncome"] });
+  const allWatched = useWatch({ control });
 
-const totalNetWorth = (watchedAssets ?? []).reduce<number>((sum, v) => (sum ?? 0) + (Number(v) || 0), 0);
-const totalIncome = (watchedIncome ?? []).reduce<number>((sum, v) => (sum ?? 0) + (Number(v) || 0), 0);
+  const watchedAssets  = useWatch({ control, name: ["savings", "investments", "propertyValue", "vehicleValue", "businessAssets", "otherAssets"] });
+  const watchedIncome  = useWatch({ control, name: ["monthlyIncome", "additionalIncome"] });
+  const watchedLoans   = useWatch({ control, name: "loans" }) ?? [];
 
-  const { fields: loanFields, append: appendLoan, remove: removeLoan } = useFieldArray({
-    control,
-    name: "loans",
-  });
+  const totalNetWorth    = watchedAssets.reduce<number>((s, v) => s + (Number(v) || 0), 0);
+  const totalIncome      = watchedIncome.reduce<number>((s, v) => s + (Number(v) || 0), 0);
+  const totalRepayment   = watchedLoans.reduce<number>((s, l) => s + (Number(l?.monthlyRepayment) || 0), 0);
+  const dti              = totalIncome > 0 ? (totalRepayment / totalIncome) * 100 : 0;
+
+  const health = useMemo(() => calcHealthScore(allWatched as Partial<FormData>), [allWatched]);
+
+  const { fields: loanFields, append: appendLoan, remove: removeLoan } = useFieldArray({ control, name: "loans" });
 
   const onSubmit = async (data: FormData) => {
     setSubmitError(null);
-
     const result = await submitDossier({
       employmentStatus: data.employmentStatus,
       monthlyIncome: data.monthlyIncome,
       additionalIncome: data.additionalIncome,
+      dependants: data.dependants,
       employmentDetails: {
         employerName: data.employerName || undefined,
         industry: data.industry || undefined,
@@ -209,97 +235,103 @@ const totalIncome = (watchedIncome ?? []).reduce<number>((sum, v) => (sum ?? 0) 
         partTimeEmployment: data.partTimeEmployment,
       },
       assets: {
-        savings: data.savings,
-        investments: data.investments,
-        propertyValue: data.propertyValue,
-        vehicleValue: data.vehicleValue,
-        businessAssets: data.businessAssets,
-        otherAssets: data.otherAssets,
+        savings: data.savings, investments: data.investments, propertyValue: data.propertyValue,
+        vehicleValue: data.vehicleValue, businessAssets: data.businessAssets, otherAssets: data.otherAssets,
       },
       hasExistingLoans: data.hasExistingLoans,
-      loans: data.loans.map((l) => ({
-        loanType: l.loanType,
-        outstandingAmount: l.outstandingAmount,
-        monthlyRepayment: l.monthlyRepayment,
-        bankName: l.bankName,
-        remainingMonths: l.remainingMonths,
-      })),
+      loans: data.loans,
       compliance: {
-        sourceOfWealth: data.sourceOfWealth,
-        sourceOfWealthOther: data.sourceOfWealthOther || undefined,
-        isPep: data.isPep,
-        pepDetails: data.pepDetails || undefined,
-        taxResidency: data.taxResidency,
-        missedRepayments: data.missedRepayments,
-        blacklisted: data.blacklisted,
-        bankruptcy: data.bankruptcy,
-        legalDisputes: data.legalDisputes,
+        sourceOfWealth: data.sourceOfWealth, sourceOfWealthOther: data.sourceOfWealthOther || undefined,
+        isPep: data.isPep, pepDetails: data.pepDetails || undefined, taxResidency: data.taxResidency,
+        missedRepayments: data.missedRepayments, blacklisted: data.blacklisted,
+        bankruptcy: data.bankruptcy, legalDisputes: data.legalDisputes,
       },
     });
-
-    if (!result.ok) {
-      setSubmitError(result.error);
-      return;
-    }
-
+    if (!result.ok) { setSubmitError(result.error); return; }
     navigate("/dashboard");
   };
 
   return (
     <div className="min-h-screen bg-cream px-5 py-8 sm:px-6 sm:py-10">
       <div className="mx-auto w-full max-w-[680px]">
-        {/* Back */}
-        <Link
-          to="/onboarding/kyc"
-          className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-ink transition-colors mb-6"
-        >
+
+        <Link to="/onboarding/kyc" className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-ink transition-colors mb-6">
           <ArrowLeft size={16} /> Back
         </Link>
 
-        {/* Step indicator */}
         <div className="flex items-center gap-2 mb-2">
-          <div className="h-1 w-8 rounded-pill bg-ficium" />
-          <div className="h-1 w-8 rounded-pill bg-ficium" />
-          <div className="h-1 w-8 rounded-pill bg-ficium" />
+          {[0,1,2].map(i => <div key={i} className="h-1 w-8 rounded-pill bg-ficium" />)}
           <span className="ml-2 text-xs text-muted">Step 3 of 3</span>
         </div>
 
         <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold mt-4">
           Financial profile
         </h1>
-        <p className="text-sm sm:text-base text-muted mt-2 mb-8">
-          Tell us about your finances so banks can give you accurate offers. The more complete your profile, the better the bids.
+        <p className="text-sm sm:text-base text-muted mt-2 mb-6">
+          The more you share, the better banks compete for you. This takes about 3 minutes.
         </p>
 
-        {/* Live score preview */}
-        <Card padded={false} className="p-4 mb-6 bg-gradient-to-br from-ficium/[0.04] to-mint/[0.06] border-ficium/15">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-ficium/10 text-ficium grid place-items-center">
-              <TrendingUp size={18} />
-            </div>
-            <div className="flex-1">
-              <div className="text-xs text-muted">Profile so far</div>
-              <div className="text-sm">
-                <span className="font-bold text-ink">{formatMUR(totalIncome)}</span>
-                <span className="text-muted"> /mo income · </span>
-                <span className="font-bold text-ink">{formatMUR(totalNetWorth)}</span>
-                <span className="text-muted"> net worth</span>
+        {/* ── LIVE HEALTH SCORE CARD ── */}
+        <div className="mb-6 rounded-2xl border border-ink/[0.07] bg-white overflow-hidden shadow-sm">
+          <div className="px-5 pt-5 pb-4">
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Sparkles size={16} style={{ color: health.colour }} />
+                  <span className="text-xs font-bold uppercase tracking-wider text-muted">Financial health score</span>
+                </div>
+                <div className="mt-1 flex items-baseline gap-2">
+                  <span className="font-display text-5xl font-bold" style={{ color: health.colour }}>
+                    {health.score}
+                  </span>
+                  <span className="text-muted text-lg">/100</span>
+                  <span className="ml-1 text-sm font-semibold" style={{ color: health.colour }}>{health.label}</span>
+                </div>
+              </div>
+              <div className="text-right text-xs text-muted space-y-1 mt-1">
+                <div><span className="font-semibold text-ink">{formatMUR(totalIncome)}</span>/mo income</div>
+                <div><span className="font-semibold text-ink">{formatMUR(totalNetWorth)}</span> net worth</div>
+                {totalRepayment > 0 && (
+                  <div className={dti > 40 ? "text-red-500 font-semibold" : "text-muted"}>
+                    DTI: {dti.toFixed(0)}%{dti > 40 ? " ⚠️" : ""}
+                  </div>
+                )}
               </div>
             </div>
+
+            {/* Score bar */}
+            <div className="w-full h-2 bg-ink/[0.06] rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-700 ease-out"
+                style={{ width: `${health.pct}%`, backgroundColor: health.colour }}
+              />
+            </div>
+
+            {/* Insight */}
+            <p className="text-[12px] text-muted mt-2.5 leading-relaxed">{health.insight}</p>
           </div>
-        </Card>
+
+          {/* Stats row */}
+          <div className="border-t border-ink/[0.06] grid grid-cols-3 divide-x divide-ink/[0.06]">
+            {[
+              { label: "Income", val: totalIncome > 0 ? formatMUR(totalIncome) + "/mo" : "—" },
+              { label: "Net worth", val: totalNetWorth > 0 ? formatMUR(totalNetWorth) : "—" },
+              { label: "DTI ratio", val: totalRepayment > 0 ? dti.toFixed(0) + "%" : "—" },
+            ].map(s => (
+              <div key={s.label} className="px-4 py-3 text-center">
+                <div className="text-[11px] text-muted">{s.label}</div>
+                <div className="text-sm font-bold text-ink mt-0.5">{s.val}</div>
+              </div>
+            ))}
+          </div>
+        </div>
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-5">
 
-          {/* ─────────── EMPLOYMENT ─────────── */}
+          {/* ─── EMPLOYMENT ─── */}
           <SectionCard icon={<Briefcase size={18} />} title="Employment" subtitle="Your main source of income">
             <Field label="Employment status" htmlFor="employmentStatus" error={errors.employmentStatus?.message}>
-              <Select
-                id="employmentStatus"
-                defaultValue=""
-                invalid={!!errors.employmentStatus}
-                {...register("employmentStatus")}
-              >
+              <Select id="employmentStatus" defaultValue="" invalid={!!errors.employmentStatus} {...register("employmentStatus")}>
                 <option value="" disabled>Choose your situation</option>
                 <option value="employed">Employed</option>
                 <option value="self_employed">Self-employed</option>
@@ -313,18 +345,30 @@ const totalIncome = (watchedIncome ?? []).reduce<number>((sum, v) => (sum ?? 0) 
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Field label="Monthly income (MUR)" htmlFor="monthlyIncome" error={errors.monthlyIncome?.message}>
-                <Input id="monthlyIncome" type="number" inputMode="numeric" placeholder="65000"
-                  invalid={!!errors.monthlyIncome}
-                  {...register("monthlyIncome", { valueAsNumber: true })} />
+                <Input id="monthlyIncome" type="number" inputMode="numeric" placeholder="65 000"
+                  invalid={!!errors.monthlyIncome} {...register("monthlyIncome", { valueAsNumber: true })} />
               </Field>
               <Field label="Additional income (MUR)" htmlFor="additionalIncome" optional error={errors.additionalIncome?.message}>
                 <Input id="additionalIncome" type="number" inputMode="numeric" placeholder="0"
-                  invalid={!!errors.additionalIncome}
-                  {...register("additionalIncome", { valueAsNumber: true })} />
+                  invalid={!!errors.additionalIncome} {...register("additionalIncome", { valueAsNumber: true })} />
               </Field>
             </div>
 
-            {/* Conditional: Employed */}
+            {/* Dependants */}
+            <Field label="Financial dependants" htmlFor="dependants" error={errors.dependants?.message}
+              hint="Number of people who depend on your income (e.g. children, spouse, parents)">
+              <div className="flex items-center gap-3">
+                <Users size={16} className="text-muted flex-shrink-0" />
+                <Select id="dependants" {...register("dependants", { valueAsNumber: true })}>
+                  {[0,1,2,3,4,5,6,7,8].map(n => (
+                    <option key={n} value={n}>{n === 0 ? "None" : n}</option>
+                  ))}
+                  <option value={9}>9+</option>
+                </Select>
+              </div>
+            </Field>
+
+            {/* Conditional employment fields */}
             {employmentStatus === "employed" && (
               <ConditionalGroup>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -336,12 +380,18 @@ const totalIncome = (watchedIncome ?? []).reduce<number>((sum, v) => (sum ?? 0) 
                   </Field>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <Field label="Industry" htmlFor="industry" optional error={errors.industry?.message}>
+                  <Field label="Industry" htmlFor="industry" optional>
                     <Input id="industry" placeholder="e.g. Banking" {...register("industry")} />
                   </Field>
-                  <Field label="Years of employment" htmlFor="yearsOfEmployment" optional error={errors.yearsOfEmployment?.message}>
-                    <Input id="yearsOfEmployment" type="number" step="0.5" inputMode="decimal"
-                      {...register("yearsOfEmployment", { valueAsNumber: true })} />
+                  <Field label="Years employed" htmlFor="yearsOfEmployment" optional>
+                    <Select id="yearsOfEmployment" defaultValue="" {...register("yearsOfEmployment", { valueAsNumber: true })}>
+                      <option value="">—</option>
+                      <option value={0.5}>Less than 1 year</option>
+                      <option value={2}>1–3 years</option>
+                      <option value={4}>3–5 years</option>
+                      <option value={7}>5–10 years</option>
+                      <option value={15}>10+ years</option>
+                    </Select>
                   </Field>
                 </div>
                 <Field label="Employment type" htmlFor="employmentType" error={errors.employmentType?.message}>
@@ -358,7 +408,6 @@ const totalIncome = (watchedIncome ?? []).reduce<number>((sum, v) => (sum ?? 0) 
               </ConditionalGroup>
             )}
 
-            {/* Conditional: Self-employed */}
             {employmentStatus === "self_employed" && (
               <ConditionalGroup>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -374,8 +423,13 @@ const totalIncome = (watchedIncome ?? []).reduce<number>((sum, v) => (sum ?? 0) 
                     <Input id="industry" {...register("industry")} />
                   </Field>
                   <Field label="Years in business" htmlFor="yearsInBusiness" optional>
-                    <Input id="yearsInBusiness" type="number" step="0.5"
-                      {...register("yearsInBusiness", { valueAsNumber: true })} />
+                    <Select id="yearsInBusiness" defaultValue="" {...register("yearsInBusiness", { valueAsNumber: true })}>
+                      <option value="">—</option>
+                      <option value={0.5}>Less than 1 year</option>
+                      <option value={2}>1–3 years</option>
+                      <option value={4}>3–5 years</option>
+                      <option value={7}>5+ years</option>
+                    </Select>
                   </Field>
                 </div>
                 <Field label="Avg monthly revenue (MUR)" htmlFor="averageMonthlyRevenue" optional>
@@ -388,7 +442,6 @@ const totalIncome = (watchedIncome ?? []).reduce<number>((sum, v) => (sum ?? 0) 
               </ConditionalGroup>
             )}
 
-            {/* Conditional: Business owner */}
             {employmentStatus === "business_owner" && (
               <ConditionalGroup>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -426,7 +479,6 @@ const totalIncome = (watchedIncome ?? []).reduce<number>((sum, v) => (sum ?? 0) 
               </ConditionalGroup>
             )}
 
-            {/* Conditional: Freelancer */}
             {employmentStatus === "freelance" && (
               <ConditionalGroup>
                 <Field label="Primary profession" htmlFor="primaryProfession" optional>
@@ -434,8 +486,12 @@ const totalIncome = (watchedIncome ?? []).reduce<number>((sum, v) => (sum ?? 0) 
                 </Field>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Field label="Years freelancing" htmlFor="yearsInBusiness" optional>
-                    <Input id="yearsInBusiness" type="number" step="0.5"
-                      {...register("yearsInBusiness", { valueAsNumber: true })} />
+                    <Select id="yearsInBusiness" defaultValue="" {...register("yearsInBusiness", { valueAsNumber: true })}>
+                      <option value="">—</option>
+                      <option value={0.5}>Less than 1 year</option>
+                      <option value={2}>1–3 years</option>
+                      <option value={7}>5+ years</option>
+                    </Select>
                   </Field>
                   <Field label="Primary clients region" htmlFor="primaryClientsRegion" optional>
                     <Input id="primaryClientsRegion" placeholder="e.g. Europe" {...register("primaryClientsRegion")} />
@@ -447,7 +503,6 @@ const totalIncome = (watchedIncome ?? []).reduce<number>((sum, v) => (sum ?? 0) 
               </ConditionalGroup>
             )}
 
-            {/* Conditional: Retired */}
             {employmentStatus === "retired" && (
               <ConditionalGroup>
                 <Field label="Pension income (MUR/month)" htmlFor="pensionIncome" optional>
@@ -460,7 +515,6 @@ const totalIncome = (watchedIncome ?? []).reduce<number>((sum, v) => (sum ?? 0) 
               </ConditionalGroup>
             )}
 
-            {/* Conditional: Student */}
             {employmentStatus === "student" && (
               <ConditionalGroup>
                 <Field label="Institution" htmlFor="institutionName" optional>
@@ -490,8 +544,9 @@ const totalIncome = (watchedIncome ?? []).reduce<number>((sum, v) => (sum ?? 0) 
             )}
           </SectionCard>
 
-          {/* ─────────── ASSETS ─────────── */}
+          {/* ─── ASSETS ─── */}
           <SectionCard icon={<Wallet size={18} />} title="Assets" subtitle="A complete picture helps banks offer better rates">
+            <p className="text-[13px] text-muted -mt-1">Include what you own. Even partial information improves your bids.</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <AssetField label="Savings" name="savings" register={register} errors={errors} />
               <AssetField label="Investments" name="investments" register={register} errors={errors} />
@@ -500,7 +555,7 @@ const totalIncome = (watchedIncome ?? []).reduce<number>((sum, v) => (sum ?? 0) 
               <AssetField label="Business assets" name="businessAssets" register={register} errors={errors} />
               <AssetField label="Other assets" name="otherAssets" register={register} errors={errors} />
             </div>
-            <div className="mt-3 px-3.5 py-3 bg-mint/[0.15] border border-mint/30 rounded-xl flex items-center justify-between">
+            <div className="mt-1 px-4 py-3 bg-mint/[0.15] border border-mint/30 rounded-xl flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <TrendingUp size={16} className="text-ink" />
                 <span className="text-sm font-semibold">Total net worth</span>
@@ -509,19 +564,29 @@ const totalIncome = (watchedIncome ?? []).reduce<number>((sum, v) => (sum ?? 0) 
             </div>
           </SectionCard>
 
-          {/* ─────────── EXISTING LOANS ─────────── */}
+          {/* ─── LOANS ─── */}
           <SectionCard icon={<CreditCard size={18} />} title="Existing loans" subtitle="Banks need this for affordability checks">
+            {/* DTI display if applicable */}
+            {hasExistingLoans && totalRepayment > 0 && totalIncome > 0 && (
+              <div className={`px-4 py-3 rounded-xl border text-[13px] font-medium ${
+                dti < 30 ? "bg-green-50 border-green-200 text-green-700"
+                : dti < 45 ? "bg-amber-50 border-amber-200 text-amber-700"
+                : "bg-red-50 border-red-200 text-red-600"
+              }`}>
+                Your debt-to-income ratio is <strong>{dti.toFixed(0)}%</strong> —{" "}
+                {dti < 30 ? "excellent. Most banks will be comfortable with this."
+                : dti < 45 ? "moderate. Some banks may factor this into their rates."
+                : "high. This may limit the number of bids you receive."}
+              </div>
+            )}
+
             <div className="flex gap-2">
-              <Controller
-                control={control}
-                name="hasExistingLoans"
-                render={({ field }) => (
-                  <>
-                    <ToggleChip active={field.value === false} onClick={() => field.onChange(false)}>No loans</ToggleChip>
-                    <ToggleChip active={field.value === true} onClick={() => field.onChange(true)}>Yes, I have loans</ToggleChip>
-                  </>
-                )}
-              />
+              <Controller control={control} name="hasExistingLoans" render={({ field }) => (
+                <>
+                  <ToggleChip active={field.value === false} onClick={() => field.onChange(false)}>No loans</ToggleChip>
+                  <ToggleChip active={field.value === true} onClick={() => field.onChange(true)}>Yes, I have loans</ToggleChip>
+                </>
+              )} />
             </div>
 
             {hasExistingLoans && (
@@ -564,11 +629,9 @@ const totalIncome = (watchedIncome ?? []).reduce<number>((sum, v) => (sum ?? 0) 
                     </Field>
                   </Card>
                 ))}
-                <button
-                  type="button"
+                <button type="button"
                   onClick={() => appendLoan({ loanType: "personal", outstandingAmount: 0, monthlyRepayment: 0, bankName: "" })}
-                  className="flex items-center justify-center gap-2 w-full px-4 py-3 border-2 border-dashed border-ink/15 rounded-xl text-sm font-semibold text-muted hover:border-ficium hover:text-ficium transition-colors"
-                >
+                  className="flex items-center justify-center gap-2 w-full px-4 py-3 border-2 border-dashed border-ink/15 rounded-xl text-sm font-semibold text-muted hover:border-ficium hover:text-ficium transition-colors">
                   <Plus size={16} /> Add another loan
                 </button>
                 {errors.loans?.message && (
@@ -578,7 +641,7 @@ const totalIncome = (watchedIncome ?? []).reduce<number>((sum, v) => (sum ?? 0) 
             )}
           </SectionCard>
 
-          {/* ─────────── COMPLIANCE ─────────── */}
+          {/* ─── COMPLIANCE ─── */}
           <SectionCard icon={<Shield size={18} />} title="Compliance" subtitle="Required by financial regulations">
             <Field label="Source of wealth" htmlFor="sourceOfWealth" error={errors.sourceOfWealth?.message}>
               <Select id="sourceOfWealth" defaultValue="" {...register("sourceOfWealth")}>
@@ -599,11 +662,13 @@ const totalIncome = (watchedIncome ?? []).reduce<number>((sum, v) => (sum ?? 0) 
               </Field>
             )}
 
-            <Field label="Tax residency" htmlFor="taxResidency" hint="Country code where you pay tax" error={errors.taxResidency?.message}>
+            <Field label="Tax residency" htmlFor="taxResidency" hint="Country where you pay tax" error={errors.taxResidency?.message}>
               <Select id="taxResidency" {...register("taxResidency")}>
                 <option value="MU">Mauritius</option>
                 <option value="IN">India</option>
                 <option value="ZA">South Africa</option>
+                <option value="RE">Réunion</option>
+                <option value="SC">Seychelles</option>
                 <option value="FR">France</option>
                 <option value="GB">United Kingdom</option>
                 <option value="OTHER">Other</option>
@@ -626,7 +691,7 @@ const totalIncome = (watchedIncome ?? []).reduce<number>((sum, v) => (sum ?? 0) 
             </div>
 
             <div className="border-t border-ink/10 pt-4">
-              <div className="text-xs font-bold tracking-wide uppercase text-muted mb-3">Credit history</div>
+              <div className="text-xs font-bold tracking-wide uppercase text-muted mb-1">Credit history</div>
               <p className="text-xs text-muted mb-3">Have any of the following ever applied to you?</p>
               <div className="flex flex-col gap-2.5">
                 <CheckboxRow label="Missed loan repayments" {...register("missedRepayments")} />
@@ -637,13 +702,23 @@ const totalIncome = (watchedIncome ?? []).reduce<number>((sum, v) => (sum ?? 0) 
             </div>
           </SectionCard>
 
-          {/* Privacy reassurance */}
+          {/* Privacy + nudge */}
           <div className="flex gap-3 px-3.5 py-3 bg-ficium/[0.04] border border-ficium/15 rounded-xl">
             <ShieldCheck size={20} className="text-ficium flex-shrink-0 mt-0.5" />
             <p className="text-[13px] text-ink/80 leading-relaxed">
               Banks see your financial profile anonymized — never your name or contact details — until you accept a bid.
             </p>
           </div>
+
+          {health.score >= 60 && (
+            <div className="flex items-center gap-3 px-4 py-3 bg-green-50 border border-green-200 rounded-xl">
+              <Sparkles size={18} className="text-green-600 flex-shrink-0" />
+              <p className="text-[13px] text-green-800 font-medium">
+                Your profile looks strong. Banks will be competing for you.
+              </p>
+              <ChevronRight size={16} className="text-green-600 ml-auto flex-shrink-0" />
+            </div>
+          )}
 
           {submitError && (
             <div role="alert" className="px-3.5 py-3 bg-red-50 border border-red-200 text-red-800 rounded-xl text-[13px]">
@@ -661,19 +736,13 @@ const totalIncome = (watchedIncome ?? []).reduce<number>((sum, v) => (sum ?? 0) 
   );
 }
 
-/* ============================================================
-   SUB-COMPONENTS
-   ============================================================ */
+/* ============================================================ SUB-COMPONENTS ============================================================ */
 
-function SectionCard({
-  icon, title, subtitle, children,
-}: { icon: React.ReactNode; title: string; subtitle: string; children: React.ReactNode }) {
+function SectionCard({ icon, title, subtitle, children }: { icon: React.ReactNode; title: string; subtitle: string; children: React.ReactNode }) {
   return (
     <Card>
       <div className="flex items-start gap-3 mb-4 pb-4 border-b border-ink/10">
-        <div className="w-10 h-10 rounded-xl bg-ficium/10 text-ficium grid place-items-center flex-shrink-0">
-          {icon}
-        </div>
+        <div className="w-10 h-10 rounded-xl bg-ficium/10 text-ficium grid place-items-center flex-shrink-0">{icon}</div>
         <div>
           <div className="font-display text-lg font-bold">{title}</div>
           <div className="text-xs text-muted mt-0.5">{subtitle}</div>
@@ -692,52 +761,38 @@ function ConditionalGroup({ children }: { children: React.ReactNode }) {
   );
 }
 
-function ToggleChip({
-  active, onClick, children,
-}: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+function ToggleChip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={[
-        "px-4 py-2.5 rounded-pill text-sm font-semibold border-[1.5px] transition-colors",
-        active ? "bg-ink text-cream border-ink" : "bg-transparent text-ink border-ink/15 hover:border-ink/30",
-      ].join(" ")}
-    >
+    <button type="button" onClick={onClick} className={[
+      "px-4 py-2.5 rounded-pill text-sm font-semibold border-[1.5px] transition-colors",
+      active ? "bg-ink text-cream border-ink" : "bg-transparent text-ink border-ink/15 hover:border-ink/30",
+    ].join(" ")}>
       {children}
     </button>
   );
 }
 
-function AssetField({
-  label, name, register, errors,
-}: { label: string; name: keyof FormData; register: any; errors: any }) {
+function AssetField({ label, name, register, errors }: { label: string; name: keyof FormData; register: unknown; errors: unknown }) {
+  const reg = register as (name: string, opts: object) => object;
+  const err = errors as Record<string, { message?: string }>;
   return (
-    <Field label={label} htmlFor={name} error={errors[name]?.message}>
+    <Field label={label} htmlFor={name} error={err[name]?.message}>
       <Input id={name} type="number" inputMode="numeric" placeholder="0"
-        invalid={!!errors[name]}
-        {...register(name, { valueAsNumber: true })} />
+        invalid={!!err[name]} {...reg(name, { valueAsNumber: true })} />
     </Field>
   );
 }
 
-function CheckboxRow(props: any) {
+function CheckboxRow(props: React.InputHTMLAttributes<HTMLInputElement> & { label: string }) {
+  const { label, ...rest } = props;
   return (
     <label className="flex items-center gap-3 text-sm cursor-pointer">
-      <input type="checkbox" {...props} className="w-4 h-4 accent-ficium" />
-      <span>{props.label}</span>
+      <input type="checkbox" {...rest} className="w-4 h-4 accent-ficium" />
+      <span>{label}</span>
     </label>
   );
 }
 
-/* ============================================================
-   HELPERS
-   ============================================================ */
-
 function formatMUR(amount: number): string {
-  return new Intl.NumberFormat("en-MU", {
-    style: "currency",
-    currency: "MUR",
-    maximumFractionDigits: 0,
-  }).format(amount || 0);
+  return new Intl.NumberFormat("en-MU", { style: "currency", currency: "MUR", maximumFractionDigits: 0 }).format(amount || 0);
 }

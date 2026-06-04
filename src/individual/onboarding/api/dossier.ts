@@ -42,7 +42,7 @@ export type ComplianceDetails = {
 };
 
 export type DossierInput = {
-  employmentStatus: EmploymentStatus; monthlyIncome: number; additionalIncome: number;
+  employmentStatus: EmploymentStatus; monthlyIncome: number; additionalIncome: number; dependants?: number;
   employmentDetails: EmploymentDetails; assets: AssetDetails;
   hasExistingLoans: boolean; loans: LoanEntry[]; compliance: ComplianceDetails;
 };
@@ -137,6 +137,7 @@ export async function submitDossier(input: DossierInput): Promise<DossierResult>
       client_id: userId,
       employment_status: input.employmentStatus,
       monthly_income: input.monthlyIncome,
+      dependants:     input.dependants ?? 0,
       additional_income: input.additionalIncome,
       total_net_worth: computeNetWorth(input.assets),
       has_existing_loans: input.hasExistingLoans,
