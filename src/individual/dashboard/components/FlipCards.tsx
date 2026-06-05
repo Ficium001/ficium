@@ -43,9 +43,9 @@ export function FlipCards({
           <SparkSlot><MiniSparkline points={SPARK_HEALTH} color="#ef4444" /></SparkSlot>
         </FlipFront>
         <FlipBack dark={dark}>
-          <Stat value="↓ 3 pts" color="text-red-500"  label="vs last month" dark={dark} />
+          <Stat value="↓ 3 pts" color="text-red-500"  label="vs last month"/>
           <Divider dark={dark} />
-          <Stat value="2 flags" color={dark ? "text-white" : "text-ink"} label="need action" dark={dark} />
+          <Stat value="2 flags" color={dark ? "text-white" : "text-ink"} label="need action"/>
         </FlipBack>
       </FlipCard>
 
@@ -61,9 +61,9 @@ export function FlipCards({
           <SparkSlot><MiniSparkline points={SPARK_NETWORTH} color="#2A1FE6" /></SparkSlot>
         </FlipFront>
         <FlipBack dark={dark}>
-          <Stat value="↑ 5 pts" color="text-emerald-600" label="vs last month" dark={dark} />
+          <Stat value="↑ 5 pts" color="text-emerald-600" label="vs last month"/>
           <Divider dark={dark} />
-          <Stat value="Top 20%" color={dark ? "text-white" : "text-ink"} label="of applicants" dark={dark} />
+          <Stat value="Top 20%" color={dark ? "text-white" : "text-ink"} label="of applicants"/>
         </FlipBack>
       </FlipCard>
 
@@ -84,9 +84,9 @@ export function FlipCards({
           <SparkSlot><MiniSparkline points={SPARK_REQUESTS} color="#10b981" /></SparkSlot>
         </FlipFront>
         <FlipBack dark={dark}>
-          <Stat value={`${totalNewBids} bids`} color={dark ? "text-white" : "text-ink"} label="awaiting review" dark={dark} />
+          <Stat value={`${totalNewBids} bids`} color={dark ? "text-white" : "text-ink"} label="awaiting review"/>
           <Divider dark={dark} />
-          <Stat value="~2 days" color="text-amber-600" label="avg. response" dark={dark} />
+          <Stat value="~2 days" color="text-amber-600" label="avg. response"/>
         </FlipBack>
       </FlipCard>
 
@@ -185,13 +185,13 @@ function SparkSlot({ children }: { children: React.ReactNode }) {
   return <div className="mt-auto -mx-3.5 -mb-3.5">{children}</div>;
 }
 
-function Stat({ value, color, label, dark }: {
-  value: string; color: string; label: string; dark: boolean;
+function Stat({ value, color, label }: {
+  value: string; color: string; label: string;
 }) {
   return (
     <div>
       <div className={["text-[15px] font-extrabold", color].join(" ")}>{value}</div>
-      <div className={["text-[9px] font-semibold", dark ? "text-white/40" : "text-muted"].join(" ")}>{label}</div>
+      <div className="text-[9px] font-semibold text-muted">{label}</div>
     </div>
   );
 }
