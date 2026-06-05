@@ -36,11 +36,12 @@ export function WhatAreYouPlanningSection() {
 
       {/* Input */}
       <div className="rounded-xl border border-ink/[0.10] px-4 py-3 mb-2 bg-cream focus-within:border-ficium/50 focus-within:ring-2 focus-within:ring-ficium/10 transition-all">
-        <input
+        <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Example: I want to buy a house in Flic en Flac for Rs 5M"
-          className="w-full text-[13px] text-ink placeholder:text-muted/50 bg-transparent outline-none"
+          placeholder={"Example: I want to buy a house in Flic en Flac for Rs 5M\nOr: I want to invest Rs 10k monthly for my retirement\nOr: I need a vehicle loan for Rs 600k"}
+          rows={3}
+          className="w-full text-[13px] text-ink placeholder:text-muted/50 bg-transparent outline-none resize-none leading-relaxed"
         />
       </div>
       <button className="flex items-center gap-1.5 text-[12px] font-semibold text-ficium hover:underline mb-5 sm:mb-6">
