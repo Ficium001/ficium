@@ -21,7 +21,11 @@ export function DashboardTopBar({
         </div>
         <div className="min-w-0">
           <div className="text-[13px] text-white/50 font-medium">{greeting},</div>
-          <div className="text-[20px] font-bold text-white truncate leading-tight">{name}</div>
+          {name ? (
+            <div className="text-[20px] font-bold text-white truncate leading-tight">{name}</div>
+          ) : (
+            <div className="h-6 w-28 bg-white/20 rounded-lg animate-pulse" />
+          )}
         </div>
       </div>
 

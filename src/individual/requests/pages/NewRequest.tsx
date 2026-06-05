@@ -64,7 +64,7 @@ export default function NewRequest() {
   /* Gate */
   useEffect(() => {
     if (profileLoading || !profile) return;
-    if (profile.kycStatus !== "verified") { navigate("/onboarding/kyc",      { replace: true }); return; }
+    if (profile.kycStatus === "pending") { navigate("/onboarding/kyc",       { replace: true }); return; }
     if (!profile.hasDossier)               { navigate("/onboarding/dossier", { replace: true }); }
   }, [profile, profileLoading, navigate]);
 

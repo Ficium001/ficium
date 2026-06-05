@@ -37,8 +37,8 @@ export default function Dashboard() {
   const readyToRequest = kycVerified && hasDossier;
   const activeRequests = requests.filter((r) => r.status === "open").length;
   const totalNewBids   = requests.reduce((s, r) => s + r.bidCount, 0);
-  const name           = profile?.firstName ?? profile?.fullName ?? "there";
-  const initial        = name[0]?.toUpperCase() ?? "?";
+  const name           = profileLoading ? "" : (profile?.firstName ?? profile?.fullName ?? "");
+  const initial        = name?.[0]?.toUpperCase() ?? (profileLoading ? "" : "?");
 
   // Real financial numbers from snapshot — zero if not entered yet
   const netWorth       = snapshot?.netWorth      ?? profile?.totalNetWorth ?? null;
