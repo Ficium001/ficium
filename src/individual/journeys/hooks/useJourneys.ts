@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  getMyJourneys, getJourney, createJourney, updateJourney,
+  getMyJourneys, getJourney, createJourney,
   getJourneyTasks, completeTask, calculateAffordability,
   type Journey, type JourneyType, type JourneyAnswers, type JourneyAIResults, type JourneyTask,
 } from "@/individual/journeys/api/journeys";

@@ -13,12 +13,12 @@ import {
 
 // Each category maps to an existing NewRequest product type
 const CATEGORIES = [
-  { icon: Home,          label: "Buy a House",    iconColor: "#2A1FE6", bg: "rgba(42,31,230,0.10)",  route: "/journeys/new?type=mortgage"   },
-  { icon: Car,           label: "Buy a Vehicle",  iconColor: "#2A1FE6", bg: "rgba(42,31,230,0.10)",  route: "/journeys/new?type=vehicle"    },
-  { icon: GraduationCap, label: "Education",      iconColor: "#059669", bg: "rgba(5,150,105,0.10)",  route: "/journeys/new?type=education"  },
-  { icon: Plane,         label: "Travel",         iconColor: "#d97706", bg: "rgba(217,119,6,0.10)",  route: "/journeys/new?type=travel"     },
-  { icon: TrendingUp,    label: "Invest Money",   iconColor: "#2A1FE6", bg: "rgba(42,31,230,0.10)",  route: "/journeys/new?type=investment" },
-  { icon: Briefcase,     label: "Start Business", iconColor: "#7c3aed", bg: "rgba(124,58,237,0.10)", route: "/journeys/new?type=business"   },
+  { id: "mortgage",         icon: Home,          label: "Buy a House",    iconColor: "#2A1FE6", bg: "rgba(42,31,230,0.10)",  route: "/journeys/new?type=mortgage"   },
+  { id: "vehicle",          icon: Car,           label: "Buy a Vehicle",  iconColor: "#2A1FE6", bg: "rgba(42,31,230,0.10)",  route: "/journeys/new?type=vehicle"    },
+  { id: "education",        icon: GraduationCap, label: "Education",      iconColor: "#059669", bg: "rgba(5,150,105,0.10)",  route: "/journeys/new?type=education"  },
+  { id: "travel",           icon: Plane,         label: "Travel",         iconColor: "#d97706", bg: "rgba(217,119,6,0.10)",  route: "/journeys/new?type=travel"     },
+  { id: "investment",       icon: TrendingUp,    label: "Invest Money",   iconColor: "#2A1FE6", bg: "rgba(42,31,230,0.10)",  route: "/journeys/new?type=investment" },
+  { id: "business",         icon: Briefcase,     label: "Start Business", iconColor: "#7c3aed", bg: "rgba(124,58,237,0.10)", route: "/journeys/new?type=business"   },
 ];
 
 const ATTACH_OPTIONS = [

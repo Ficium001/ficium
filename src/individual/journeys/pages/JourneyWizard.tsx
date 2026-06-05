@@ -2,7 +2,7 @@
 // Ficium — Journey Wizard (/journeys/new?type=X)
 // Adaptive Q&A → AI calculation → Journey created → Workspace
 // =============================================================
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft, ArrowRight, CheckCircle2, Loader2,
@@ -127,7 +127,7 @@ const JOURNEY_CONFIG: Record<JourneyType, {
 
 // ── Journey Result Card ───────────────────────────────────────
 function JourneyResultCard({
-  type, title, answers, aiResults, onConfirm, onBack, creating,
+  type, title, answers: _answers, aiResults, onConfirm, onBack, creating,
 }: {
   type: JourneyType; title: string; answers: JourneyAnswers;
   aiResults: JourneyAIResults; onConfirm: () => void; onBack: () => void; creating: boolean;
