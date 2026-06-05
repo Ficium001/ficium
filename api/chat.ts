@@ -1,25 +1,50 @@
 /**
  * api/chat.ts
  * POST /api/chat
- * Ficium AI Financial Coach — now with full user profile context.
- * Claude knows exactly who the user is, their finances, and their journeys.
+ * Ficium AI Financial Coach — with real user profile context.
+ * Uses direct Supabase REST fetch (no getServiceDb import) to stay
+ * compatible with Vercel's node16 moduleResolution for api/ routes.
  */
 import Anthropic              from "@anthropic-ai/sdk";
-import { Env }                from "./_lib/env.js";
-import { IntelligenceService } from "./_lib/intelligence-service.js";
-import { Response }           from "./_lib/response.js";
-import { getServiceDb }       from "./_lib/db.js";
+import { Env }                from "./_lib/env";
+import { IntelligenceService } from "./_lib/intelligence-service";
+import { Response }           from "./_lib/response";
 
 export const config = { runtime: "nodejs" };
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 type RequestBody = {
   messages?:   ChatMessage[];
-  userId?:     string;   // optional — injected by client when available
-  journeyCtx?: string;  // optional — journey-specific context
+  userId?:     string;
+  journeyCtx?: string;
 };
 
-// ── Build user-aware system prompt ───────────────────────────
+// ── Fetch user profile via Supabase REST (no SDK import needed) ──
+async function fetchUserProfile(userId: string): Promise<Record<string, unknown> | null> {
+  const url = Env.supabaseUrl();
+  const key = Env.supabaseServiceKey();
+  if (!url || !key || !userId) return null;
+
+  try {
+    const res = await fetch(
+      `${url}/rest/v1/client_profile_view?user_id=eq.${userId}&limit=1`,
+      {
+        headers: {
+          "apikey":        key,
+          "Authorization": `Bearer ${key}`,
+          "Content-Type":  "application/json",
+        },
+      }
+    );
+    if (!res.ok) return null;
+    const rows = await res.json() as Record<string, unknown>[];
+    return rows[0] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// ── Build system prompt with user context ────────────────────
 async function buildSystemPrompt(userId?: string, journeyCtx?: string): Promise<string> {
   const BASE = `\
 You are Ficium AI — an intelligent personal financial coach for clients in Mauritius \
@@ -36,72 +61,53 @@ You help users:
 
 Tone: warm, direct, practical, specific. Use the user's real numbers — never guess.
 Keep responses under 200 words unless the user asks for detail.
-Always be specific: "Your debt-to-income ratio is 45% — above the 40% threshold banks prefer" \
-is better than "Your debt ratio is high."
-Do not: guarantee approvals, recommend a specific bank by name unless comparing bids received, \
-give advice that requires a licensed financial advisor.`;
+Always be specific: cite real figures from their profile when available.
+Do not: guarantee approvals, recommend a specific bank by name unless comparing bids received.`;
 
   const parts: string[] = [BASE];
 
-  // ── Inject live market intelligence ──────────────────────
+  // Live market intelligence
   try {
-    const marketSummary = await IntelligenceService.getSummary();
-    if (marketSummary) parts.push(`\n${marketSummary}`);
+    const summary = await IntelligenceService.getSummary();
+    if (summary) parts.push(`\n${summary}`);
   } catch { /* degrade gracefully */ }
 
-  // ── Inject user financial profile ────────────────────────
+  // User financial profile
   if (userId) {
-    try {
-      const db = getServiceDb();
-      const { data: profile } = await db
-        .from("client_profile_view")
-        .select("*")
-        .eq("user_id", userId)
-        .maybeSingle();
-
-      if (profile) {
-        const fmt = (n: number | null) => n ? `MUR ${Number(n).toLocaleString()}` : "not provided";
-        const pct  = (n: number | null) => n != null ? `${n}%` : "not calculated";
-
-        const profileSection = [
-          "\n=== THIS USER'S FINANCIAL PROFILE ===",
-          `Name: ${profile.full_name ?? "Unknown"}`,
-          `Employment: ${profile.employment_status ?? "not provided"}`,
-          `Monthly income: ${fmt(profile.monthly_income)}`,
-          `Monthly expenses: ${fmt(profile.monthly_expenses)}`,
-          `Monthly loan payments: ${fmt(profile.monthly_loan_payments)}`,
-          `Monthly savings: ${fmt(profile.monthly_savings)}`,
-          "",
-          `Total assets: ${fmt(profile.total_assets)}`,
-          `  - Cash & savings: ${fmt(profile.cash_savings)}`,
-          `  - Fixed deposits: ${fmt(profile.fixed_deposits)}`,
-          `  - Investments: ${fmt(profile.investments_value)}`,
-          `  - Property: ${fmt(profile.property_value)}`,
-          `  - Vehicles: ${fmt(profile.vehicle_value)}`,
-          "",
-          `Total liabilities: ${fmt(profile.total_liabilities)}`,
-          `  - Mortgage: ${fmt(profile.mortgage_balance)}`,
-          `  - Personal loans: ${fmt(profile.personal_loan_balance)}`,
-          `  - Credit cards: ${fmt(profile.credit_card_balance)}`,
-          `  - Vehicle loans: ${fmt(profile.vehicle_loan_balance)}`,
-          "",
-          `Net worth: ${fmt(profile.net_worth ?? profile.total_net_worth)}`,
-          `Debt-to-income ratio: ${profile.debt_to_income_ratio != null ? `${profile.debt_to_income_ratio}%` : "not calculated"}`,
-          "",
-          `Financial health score: ${pct(profile.health_score)} ${profile.health_score != null ? (profile.health_score >= 70 ? "(Good)" : profile.health_score >= 50 ? "(Fair)" : "(Needs improvement)") : ""}`,
-          `Bank readiness score: ${pct(profile.affordability_score)}`,
-          `KYC status: ${profile.kyc_status ?? "pending"}`,
-          `Has existing loans: ${profile.has_existing_loans ? "Yes" : "No"}`,
-          `Profile completion: ${profile.completion_percent ?? 20}%`,
-          "=== END OF USER PROFILE ===",
-          "Use these exact numbers in your responses. Be specific and personal.",
-        ];
-        parts.push(profileSection.join("\n"));
-      }
-    } catch { /* degrade gracefully — answer without profile */ }
+    const p = await fetchUserProfile(userId);
+    if (p) {
+      const fmt = (n: unknown) => n ? `MUR ${Number(n).toLocaleString()}` : "not provided";
+      const pct  = (n: unknown) => n != null ? `${n}%` : "not calculated";
+      parts.push([
+        "\n=== THIS USER'S FINANCIAL PROFILE ===",
+        `Name: ${p.full_name ?? "Unknown"}`,
+        `Employment: ${p.employment_status ?? "not provided"}`,
+        `Monthly income: ${fmt(p.monthly_income)}`,
+        `Monthly expenses: ${fmt(p.monthly_expenses)}`,
+        `Monthly loan payments: ${fmt(p.monthly_loan_payments)}`,
+        `Monthly savings: ${fmt(p.monthly_savings)}`,
+        `Total assets: ${fmt(p.total_assets)}`,
+        `  Cash & savings: ${fmt(p.cash_savings)}`,
+        `  Fixed deposits: ${fmt(p.fixed_deposits)}`,
+        `  Investments: ${fmt(p.investments_value)}`,
+        `  Property: ${fmt(p.property_value)}`,
+        `  Vehicles: ${fmt(p.vehicle_value)}`,
+        `Total liabilities: ${fmt(p.total_liabilities)}`,
+        `  Mortgage: ${fmt(p.mortgage_balance)}`,
+        `  Personal loans: ${fmt(p.personal_loan_balance)}`,
+        `  Credit cards: ${fmt(p.credit_card_balance)}`,
+        `Net worth: ${fmt(p.net_worth ?? p.total_net_worth)}`,
+        `Debt-to-income ratio: ${p.debt_to_income_ratio != null ? `${p.debt_to_income_ratio}%` : "not calculated"}`,
+        `Financial health score: ${pct(p.health_score)}`,
+        `Bank readiness: ${pct(p.affordability_score)}`,
+        `KYC status: ${p.kyc_status ?? "pending"}`,
+        `Has existing loans: ${p.has_existing_loans ? "Yes" : "No"}`,
+        "=== END OF USER PROFILE ===",
+        "Use these exact numbers. Be specific and personal.",
+      ].join("\n"));
+    }
   }
 
-  // ── Inject journey context if provided ───────────────────
   if (journeyCtx) {
     parts.push(`\n=== CURRENT JOURNEY CONTEXT ===\n${journeyCtx}\n=== END ===`);
   }
