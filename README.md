@@ -1,9 +1,8 @@
-# Ficium 3
+# Ficium
 
-Reverse-banking marketplace for Mauritius. Clients post anonymized financial requests;
-licensed institutions compete with bids.
+> **Reverse-banking marketplace for Mauritius.** Clients post anonymised financial requests; FSC-licensed institutions compete with bids. The client picks the winner.
 
-**Production:** [ficium.vercel.app](https://ficium.vercel.app)
+**Production:** [ficium.vercel.app](https://ficium.vercel.app) · **Stack:** React 19 · TypeScript · Supabase · Vercel · Tailwind
 
 ---
 
@@ -11,86 +10,67 @@ licensed institutions compete with bids.
 
 ```bash
 npm install
-npm run dev        # local dev server
-npm run build      # type-check + production build
+cp .env.example .env          # fill in your Supabase credentials
+npm run dev                   # http://localhost:5173
+npm run build                 # type-check + production bundle
 ```
 
-Required environment variables (`.env`):
+### Required environment variables
 
-```
-VITE_SUPABASE_URL=https://<project>.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=<publishable-key>
-```
-
----
-
-## Architecture at a glance
-
-Three role-gated apps in one React SPA, backed by three isolated Postgres schemas.
-
-| App | Route | Role | Schema |
-|-----|-------|------|--------|
-| Individual / business client | `/dashboard` | `client` | `public` |
-| Institution portal | `/institution` | `bank` | `institution` |
-| Admin console | `/admin` | `admin` | `admin` |
-
-- **Stack:** React 19 · TypeScript · Vite · Tailwind · TanStack Query · Supabase
-- **Auth:** Supabase GoTrue; role read from `public.users` (not JWT)
-- **Data clients:** one unified factory in `src/shared/lib/supabase.ts` — never call
-  `createClient()` directly
-- **Security:** RLS on every table + maker-checker on every material institution action
-- **Audit:** append-only WORM log for FSC Mauritius compliance
+| Variable | Description |
+|---|---|
+| `VITE_SUPABASE_URL` | Supabase project URL |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase anon/publishable key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server-side only — Vercel env vars |
+| `ANTHROPIC_API_KEY` | Claude AI (server-side) |
+| `RESEND_API_KEY` | Transactional email |
 
 ---
 
 ## Documentation
 
-The complete A–Z technical reference lives in [`/docs`](./docs):
-
 | Document | Contents |
-|----------|----------|
-| `FICIUM_DOCUMENTATION.md` | Full reference: architecture, data dictionary, RLS, RPCs, flows, runbook, glossary (27 sections) |
-| `SCHEMA_REFERENCE.sql` | Executable schema reference + live-DB inspection queries |
-| `ARCHITECTURE_REVIEW.md` | Honest review against modularity / enterprise / scale / ease-of-change goals, with a prioritised action list |
-| `SCALING.md` | Staged growth plan and an honest discussion of the real bottlenecks |
-| `MODULE_PATTERN.md` | The canonical feature-module structure (reference: `markets/`) that all features should follow |
-
-Database migrations are in [`/database`](./database) and [`/supabase/migrations`](./supabase/migrations), run in numbered order.
-
----
-
-## Repository layout
-
-```
-src/
-  app/          route table + guards
-  shared/       supabase factory, auth, ui primitives, design tokens
-  features/     cross-cutting auth + marketing pages
-  individual/   client app (dashboard, requests, advisor, alerts, markets)
-  business/     business registration
-  institution/  institution portal (dashboard, marketplace, bids, ...)
-  admin/        platform admin console
-api/            Vercel serverless functions (Claude AI advisor)
-database/       SQL migrations
-docs/           technical documentation
-```
-
-See `docs/FICIUM_DOCUMENTATION.md` §4 for the full annotated tree.
+|---|---|
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Full system architecture, design decisions, constraints |
+| [docs/USER_GUIDE.md](docs/USER_GUIDE.md) | End-user guide for individuals and institutions |
+| [docs/TECHNICAL.md](docs/TECHNICAL.md) | Developer guide — code conventions, adding features |
+| [docs/DATABASE.md](docs/DATABASE.md) | Schema, RLS policies, migrations, data dictionary |
+| [docs/API.md](docs/API.md) | All API endpoints — request/response shapes |
+| [docs/SCALING.md](docs/SCALING.md) | Growth path — when to add what infrastructure |
+| [docs/SCHEMA_REFERENCE.sql](docs/SCHEMA_REFERENCE.sql) | Executable schema reference and inspection queries |
 
 ---
 
-## Key conventions
+## Architecture at a glance
 
-- **Supabase clients:** import `supabase`, `institutionDb`, `adminDb`, or `db(schema)`
-  from `src/shared/lib/supabase.ts`. One auth session is shared across all schemas.
-- **Imports:** use the `@/` alias for cross-folder imports (e.g.
-  `@/shared/lib/supabase`), configured in `tsconfig.app.json` + `vite.config.ts`.
-  Relative imports are only for siblings in the same folder.
-- **New features:** follow the module pattern in `docs/MODULE_PATTERN.md`
-  (types → config → api → hooks → components → thin page). `individual/markets/`
-  is the reference implementation.
-- **Institution types:** all in `src/institution/types/institution.ts` — never scatter.
-- **Maker-checker:** material actions call `submit_for_approval()`; a second admin
-  approves via `approve_action()` (maker ≠ checker enforced).
-- **Design:** cream background, white cards, `ficium` indigo. No dark theme. Tokens in
-  `tailwind.config.js` / `src/shared/lib/tokens.ts`.
+Three role-gated apps in one React SPA, backed by three isolated Postgres schemas with RLS.
+
+```
+Browser (React SPA)
+  ├── /                   → Marketing (public)
+  ├── /dashboard          → Individual client app
+  ├── /institution        → Institution portal
+  └── /admin              → Admin panel
+
+Vercel Edge / Serverless
+  └── /api/*              → Claude AI, Intelligence, KYC, Markets
+
+Supabase (Postgres + Auth + Realtime + Storage)
+  ├── public schema       → clients, requests, bids, audit
+  ├── institution schema  → institutions, members, products, bids
+  └── admin schema        → config, overrides
+```
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full picture.
+
+---
+
+## Roles
+
+| Role | Entry point | Auth |
+|---|---|---|
+| `client` | `/login` → `/dashboard` | Supabase email/password |
+| `bank` | `/institution/login` → `/institution` | Same auth, different role |
+| `admin` | `/admin` | Same auth, `admin` role |
+
+Role is determined at sign-in via the `get_my_role()` Postgres RPC and cached in `AuthContext`.
