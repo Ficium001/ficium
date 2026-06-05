@@ -4,7 +4,6 @@
 // Steps: product → amount/term → purpose → review → submit
 // =============================================================
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
 import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, ArrowRight, Lock, CheckCircle2,
@@ -69,7 +68,6 @@ export default function NewRequest() {
     if (!profile.hasDossier)               { navigate("/onboarding/dossier", { replace: true }); }
   }, [profile, profileLoading, navigate]);
 
-  const [searchParams] = useSearchParams();
   const [step,        setStep]        = useState<Step>("product");
   const [product,     setProduct]     = useState<Product | null>(null);
   const [amount,      setAmount]      = useState(0);
@@ -79,23 +77,6 @@ export default function NewRequest() {
   const [purpose,     setPurpose]     = useState("");
   const [submitting,  setSubmitting]  = useState(false);
 
-  // ── Read URL params from planning section / category chips ──
-  useEffect(() => {
-    const typeParam = searchParams.get("type");
-    const goalParam = searchParams.get("goal");
-    if (goalParam) setPurpose(goalParam);
-    if (typeParam) {
-      const match = PRODUCTS.find((p) => p.type === typeParam);
-      if (match) {
-        setProduct(match);
-        setAmount(match.defaultAmount);
-        setTermMonths(match.defaultTerm);
-        setStep("details");
-      }
-    }
-  // Only run once on mount
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
   const [error,       setError]       = useState<string | null>(null);
   const [submitted,   setSubmitted]   = useState(false);
 
