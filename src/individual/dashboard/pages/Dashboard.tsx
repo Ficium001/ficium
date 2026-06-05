@@ -62,7 +62,6 @@ export default function Dashboard() {
           <DashboardTopBar
             initial={initial} name={name} greeting={getGreeting()}
             totalNewBids={totalNewBids} onSignOut={handleSignOut}
-            isLoading={profileLoading}
           />
         </div>
       </div>

@@ -1,12 +1,3 @@
-/**
- * src/individual/dashboard/hooks/useDashboard.ts
- * ─────────────────────────────────────────────────────────────
- * Dashboard data hooks — profile + derived computations.
- * Requests are now in their own module (src/modules/requests/hooks.ts).
- *
- * Re-exports useMyRequests from the requests module for backward
- * compatibility — existing consumers don't need to change.
- */
 import { useQuery } from "@tanstack/react-query";
 import {
   getProfileSummary,
@@ -15,26 +6,22 @@ import {
   computeHealthRecommendations,
 } from "@/individual/dashboard/api/profile";
 
-// Re-export from canonical requests module — single source of truth
 export { useMyRequests } from "@/individual/requests/hooks/useRequests";
-
-// ── Query keys ───────────────────────────────────────────────
 
 export const DashboardQueryKeys = {
   profile: ["profile"] as const,
 } as const;
 
-// ── Profile ──────────────────────────────────────────────────
-
 export function useProfile() {
   return useQuery({
-    queryKey: DashboardQueryKeys.profile,
-    queryFn:  getProfileSummary,
-    staleTime: 2 * 60 * 1000, // 2 min — profile rarely changes mid-session
+    queryKey:  DashboardQueryKeys.profile,
+    queryFn:   getProfileSummary,
+    staleTime: 10 * 60 * 1000,  // 10 min — don't refetch while navigating
+    gcTime:    30 * 60 * 1000,  // 30 min — keep in memory across page loads
+    refetchOnWindowFocus: false, // don't refetch when user tabs back
+    refetchOnMount: false,       // use cached data immediately on remount
   });
 }
-
-// ── Derived (computed client-side from profile — no extra DB calls) ──
 
 export function useNextActions() {
   const { data: profile } = useProfile();
