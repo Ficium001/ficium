@@ -3,7 +3,7 @@
 // Zero Claude calls. SQL-powered market hints from intelligence.
 // Steps: product → amount/term → purpose → review → submit
 // =============================================================
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, ArrowRight, Lock, CheckCircle2,
