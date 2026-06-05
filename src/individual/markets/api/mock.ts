@@ -49,34 +49,34 @@ const MOCK_NEWS: NewsResult["items"] = [
 
 const MOCK_STORIES: NewsResult["stories"] = [
   {
-    id: "s1", emoji: "🏦", category: "Interest Rates", relatedCTA: true,
-    everyday: { headline: "Your loan costs the same this month",       plain: "The Bank of Mauritius kept its key rate at 4%. Your monthly repayments won't change. If you're thinking of taking a new loan, now is a stable time — banks on Ficium are competing." },
-    finance:  { headline: "BoM MPC holds repo at 400bps for Q3 FY2025", plain: "Unanimous hold. 12-month inflation expectations anchored at 3.1%. Real rate +90bps. Neutral policy stance maintained. Next MPC review: September 2025." },
+    id: "s1", emoji: "🏠", category: "Lending", relatedCTA: true,
+    everyday: { headline: "Thinking of a home loan? Here's what 'a good rate' looks like", plain: "A home loan rate under 5% is considered strong in Mauritius right now. Banks rarely advertise their best rate upfront — on Ficium they bid against each other, so you see the real floor. The difference between 4.95% and 5.5% on a Rs 3M loan is about Rs 250,000 over 20 years." },
+    finance:  { headline: "Mortgage pricing: how to read the spread", plain: "Mauritian mortgages price off Repo + margin. With Repo at 4%, a 4.95% offer implies a 95bps margin — tight. Watch the variable/fixed spread (currently ~40bps) and LTV banding: rates step up above 80% LTV. First-home buyers retain the 90% LTV cap." },
   },
   {
-    id: "s2", emoji: "💱", category: "Currency", relatedCTA: false,
-    everyday: { headline: "Your imports cost slightly more today",     plain: "The rupee weakened a little against the dollar. Electronics, fuel, anything priced in USD may cost a bit more. If you hold USD savings, they're worth more rupees right now." },
-    finance:  { headline: "MUR/USD spot -0.28% · REER index softening", plain: "USD/MUR at 46.32, testing 5-week high. BoM FX reserves at 10.2 months import cover. REER depreciation 1.2% YTD. Oil import bill pressure persists." },
+    id: "s2", emoji: "🏧", category: "Savings", relatedCTA: true,
+    everyday: { headline: "Where your savings actually grow fastest", plain: "Most current accounts pay almost nothing. A 1-year fixed deposit in Mauritius pays around 3.4%, and government T-bills can pay more. The catch: fixed deposits lock your money. On Ficium you can post how much and how long, and let banks compete for it." },
+    finance:  { headline: "Deposit laddering vs T-bills: the real-rate view", plain: "With CPI at 3.1%, a 3.4% 1Y deposit yields ~+30bps real. The 91-day T-bill at 4.80% beats retail deposits but requires rollover discipline. A deposit ladder (3/6/12mo tranches) balances liquidity against the rate curve without timing risk." },
   },
   {
-    id: "s3", emoji: "📈", category: "Stock Market", relatedCTA: false,
-    everyday: { headline: "Local companies had a good day — your pension likely benefited", plain: "The SEMDEX rose 0.72%. If you have a pension, unit trust, or local stock investment, your balance probably went up. MCB Group and Rogers led the gains." },
-    finance:  { headline: "SEMDEX +0.72% · MCB Group +1.8% · Rogers +2.1%",               plain: "Volume: 42M shares (+18% vs 30d avg). Banking sector PE 11.2x trailing. Net foreign inflows Rs 120M. DCDM upgrades MCB to Accumulate." },
+    id: "s3", emoji: "⛽", category: "Economy", relatedCTA: false,
+    everyday: { headline: "Why your petrol price changes — and how to see it coming", plain: "Mauritius resets fuel prices monthly based on world oil prices and the rupee. When global oil rises or the rupee weakens, expect a hike at the next reset. Watching both gives you a few weeks' warning before it hits your wallet." },
+    finance:  { headline: "Fuel price transmission mechanism", plain: "STC procures on a monthly cycle (reset ~15th). Pump price ≈ landed cost × MUR/USD + excise + margin. Sensitivity: every 1% move in oil ≈ Rs 0.15/L; every 1% MUR depreciation compounds it. Brent + REER together predict the print." },
   },
   {
-    id: "s4", emoji: "🏧", category: "Savings", relatedCTA: true,
-    everyday: { headline: "Banks are fighting for your savings right now",  plain: "Competition pushed deposit rates up slightly. Instead of calling each bank, post a deposit request on Ficium — banks come to you with their best offer." },
-    finance:  { headline: "Avg 1Y deposit rate +10bps MoM to 3.40%",       plain: "Rate dispersion across 8 banks: 285–350bps. MCB leads on 3Y term (350bps). Real deposit rate +30bps vs CPI. T-bill 91d yield 4.80% — above retail deposit rates." },
+    id: "s4", emoji: "📊", category: "Stock Market", relatedCTA: false,
+    everyday: { headline: "Do you already own shares without knowing it?", plain: "If you have a pension fund or unit trust in Mauritius, you probably own a slice of the big listed companies — MCB Group, SBM, Rogers, IBL. When the SEMDEX rises, your retirement savings quietly grow, even if you've never bought a share yourself." },
+    finance:  { headline: "SEMDEX concentration and your indirect exposure", plain: "The SEMDEX is heavily weighted toward financials and conglomerates. Most local pension/unit-trust mandates track it closely, so household equity exposure is higher than self-reported. Banking-sector PE at 11.2x trailing remains below regional EM peers." },
   },
   {
-    id: "s5", emoji: "🏠", category: "Lending", relatedCTA: true,
-    everyday: { headline: "Home loan rates at their lowest in 2 years",     plain: "Banks are offering home loans below 5% — historically low. If you've been waiting to buy, this could be a good window. Post a request on Ficium to see what you qualify for." },
-    finance:  { headline: "Mortgage market: avg rate 4.95% · -35bps YoY",  plain: "Variable vs fixed spread compressed to 40bps. LTV limits unchanged at 90% for first-home buyers. FSC macro-prudential buffer held at 1%." },
+    id: "s5", emoji: "💱", category: "Currency", relatedCTA: false,
+    everyday: { headline: "Sending or receiving money abroad? Timing matters", plain: "Exchange rates move daily, and banks charge different rates on the same day. If you're paying overseas tuition or receiving a remittance, even a small rate difference adds up. Check the 'best rate today' card above before you convert." },
+    finance:  { headline: "Spread arbitrage across local banks", plain: "Inter-bank FX spreads in Mauritius can exceed 100bps on the same currency on the same day. For sizeable transfers, comparing the buy/sell board across banks captures more than most fee waivers. The REER trend signals the medium-term direction." },
   },
   {
-    id: "s6", emoji: "⛽", category: "Economy", relatedCTA: false,
-    everyday: { headline: "Petrol price may rise next month — here's why",  plain: "Global oil prices rose 4% this week. Mauritius sets petrol prices monthly based on world prices — if oil stays high, your next tank could cost more." },
-    finance:  { headline: "Brent crude +4.1% WoW · STC hedging position unconfirmed", plain: "Brent at $87.40/bbl. MUR/USD sensitivity: every 1% oil move = ~Rs 0.15/L pump price impact. STC procurement cycle ends 15th of each month." },
+    id: "s6", emoji: "📈", category: "Economy", relatedCTA: true,
+    everyday: { headline: "Inflation is cooling — what that means for you", plain: "Prices are still rising, but more slowly than last year. That's good: your money loses value less quickly. It also means banks may eventually lower rates, so locking a savings rate now — while they're still decent — can work in your favour." },
+    finance:  { headline: "Disinflation trajectory and rate-cut odds", plain: "Headline CPI easing to 3.1% YoY widens the real-rate buffer and raises the probability of a dovish tilt at the next MPC. Implication: term deposits locked now capture the current curve before any cut; borrowers may prefer variable if cuts materialise." },
   },
 ];
 

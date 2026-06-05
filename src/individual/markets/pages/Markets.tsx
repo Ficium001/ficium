@@ -99,12 +99,17 @@ export default function Markets() {
 
         {/* 8 ── Financial stories with mode toggle */}
         <div className="space-y-3">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-bold text-muted uppercase tracking-widest">
-                Financial Stories
-              </span>
-              <div className="h-px w-12 bg-ink/[0.07]" />
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[11px] font-bold text-muted uppercase tracking-widest">
+                  Financial Stories
+                </span>
+                <div className="h-px w-12 bg-ink/[0.07]" />
+              </div>
+              <p className="text-[12px] text-muted/70">
+                Understand how the market affects your money
+              </p>
             </div>
             <StoryModeToggle mode={storyMode} onChange={setStoryMode} />
           </div>

@@ -3,18 +3,27 @@
 // Import anything: import { TickerCard, StoriesGrid } from "../components"
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Primitives
 export { Sparkline }        from "./Sparkline";
 export { ChangeBadge }      from "./ChangeBadge";
+
+// Tickers
 export { TickerCard }       from "./TickerCard";
 export { TickerStrip }      from "./TickerStrip";
 export { StoryCallout }     from "./StoryCallout";
-export { NewsCard }         from "./NewsCard";
+
+// Layout / header
 export { MarketHeader }     from "./MarketHeader";
-export { AiMarketChat }     from "./AiMarketChat";
 export { FiciumCTA }        from "./FiciumCTA";
-export { RatesPanel }       from "./RatesPanel";
-export { RatesSummaryBar }  from "./RatesSummaryBar";
+
+// FX
 export { FxBestRates }      from "./FxBestRates";
+
+// News & stories
 export { MarketNewsFeed }   from "./MarketNewsFeed";
 export { StoryModeToggle }  from "./StoryModeToggle";
 export { StoriesGrid }      from "./StoriesGrid";
+
+// AI
+export { RatesSummaryBar }  from "./RatesSummaryBar";
+export { AiMarketChat }     from "./AiMarketChat";

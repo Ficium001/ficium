@@ -24,13 +24,16 @@ export function MarketNewsFeed({ news }: Props) {
   if (!news.length) return null;
   return (
     <section aria-label="Market news">
-      <div className="flex items-center gap-3 mb-3">
+      <div className="flex items-center gap-3 mb-1">
         <Newspaper size={14} className="text-muted flex-shrink-0" />
         <span className="text-[11px] font-bold text-muted uppercase tracking-widest">
           Market News
         </span>
         <div className="flex-1 h-px bg-ink/[0.07]" />
       </div>
+      <p className="text-[12px] text-muted/70 mb-3 ml-[26px]">
+        Today's headlines from Mauritius and global markets
+      </p>
 
       <div className="bg-white rounded-2xl border border-ink/[0.06] divide-y divide-ink/[0.04] lg:grid lg:grid-cols-2 lg:divide-y-0 lg:divide-x">
         {news.map((item) => {

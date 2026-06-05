@@ -30,9 +30,11 @@ src/individual/markets/
 │   ├── index.ts          — Adapter selector (change one import to go live)
 │   └── mock.ts           — Mock adapter — mirrors live API shape exactly
 ├── hooks/
-│   ├── useMarketData.ts  — Tickers, FX rates, deposit rates, lending rates
-│   ├── useMarketNews.ts  — News items + dual-mode stories
-│   └── index.ts          — Barrel
+│   ├── useMarketData.ts       — Tickers, FX, deposit, lending (+ _rawResult)
+│   ├── useMarketNews.ts       — News headlines + dual-mode stories
+│   ├── useAiMarketSummary.ts  — Streams AI summary, 30min client cache
+│   ├── useAiMarketChat.ts     — Streaming AI Q&A conversation state
+│   └── index.ts               — Barrel
 ├── components/
 │   ├── MarketHeader.tsx      — Top bar: title, live indicator, refresh button
 │   ├── TickerStrip.tsx       — Horizontal scrollable ticker row
@@ -59,13 +61,13 @@ src/individual/markets/
 | Section | Component | Description |
 |---|---|---|
 | Header | `MarketHeader` | Title, live dot, last-updated, refresh |
-| Tickers | `TickerStrip` → `TickerCard` | 8 tickers, horizontal scroll |
-| Callout | `StoryCallout` | Appears when ticker selected; plain-English story |
-| Rates | `RatesPanel` | Deposit (5 banks × 3 terms) + lending (5 products) |
-| Summary | `RatesSummaryBar` | AI one-liner with "Read full summary" CTA |
+| Tickers | `TickerStrip` → `TickerCard` | 8 tickers; scroll on mobile, grid on desktop |
+| Callout | `StoryCallout` | Ticker explainer + streaming AI "Explain" button |
+| AI Summary | `RatesSummaryBar` | Streaming AI one-sentence market summary |
+| AI Q&A | `AiMarketChat` | Inline ask-AI panel, grounded in live data |
 | FX | `FxBestRates` | Best buy rate today, all 4 major currencies |
-| News | `MarketNewsFeed` | Expandable news items, full width |
-| Stories | `StoryModeToggle` + `StoriesGrid` | 6 stories, everyday / finance toggle |
+| News | `MarketNewsFeed` | **Headlines** — what happened, when (timestamped) |
+| Stories | `StoryModeToggle` + `StoriesGrid` | **Explainers** — evergreen, everyday/finance toggle |
 | CTA | `FiciumCTA` | Conversion to new request |
 
 ---
@@ -224,3 +226,56 @@ create table market_stories (
 - **Adapter pattern strictly maintained.** `api/index.ts` is the only file that decides the data source.
 - **Types first.** Any new data shape goes in `types/index.ts` before writing any component.
 - **Barrel imports.** Import from `../components`, `../hooks`, `../types` — never from individual files across module boundaries.
+
+---
+
+## 10. News vs Stories — avoiding duplication
+
+These two sections look similar but serve different purposes. Keep them distinct:
+
+| | Market News | Financial Stories |
+|---|---|---|
+| **Answers** | "What happened?" | "What does it mean for me?" |
+| **Lifespan** | Timestamped, expires | Evergreen, educational |
+| **Source** | RSS / scraped headlines | AI-generated explainers |
+| **Format** | Single plain-English line | Everyday + Finance dual mode |
+| **Example** | "BoM holds repo rate at 4.00%" | "Thinking of a home loan? Here's what a good rate looks like" |
+
+**Rule:** a story must NOT restate a news headline. News reports the event; stories teach
+the underlying concept. If the repo decision is in the news feed, the story covers
+*how to read mortgage pricing* — not the decision itself.
+
+---
+
+## 11. GenAI architecture
+
+Three AI touchpoints, all using `claude-haiku-4-5` for speed and cost:
+
+### 11.1 Streaming summary (`RatesSummaryBar`)
+- Hook: `useAiMarketSummary` → `POST /api/market-summary`
+- One sentence (max 25 words), grounded in the live snapshot
+- Client-cached 30 min; regenerates only when data changes
+- Graceful fallback to static text if AI unavailable
+- Cost: ~$0.0005/call
+
+### 11.2 Inline Q&A (`AiMarketChat`)
+- Hook: `useAiMarketChat` → `POST /api/market-ask`
+- Streaming token-by-token, 6-turn history retained
+- Snapshot enriched with best deposit/lending/FX rates for accurate answers
+- 6 suggested starter questions
+- Cost: ~$0.002/exchange
+
+### 11.3 Ticker "Explain with AI" (`StoryCallout`)
+- Direct `streamClaude` call → `POST /api/market-ask`
+- Deeper 3-sentence explanation of the selected ticker's current value
+- Static config line = instant teaser; AI = on-demand depth
+
+### Endpoints
+| Route | Runtime | Model | Streams |
+|---|---|---|---|
+| `/api/market-summary` | nodejs | claude-haiku-4-5 | SSE |
+| `/api/market-ask` | nodejs | claude-haiku-4-5 | SSE |
+
+Both require `ANTHROPIC_API_KEY` (server-held, never in browser bundle).
+
+**Total AI cost at scale: under $2/month** for typical usage.

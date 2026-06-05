@@ -30,3 +30,9 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Shared entrance animation (used by StoryCallout and other reveal-on-mount UI) */
+@keyframes fadeSlide {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

@@ -25,16 +25,35 @@ interface Props {
 function buildSnapshot(marketData: MarketDataResult | null): Record<string, string | number> {
   if (!marketData) return {};
   const r = marketData.readings;
-  return {
-    "Repo Rate":    r.repo_rate?.displayValue    ?? "—",
-    "USD/MUR":      r.usd_mur?.displayValue      ?? "—",
-    "EUR/MUR":      r.eur_mur?.displayValue      ?? "—",
-    "GBP/MUR":      r.gbp_mur?.displayValue      ?? "—",
-    "SEMDEX":       r.semdex?.displayValue        ?? "—",
-    "Inflation YoY":r.inflation_yoy?.displayValue ?? "—",
-    "USD change %": r.usd_mur?.change             ?? 0,
-    "SEMDEX change %": r.semdex?.change           ?? 0,
+
+  const snapshot: Record<string, string | number> = {
+    "Repo Rate":       r.repo_rate?.displayValue     ?? "—",
+    "USD/MUR":         r.usd_mur?.displayValue       ?? "—",
+    "EUR/MUR":         r.eur_mur?.displayValue       ?? "—",
+    "GBP/MUR":         r.gbp_mur?.displayValue       ?? "—",
+    "SEMDEX":          r.semdex?.displayValue         ?? "—",
+    "Inflation YoY":   r.inflation_yoy?.displayValue  ?? "—",
+    "USD change %":    r.usd_mur?.change              ?? 0,
+    "SEMDEX change %": r.semdex?.change               ?? 0,
   };
+
+  // Best deposit rate (so AI can answer "should I open a fixed deposit?")
+  const bestDeposit = marketData.depositRates
+    .map((d) => parseFloat(d.rate1y))
+    .filter((n) => !Number.isNaN(n))
+    .sort((a, b) => b - a)[0];
+  if (bestDeposit) snapshot["Best 1Y deposit rate"] = `${bestDeposit.toFixed(2)}%`;
+
+  // Best home loan rate (so AI can answer borrowing questions)
+  const homeLoan = marketData.lendingRates.find((l) => /home/i.test(l.product));
+  if (homeLoan) snapshot["Best home loan rate"] = homeLoan.bestRate;
+
+  // Best FX deals today
+  marketData.fxRates.slice(0, 2).forEach((fx) => {
+    snapshot[`Best ${fx.currencyCode} rate`] = `${fx.bestRate} (${fx.bestBank})`;
+  });
+
+  return snapshot;
 }
 
 export function AiMarketChat({ marketData }: Props) {
