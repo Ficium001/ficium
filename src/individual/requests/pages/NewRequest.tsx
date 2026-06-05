@@ -3,7 +3,7 @@
 // Zero Claude calls. SQL-powered market hints from intelligence.
 // Steps: product → amount/term → purpose → review → submit
 // =============================================================
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, ArrowRight, Lock, CheckCircle2,
@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { useProfile } from "../../dashboard/hooks/useDashboard";
 import { createRequest, type ProductType } from "../api/requests";
-import { useIntelligence } from "@/shared/lib/intelligence";
+import { useIntelligence } from "../../../lib/intelligence";
 import { BottomNav } from "../../../shared/ui";
 
 /* ─── Product catalogue ─────────────────────────────────── */
@@ -61,9 +61,12 @@ export default function NewRequest() {
   const { data: profile, isLoading: profileLoading } = useProfile();
   const { intel } = useIntelligence();
 
-  /* Soft gate — show banner instead of hard redirect so page still renders */
-  const needsKyc     = !profileLoading && !!profile && profile.kycStatus !== "verified";
-  const needsDossier = !profileLoading && !!profile && !profile.hasDossier;
+  /* Gate */
+  useEffect(() => {
+    if (profileLoading || !profile) return;
+    if (profile.kycStatus !== "verified") { navigate("/onboarding/kyc",      { replace: true }); return; }
+    if (!profile.hasDossier)               { navigate("/onboarding/dossier", { replace: true }); }
+  }, [profile, profileLoading, navigate]);
 
   const [step,        setStep]        = useState<Step>("product");
   const [product,     setProduct]     = useState<Product | null>(null);
@@ -73,13 +76,10 @@ export default function NewRequest() {
   const [deadline,    setDeadline]    = useState("");
   const [purpose,     setPurpose]     = useState("");
   const [submitting,  setSubmitting]  = useState(false);
-
   const [error,       setError]       = useState<string | null>(null);
   const [submitted,   setSubmitted]   = useState(false);
 
   const stepIdx = STEPS.indexOf(step);
-
-  // Show warning banners but still allow access for testing/partial profiles
 
   const selectProduct = (p: Product) => {
     setProduct(p);
@@ -105,11 +105,7 @@ export default function NewRequest() {
     setTimeout(() => navigate("/dashboard"), 2000);
   };
 
-  if (profileLoading) return (
-    <div className="min-h-screen bg-cream flex items-center justify-center">
-      <Loader2 size={32} className="text-ficium animate-spin" />
-    </div>
-  );
+  if (profileLoading) return null;
 
   /* ── Success ── */
   if (submitted) return (
@@ -127,24 +123,6 @@ export default function NewRequest() {
 
   return (
     <div className="min-h-screen bg-cream flex flex-col">
-
-      {/* Profile completion banners */}
-      {needsKyc && (
-        <div className="bg-amber-500 px-4 py-2.5 flex items-center justify-between gap-3">
-          <span className="text-[13px] font-semibold text-white">Complete identity verification to post requests</span>
-          <button onClick={() => navigate("/onboarding/kyc")} className="text-[12px] font-bold text-amber-900 bg-white px-3 py-1 rounded-pill flex-shrink-0">
-            Verify ID →
-          </button>
-        </div>
-      )}
-      {!needsKyc && needsDossier && (
-        <div className="bg-ficium px-4 py-2.5 flex items-center justify-between gap-3">
-          <span className="text-[13px] font-semibold text-white">Complete your financial profile for better bank offers</span>
-          <button onClick={() => navigate("/onboarding/dossier")} className="text-[12px] font-bold text-ficium bg-white px-3 py-1 rounded-pill flex-shrink-0">
-            Complete →
-          </button>
-        </div>
-      )}
 
       {/* Top gradient */}
       <div className="absolute top-0 left-0 right-0 h-[160px] overflow-hidden pointer-events-none">
