@@ -4,7 +4,7 @@
 // Each card CTA routes directly to the correct NewRequest wizard.
 // =============================================================
 import { useNavigate } from "react-router-dom";
-import { useGoals } from "@/individual/dashboard/hooks/useGoals";
+import { useGoals, goalProgress, type Goal, type GoalType } from "@/individual/dashboard/hooks/useGoals";
 import { Home, Car, Plane, TrendingUp, GraduationCap, Briefcase, PiggyBank, Plus, Building2 } from "lucide-react";
 
 // ── Icon + color config per goal type ────────────────────────
