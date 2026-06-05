@@ -10,8 +10,8 @@
  * Cost: ~$0.0005 per call. Cached client-side for 30 min.
  */
 import Anthropic from "@anthropic-ai/sdk";
-import { Env }   from "./_lib/env";
-import { Response as R } from "./_lib/response";
+import { Env }   from "./_lib/env.js";
+import { Response as R } from "./_lib/response.js";
 
 export const config = { runtime: "nodejs" };
 

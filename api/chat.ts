@@ -5,10 +5,10 @@
  * Claude knows exactly who the user is, their finances, and their journeys.
  */
 import Anthropic              from "@anthropic-ai/sdk";
-import { Env }                from "./_lib/env";
-import { IntelligenceService } from "./_lib/intelligence-service";
-import { Response }           from "./_lib/response";
-import { getServiceDb }       from "./_lib/db";
+import { Env }                from "./_lib/env.js";
+import { IntelligenceService } from "./_lib/intelligence-service.js";
+import { Response }           from "./_lib/response.js";
+import { getServiceDb }       from "./_lib/db.js";
 
 export const config = { runtime: "nodejs" };
 

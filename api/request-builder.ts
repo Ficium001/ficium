@@ -6,9 +6,9 @@
  * Intelligence injected from cache — zero extra DB queries per stream.
  */
 import Anthropic          from "@anthropic-ai/sdk";
-import { Env }            from "./_lib/env";
-import { IntelligenceService } from "./_lib/intelligence-service";
-import { Response }       from "./_lib/response";
+import { Env }            from "./_lib/env.js";
+import { IntelligenceService } from "./_lib/intelligence-service.js";
+import { Response }       from "./_lib/response.js";
 
 export const config = { runtime: "nodejs" };
 

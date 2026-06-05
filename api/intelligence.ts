@@ -5,8 +5,8 @@
  * Returns anonymised market intelligence for frontend consumption.
  * Cached at the edge via Cache-Control headers + in-process TTL cache.
  */
-import { IntelligenceService } from "./_lib/intelligence-service";
-import { Response }       from "./_lib/response";
+import { IntelligenceService } from "./_lib/intelligence-service.js";
+import { Response }       from "./_lib/response.js";
 
 export const config = { runtime: "nodejs" };
 

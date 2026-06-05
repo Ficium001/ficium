@@ -10,8 +10,8 @@
  * Cost: ~$0.002 per Q&A exchange.
  */
 import Anthropic from "@anthropic-ai/sdk";
-import { Env }   from "./_lib/env";
-import { Response as R } from "./_lib/response";
+import { Env }   from "./_lib/env.js";
+import { Response as R } from "./_lib/response.js";
 
 export const config = { runtime: "nodejs" };
 
