@@ -40,8 +40,8 @@ export function WhatAreYouPlanningSection() {
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder={"Example: I want to buy a house in Flic en Flac for Rs 5M\nOr: I want to invest Rs 10k monthly for my retirement\nOr: I need a vehicle loan for Rs 600k"}
-          rows={3}
-          className="w-full text-[13px] text-ink placeholder:text-muted/50 bg-transparent outline-none resize-none leading-relaxed"
+          rows={4}
+          className="w-full text-[13px] text-ink placeholder:text-muted/50 bg-transparent outline-none resize-none leading-relaxed min-h-[90px] sm:min-h-[70px]"
         />
       </div>
       <button className="flex items-center gap-1.5 text-[12px] font-semibold text-ficium hover:underline mb-5 sm:mb-6">
@@ -50,7 +50,7 @@ export function WhatAreYouPlanningSection() {
 
       {/* Categories — 3-col grid on mobile, row on sm+ */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5">
-        <div className="grid grid-cols-3 sm:flex sm:flex-wrap gap-3 sm:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:flex md:flex-wrap gap-3 sm:gap-4 md:gap-6">
           {CATEGORIES.map(({ id, icon: Icon, label, route, iconColor, bg }) => {
             const isSelected = selected === id;
             return (
@@ -61,7 +61,7 @@ export function WhatAreYouPlanningSection() {
                 style={{ opacity: isSelected ? 1 : 0.8 }}
               >
                 <div
-                  className="w-12 h-12 rounded-xl grid place-items-center border-2 transition-all"
+                  className="w-14 h-14 sm:w-12 sm:h-12 rounded-xl grid place-items-center border-2 transition-all"
                   style={{
                     background: bg,
                     borderColor: isSelected ? iconColor : "transparent",
@@ -70,7 +70,7 @@ export function WhatAreYouPlanningSection() {
                 >
                   <Icon size={20} style={{ color: iconColor }} />
                 </div>
-                <span className="text-[10px] sm:text-[11px] font-semibold text-muted text-center leading-tight">
+                <span className="text-[11px] font-semibold text-muted text-center leading-tight">
                   {label}
                 </span>
               </button>
