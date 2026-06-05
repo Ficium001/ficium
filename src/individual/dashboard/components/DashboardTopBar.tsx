@@ -7,11 +7,12 @@ interface DashboardTopBarProps {
   greeting:     string;
   totalNewBids: number;
   onSignOut:    () => void;
+  isLoading?:   boolean;
 }
 
 // Pure presentational — all data and callbacks come from the page.
 export function DashboardTopBar({
-  initial, name, greeting, totalNewBids, onSignOut,
+  initial, name, greeting, totalNewBids, onSignOut, isLoading = false,
 }: DashboardTopBarProps) {
   return (
     <div className="flex items-center justify-between pt-6 pb-5">
@@ -21,7 +22,11 @@ export function DashboardTopBar({
         </div>
         <div className="min-w-0">
           <div className="text-[13px] text-white/50 font-medium">{greeting},</div>
-          <div className="text-[20px] font-bold text-white truncate leading-tight">{name}</div>
+          {isLoading ? (
+            <div className="h-6 w-32 bg-white/20 rounded-lg animate-pulse mt-0.5" />
+          ) : (
+            <div className="text-[20px] font-bold text-white truncate leading-tight">{name}</div>
+          )}
         </div>
       </div>
 

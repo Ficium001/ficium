@@ -41,7 +41,7 @@ export default function Dashboard() {
   const initial        = name[0]?.toUpperCase() ?? "?";
 
   // Real financial numbers from snapshot — zero if not entered yet
-  const netWorth       = snapshot?.netWorth      ?? profile?.totalNetWorth ?? 0;
+  const netWorth       = snapshot?.netWorth      ?? profile?.totalNetWorth ?? null;
   const totalAssets    = snapshot?.totalAssets    ?? 0;
   const totalLiabs     = snapshot?.totalLiabilities ?? 0;
   // Monthly change = savings amount (best proxy without historical data)
@@ -62,6 +62,7 @@ export default function Dashboard() {
           <DashboardTopBar
             initial={initial} name={name} greeting={getGreeting()}
             totalNewBids={totalNewBids} onSignOut={handleSignOut}
+            isLoading={profileLoading}
           />
         </div>
       </div>
@@ -100,7 +101,7 @@ export default function Dashboard() {
               </button>
             </div>
             <NetWorthHero
-              netWorth={netWorth}
+              netWorth={netWorth ?? 0}
               hidden={hidden}
               onToggle={() => setHidden((h) => !h)}
             />
