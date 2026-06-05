@@ -37,6 +37,8 @@ const GoalDetail          = lazy(() => import("../individual/goals/pages/GoalDet
 const Journeys            = lazy(() => import("../individual/journeys/pages/Journeys"));
 const JourneyWizard       = lazy(() => import("../individual/journeys/pages/JourneyWizard"));
 const JourneyWorkspace    = lazy(() => import("../individual/journeys/pages/JourneyWorkspace"));
+const NetWorthPage        = lazy(() => import("../individual/networth/pages/NetWorth"));
+const FinancialHealthPage = lazy(() => import("../individual/health/pages/FinancialHealth"));
 
 // ── Institution app ───────────────────────────────────────────
 const InstitutionPending      = lazy(() => import("../institution/auth/pages/InstitutionPending"));
@@ -136,6 +138,8 @@ export const router = createBrowserRouter([
   { path: "/journeys",               element: <ClientOnlyRoute><S><Journeys /></S></ClientOnlyRoute> },
   { path: "/journeys/new",           element: <ClientOnlyRoute><S><JourneyWizard /></S></ClientOnlyRoute> },
   { path: "/journeys/:id",           element: <ClientOnlyRoute><S><JourneyWorkspace /></S></ClientOnlyRoute> },
+  { path: "/networth",               element: <ClientOnlyRoute><S><NetWorthPage /></S></ClientOnlyRoute> },
+  { path: "/health",                 element: <ClientOnlyRoute><S><FinancialHealthPage /></S></ClientOnlyRoute> },
 
   // ── Institution app ─────────────────────────────────────────
   { path: "/institution/login",        element: <S><InstitutionLogin /></S> },

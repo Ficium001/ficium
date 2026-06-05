@@ -1,41 +1,113 @@
 /**
  * api/chat.ts
- * ─────────────────────────────────────────────────────────────
  * POST /api/chat
- * AI Financial Coach — powers the Advisor page.
- * Intelligence injected from cache, not fetched per-request.
+ * Ficium AI Financial Coach — now with full user profile context.
+ * Claude knows exactly who the user is, their finances, and their journeys.
  */
-import Anthropic          from "@anthropic-ai/sdk";
-import { Env }            from "./_lib/env";
+import Anthropic              from "@anthropic-ai/sdk";
+import { Env }                from "./_lib/env";
 import { IntelligenceService } from "./_lib/intelligence-service";
-import { Response }       from "./_lib/response";
+import { Response }           from "./_lib/response";
+import { getServiceDb }       from "./_lib/db";
 
 export const config = { runtime: "nodejs" };
 
-// ── Types ────────────────────────────────────────────────────
 type ChatMessage = { role: "user" | "assistant"; content: string };
-type RequestBody = { messages?: ChatMessage[] };
+type RequestBody = {
+  messages?:   ChatMessage[];
+  userId?:     string;   // optional — injected by client when available
+  journeyCtx?: string;  // optional — journey-specific context
+};
 
-// ── System prompt ────────────────────────────────────────────
-const BASE_SYSTEM = `\
-You are Ficium AI — an intelligent financial coach for clients in Mauritius \
-using the Ficium reverse-banking marketplace, where banks and fintechs compete \
-with bids for each client's financial request.
+// ── Build user-aware system prompt ───────────────────────────
+async function buildSystemPrompt(userId?: string, journeyCtx?: string): Promise<string> {
+  const BASE = `\
+You are Ficium AI — an intelligent personal financial coach for clients in Mauritius \
+using the Ficium reverse-banking marketplace, where banks compete with bids for \
+each client's financial request.
 
 You help users:
-- Understand and compare financial products (loans, deposits, investments, business funding)
-- Make sense of bids they receive
+- Understand their personal financial situation with real numbers
+- Plan and achieve specific financial goals (home, vehicle, investment, education, travel, business)
+- Compare financial products and bank offers
 - Improve their financial health score and bank eligibility
-- Decide what to post as a request and when
-- Understand Mauritian banking products and current rates
+- Make smart decisions about borrowing, saving, and investing
+- Understand Mauritian banking products and current market rates
 
-Live market data is injected below — always use it for rate benchmarks. \
-Cite figures as "current Ficium market data" rather than guessing.
+Tone: warm, direct, practical, specific. Use the user's real numbers — never guess.
+Keep responses under 200 words unless the user asks for detail.
+Always be specific: "Your debt-to-income ratio is 45% — above the 40% threshold banks prefer" \
+is better than "Your debt ratio is high."
+Do not: guarantee approvals, recommend a specific bank by name unless comparing bids received, \
+give advice that requires a licensed financial advisor.`;
 
-Tone: direct, warm, practical, Mauritius-focused.
-Keep responses under 150 words unless the user asks for detail.
-Do not: give personalised investment advice, guarantee approvals, \
-recommend a specific bank by name unless comparing bids the user has received.`;
+  const parts: string[] = [BASE];
+
+  // ── Inject live market intelligence ──────────────────────
+  try {
+    const marketSummary = await IntelligenceService.getSummary();
+    if (marketSummary) parts.push(`\n${marketSummary}`);
+  } catch { /* degrade gracefully */ }
+
+  // ── Inject user financial profile ────────────────────────
+  if (userId) {
+    try {
+      const db = getServiceDb();
+      const { data: profile } = await db
+        .from("client_profile_view")
+        .select("*")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (profile) {
+        const fmt = (n: number | null) => n ? `MUR ${Number(n).toLocaleString()}` : "not provided";
+        const pct  = (n: number | null) => n != null ? `${n}%` : "not calculated";
+
+        const profileSection = [
+          "\n=== THIS USER'S FINANCIAL PROFILE ===",
+          `Name: ${profile.full_name ?? "Unknown"}`,
+          `Employment: ${profile.employment_status ?? "not provided"}`,
+          `Monthly income: ${fmt(profile.monthly_income)}`,
+          `Monthly expenses: ${fmt(profile.monthly_expenses)}`,
+          `Monthly loan payments: ${fmt(profile.monthly_loan_payments)}`,
+          `Monthly savings: ${fmt(profile.monthly_savings)}`,
+          "",
+          `Total assets: ${fmt(profile.total_assets)}`,
+          `  - Cash & savings: ${fmt(profile.cash_savings)}`,
+          `  - Fixed deposits: ${fmt(profile.fixed_deposits)}`,
+          `  - Investments: ${fmt(profile.investments_value)}`,
+          `  - Property: ${fmt(profile.property_value)}`,
+          `  - Vehicles: ${fmt(profile.vehicle_value)}`,
+          "",
+          `Total liabilities: ${fmt(profile.total_liabilities)}`,
+          `  - Mortgage: ${fmt(profile.mortgage_balance)}`,
+          `  - Personal loans: ${fmt(profile.personal_loan_balance)}`,
+          `  - Credit cards: ${fmt(profile.credit_card_balance)}`,
+          `  - Vehicle loans: ${fmt(profile.vehicle_loan_balance)}`,
+          "",
+          `Net worth: ${fmt(profile.net_worth ?? profile.total_net_worth)}`,
+          `Debt-to-income ratio: ${profile.debt_to_income_ratio != null ? `${profile.debt_to_income_ratio}%` : "not calculated"}`,
+          "",
+          `Financial health score: ${pct(profile.health_score)} ${profile.health_score != null ? (profile.health_score >= 70 ? "(Good)" : profile.health_score >= 50 ? "(Fair)" : "(Needs improvement)") : ""}`,
+          `Bank readiness score: ${pct(profile.affordability_score)}`,
+          `KYC status: ${profile.kyc_status ?? "pending"}`,
+          `Has existing loans: ${profile.has_existing_loans ? "Yes" : "No"}`,
+          `Profile completion: ${profile.completion_percent ?? 20}%`,
+          "=== END OF USER PROFILE ===",
+          "Use these exact numbers in your responses. Be specific and personal.",
+        ];
+        parts.push(profileSection.join("\n"));
+      }
+    } catch { /* degrade gracefully — answer without profile */ }
+  }
+
+  // ── Inject journey context if provided ───────────────────
+  if (journeyCtx) {
+    parts.push(`\n=== CURRENT JOURNEY CONTEXT ===\n${journeyCtx}\n=== END ===`);
+  }
+
+  return parts.join("\n");
+}
 
 // ── Handler ──────────────────────────────────────────────────
 export default async function handler(req: any, res: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -49,30 +121,23 @@ export default async function handler(req: any, res: any) { // eslint-disable-li
     return Response.error(res, "messages array required", 400, "INVALID_BODY");
   }
 
-  // Guard: cap payload size
   const totalChars = body.messages.reduce((s, m) => s + (m.content?.length ?? 0), 0);
   if (totalChars > 20_000) {
     return Response.error(res, "Conversation too large", 413, "PAYLOAD_TOO_LARGE");
   }
 
-  // Normalise messages
   const messages = body.messages.slice(-20).map((m) => ({
     role:    (m.role === "assistant" ? "assistant" : "user") as "assistant" | "user",
     content: String(m.content ?? "").slice(0, 4_000),
   }));
 
-  // Inject live intelligence — from cache, not a fresh DB query
-  let system = BASE_SYSTEM;
-  try {
-    const summary = await IntelligenceService.getSummary();
-    if (summary) system += `\n\n${summary}`;
-  } catch { /* degrade gracefully — proceed without intelligence */ }
+  const system = await buildSystemPrompt(body.userId, body.journeyCtx);
 
   try {
-    const anthropic = new Anthropic({ apiKey });
+    const anthropic  = new Anthropic({ apiKey });
     const completion = await anthropic.messages.create({
       model:      "claude-sonnet-4-6",
-      max_tokens: 700,
+      max_tokens: 800,
       system,
       messages,
     });

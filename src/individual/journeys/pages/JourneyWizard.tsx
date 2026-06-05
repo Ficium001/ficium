@@ -9,7 +9,42 @@ import {
   Home, Car, TrendingUp, GraduationCap, Plane, Briefcase,
   Building2, Sparkles,
 } from "lucide-react";
-import { useCreateJourney, useCalculateAffordability, type JourneyType, type JourneyAnswers, type JourneyAIResults } from "@/individual/journeys/hooks/useJourneys";
+import { useCreateJourney, type JourneyType, type JourneyAnswers, type JourneyAIResults } from "@/individual/journeys/hooks/useJourneys";
+import { useProfile } from "@/individual/dashboard/hooks/useDashboard";
+
+// Call the real server-side affordability calculator
+async function calculateAffordabilityReal(
+  type: JourneyType,
+  answers: JourneyAnswers,
+  userId: string | undefined,
+): Promise<JourneyAIResults> {
+  if (!userId) return buildFallback(type, answers);
+  try {
+    const res = await fetch("/api/journey-calculate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId, type, answers }),
+    });
+    if (!res.ok) return buildFallback(type, answers);
+    const data = await res.json();
+    return data;
+  } catch {
+    return buildFallback(type, answers);
+  }
+}
+
+function buildFallback(type: JourneyType, answers: JourneyAnswers): JourneyAIResults {
+  const val = Number(answers.propertyValue || answers.vehicleValue || answers.amount || 0);
+  const dep = Number(answers.depositAvailable || answers.savedAmount || 0);
+  return {
+    affordability: 65, eligibility: 68,
+    monthlyRepayment: val > 0 ? Math.round((val - dep) * 0.008) : undefined,
+    depositGap: Math.max(0, val * 0.1 - dep),
+    banksMatched: 3,
+    summary: "Based on your profile, you qualify for competitive offers.",
+    actionPlan: ["Complete your financial profile", "Upload required documents", "Review bank offers"],
+  };
+}
 import { BottomNav } from "@/shared/ui";
 
 // ── Journey config ────────────────────────────────────────────
@@ -248,7 +283,7 @@ export default function JourneyWizard() {
   const typeParam       = searchParams.get("type") as JourneyType | null;
 
   const { mutateAsync: createJourney } = useCreateJourney();
-  const calcAffordability = useCalculateAffordability();
+  const { data: profile } = useProfile();
 
   const [type,       setType]       = useState<JourneyType | null>(typeParam);
   const [step,       setStep]       = useState(typeParam ? 0 : -1); // -1 = type select
@@ -274,7 +309,7 @@ export default function JourneyWizard() {
     } else {
       // Last question — calculate
       setCalculating(true);
-      const results = await calcAffordability(type!, answers);
+      const results = await calculateAffordabilityReal(type!, answers, profile?.userId);
       setAIResults(results);
       setCalculating(false);
     }

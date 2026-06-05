@@ -7,7 +7,19 @@ import {
 } from "lucide-react";
 import { useProfile } from "../../dashboard/hooks/useDashboard";
 import { BottomNav } from "../../../shared/ui";
-import { askClaude, type ClaudeMessage } from "@/shared/lib/claude";
+import { type ClaudeMessage } from "@/shared/lib/claude";
+
+// Profile-aware Claude call — passes userId so Claude knows the user's finances
+async function askClaudeWithProfile(messages: ClaudeMessage[], userId?: string): Promise<string> {
+  const res = await fetch("/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ messages, userId }),
+  });
+  if (!res.ok) throw new Error(`Claude error: ${res.status}`);
+  const data = await res.json();
+  return data.reply ?? "";
+}
 
 /* ============================================================
    TYPES
@@ -140,14 +152,14 @@ export default function Advisor() {
     const used = incrementUsedMessages();
     setUsedMsgs(used);
 
-    // Build history for Claude
+    // Build history with user context
     const history: ClaudeMessage[] = [...messages, userMsg].map((m) => ({
       role:    m.role === "ai" ? "assistant" : "user",
       content: m.text ?? "",
     }));
 
     try {
-      const reply = await askClaude(history);
+      const reply = await askClaudeWithProfile(history, profile?.userId);
       setMessages((prev) => [...prev, {
         id:   (Date.now() + 1).toString(),
         role: "ai",
