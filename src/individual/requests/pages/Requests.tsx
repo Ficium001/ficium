@@ -33,15 +33,17 @@ export default function Requests() {
   const pendingDocs = 0;
 
   return (
-    <div className="min-h-screen pb-28 lg:pb-10">
+    <div className="min-h-screen bg-cream pb-28 lg:pb-10">
 
-      {/* ── GRADIENT BACKGROUND ── */}
-      <div className="absolute top-0 left-0 right-0 h-[520px] overflow-hidden pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0f0c29] via-[#1a1040] to-[#302b63]" />
+      {/* ── GRADIENT BACKGROUND — matches dashboard ── */}
+      <div className="absolute top-0 left-0 right-0 h-[580px] overflow-hidden pointer-events-none">
+        <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, #0f0c29 0%, #1A14A8 50%, #2A1FE6 100%)" }} />
         <div className="absolute inset-0" style={{
-          background: "radial-gradient(ellipse at 20% 40%, rgba(79,70,229,0.5) 0%, transparent 55%), radial-gradient(ellipse at 85% 60%, rgba(201,168,76,0.2) 0%, transparent 50%)"
+          background: "radial-gradient(ellipse at 15% 40%, rgba(61,50,255,0.6) 0%, transparent 55%), radial-gradient(ellipse at 85% 30%, rgba(42,31,230,0.4) 0%, transparent 50%), radial-gradient(ellipse at 50% 80%, rgba(26,20,168,0.3) 0%, transparent 50%)"
         }} />
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#f8f7f4] to-transparent" />
+        <div className="absolute top-20 -left-16 w-64 h-64 rounded-full bg-ficium/20 blur-[80px] animate-pulse" />
+        <div className="absolute top-32 -right-20 w-80 h-80 rounded-full bg-ficium-bright/10 blur-[100px] animate-pulse" style={{ animationDelay: "2s" }} />
+        <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-cream to-transparent" />
       </div>
 
       <div className="relative z-10 mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-10">
