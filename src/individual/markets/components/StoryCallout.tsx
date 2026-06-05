@@ -34,7 +34,7 @@ export function StoryCallout({ ticker }: StoryCalloutProps) {
 
     let streamed = "";
     streamClaude(
-      "/api/market-ask",
+      "/api/market?action=ask",
       { question, snapshot: { [label]: reading?.displayValue ?? "—" } },
       {
         onToken: (t) => { streamed += t; setAiText(streamed); },

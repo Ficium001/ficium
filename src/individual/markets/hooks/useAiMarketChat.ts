@@ -50,7 +50,7 @@ export function useAiMarketChat(): UseAiMarketChatReturn {
       const history = messages.map((m) => ({ role: m.role, content: m.content }));
 
       streamClaude(
-        "/api/market-ask",
+        "/api/market?action=ask",
         { question, snapshot, history },
         {
           onToken: (t) => {
