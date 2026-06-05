@@ -45,7 +45,7 @@ export default function Dashboard() {
     <div className="min-h-screen bg-cream pb-28">
 
       {/* ── Top nav bar ─────────────────────────────────────────────────── */}
-      <div style={{ background: "linear-gradient(135deg, #0f0c29 0%, #1A14A8 50%, #2A1FE6 100%)" }}>
+      <div className="bg-gradient-to-br from-[#0f0c29] via-[#1a1040] to-[#302b63]">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-10">
           <DashboardTopBar
             initial={initial} name={name} greeting={getGreeting()}
