@@ -64,8 +64,7 @@ export default function NewRequest() {
   /* Gate */
   useEffect(() => {
     if (profileLoading || !profile) return;
-    if (profile.kycStatus === "pending") { navigate("/onboarding/kyc",       { replace: true }); return; }
-    if (!profile.hasDossier)               { navigate("/onboarding/dossier", { replace: true }); }
+    if (profile.kycStatus === "pending") { navigate("/onboarding/kyc", { replace: true }); return; }
   }, [profile, profileLoading, navigate]);
 
   const [step,        setStep]        = useState<Step>("product");
@@ -105,7 +104,11 @@ export default function NewRequest() {
     setTimeout(() => navigate("/dashboard"), 2000);
   };
 
-  if (profileLoading) return null;
+  if (profileLoading) return (
+    <div className="min-h-screen bg-cream flex items-center justify-center">
+      <Loader2 size={32} className="text-ficium animate-spin" />
+    </div>
+  );
 
   /* ── Success ── */
   if (submitted) return (
