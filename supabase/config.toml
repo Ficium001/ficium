@@ -1,0 +1,10 @@
+# Supabase project configuration
+# https://supabase.com/docs/guides/functions
+
+[functions.market-refresh]
+enabled = true
+verify_jwt = false   # Public cron trigger — no JWT needed
+
+[functions.market-refresh.cron]
+# Run at 6 AM, 12 PM and 6 PM Mauritius time (UTC+4 = 02:00, 08:00, 14:00 UTC)
+schedule = "0 2,8,14 * * *"
