@@ -31,6 +31,9 @@ const Markets             = lazy(() => import("../individual/markets/pages/Marke
 const Advisor             = lazy(() => import("../individual/advisor/pages/Advisor"));
 const FinancialTools      = lazy(() => import("../individual/tools/pages/FinancialTools"));
 const ClientAudit         = lazy(() => import("../individual/audit/pages/ClientAudit"));
+const Goals               = lazy(() => import("../individual/goals/pages/Goals"));
+const NewGoal             = lazy(() => import("../individual/goals/pages/NewGoal"));
+const GoalDetail          = lazy(() => import("../individual/goals/pages/GoalDetail"));
 
 // ── Institution app ───────────────────────────────────────────
 const InstitutionPending      = lazy(() => import("../institution/auth/pages/InstitutionPending"));
@@ -124,6 +127,9 @@ export const router = createBrowserRouter([
   { path: "/advisor",                element: <ClientOnlyRoute><S><Advisor /></S></ClientOnlyRoute> },
   { path: "/tools",                  element: <ClientOnlyRoute><S><FinancialTools /></S></ClientOnlyRoute> },
   { path: "/activity",               element: <ClientOnlyRoute><S><ClientAudit /></S></ClientOnlyRoute> },
+  { path: "/goals",                  element: <ClientOnlyRoute><S><Goals /></S></ClientOnlyRoute> },
+  { path: "/goals/new",              element: <ClientOnlyRoute><S><NewGoal /></S></ClientOnlyRoute> },
+  { path: "/goals/:id",              element: <ClientOnlyRoute><S><GoalDetail /></S></ClientOnlyRoute> },
 
   // ── Institution app ─────────────────────────────────────────
   { path: "/institution/login",        element: <S><InstitutionLogin /></S> },
