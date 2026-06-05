@@ -315,5 +315,3 @@ export async function acceptBid(bidId: string, requestId: string): Promise<Accep
   await audit.bidAccepted(bidId, requestId);
   return { ok: true };
 }
-
-}
