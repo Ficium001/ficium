@@ -9,6 +9,7 @@ import {
   DashboardBackground, DashboardTopBar, OnboardingBanners,
   NetWorthHero, FlipCards, AIFinancialCoach, SmartInsightsFeed,
   MarketTile, NextActions, FinancialToolsSection,
+  FinancialGoalsSection, WhatAreYouPlanningSection,
 } from "@/individual/dashboard/components";
 import { BottomNav }      from "@/shared/ui";
 import { ErrorBoundary }  from "@/core/error-boundary";
@@ -81,8 +82,17 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* ── Cream zone ── */}
+        {/* ── What are you planning today? ── */}
+        <ErrorBoundary name="Planning Section">
+          <WhatAreYouPlanningSection />
+        </ErrorBoundary>
 
+        {/* ── Financial Goals ── */}
+        <ErrorBoundary name="Financial Goals">
+          <FinancialGoalsSection />
+        </ErrorBoundary>
+
+        {/* ── Smart Insights ── */}
         <ErrorBoundary name="Smart Insights">
           <SmartInsightsFeed insights={insights} activeIdx={activeIdx} onNext={next} />
         </ErrorBoundary>
