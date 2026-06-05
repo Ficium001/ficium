@@ -2,14 +2,13 @@ import { useState }    from "react";
 import { useNavigate }  from "react-router-dom";
 import { Home, Car, Plane, GraduationCap, TrendingUp, Briefcase, ArrowRight, Upload } from "lucide-react";
 
-// Each category has its own accent color for the icon
 const CATEGORIES = [
-  { id: "house",     icon: Home,          label: "Buy a\nHouse",    route: "/requests/new?type=mortgage",   iconColor: "#2A1FE6", bg: "rgba(42,31,230,0.10)"  },
-  { id: "vehicle",   icon: Car,           label: "Buy a\nVehicle",  route: "/requests/new?type=vehicle",    iconColor: "#2A1FE6", bg: "rgba(42,31,230,0.10)"  },
-  { id: "education", icon: GraduationCap, label: "Education",       route: "/requests/new?type=education",  iconColor: "#059669", bg: "rgba(5,150,105,0.10)"  },
-  { id: "travel",    icon: Plane,         label: "Travel",          route: "/requests/new?type=personal",   iconColor: "#d97706", bg: "rgba(217,119,6,0.10)"  },
-  { id: "invest",    icon: TrendingUp,    label: "Invest\nMoney",   route: "/requests/new?type=investment", iconColor: "#2A1FE6", bg: "rgba(42,31,230,0.10)"  },
-  { id: "business",  icon: Briefcase,     label: "Start\nBusiness", route: "/requests/new?type=business",   iconColor: "#7c3aed", bg: "rgba(124,58,237,0.10)" },
+  { id: "house",     icon: Home,          label: "Buy a House",    route: "/requests/new?type=mortgage",   iconColor: "#2A1FE6", bg: "rgba(42,31,230,0.10)"  },
+  { id: "vehicle",   icon: Car,           label: "Buy a Vehicle",  route: "/requests/new?type=vehicle",    iconColor: "#2A1FE6", bg: "rgba(42,31,230,0.10)"  },
+  { id: "education", icon: GraduationCap, label: "Education",      route: "/requests/new?type=education",  iconColor: "#059669", bg: "rgba(5,150,105,0.10)"  },
+  { id: "travel",    icon: Plane,         label: "Travel",         route: "/requests/new?type=personal",   iconColor: "#d97706", bg: "rgba(217,119,6,0.10)"  },
+  { id: "invest",    icon: TrendingUp,    label: "Invest Money",   route: "/requests/new?type=investment", iconColor: "#2A1FE6", bg: "rgba(42,31,230,0.10)"  },
+  { id: "business",  icon: Briefcase,     label: "Start Business", route: "/requests/new?type=business",   iconColor: "#7c3aed", bg: "rgba(124,58,237,0.10)" },
 ] as const;
 
 export function WhatAreYouPlanningSection() {
@@ -48,31 +47,29 @@ export function WhatAreYouPlanningSection() {
         <Upload size={12} /> Upload image
       </button>
 
-      {/* Categories + CTA */}
+      {/* Categories — 3-col grid on mobile, row on sm+ */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5">
-
-        {/* Colored category chips */}
-        <div className="flex flex-wrap gap-4 sm:gap-6">
+        <div className="grid grid-cols-3 sm:flex sm:flex-wrap gap-3 sm:gap-6">
           {CATEGORIES.map(({ id, icon: Icon, label, route, iconColor, bg }) => {
             const isSelected = selected === id;
             return (
               <button
                 key={id}
                 onClick={() => { setSelected(id); navigate(route); }}
-                className="flex flex-col items-center gap-2 group transition-all"
-                style={{ opacity: isSelected ? 1 : 0.75 }}
+                className="flex flex-col items-center gap-2 transition-all"
+                style={{ opacity: isSelected ? 1 : 0.8 }}
               >
                 <div
-                  className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl grid place-items-center border-2 transition-all"
+                  className="w-12 h-12 rounded-xl grid place-items-center border-2 transition-all"
                   style={{
-                    background: isSelected ? bg : bg,
+                    background: bg,
                     borderColor: isSelected ? iconColor : "transparent",
                     boxShadow: isSelected ? `0 0 0 3px ${iconColor}20` : "none",
                   }}
                 >
                   <Icon size={20} style={{ color: iconColor }} />
                 </div>
-                <span className="text-[10px] sm:text-[11px] font-semibold text-muted text-center leading-tight max-w-[56px] whitespace-pre-line">
+                <span className="text-[10px] sm:text-[11px] font-semibold text-muted text-center leading-tight">
                   {label}
                 </span>
               </button>
@@ -80,7 +77,7 @@ export function WhatAreYouPlanningSection() {
           })}
         </div>
 
-        {/* Generate CTA */}
+        {/* Generate CTA — full width on mobile */}
         <button
           onClick={handleGenerate}
           className="flex items-center justify-center gap-2 text-white px-6 py-3.5 rounded-xl text-[13px] font-bold shadow-ficium hover:opacity-90 active:scale-[0.98] transition-all flex-shrink-0 w-full sm:w-auto"

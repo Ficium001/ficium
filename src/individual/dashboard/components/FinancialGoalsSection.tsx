@@ -179,11 +179,8 @@ function GoalCard({ goal, onLoan }: { goal: FinancialGoal; onLoan: () => void })
           {STATUS_LABEL[goal.status]}
         </span>
 
-        {/* AI says */}
-        <div className="mt-1 mb-1">
-          <div className="text-[9px] sm:text-[10px] font-bold text-muted uppercase tracking-widest mb-0.5">AI says</div>
-          <p className="text-[11px] text-ink/70 leading-snug">{goal.aiSays}</p>
-        </div>
+        {/* AI insight — no label, just the line */}
+        <p className="text-[11px] text-muted italic leading-snug mt-1 mb-1">{goal.aiSays}</p>
 
         {/* Banks tag */}
         <div className="text-[10px] font-bold flex items-center gap-1" style={{ color: "#2A1FE6" }}>
