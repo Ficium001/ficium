@@ -1,11 +1,9 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// API surface for the Markets feature.
-// This is the ONLY file that decides which adapter is used.
-// To go live: swap the import below to a real adapter — nothing else changes.
+// Markets API surface — single import controls the active data source.
+// Switch by changing the export below. Nothing else in the codebase changes.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export { fetchMarketData, fetchMarketNews } from "./mock";
+export { fetchMarketData, fetchMarketNews } from "./supabase";
 
-// Future — just change the import above to one of:
-// export { fetchMarketData, fetchMarketNews } from "./bom";
-// export { fetchMarketData, fetchMarketNews } from "./supabase";
+// To fall back to mock during development:
+// export { fetchMarketData, fetchMarketNews } from "./mock";
