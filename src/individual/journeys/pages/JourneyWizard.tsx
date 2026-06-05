@@ -33,7 +33,7 @@ async function calculateAffordabilityReal(
   }
 }
 
-function buildFallback(type: JourneyType, answers: JourneyAnswers): JourneyAIResults {
+function buildFallback(_type: JourneyType, answers: JourneyAnswers): JourneyAIResults {
   const val = Number(answers.propertyValue || answers.vehicleValue || answers.amount || 0);
   const dep = Number(answers.depositAvailable || answers.savedAmount || 0);
   return {

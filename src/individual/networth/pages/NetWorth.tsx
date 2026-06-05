@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, TrendingUp, TrendingDown, Edit3, Save, Loader2,
-  Home, Car, PiggyBank, BarChart2, Wallet, Plus, Building2,
+  Home, Car, BarChart2, Wallet, Plus, Building2,
   CreditCard, Landmark,
 } from "lucide-react";
 import { useSnapshot, useUpsertSnapshot, type SnapshotInput } from "@/individual/networth/hooks/useSnapshot";
