@@ -79,10 +79,6 @@ export function RatesPanel({ depositRates, lendingRates }: Props) {
           ))}
         </div>
 
-        <button className="mt-3 w-full flex items-center justify-center gap-2 bg-ficium text-white text-[13px] font-bold py-2.5 rounded-xl hover:bg-ficium-deep transition-colors">
-          Post a Request on Ficium
-          <ArrowRight size={13} />
-        </button>
       </div>
     </div>
   );

@@ -32,12 +32,12 @@ export function MarketNewsFeed({ news }: Props) {
         <div className="flex-1 h-px bg-ink/[0.07]" />
       </div>
 
-      <div className="bg-white rounded-2xl border border-ink/[0.06] divide-y divide-ink/[0.04]">
+      <div className="bg-white rounded-2xl border border-ink/[0.06] divide-y divide-ink/[0.04] lg:grid lg:grid-cols-2 lg:divide-y-0 lg:divide-x">
         {news.map((item) => {
           const tagColor = NEWS_CATEGORY_COLORS[item.category] ?? "#64748b";
           const tagBg    = NEWS_CATEGORY_BG[item.category]    ?? "#f1f5f9";
           return (
-            <div key={item.id} className="flex items-start gap-3 px-4 py-3.5">
+            <div key={item.id} className="flex items-start gap-3 px-4 py-3.5 border-b border-ink/[0.04] last:border-0 lg:border-b lg:[&:nth-child(odd)]:border-b lg:[&:nth-child(even)]:border-b">
               {/* Emoji icon */}
               <span
                 className="w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0"

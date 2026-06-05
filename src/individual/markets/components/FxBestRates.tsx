@@ -40,9 +40,6 @@ export function FxBestRates({ rates }: Props) {
             <p className="text-[11px] font-semibold text-green-600">
               Save {r.savingPer1000}
             </p>
-            <p className="text-[10px] text-muted mt-1">
-              Worst: {r.worstBank} {r.worstRate.toFixed(2)}
-            </p>
           </div>
         ))}
       </div>

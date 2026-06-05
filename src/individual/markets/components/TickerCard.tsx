@@ -23,7 +23,7 @@ export function TickerCard({ ticker, isActive, onClick }: TickerCardProps) {
       onClick={onClick}
       aria-pressed={isActive}
       aria-label={`${label}: ${reading?.displayValue ?? "loading"}`}
-      className="flex-shrink-0 bg-white rounded-2xl border border-ink/[0.06] shadow-sm p-4 w-[148px] text-left transition-all hover:shadow-md focus:outline-none"
+      className="flex-shrink-0 bg-white rounded-2xl border border-ink/[0.06] shadow-sm p-4 w-[148px] lg:w-full text-left transition-all hover:shadow-md focus:outline-none"
       style={
         isActive
           ? { borderColor: color, boxShadow: `0 0 0 2px ${color}22` }

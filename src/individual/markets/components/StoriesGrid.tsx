@@ -24,7 +24,7 @@ export function StoriesGrid({ stories, mode }: Props) {
   if (!stories.length) return null;
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
       {stories.map((s) => {
         const content  = mode === "everyday" ? s.everyday : s.finance;
         const isOpen   = expandedId === s.id;

@@ -62,7 +62,7 @@ export default function Markets() {
         <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-cream to-transparent" />
       </div>
 
-      <div className="relative z-10 mx-auto w-full max-w-[720px] px-4 pt-6 space-y-5">
+      <div className="relative z-10 mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-10 pt-6 space-y-5">
 
         {/* 1 ── Header */}
         <MarketHeader
