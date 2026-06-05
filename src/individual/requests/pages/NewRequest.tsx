@@ -105,7 +105,11 @@ export default function NewRequest() {
     setTimeout(() => navigate("/dashboard"), 2000);
   };
 
-  if (profileLoading) return null;
+  if (profileLoading) return (
+    <div className="min-h-screen bg-cream flex items-center justify-center">
+      <Loader2 size={32} className="text-ficium animate-spin" />
+    </div>
+  );
 
   /* ── Success ── */
   if (submitted) return (
