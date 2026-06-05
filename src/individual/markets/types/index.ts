@@ -11,7 +11,8 @@ export type TickerId =
   | "gbp_mur"
   | "semdex"
   | "avg_deposit_rate"
-  | "avg_lending_rate";
+  | "avg_lending_rate"
+  | "inflation_yoy";
 
 export type NewsCategory =
   | "Interest Rates"
@@ -23,34 +24,70 @@ export type NewsCategory =
 
 export type Direction = "up" | "down" | "flat";
 
+export type StoryMode = "everyday" | "finance";
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Ticker — one market data point
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface TickerReading {
-  value: number;          // raw numeric value
-  displayValue: string;   // formatted for UI (e.g. "4.50%", "46.20")
-  change: number;         // % change vs prior period (positive = up)
+  value: number;
+  displayValue: string;
+  change: number;
   direction: Direction;
-  history: number[];      // last N readings for sparkline (oldest → newest)
+  history: number[];
   fetchedAt: Date;
 }
 
 export interface TickerConfig {
   id: TickerId;
   label: string;
-  unit: string;           // e.g. "%" or "pts" or ""
+  unit: string;
   icon: ElementType;
-  color: string;          // brand hex
-  story: string;          // plain-English "what this means" for a layman
+  color: string;
+  story: string;
 }
 
 export interface Ticker extends TickerConfig {
-  reading: TickerReading | null;   // null = loading / error
+  reading: TickerReading | null;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// News
+// FX — best rate across banks
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface FxRate {
+  currency: string;          // "USD / MUR"
+  currencyCode: string;      // "USD"
+  bestBank: string;
+  bestRate: number;
+  worstBank: string;
+  worstRate: number;
+  savingPer1000: string;     // "Rs 700 per $1,000"
+  updatedAt: Date;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Deposit & Lending rates
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface DepositRateRow {
+  bank: string;
+  color: string;
+  rate1y: string;
+  rate2y: string;
+  rate3y: string;
+}
+
+export interface LendingRateRow {
+  product: string;
+  iconName: string;
+  bestRate: string;
+  isBest: boolean;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// News — dual-mode stories
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface NewsItem {
@@ -58,23 +95,36 @@ export interface NewsItem {
   headline: string;
   category: NewsCategory;
   emoji: string;
-  plainEnglish: string;   // what this means for the user
+  plainEnglish: string;
   publishedAt: Date;
   relatedTickerId?: TickerId;
 }
 
+export interface StoryItem {
+  id: string;
+  emoji: string;
+  category: NewsCategory;
+  relatedCTA: boolean;
+  everyday: { headline: string; plain: string };
+  finance:  { headline: string; plain: string };
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
-// API response envelopes — adapter pattern so the UI never cares about source
+// API response envelopes
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface MarketDataResult {
   readings: Record<TickerId, TickerReading>;
+  fxRates: FxRate[];
+  depositRates: DepositRateRow[];
+  lendingRates: LendingRateRow[];
   fetchedAt: Date;
   source: "mock" | "bom" | "exchangerate-api" | "supabase";
 }
 
 export interface NewsResult {
   items: NewsItem[];
+  stories: StoryItem[];
   fetchedAt: Date;
   source: "mock" | "rss" | "supabase";
 }

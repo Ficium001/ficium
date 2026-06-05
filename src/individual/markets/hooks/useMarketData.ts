@@ -1,28 +1,25 @@
 import { useState, useEffect, useCallback } from "react";
 import { fetchMarketData } from "../api";
 import { TICKER_CONFIGS, TICKER_ORDER } from "../config/tickers";
-import type { Ticker, MarketDataResult } from "../types";
-
-// ─────────────────────────────────────────────────────────────────────────────
-// useMarketData
-// Assembles full Ticker objects (config + live reading) for the UI.
-// The page never calls fetch directly — all data logic lives here.
-// ─────────────────────────────────────────────────────────────────────────────
+import type { Ticker, MarketDataResult, FxRate, DepositRateRow, LendingRateRow } from "../types";
 
 interface UseMarketDataReturn {
-  tickers: Ticker[];
-  isLoading: boolean;
+  tickers:      Ticker[];
+  fxRates:      FxRate[];
+  depositRates: DepositRateRow[];
+  lendingRates: LendingRateRow[];
+  isLoading:    boolean;
   isRefreshing: boolean;
-  error: string | null;
-  lastUpdated: Date | null;
-  refresh: () => void;
+  error:        string | null;
+  lastUpdated:  Date | null;
+  refresh:      () => void;
 }
 
 export function useMarketData(): UseMarketDataReturn {
-  const [result, setResult]         = useState<MarketDataResult | null>(null);
-  const [isLoading, setIsLoading]   = useState(true);
+  const [result, setResult]             = useState<MarketDataResult | null>(null);
+  const [isLoading, setIsLoading]       = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [error, setError]           = useState<string | null>(null);
+  const [error, setError]               = useState<string | null>(null);
 
   const load = useCallback(async (isManualRefresh = false) => {
     if (isManualRefresh) setIsRefreshing(true);
@@ -38,7 +35,6 @@ export function useMarketData(): UseMarketDataReturn {
     }
   }, []);
 
-  // Initial load — async work owned by the effect, with a cancellation guard
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -54,7 +50,6 @@ export function useMarketData(): UseMarketDataReturn {
     return () => { cancelled = true; };
   }, []);
 
-  // Auto-refresh every 5 minutes (interval callback runs outside the effect body)
   useEffect(() => {
     const interval = setInterval(() => void load(true), 5 * 60 * 1000);
     return () => clearInterval(interval);
@@ -67,6 +62,9 @@ export function useMarketData(): UseMarketDataReturn {
 
   return {
     tickers,
+    fxRates:      result?.fxRates      ?? [],
+    depositRates: result?.depositRates ?? [],
+    lendingRates: result?.lendingRates ?? [],
     isLoading,
     isRefreshing,
     error,

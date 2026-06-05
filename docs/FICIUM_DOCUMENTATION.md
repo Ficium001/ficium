@@ -1476,3 +1476,65 @@ internally.
 
 *End of document. For the executable SQL data dictionary, see the companion
 `SCHEMA_REFERENCE.sql`. For per-table migration history, see `database/`.*
+
+---
+
+## 28. Markets module
+
+> Full detail: [`docs/MARKETS_MODULE.md`](./MARKETS_MODULE.md)
+> Live data plan: [`docs/LIVE_DATA_PLAN.md`](./LIVE_DATA_PLAN.md)
+
+### 28.1 Purpose
+
+The Markets page (`/markets`) is the daily-engagement surface for individual (client) users.
+It provides:
+- Live Mauritius financial data: repo rate, FX, SEMDEX, inflation, deposit/lending rates
+- Best FX rate today across all 8 Mauritius banks (unique in the market)
+- Plain-English financial stories in "Everyday" mode (layman) and "Finance" mode (professional)
+- AI-generated summaries via Claude Haiku (cached in Supabase, regenerated only on change)
+
+### 28.2 Route
+
+| Path | Component | Guard |
+|---|---|---|
+| `/markets` | `src/individual/markets/pages/Markets.tsx` | `ClientOnlyRoute` |
+
+### 28.3 Data flow
+
+```
+Supabase Edge Function (cron 30min)
+  → Scrape BOM, all 8 banks, SEM, RSS
+  → If changed: call Claude Haiku → upsert stories
+  → Upsert market_data, market_fx_rates, market_stories
+
+Frontend
+  → useMarketData() + useMarketNews()
+  → api/index.ts (adapter selector)
+  → Currently: mock.ts  |  Next: supabase.ts
+```
+
+### 28.4 Adding a ticker (3 steps)
+
+1. Add `TickerId` literal to `types/index.ts`
+2. Add `TICKER_CONFIGS[newId]` to `config/tickers.ts`
+3. Add to `TICKER_ORDER` array
+
+### 28.5 Story modes
+
+| Mode | Audience | Style |
+|---|---|---|
+| Everyday (default) | All users | Plain English, wallet impact, no jargon |
+| Finance | Power users | Basis points, index notation, analyst language |
+
+Toggle stored in component state — resets on page navigation (intentional, default = accessible).
+
+### 28.6 Estimated live data cost
+
+| Item | Cost |
+|---|---|
+| All bank FX scraping | Free |
+| SEM / BOM / Statistics Mauritius | Free |
+| News scraping (L'Express, Le Défi) | Free |
+| Claude Haiku story generation | ~$0.60 / month |
+| exchangerate.host (backup) | Free tier |
+| **Total** | **~$0.60 / month** |
