@@ -1,5 +1,7 @@
 import { supabase, institutionDb, db } from "@/shared/lib/supabase";
 import { audit } from "@/shared/lib/audit";
+import { formatProductType } from "@/shared/lib/format";
+export { formatProductType } from "@/shared/lib/format";
 
 /* ---------- Institution schema client (read-only for bids) ---------- */
 const instSupabase = institutionDb;

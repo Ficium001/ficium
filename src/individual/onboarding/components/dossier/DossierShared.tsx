@@ -1,6 +1,7 @@
 import { ArrowRight, Sparkles, Check } from "lucide-react";
 import type { HealthResult }           from "@/individual/onboarding/utils/calcHealth";
 import { STEP_LABELS }                 from "@/individual/onboarding/config/dossierOptions";
+import { formatMUR }                   from "@/shared/lib/format";
 export { formatMUR }                   from "@/shared/lib/format";
 
 // ── StepButton ────────────────────────────────────────────────────────────────
