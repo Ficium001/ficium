@@ -243,18 +243,18 @@ function SectionHeader({
 // ── Static data ───────────────────────────────────────────────────────────────
 
 const QUICK_ACTIONS = [
-  { icon: <HandCoins    size={20} className="text-ficium"       />, label: "Apply for Loan",     bg: "bg-ficium/10",    to: "/requests/new" },
-  { icon: <CreditCard   size={20} className="text-violet-600"   />, label: "Credit Card",        bg: "bg-violet-50",    to: "/requests/new?type=credit-card" },
-  { icon: <LineChart    size={20} className="text-emerald-600"  />, label: "Invest Now",         bg: "bg-emerald-50",   to: "/requests/new?type=investment" },
-  { icon: <span className="text-[18px] font-bold text-amber-600">%</span>, label: "Compare Rates", bg: "bg-amber-50", to: "/tools" },
-  { icon: <ShieldCheck  size={20} className="text-ficium"       />, label: "Check Eligibility",  bg: "bg-ficium/10",    to: "/advisor" },
-  { icon: <Upload       size={20} className="text-muted"        />, label: "Upload Document",    bg: "bg-ink/[0.05]",   to: "/kyc" },
-  { icon: <MessageCircle size={20} className="text-ficium"      />, label: "Talk to AI Coach",   bg: "bg-ficium/10",    to: "/advisor" },
+  { icon: <HandCoins     size={20} className="text-ficium"      />, label: "Apply for Loan",    bg: "bg-ficium/10",  to: "/requests/new"                        },
+  { icon: <CreditCard    size={20} className="text-violet-600"  />, label: "Credit Card",       bg: "bg-violet-50",  to: "/requests/new?type=credit_card"        },
+  { icon: <LineChart     size={20} className="text-emerald-600" />, label: "Invest Now",        bg: "bg-emerald-50", to: "/requests/new?type=investment_account" },
+  { icon: <ShieldCheck   size={20} className="text-ficium"      />, label: "Eligibility",       bg: "bg-ficium/10",  to: "/advisor"                             },
+  { icon: <Upload        size={20} className="text-muted"       />, label: "Upload Doc",        bg: "bg-ink/[0.05]", to: "/onboarding/kyc"                      },
+  { icon: <MessageCircle size={20} className="text-ficium"      />, label: "AI Coach",          bg: "bg-ficium/10",  to: "/advisor"                             },
+  { icon: <Calculator    size={20} className="text-amber-600"   />, label: "Calculator",        bg: "bg-amber-50",   to: "/tools"                               },
 ];
 
 const TOOLS = [
-  { icon: <Calculator size={20} className="text-ficium"      />, bg: "bg-ficium/10",   title: "Loan Calculator",      desc: "Estimate your monthly repayments", to: "/tools" },
-  { icon: <LineChart  size={20} className="text-emerald-600" />, bg: "bg-emerald-50",  title: "Investment Calculator", desc: "Project your future wealth",       to: "/tools" },
-  { icon: <Wallet     size={20} className="text-amber-600"   />, bg: "bg-amber-50",    title: "Affordability Check",  desc: "Find what you can afford",         to: "/tools" },
-  { icon: <ShieldCheck size={20} className="text-violet-600" />, bg: "bg-violet-50",   title: "Debt Analyser",        desc: "Understand your debt better",      to: "/tools" },
+  { icon: <Calculator  size={20} className="text-ficium"      />, bg: "bg-ficium/10",  title: "Loan Calculator",      desc: "Estimate your monthly repayments", to: "/tools#credit"        },
+  { icon: <LineChart   size={20} className="text-emerald-600" />, bg: "bg-emerald-50", title: "Investment Calculator", desc: "Project your future wealth",       to: "/tools#investment"    },
+  { icon: <Wallet      size={20} className="text-amber-600"   />, bg: "bg-amber-50",   title: "Affordability Check",  desc: "Find what you can afford",         to: "/requests/new"        },
+  { icon: <ShieldCheck size={20} className="text-violet-600"  />, bg: "bg-violet-50",  title: "Debt Analyser",        desc: "Understand your debt better",      to: "/advisor"             },
 ];
