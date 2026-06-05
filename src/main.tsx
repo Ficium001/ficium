@@ -4,8 +4,12 @@ import { RouterProvider }      from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { router }              from "./app/routes";
 import { AuthProvider }        from "./features/auth/context/AuthContext";
-import { queryClient }         from "./core/query-client";
+import { queryClient, hydrateProfileCache } from "./core/query-client";
 import "./index.css";
+
+// Rehydrate profile from sessionStorage BEFORE first render
+// so the name appears instantly without a network round-trip.
+hydrateProfileCache();
 
 const root = document.getElementById("root");
 if (!root) throw new Error("Root element #root not found in index.html");
