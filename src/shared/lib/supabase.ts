@@ -1,21 +1,12 @@
 // =============================================================
 // Ficium — Supabase client (single source of truth)
 //
-// ONE GoTrueClient owned by `supabase` (public schema).
-// Schema-scoped clients (institutionDb, adminDb) are created
-// WITHOUT their own auth config — they inherit the session by
-// reading the token from the primary client on every request
-// via a custom global fetch interceptor.
-//
-// This eliminates the "Multiple GoTrueClient instances detected"
-// warning and the 403s caused by RLS seeing an anonymous session
-// on the secondary clients.
-//
-// Usage:
-//   import { supabase }      from "@/shared/lib/supabase"; // public schema
-//   import { institutionDb } from "@/shared/lib/supabase"; // institution schema
-//   import { adminDb }       from "@/shared/lib/supabase"; // admin schema
-//   import { db }            from "@/shared/lib/supabase"; // db("institution")
+// ONE active GoTrueClient — owned by `supabase` (public schema).
+// Schema-scoped clients (institutionDb, adminDb) are created with
+// a no-op in-memory storage so their GoTrueClient never touches
+// localStorage and never collides with the primary session key.
+// Auth tokens are injected per-request via a fetch interceptor
+// that reads the live session from the primary client.
 // =============================================================
 import { createClient } from "@supabase/supabase-js";
 
@@ -34,7 +25,7 @@ if (!URL || !KEY) {
 const url = URL ?? "";
 const key = KEY ?? "";
 
-/** Primary client — public schema. Owns the ONE GoTrueClient / auth session. */
+/** Primary client — public schema. Owns the ONE real GoTrueClient / auth session. */
 export const supabase: AnyClient = createClient(url, key, {
   auth: {
     persistSession:     true,
@@ -46,17 +37,26 @@ export const supabase: AnyClient = createClient(url, key, {
 
 export type SchemaName = "public" | "institution" | "admin";
 
+/**
+ * A no-op storage adapter — schema clients use this so their internal
+ * GoTrueClient never reads/writes localStorage and never triggers the
+ * "multiple GoTrueClient instances" warning.
+ */
+const nullStorage = {
+  getItem:    (_key: string) => null,
+  setItem:    (_key: string, _val: string) => {},
+  removeItem: (_key: string) => {},
+};
+
 // Schema-scoped clients are cached — no duplicate instances.
 const schemaClients = new Map<SchemaName, AnyClient>();
 schemaClients.set("public", supabase);
 
 /**
  * Returns a Supabase client scoped to the given Postgres schema.
- *
- * Schema clients do NOT have their own GoTrueClient. Instead, a
- * custom global fetch interceptor injects the Authorization header
- * from the primary client's live session before every request,
- * so RLS sees the correct authenticated user.
+ * Uses a no-op storage + fetch interceptor so:
+ *  - No extra GoTrueClient warnings
+ *  - RLS always sees the authenticated user via injected Bearer token
  */
 export function db(schema: SchemaName = "public"): AnyClient {
   if (schema === "public") return supabase;
@@ -65,10 +65,14 @@ export function db(schema: SchemaName = "public"): AnyClient {
 
   const client: AnyClient = createClient(url, key, {
     db:   { schema },
-    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    auth: {
+      persistSession:     false,
+      autoRefreshToken:   false,
+      detectSessionInUrl: false,
+      storage:            nullStorage,
+    },
     global: {
       fetch: async (input, init) => {
-        // Inject the live session token from the primary client
         const { data } = await supabase.auth.getSession();
         const token = data.session?.access_token;
         const headers = new Headers((init as RequestInit | undefined)?.headers);

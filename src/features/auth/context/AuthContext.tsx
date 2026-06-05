@@ -2,6 +2,9 @@ import { createContext, useContext, useEffect, useState } from "react";
 import type { ReactNode }     from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase }           from "../../../shared/lib/supabase";
+import { queryClient }        from "../../../core/query-client";
+import { getProfileSummary }  from "../../../individual/dashboard/api/profile";
+import { getMyRequests }      from "../../../individual/requests/api/requests";
 
 type UserRole = "client" | "bank" | "admin";
 
@@ -14,6 +17,25 @@ type AuthContextValue = {
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+
+/**
+ * Warm the React-Query cache with the data the dashboard needs immediately.
+ * Fires in the background as soon as we know the user is logged in — before
+ * the router has even rendered the dashboard route — so name, greeting and
+ * request count appear instantly instead of after a loading spinner.
+ */
+function prefetchDashboardData(): void {
+  void queryClient.prefetchQuery({
+    queryKey:  ["profile"],
+    queryFn:   getProfileSummary,
+    staleTime: 10 * 60 * 1000,
+  });
+  void queryClient.prefetchQuery({
+    queryKey:  ["requests", "mine"],
+    queryFn:   getMyRequests,
+    staleTime: 60 * 1000,
+  });
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session,   setSession]   = useState<Session | null>(null);
@@ -31,6 +53,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     void userId;
     setRole((roleData as UserRole) ?? "client");
+    // Kick off dashboard prefetch in parallel — don't await it
+    if ((roleData as UserRole) === "client") prefetchDashboardData();
   }
 
   useEffect(() => {
@@ -49,6 +73,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         fetchUserMeta(newSession.user.id);
       } else {
         setRole(null);
+        // Clear cached user data on sign-out
+        queryClient.removeQueries({ queryKey: ["profile"] });
+        queryClient.removeQueries({ queryKey: ["requests"] });
       }
     });
 
