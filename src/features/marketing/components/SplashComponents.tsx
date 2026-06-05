@@ -172,9 +172,9 @@ export function Hero({ scene, sceneIndex, activeOffer }: { scene: Scene; sceneIn
   );
 }
 
-// ── HowItWorks ────────────────────────────────────────────────────────────────
+// ── HowItWorksSection ─────────────────────────────────────────────────────────
 
-export function HowItWorks() {
+export function HowItWorksSection() {
   const ref    = useRef<HTMLDivElement>(null);
   const inView = useInView(ref);
   return (

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useReducedMotion, useScrollY } from "@/features/marketing/hooks";
 import { SCENES }   from "@/features/marketing/config/scenes";
-import { Nav, Hero, HowItWorks, Products, Trust, CTA, Footer } from "@/features/marketing/components/SplashComponents";
+import { Nav, Hero, HowItWorksSection, Products, Trust, CTA, Footer } from "@/features/marketing/components/SplashComponents";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Splash — marketing landing page orchestrator.
@@ -44,7 +44,7 @@ export default function Splash() {
     <div className="min-h-screen bg-cream text-ink overflow-x-hidden">
       <Nav scrollY={scrollY} />
       <Hero scene={scene} sceneIndex={sceneIndex} activeOffer={activeOffer} />
-      <HowItWorks />
+      <HowItWorksSection />
       <Products />
       <Trust />
       <CTA />

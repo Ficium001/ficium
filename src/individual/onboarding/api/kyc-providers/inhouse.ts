@@ -133,7 +133,6 @@ export const inhouseProvider: KycProvider = {
         throw new Error(`kyc-verify ${res.status}: ${errText.slice(0, 300)}`);
       }
       const result = await res.json() as KycVerifyResult & { flags?: string[] };
-      console.log("[KYC inhouse] result:", JSON.stringify({ ok: result.ok, riskScore: result.riskScore, reason: result.reason }));
       return result;
 
     } catch (err) {

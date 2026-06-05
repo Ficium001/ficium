@@ -1,4 +1,5 @@
 import { supabase } from "@/shared/lib/supabase";
+export { formatMUR, formatProductType } from "@/shared/lib/format";
 
 export type ProfileCompletion = {
   accountCreated: boolean; kycVerified: boolean; proofOfAddressDone: boolean;
@@ -51,22 +52,6 @@ export async function getProfileSummary(): Promise<ProfileSummary | null> {
     affordabilityScore: data.affordability_score ?? null,
     completion, hasDossier: data.financial_profile_done ?? false,
   };
-}
-
-export function formatMUR(amount: number): string {
-  return new Intl.NumberFormat("en-MU", {
-    style: "currency", currency: "MUR", maximumFractionDigits: 0,
-  }).format(amount);
-}
-
-export function formatProductType(t: string): string {
-  const labels: Record<string, string> = {
-    sme_loan: "SME Loan", personal_loan: "Personal Loan", mortgage: "Mortgage",
-    fixed_deposit: "Fixed Deposit", savings_account: "Savings Account",
-    credit_card: "Credit Card", business_account: "Business Account",
-    investment_account: "Investment Account",
-  };
-  return labels[t] ?? t;
 }
 
 export type NextAction = {

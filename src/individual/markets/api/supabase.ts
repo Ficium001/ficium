@@ -52,11 +52,6 @@ export async function fetchMarketData(): Promise<MarketDataResult> {
   if (depositRes.error) console.error("[markets] market_deposit_rates error:", depositRes.error);
   if (lendingRes.error) console.error("[markets] market_lending_rates error:", lendingRes.error);
 
-  console.log("[markets] rows fetched — tickers:", tickerRes.data?.length ?? 0,
-    "fx:", fxRes.data?.length ?? 0,
-    "deposit:", depositRes.data?.length ?? 0,
-    "lending:", lendingRes.data?.length ?? 0);
-
   // ── Ticker readings ──
   const readings = {} as MarketDataResult["readings"];
 
@@ -165,8 +160,6 @@ export async function fetchMarketNews(): Promise<NewsResult> {
 
   if (newsRes.error)    console.error("[markets] market_news error:",    newsRes.error);
   if (storiesRes.error) console.error("[markets] market_stories error:", storiesRes.error);
-
-  console.log("[markets] news:", newsRes.data?.length ?? 0, "stories:", storiesRes.data?.length ?? 0);
 
   const items: NewsItem[] = (newsRes.data ?? []).map((row) => ({
     id:               row.id,

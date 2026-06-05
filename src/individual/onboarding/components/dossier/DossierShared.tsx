@@ -1,14 +1,7 @@
 import { ArrowRight, Sparkles, Check } from "lucide-react";
 import type { HealthResult }           from "@/individual/onboarding/utils/calcHealth";
 import { STEP_LABELS }                 from "@/individual/onboarding/config/dossierOptions";
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-export function formatMUR(n: number): string {
-  return new Intl.NumberFormat("en-MU", {
-    style: "currency", currency: "MUR", maximumFractionDigits: 0,
-  }).format(n || 0);
-}
+export { formatMUR }                   from "@/shared/lib/format";
 
 // ── StepButton ────────────────────────────────────────────────────────────────
 

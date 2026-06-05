@@ -10,6 +10,7 @@ import {
   useKycQueue, useKycStats, useApproveKyc, useRejectKyc,
   getSignedUrl, type KycQueueItem, type KycStatus,
 } from "./useKycReview";
+import { supabase } from "@/shared/lib/supabase";
 
 /* ---------- Helpers ---------- */
 
@@ -126,8 +127,6 @@ function KycReviewModal({ item, onClose }: { item: KycQueueItem; onClose: () => 
       const faceData = await faceRes.json() as { deleted?: number; message?: string; error?: string };
       if (faceData.error) throw new Error(faceData.error);
       // Delete KYC submissions from DB
-      const { createClient } = await import("@supabase/supabase-js");
-      const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY);
       await supabase.from("kyc_submissions").delete().eq("client_id", item.id);
       await supabase.from("clients").update({ kyc_status: "not_started" }).eq("id", item.id);
       setResetMsg(`✓ Reset complete. Faces removed: ${faceData.deleted ?? 0}. User can resubmit KYC.`);

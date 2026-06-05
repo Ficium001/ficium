@@ -316,16 +316,4 @@ export async function acceptBid(bidId: string, requestId: string): Promise<Accep
 
 /* ---------- Helper ---------- */
 
-export function formatProductType(t: string): string {
-  const labels: Record<string, string> = {
-    sme_loan:           "SME Loan",
-    personal_loan:      "Personal Loan",
-    mortgage:           "Mortgage",
-    fixed_deposit:      "Fixed Deposit",
-    savings_account:    "Savings Account",
-    credit_card:        "Credit Card",
-    business_account:   "Business Account",
-    investment_account: "Investment Account",
-  };
-  return labels[t] ?? t;
-}
+export { formatProductType } from "@/shared/lib/format";

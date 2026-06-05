@@ -301,9 +301,7 @@ export function FinancialEditForm({ profile, onClose, hidden, setHidden }: {
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function formatMUR(amount: number): string {
-  return `MUR ${new Intl.NumberFormat("en-MU", { maximumFractionDigits: 0 }).format(amount)}`;
-}
+export { formatMUR } from "@/shared/lib/format";
 
 export function formatEmployment(status: string | null): string {
   if (!status) return "—";
