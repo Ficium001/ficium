@@ -316,6 +316,4 @@ export async function acceptBid(bidId: string, requestId: string): Promise<Accep
   return { ok: true };
 }
 
-/* ---------- Helper ---------- */
-
-export { formatProductType } from "@/shared/lib/format";
+}
