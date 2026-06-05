@@ -1,4 +1,3 @@
-import { persistProfileCache, clearProfileCache } from "@/core/query-client";
 import { supabase } from "@/shared/lib/supabase";
 
 export type ProfileCompletion = {
@@ -29,7 +28,7 @@ export async function getProfileSummary(): Promise<ProfileSummary | null> {
     .select("*")
     .maybeSingle();
 
-  if (error || !data) { clearProfileCache(); return null; }
+  if (error || !data) return null;
 
   const completion: ProfileCompletion = {
     accountCreated: true,
@@ -40,7 +39,7 @@ export async function getProfileSummary(): Promise<ProfileSummary | null> {
     percent: data.completion_percent ?? 20,
   };
 
-  const result = {
+  return {
     userId: data.user_id, email: data.email, fullName: data.full_name,
     firstName: data.first_name, kycStatus: data.kyc_status,
     addressLine1: data.address_line_1 ?? null, city: data.city ?? null,
@@ -52,8 +51,6 @@ export async function getProfileSummary(): Promise<ProfileSummary | null> {
     affordabilityScore: data.affordability_score ?? null,
     completion, hasDossier: data.financial_profile_done ?? false,
   };
-  persistProfileCache(result);
-  return result;
 }
 
 export function formatMUR(amount: number): string {
