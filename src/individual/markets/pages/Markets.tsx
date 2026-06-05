@@ -6,7 +6,6 @@ import {
   MarketHeader,
   TickerStrip,
   StoryCallout,
-  RatesPanel,
   RatesSummaryBar,
   FxBestRates,
   MarketNewsFeed,
@@ -32,7 +31,7 @@ import type { TickerId, StoryMode } from "@/individual/markets/types";
 
 export default function Markets() {
   const {
-    tickers, fxRates, depositRates, lendingRates,
+    tickers, fxRates,
     isRefreshing, lastUpdated, refresh,
   } = useMarketData();
 
@@ -81,10 +80,7 @@ export default function Markets() {
         {/* 3 ── Story callout (conditional) */}
         {activeTicker && <StoryCallout ticker={activeTicker} />}
 
-        {/* 4 ── Rates panels */}
-        <RatesPanel depositRates={depositRates} lendingRates={lendingRates} />
-
-        {/* 5 ── AI summary bar */}
+        {/* 4 ── AI summary bar */}
         <RatesSummaryBar
           summary="Rates are stable. Repo rate unchanged. Best time to refinance and optimise your debt."
         />
