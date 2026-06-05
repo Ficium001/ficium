@@ -27,7 +27,7 @@ export function FlipCards({
     <div className="grid grid-cols-3 gap-2.5">
 
       {/* ── Health Score ── */}
-      <FlipCard id="health" flipped={!!flipped.health} onFlip={onFlip} dark={dark}>
+      <FlipCard id="health" flipped={!!flipped.health} onFlip={onFlip}>
         <FlipFront dark={dark}>
           <FlipIcon bg={dark ? "bg-red-500/20" : "bg-red-50"}>
             <Activity size={13} className="text-red-500" />
@@ -50,7 +50,7 @@ export function FlipCards({
       </FlipCard>
 
       {/* ── Bank Readiness ── */}
-      <FlipCard id="nw" flipped={!!flipped.nw} onFlip={onFlip} dark={dark}>
+      <FlipCard id="nw" flipped={!!flipped.nw} onFlip={onFlip}>
         <FlipFront dark={dark}>
           <FlipIcon bg={dark ? "bg-ficium/20" : "bg-ficium/10"}>
             <Zap size={13} className="text-ficium" />
@@ -68,7 +68,7 @@ export function FlipCards({
       </FlipCard>
 
       {/* ── Requests ── */}
-      <FlipCard id="req" flipped={!!flipped.req} onFlip={onFlip} dark={dark}>
+      <FlipCard id="req" flipped={!!flipped.req} onFlip={onFlip}>
         <FlipFront dark={dark}>
           <FlipIcon bg={dark ? "bg-emerald-400/20" : "bg-emerald-50"}>
             <FileText size={13} className="text-emerald-600" />
@@ -96,9 +96,9 @@ export function FlipCards({
 
 // ── Internal primitives ───────────────────────────────────────────────────────
 
-function FlipCard({ id, flipped, onFlip, dark, children }: {
+function FlipCard({ id, flipped, onFlip, children }: {
   id: string; flipped: boolean; onFlip: (id: string) => void;
-  dark: boolean; children: React.ReactNode;
+  children: React.ReactNode;
 }) {
   return (
     <div className="cursor-pointer" onClick={() => onFlip(id)} style={{ perspective: "800px" }}>
