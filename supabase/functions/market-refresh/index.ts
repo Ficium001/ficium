@@ -390,7 +390,12 @@ Respond in this exact JSON format only, no markdown:
 // MAIN HANDLER
 // ─────────────────────────────────────────────────────────────────────────────
 
-Deno.serve(async () => {
+Deno.serve(async (req) => {
+  // Allow all POST requests — this function is internal/cron only
+  // Auth is handled by Supabase network rules, not JWT
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 204 });
+  }
   const startedAt = new Date().toISOString();
   log("Starting market refresh at", startedAt);
 
