@@ -59,7 +59,7 @@ function fmtMUR(n: number) {
 export default function NewRequest() {
   const navigate = useNavigate();
   const { data: profile, isLoading: profileLoading } = useProfile();
-  const { intel } = useIntelligence();
+  const { getRates, getWinningBid } = useIntelligence();
 
   /* Gate */
   useEffect(() => {
@@ -182,7 +182,7 @@ export default function NewRequest() {
             <p className="text-[14px] text-muted mb-5">What are you looking for?</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {PRODUCTS.map((p) => {
-                const rates = intel?.marketRates?.find((r: { product_type: string }) => r.product_type === p.type);
+                const rates = getRates(p.type);
                 const Icon  = p.icon;
                 return (
                   <button
@@ -219,8 +219,8 @@ export default function NewRequest() {
 
             {/* Market rate hint */}
             {(() => {
-              const rates = intel?.marketRates?.find((r: { product_type: string }) => r.product_type === product.type);
-              const wins  = intel?.acceptanceIntel?.find((a: { product_type: string; avg_winning_rate_pct: number; avg_winning_term_months: number }) => a.product_type === product.type);
+              const rates = getRates(product.type);
+              const wins  = getWinningBid(product.type);
               if (!rates) return null;
               return (
                 <div className="flex items-start gap-3 bg-ficium/[0.04] border border-ficium/[0.12] rounded-xl px-4 py-3.5">
