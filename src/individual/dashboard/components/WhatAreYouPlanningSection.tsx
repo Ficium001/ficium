@@ -13,13 +13,13 @@ import {
 
 // Each category maps to an existing NewRequest product type
 const CATEGORIES = [
-  { id: "mortgage",          icon: Home,          label: "Buy a House",    iconColor: "#2A1FE6", bg: "rgba(42,31,230,0.10)"  },
-  { id: "leasing",           icon: Car,           label: "Buy a Vehicle",  iconColor: "#2A1FE6", bg: "rgba(42,31,230,0.10)"  },
-  { id: "personal_loan",     icon: GraduationCap, label: "Education",      iconColor: "#059669", bg: "rgba(5,150,105,0.10)"  },
-  { id: "personal_loan",     icon: Plane,         label: "Travel",         iconColor: "#d97706", bg: "rgba(217,119,6,0.10)"  },
-  { id: "investment_account",icon: TrendingUp,    label: "Invest Money",   iconColor: "#2A1FE6", bg: "rgba(42,31,230,0.10)"  },
-  { id: "business_loan",     icon: Briefcase,     label: "Start Business", iconColor: "#7c3aed", bg: "rgba(124,58,237,0.10)" },
-] as const;
+  { icon: Home,          label: "Buy a House",    iconColor: "#2A1FE6", bg: "rgba(42,31,230,0.10)",  route: "/journeys/new?type=mortgage"   },
+  { icon: Car,           label: "Buy a Vehicle",  iconColor: "#2A1FE6", bg: "rgba(42,31,230,0.10)",  route: "/journeys/new?type=vehicle"    },
+  { icon: GraduationCap, label: "Education",      iconColor: "#059669", bg: "rgba(5,150,105,0.10)",  route: "/journeys/new?type=education"  },
+  { icon: Plane,         label: "Travel",         iconColor: "#d97706", bg: "rgba(217,119,6,0.10)",  route: "/journeys/new?type=travel"     },
+  { icon: TrendingUp,    label: "Invest Money",   iconColor: "#2A1FE6", bg: "rgba(42,31,230,0.10)",  route: "/journeys/new?type=investment" },
+  { icon: Briefcase,     label: "Start Business", iconColor: "#7c3aed", bg: "rgba(124,58,237,0.10)", route: "/journeys/new?type=business"   },
+];
 
 const ATTACH_OPTIONS = [
   { icon: <Image    size={15} className="text-ficium"       />, label: "Upload photos",  accept: "image/*",          capture: undefined     },
@@ -41,7 +41,7 @@ export function WhatAreYouPlanningSection() {
     const cat = selectedIdx !== null ? CATEGORIES[selectedIdx] : null;
     if (cat)         p.set("type", cat.id);
     // Always go to NewRequest — it reads these params
-    navigate(`/requests/new?${p.toString()}`);
+    navigate(`/journeys/new?${p.toString()}`);
   };
 
   const handleCategory = (idx: number) => {
@@ -50,7 +50,7 @@ export function WhatAreYouPlanningSection() {
     // Navigate immediately with type pre-selected
     const p = new URLSearchParams({ type: cat.id });
     if (text.trim()) p.set("goal", text.trim());
-    navigate(`/requests/new?${p.toString()}`);
+    navigate(`/journeys/new?${p.toString()}`);
   };
 
   return (

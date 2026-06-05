@@ -34,6 +34,9 @@ const ClientAudit         = lazy(() => import("../individual/audit/pages/ClientA
 const Goals               = lazy(() => import("../individual/goals/pages/Goals"));
 const NewGoal             = lazy(() => import("../individual/goals/pages/NewGoal"));
 const GoalDetail          = lazy(() => import("../individual/goals/pages/GoalDetail"));
+const Journeys            = lazy(() => import("../individual/journeys/pages/Journeys"));
+const JourneyWizard       = lazy(() => import("../individual/journeys/pages/JourneyWizard"));
+const JourneyWorkspace    = lazy(() => import("../individual/journeys/pages/JourneyWorkspace"));
 
 // ── Institution app ───────────────────────────────────────────
 const InstitutionPending      = lazy(() => import("../institution/auth/pages/InstitutionPending"));
@@ -130,6 +133,9 @@ export const router = createBrowserRouter([
   { path: "/goals",                  element: <ClientOnlyRoute><S><Goals /></S></ClientOnlyRoute> },
   { path: "/goals/new",              element: <ClientOnlyRoute><S><NewGoal /></S></ClientOnlyRoute> },
   { path: "/goals/:id",              element: <ClientOnlyRoute><S><GoalDetail /></S></ClientOnlyRoute> },
+  { path: "/journeys",               element: <ClientOnlyRoute><S><Journeys /></S></ClientOnlyRoute> },
+  { path: "/journeys/new",           element: <ClientOnlyRoute><S><JourneyWizard /></S></ClientOnlyRoute> },
+  { path: "/journeys/:id",           element: <ClientOnlyRoute><S><JourneyWorkspace /></S></ClientOnlyRoute> },
 
   // ── Institution app ─────────────────────────────────────────
   { path: "/institution/login",        element: <S><InstitutionLogin /></S> },
