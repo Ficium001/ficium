@@ -127,9 +127,9 @@ const JOURNEY_CONFIG: Record<JourneyType, {
 
 // ── Journey Result Card ───────────────────────────────────────
 function JourneyResultCard({
-  type, title, answers: _answers, aiResults, onConfirm, onBack, creating,
+  type, title, aiResults, onConfirm, onBack, creating,
 }: {
-  type: JourneyType; title: string; answers: JourneyAnswers;
+  type: JourneyType; title: string;
   aiResults: JourneyAIResults; onConfirm: () => void; onBack: () => void; creating: boolean;
 }) {
   const config = JOURNEY_CONFIG[type];
