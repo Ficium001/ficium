@@ -12,6 +12,7 @@ interface UseMarketDataReturn {
   isRefreshing: boolean;
   error:        string | null;
   lastUpdated:  Date | null;
+  _rawResult:   MarketDataResult | null;
   refresh:      () => void;
 }
 
@@ -68,7 +69,8 @@ export function useMarketData(): UseMarketDataReturn {
     isLoading,
     isRefreshing,
     error,
-    lastUpdated: result?.fetchedAt ?? null,
+    lastUpdated:  result?.fetchedAt ?? null,
+    _rawResult:   result,
     refresh: () => load(true),
   };
 }

@@ -10,6 +10,7 @@ export { TickerStrip }      from "./TickerStrip";
 export { StoryCallout }     from "./StoryCallout";
 export { NewsCard }         from "./NewsCard";
 export { MarketHeader }     from "./MarketHeader";
+export { AiMarketChat }     from "./AiMarketChat";
 export { FiciumCTA }        from "./FiciumCTA";
 export { RatesPanel }       from "./RatesPanel";
 export { RatesSummaryBar }  from "./RatesSummaryBar";
