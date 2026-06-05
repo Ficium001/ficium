@@ -362,7 +362,6 @@ export default function JourneyWizard() {
           <JourneyResultCard
             type={type}
             title={config.title(answers)}
-            answers={answers}
             aiResults={aiResults}
             onConfirm={handleConfirm}
             onBack={() => { setAIResults(null); setStep(questions.length - 1); }}
@@ -470,3 +469,4 @@ function QuestionCard({ question, value, onChange, onNext, isLast, stepNum, tota
     </div>
   );
 }
+

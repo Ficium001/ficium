@@ -36,21 +36,18 @@ export function WhatAreYouPlanningSection() {
   const menuRef = useRef<HTMLDivElement>(null);
 
   const handleGenerate = () => {
-    const p = new URLSearchParams();
-    if (text.trim()) p.set("goal", text.trim());
     const cat = selectedIdx !== null ? CATEGORIES[selectedIdx] : null;
-    if (cat)         p.set("type", cat.id);
-    // Always go to NewRequest — it reads these params
-    navigate(`/journeys/new?${p.toString()}`);
+    let url = cat ? cat.route : "/journeys/new";
+    if (text.trim()) url += `&goal=${encodeURIComponent(text.trim())}`;
+    navigate(url);
   };
 
   const handleCategory = (idx: number) => {
     setSelectedIdx(idx);
     const cat = CATEGORIES[idx];
-    // Navigate immediately with type pre-selected
-    const p = new URLSearchParams({ type: cat.id });
-    if (text.trim()) p.set("goal", text.trim());
-    navigate(`/journeys/new?${p.toString()}`);
+    let url = cat.route;
+    if (text.trim()) url += `&goal=${encodeURIComponent(text.trim())}`;
+    navigate(url);
   };
 
   return (
@@ -148,3 +145,4 @@ export function WhatAreYouPlanningSection() {
     </div>
   );
 }
+

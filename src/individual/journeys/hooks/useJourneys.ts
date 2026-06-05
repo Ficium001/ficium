@@ -54,3 +54,4 @@ export function useCalculateAffordability() {
     return calculateAffordability(type, answers, ctx);
   };
 }
+
