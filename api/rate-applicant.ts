@@ -10,58 +10,79 @@ const RATING_ENGINE_URL = process.env.RATING_ENGINE_URL!
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') return res.status(405).end()
 
-  const { applicant_id } = req.body
-  if (!applicant_id) return res.status(400).json({ error: 'applicant_id required' })
+  const { client_id } = req.body
+  if (!client_id) return res.status(400).json({ error: 'client_id required' })
 
-  const { data: applicant, error } = await supabase
-    .from('kyc_submissions')
-    .select('*')
-    .eq('id', applicant_id)
+  // Fetch client + their financial profile
+  const { data: client, error } = await supabase
+    .from('clients')
+    .select(`
+      *,
+      client_dossier (*),
+      client_loan_details (*)
+    `)
+    .eq('id', client_id)
     .single()
 
-  if (error || !applicant) return res.status(404).json({ error: 'Applicant not found' })
+  if (error || !client) return res.status(404).json({ error: 'Client not found' })
 
-  const ratingPayload = {
-    applicant_id,
-    type: applicant.business_type === 'sme' ? 'sme' : 'individual',
-    annual_income: applicant.annual_income,
-    monthly_expenses: applicant.monthly_expenses,
-    existing_debt: applicant.existing_debt,
-    credit_history_years: applicant.credit_history_years,
-    employment_status: applicant.employment_status,
-    annual_revenue: applicant.annual_revenue,
-    net_profit_margin: applicant.net_profit_margin,
-    years_in_business: applicant.years_in_business,
-    industry: applicant.industry,
-    debt_service_coverage: applicant.debt_service_coverage,
-    loan_amount_requested: applicant.loan_amount,
-    loan_purpose: applicant.loan_purpose,
-    collateral_value: applicant.collateral_value,
+  // Only rate if KYC is complete
+  if (client.kyc_status !== 'verified') {
+    return res.status(400).json({ error: 'KYC must be verified before rating' })
   }
 
+  const dossier = client.client_dossier?.[0] || {}
+  const loan = client.client_loan_details?.[0] || {}
+
+  const inputSnapshot = {
+    type: client.user_type === 'business' ? 'sme' : 'individual',
+    annual_income: dossier.annual_income,
+    monthly_expenses: dossier.monthly_expenses,
+    existing_debt: dossier.existing_debt,
+    credit_history_years: dossier.credit_history_years,
+    employment_status: dossier.employment_status,
+    annual_revenue: dossier.annual_revenue,
+    net_profit_margin: dossier.net_profit_margin,
+    years_in_business: dossier.years_in_business,
+    industry: dossier.industry,
+    debt_service_coverage: dossier.debt_service_coverage,
+    loan_amount_requested: loan.amount,
+    loan_purpose: loan.purpose,
+    collateral_value: loan.collateral_value,
+  }
+
+  // Call rating engine
   const ratingRes = await fetch(`${RATING_ENGINE_URL}/rate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(ratingPayload),
+    body: JSON.stringify({ client_id, ...inputSnapshot }),
   })
 
   if (!ratingRes.ok) return res.status(502).json({ error: 'Rating engine error' })
 
   const rating = await ratingRes.json()
 
-  await supabase
-    .from('kyc_submissions')
-    .update({
-      credit_rating: rating.rating,
-      credit_pd: rating.pd,
-      credit_pd_percent: rating.pd_percent,
-      credit_risk_category: rating.risk_category,
-      credit_pillar_scores: rating.pillar_scores,
-      credit_audit_trail: rating.audit_trail,
-      credit_recommendation: rating.recommendation,
-      credit_rated_at: new Date().toISOString(),
+  // Store in credit_ratings table (separate from KYC)
+  const { data: saved, error: saveError } = await supabase
+    .from('credit_ratings')
+    .insert({
+      client_id,
+      rating: rating.rating,
+      pd: rating.pd,
+      pd_percent: rating.pd_percent,
+      risk_category: rating.risk_category,
+      recommendation: rating.recommendation,
+      pillar_scores: rating.pillar_scores,
+      audit_trail: rating.audit_trail,
+      input_snapshot: inputSnapshot,
+      rated_at: new Date().toISOString(),
+      rating_version: '1.0.0',
+      rated_by: 'auto',
     })
-    .eq('id', applicant_id)
+    .select()
+    .single()
 
-  return res.status(200).json(rating)
+  if (saveError) return res.status(500).json({ error: 'Failed to save rating' })
+
+  return res.status(200).json(saved)
 }
