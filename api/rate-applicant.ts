@@ -60,7 +60,15 @@ export default async function handler(req: any, res: any) {
 
   if (!ratingRes.ok) return res.status(502).json({ error: 'Rating engine error' })
 
-  const rating = await ratingRes.json()
+  const rating = await ratingRes.json() as {
+    rating: string
+    pd: number
+    pd_percent: number
+    risk_category: string
+    recommendation: string
+    pillar_scores: Record<string, number>
+    audit_trail: unknown
+  }
 
   // Store in credit_ratings table (separate from KYC)
   const { data: saved, error: saveError } = await supabase

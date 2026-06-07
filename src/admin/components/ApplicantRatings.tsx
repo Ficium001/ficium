@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { supabase } from "@/core/supabase"
+import { supabase } from "@/shared/lib/supabase"
 
 type RiskCategory = "Investment Grade" | "Speculative Grade" | "Distressed"
 
