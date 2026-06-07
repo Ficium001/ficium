@@ -28,18 +28,69 @@ const ATTACH_OPTIONS = [
   { icon: <FileText size={15} className="text-violet-600"   />, label: "Upload files",   accept: ".pdf,.doc,.docx",  capture: undefined     },
 ];
 
+// Map journey type IDs to their routes
+const TYPE_TO_ROUTE: Record<string, string> = Object.fromEntries(
+  CATEGORIES.map((c) => [c.id, c.route])
+);
+
+async function classifyGoalWithAI(goal: string): Promise<string | null> {
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 50,
+        system:
+          "You are a financial intent classifier. Given a user's goal, reply with ONLY one of these exact words: mortgage, vehicle, education, travel, investment, business. No other text.",
+        messages: [{ role: "user", content: goal }],
+      }),
+    });
+    const data = await res.json();
+    const type = data?.content?.[0]?.text?.trim().toLowerCase();
+    return TYPE_TO_ROUTE[type] ? type : null;
+  } catch {
+    return null;
+  }
+}
+
 export function WhatAreYouPlanningSection() {
   const navigate      = useNavigate();
   const [text,        setText]        = useState("");
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [showMenu,    setShowMenu]    = useState(false);
+  const [loading,     setLoading]     = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     const cat = selectedIdx !== null ? CATEGORIES[selectedIdx] : null;
-    let url = cat ? cat.route : "/journeys/new";
-    if (text.trim()) url += `&goal=${encodeURIComponent(text.trim())}`;
-    navigate(url);
+
+    // If a chip is already selected, go straight there
+    if (cat) {
+      const url = text.trim()
+        ? `${cat.route}&goal=${encodeURIComponent(text.trim())}`
+        : cat.route;
+      navigate(url);
+      return;
+    }
+
+    // No chip selected — use AI to classify the free-text intent
+    if (text.trim()) {
+      setLoading(true);
+      const type = await classifyGoalWithAI(text.trim());
+      setLoading(false);
+
+      if (type && TYPE_TO_ROUTE[type]) {
+        navigate(`${TYPE_TO_ROUTE[type]}?goal=${encodeURIComponent(text.trim())}`);
+      } else {
+        // Fallback: generic journey page with correct ? separator
+        navigate(`/journeys/new?goal=${encodeURIComponent(text.trim())}`);
+      }
+      return;
+    }
+
+    // Nothing typed, nothing selected — open journeys list
+    navigate("/journeys/new");
   };
 
   const handleCategory = (idx: number) => {
@@ -136,10 +187,21 @@ export function WhatAreYouPlanningSection() {
 
         <button
           onClick={handleGenerate}
-          className="flex items-center justify-center gap-2 text-white px-6 py-3.5 rounded-xl text-[13px] font-bold shadow-ficium hover:opacity-90 active:scale-[0.98] transition-all flex-shrink-0 w-full sm:w-auto"
+          disabled={loading}
+          className="flex items-center justify-center gap-2 text-white px-6 py-3.5 rounded-xl text-[13px] font-bold shadow-ficium hover:opacity-90 active:scale-[0.98] transition-all flex-shrink-0 w-full sm:w-auto disabled:opacity-70 disabled:cursor-not-allowed"
           style={{ background: "linear-gradient(135deg, #2A1FE6, #3D32FF)" }}
         >
-          ✦ Generate My Plan <ArrowRight size={15} />
+          {loading ? (
+            <>
+              <svg className="animate-spin" width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                <circle cx="12" cy="12" r="10" strokeOpacity={0.3}/>
+                <path d="M12 2a10 10 0 0 1 10 10"/>
+              </svg>
+              Reading your goal…
+            </>
+          ) : (
+            <>✦ Generate My Plan <ArrowRight size={15} /></>
+          )}
         </button>
       </div>
     </div>
