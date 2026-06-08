@@ -83,9 +83,8 @@ export default function Dashboard() {
           <div>
             <div className="flex items-end justify-between mb-4">
               <div>
-                <div className="text-[11px] font-bold text-muted uppercase tracking-widest mb-1">Your marketplace</div>
                 <h2 className="font-display text-[20px] sm:text-[24px] font-bold text-ink leading-tight">
-                  Active <span className="text-ficium">Requests</span>
+                  Your Active <span className="text-ficium">Requests</span>
                 </h2>
               </div>
               <Link to="/requests" className="text-[12px] sm:text-[13px] text-muted font-semibold no-underline hover:text-ink pb-1 flex-shrink-0 ml-4">

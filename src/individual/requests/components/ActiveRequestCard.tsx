@@ -1,37 +1,38 @@
 // =============================================================
-// Ficium — ActiveRequestCard
-// Rich request card used on Dashboard + Requests page
+// Ficium — ActiveRequestCard v2
+// Clean card: full gradient header, icon centered, bold body
+// Matches the image reference aesthetic
 // =============================================================
 import { useNavigate } from "react-router-dom";
 import {
   Home, Car, CreditCard, Briefcase, PiggyBank,
-  TrendingUp, Banknote, Building2, Clock, CheckCircle2,
-  ChevronRight, Zap,
+  TrendingUp, Banknote, Building2, Clock,
+  CheckCircle2, ArrowRight, Users,
 } from "lucide-react";
 import type { RequestSummary } from "@/individual/requests/api/requests";
 
-/* ── Product config ── */
 const PRODUCT_CONFIG: Record<string, {
   icon:        React.ElementType;
   label:       string;
-  gradient:    string;
-  accentColor: string;
+  from:        string;
+  to:          string;
+  accent:      string;
 }> = {
-  mortgage:           { icon: Home,       label: "Home Loan",     gradient: "from-amber-700 to-amber-900",   accentColor: "#d97706" },
-  personal_loan:      { icon: Building2,  label: "Personal Loan", gradient: "from-sky-600 to-sky-800",       accentColor: "#0284c7" },
-  credit_card:        { icon: CreditCard, label: "Credit Card",   gradient: "from-pink-600 to-pink-900",     accentColor: "#db2777" },
-  leasing:            { icon: Car,        label: "Vehicle Loan",  gradient: "from-slate-600 to-slate-800",   accentColor: "#475569" },
-  business_loan:      { icon: Briefcase,  label: "Business Loan", gradient: "from-violet-600 to-violet-900", accentColor: "#7c3aed" },
-  sme_loan:           { icon: Briefcase,  label: "SME Loan",      gradient: "from-violet-600 to-violet-900", accentColor: "#7c3aed" },
-  fixed_deposit:      { icon: PiggyBank,  label: "Fixed Deposit", gradient: "from-amber-500 to-orange-700",  accentColor: "#f59e0b" },
-  investment_account: { icon: TrendingUp, label: "Investment",    gradient: "from-indigo-800 to-indigo-950", accentColor: "#4f46e5" },
-  overdraft:          { icon: Banknote,   label: "Overdraft",     gradient: "from-red-600 to-red-800",       accentColor: "#dc2626" },
+  mortgage:           { icon: Home,       label: "Home Loan",     from: "#c47b2b", to: "#7a4a1e", accent: "#d97706" },
+  personal_loan:      { icon: Building2,  label: "Personal Loan", from: "#0ea5e9", to: "#0369a1", accent: "#0284c7" },
+  credit_card:        { icon: CreditCard, label: "Credit Card",   from: "#db2777", to: "#9d174d", accent: "#db2777" },
+  leasing:            { icon: Car,        label: "Vehicle Loan",  from: "#4b5563", to: "#1f2937", accent: "#475569" },
+  business_loan:      { icon: Briefcase,  label: "Business Loan", from: "#7c3aed", to: "#4c1d95", accent: "#7c3aed" },
+  sme_loan:           { icon: Briefcase,  label: "SME Loan",      from: "#7c3aed", to: "#4c1d95", accent: "#7c3aed" },
+  fixed_deposit:      { icon: PiggyBank,  label: "Fixed Deposit", from: "#d97706", to: "#92400e", accent: "#f59e0b" },
+  investment_account: { icon: TrendingUp, label: "Investment",    from: "#1e1b4b", to: "#2A1FE6", accent: "#4f46e5" },
+  overdraft:          { icon: Banknote,   label: "Overdraft",     from: "#dc2626", to: "#991b1b", accent: "#dc2626" },
 };
 
 function getConfig(type: string) {
   return PRODUCT_CONFIG[type] ?? {
     icon: Building2, label: "Request",
-    gradient: "from-slate-600 to-slate-800", accentColor: "#64748b",
+    from: "#6b7280", to: "#374151", accent: "#64748b",
   };
 }
 
@@ -56,129 +57,145 @@ function timeAgo(dateStr: string) {
   if (days === 0) return "Today";
   if (days === 1) return "Yesterday";
   if (days < 7)  return `${days}d ago`;
-  if (days < 30) return `${Math.floor(days / 7)}w ago`;
   return new Date(dateStr).toLocaleDateString("en-MU", { day: "numeric", month: "short" });
 }
 
-export function ActiveRequestCard({ request, compact = false }: {
-  request:  RequestSummary;
-  compact?: boolean;
-}) {
+export function ActiveRequestCard({ request }: { request: RequestSummary }) {
   const navigate = useNavigate();
   const cfg      = getConfig(request.productType);
   const Icon     = cfg.icon;
   const progress = journeyProgress(request);
   const isClosed = request.status !== "open";
+  const pct      = Math.round((progress / (JOURNEY_STEPS.length - 1)) * 100);
 
   return (
     <div
       onClick={() => navigate(`/requests/${request.id}`)}
-      className="bg-white rounded-[20px] border border-ink/[0.06] shadow-sm overflow-hidden cursor-pointer hover:shadow-card hover:-translate-y-0.5 transition-all group"
+      className="bg-white rounded-[20px] border border-ink/[0.06] shadow-sm overflow-hidden cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all"
     >
-      {/* Gradient header */}
-      <div className={`bg-gradient-to-br ${cfg.gradient} p-4 flex items-start justify-between relative min-h-[90px]`}>
-        <div className="w-11 h-11 rounded-xl bg-white/20 grid place-items-center">
-          <Icon size={22} className="text-white" />
+      {/* Full-width gradient header */}
+      <div
+        className="relative flex flex-col items-center justify-center py-7 px-4"
+        style={{ background: `linear-gradient(135deg, ${cfg.from}, ${cfg.to})` }}
+      >
+        {/* Status pill top-right */}
+        <span className="absolute top-3 right-3 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide bg-white/25 text-white">
+          {request.status}
+        </span>
+
+        {/* Centered icon */}
+        <div className="w-14 h-14 rounded-2xl bg-white/20 grid place-items-center mb-2">
+          <Icon size={28} className="text-white" />
         </div>
 
-        <div className="flex flex-col items-end gap-1.5">
-          <span className={[
-            "text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide",
-            isClosed ? "bg-white/20 text-white/70" : "bg-white/25 text-white",
-          ].join(" ")}>
-            {request.status}
-          </span>
-          {request.bidCount > 0 && (
-            <div className="flex items-center gap-1 bg-emerald-400/30 border border-emerald-300/40 rounded-full px-2 py-0.5">
-              <Zap size={9} className="text-emerald-300" />
-              <span className="text-[10px] font-bold text-emerald-200">
-                {request.bidCount} offer{request.bidCount !== 1 ? "s" : ""}
-              </span>
-            </div>
-          )}
-        </div>
-
+        {/* Best rate */}
         {request.bestRate !== null && (
-          <div className="absolute bottom-3 left-4 bg-black/20 rounded-full px-2.5 py-1">
-            <span className="text-[11px] font-bold text-white">
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/20 rounded-full px-3 py-1">
+            <span className="text-[11px] font-bold text-white whitespace-nowrap">
               Best {request.bestRate.toFixed(2)}% APR
             </span>
           </div>
         )}
       </div>
 
-      {/* Body */}
+      {/* Card body */}
       <div className="p-4 space-y-3">
 
+        {/* Label + amount */}
         <div>
-          <div className="text-[11px] text-muted font-medium mb-0.5">{cfg.label}</div>
-          <div className="font-display text-[26px] font-extrabold text-ink leading-none">
+          <p className="text-[11px] text-muted font-medium mb-0.5">{cfg.label}</p>
+          <p className="font-display text-[28px] font-extrabold text-ink leading-none tracking-tight">
             {fmtAmt(request.amount)}
-          </div>
-          <div className="text-[11px] text-muted mt-1">{timeAgo(request.createdAt)}</div>
+          </p>
+          <p className="text-[11px] text-muted mt-1 flex items-center gap-1">
+            <Clock size={10} /> {timeAgo(request.createdAt)}
+          </p>
         </div>
 
         {/* Journey progress */}
-        {!compact && (
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-bold text-muted uppercase tracking-wider">Journey</span>
-              <span className="text-[10px] font-bold" style={{ color: cfg.accentColor }}>
-                {JOURNEY_STEPS[progress]}
-              </span>
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] font-bold text-muted uppercase tracking-wider">Journey</span>
+            <span className="text-[10px] font-bold" style={{ color: cfg.accent }}>
+              {JOURNEY_STEPS[progress]}
+            </span>
+          </div>
+
+          {/* Bar */}
+          <div className="relative mb-4">
+            <div className="h-1.5 bg-ink/[0.08] rounded-full">
+              <div
+                className="h-full rounded-full transition-all duration-700"
+                style={{ width: `${pct}%`, background: cfg.accent }}
+              />
             </div>
-            <div className="relative pb-5">
-              <div className="h-1.5 bg-ink/[0.07] rounded-full overflow-hidden">
+            {/* Dots */}
+            <div className="absolute -top-[3px] left-0 right-0 flex justify-between">
+              {JOURNEY_STEPS.map((_, i) => (
                 <div
-                  className="h-full rounded-full transition-all duration-700"
-                  style={{ width: `${(progress / (JOURNEY_STEPS.length - 1)) * 100}%`, background: cfg.accentColor }}
+                  key={i}
+                  className="w-3 h-3 rounded-full border-2 border-white"
+                  style={{ background: i <= progress ? cfg.accent : "#e2e8f0" }}
                 />
-              </div>
-              <div className="absolute -top-[3px] left-0 right-0 flex justify-between px-0">
-                {JOURNEY_STEPS.map((_, i) => (
-                  <div key={i}
-                    className="w-3 h-3 rounded-full border-2 border-white"
-                    style={i <= progress ? { background: cfg.accentColor } : { background: "#e2e8f0" }}
-                  />
-                ))}
-              </div>
-              <div className="absolute bottom-0 left-0 right-0 flex justify-between">
-                {JOURNEY_STEPS.map((label, i) => (
-                  <span key={label}
-                    className={["text-[9px] font-semibold text-center", i <= progress ? "text-ink/60" : "text-muted/40"].join(" ")}
-                    style={{ width: "25%" }}>
-                    {label}
-                  </span>
-                ))}
-              </div>
+              ))}
+            </div>
+            {/* Labels */}
+            <div className="absolute -bottom-4 left-0 right-0 flex justify-between">
+              {JOURNEY_STEPS.map((label, i) => (
+                <span
+                  key={label}
+                  className={["text-[9px] font-semibold", i <= progress ? "text-ink/60" : "text-muted/40"].join(" ")}
+                  style={{ width: "25%", textAlign: i === 0 ? "left" : i === JOURNEY_STEPS.length - 1 ? "right" : "center" }}
+                >
+                  {label}
+                </span>
+              ))}
             </div>
           </div>
-        )}
+        </div>
 
         {/* Status banner */}
-        {request.bidCount === 0 && !isClosed ? (
-          <div className="flex items-center gap-2 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
-            <Clock size={12} className="text-amber-500 flex-shrink-0" />
+        {!isClosed && request.bidCount === 0 && (
+          <div className="flex items-center gap-2 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2.5">
+            <Clock size={13} className="text-amber-500 flex-shrink-0" />
             <span className="text-[11px] text-amber-700 font-medium">Waiting for offers · usually within 24h</span>
           </div>
-        ) : request.bidCount > 0 ? (
-          <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2">
-            <CheckCircle2 size={12} className="text-emerald-500 flex-shrink-0" />
+        )}
+        {request.bidCount > 0 && (
+          <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2.5">
+            <CheckCircle2 size={13} className="text-emerald-500 flex-shrink-0" />
             <span className="text-[11px] text-emerald-700 font-medium">
               {request.bidCount} provider{request.bidCount !== 1 ? "s" : ""} competing for you
             </span>
           </div>
-        ) : null}
+        )}
 
-        {/* CTA */}
-        <button
-          onClick={e => { e.stopPropagation(); navigate(`/requests/${request.id}`); }}
-          className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[12px] font-bold text-white transition-all hover:opacity-90 active:scale-[0.98]"
-          style={{ background: cfg.accentColor }}
-        >
-          {request.bidCount > 0 ? "View offers" : "Track request"}
-          <ChevronRight size={13} />
-        </button>
+        {/* Provider count */}
+        <div className="flex items-center gap-1.5 text-[11px] font-semibold" style={{ color: cfg.accent }}>
+          <Users size={12} />
+          {request.bidCount > 0
+            ? `${request.bidCount} providers offering`
+            : "0 providers yet"}
+        </div>
+
+        {/* Dual CTAs */}
+        <div className="flex gap-2 pt-1">
+          <button
+            onClick={e => { e.stopPropagation(); navigate(`/requests/new?type=${request.productType.replace("_loan","").replace("_account","").replace("_deposit","deposit")}`); }}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[12px] font-bold border-2 transition-all hover:opacity-80"
+            style={{ borderColor: cfg.accent, color: cfg.accent }}
+          >
+            New similar →
+          </button>
+          <button
+            onClick={e => { e.stopPropagation(); navigate(`/requests/${request.id}`); }}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[12px] font-bold text-white transition-all hover:opacity-90"
+            style={{ background: cfg.accent }}
+          >
+            {request.bidCount > 0 ? "View offers" : "Track request"}
+            <ArrowRight size={13} />
+          </button>
+        </div>
       </div>
     </div>
   );
