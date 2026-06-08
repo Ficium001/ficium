@@ -14,6 +14,7 @@ import {
   NetWorthHero, FlipCards,
   SmartInsightsFeed, MarketTile, NextActions,
 } from "@/individual/dashboard/components";
+import { WhatAreYouPlanningSection } from "@/individual/dashboard/components/WhatAreYouPlanningSection";
 import { BottomNav } from "@/shared/ui";
 import { ErrorBoundary } from "@/core/error-boundary";
 
@@ -70,6 +71,11 @@ export default function Dashboard() {
         {profile && (
           <OnboardingBanners kycVerified={kycVerified} hasDossier={hasDossier} />
         )}
+
+        {/* 1 — Post a need */}
+        <ErrorBoundary name="Planning">
+          <WhatAreYouPlanningSection />
+        </ErrorBoundary>
 
         {/* 3 — Net Worth + Financial Health */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
