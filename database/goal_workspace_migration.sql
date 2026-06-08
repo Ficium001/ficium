@@ -165,9 +165,9 @@ CREATE POLICY "goal_insights_select" ON public.goal_ai_insights
 CREATE POLICY "goal_insights_insert" ON public.goal_ai_insights
   FOR INSERT WITH CHECK (auth.uid() = client_id);
 
--- Monthly metering index
+-- Index for monthly metering queries (range scan on created_at is sufficient)
 CREATE INDEX IF NOT EXISTS goal_insights_monthly_idx
-  ON public.goal_ai_insights(client_id, date_trunc('month', created_at));
+  ON public.goal_ai_insights(client_id, created_at DESC);
 
 
 -- =============================================================
