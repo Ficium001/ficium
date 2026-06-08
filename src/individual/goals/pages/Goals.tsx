@@ -42,16 +42,16 @@ export default function Goals() {
       <div className="bg-gradient-to-br from-[#0f0c29] via-[#1a1040] to-[#302b63]">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-10 pt-10 pb-8 flex items-end justify-between">
           <div>
-            <div className="text-[12px] font-bold text-white/50 uppercase tracking-widest mb-2">Your journeys</div>
+            <div className="text-[12px] font-bold text-white/50 uppercase tracking-widest mb-2">Your marketplace</div>
             <h1 className="font-display text-[36px] sm:text-[48px] font-extrabold text-white leading-tight">
-              Financial Goals
+              Your Requests
             </h1>
           </div>
           <button
             onClick={() => navigate("/goals/new")}
             className="inline-flex items-center gap-2 bg-ficium text-white px-5 py-3.5 rounded-[18px] text-[14px] font-bold shadow-ficium hover:-translate-y-0.5 transition-transform"
           >
-            <Plus size={16} /> New Goal
+            <Plus size={16} /> Post a Need
           </button>
         </div>
       </div>
@@ -68,15 +68,15 @@ export default function Goals() {
             <div className="w-16 h-16 rounded-2xl bg-ficium/10 grid place-items-center mx-auto mb-4">
               <Target size={28} className="text-ficium" />
             </div>
-            <h2 className="font-display text-[22px] font-bold text-ink mb-2">No goals yet</h2>
+            <h2 className="font-display text-[22px] font-bold text-ink mb-2">No requests yet</h2>
             <p className="text-muted text-[14px] mb-6 max-w-[280px] mx-auto">
-              Set a financial goal and let Ficium AI guide you towards it.
+              Post your financing need and let providers compete for you.
             </p>
             <button
               onClick={() => navigate("/goals/new")}
               className="inline-flex items-center gap-2 bg-ficium text-white px-6 py-3 rounded-pill text-[14px] font-bold shadow-ficium"
             >
-              <Plus size={16} /> Create first goal
+              <Plus size={16} /> Post your first need
             </button>
           </div>
         ) : (
@@ -113,7 +113,7 @@ export default function Goals() {
                     </span>
                     {g.aiInsight && <p className="text-[11px] text-muted italic">{g.aiInsight}</p>}
                     <div className="text-[10px] font-bold text-ficium flex items-center gap-1">
-                      <Building2 size={10} /> {g.banksReady} banks ready
+                      <Building2 size={10} /> {g.banksReady} providers ready
                     </div>
                     <button
                       onClick={(e) => { e.stopPropagation(); navigate(g.loanRoute); }}
@@ -134,7 +134,7 @@ export default function Goals() {
               <div className="w-12 h-12 rounded-full bg-ficium grid place-items-center shadow-ficium group-hover:scale-110 transition-transform">
                 <Plus size={20} className="text-white" />
               </div>
-              <span className="text-[13px] font-bold text-ink">Add New Goal</span>
+              <span className="text-[13px] font-bold text-ink">Add Post a Need</span>
             </button>
           </div>
         )}

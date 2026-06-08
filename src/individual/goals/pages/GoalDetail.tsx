@@ -105,8 +105,8 @@ function PlanTab({ goal }: { goal: Goal }) {
             <Building2 size={22} className="text-ficium" />
           </div>
           <div className="flex-1">
-            <div className="font-bold text-[14px] text-ink">{goal.banksReady} banks ready to help</div>
-            <div className="text-[12px] text-muted">Post a request — banks compete for you anonymously.</div>
+            <div className="font-bold text-[14px] text-ink">{goal.banksReady} providers ready</div>
+            <div className="text-[12px] text-muted">Post your need — providers compete for you anonymously.</div>
           </div>
         </div>
       )}
@@ -292,7 +292,7 @@ export default function GoalDetail() {
     <div className="min-h-screen bg-cream flex items-center justify-center">
       <div className="text-center">
         <p className="text-muted mb-4">Goal not found.</p>
-        <button onClick={() => navigate("/goals")} className="text-ficium font-semibold">← Back to goals</button>
+        <button onClick={() => navigate("/goals")} className="text-ficium font-semibold">← Back to requests</button>
       </div>
     </div>
   );
@@ -310,7 +310,7 @@ export default function GoalDetail() {
             onClick={() => navigate("/goals")}
             className="flex items-center gap-1.5 text-[13px] text-white/70 hover:text-white mb-6"
           >
-            <ArrowLeft size={15} /> All goals
+            <ArrowLeft size={15} /> All requests
           </button>
           <div className="flex items-center gap-4 mb-5">
             <div className="w-16 h-16 rounded-2xl bg-white/20 grid place-items-center flex-shrink-0">

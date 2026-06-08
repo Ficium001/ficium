@@ -55,7 +55,7 @@ export default function NewGoal() {
           <CheckCircle2 size={40} className="text-emerald-500" />
         </div>
         <h2 className="font-display text-2xl font-bold text-ink mb-1">Goal created!</h2>
-        <p className="text-muted text-[14px]">Redirecting to your goals…</p>
+        <p className="text-muted text-[14px]">Redirecting to your requests…</p>
       </div>
     </div>
   );
@@ -71,7 +71,7 @@ export default function NewGoal() {
             <ArrowLeft size={15} /> Back
           </button>
           <h1 className="font-display text-[28px] font-extrabold text-white">New financial goal</h1>
-          <p className="text-white/50 text-[13px] mt-1">Ficium AI will track your progress and match you with banks.</p>
+          <p className="text-white/50 text-[13px] mt-1">Ficium AI will track your progress and match you with providers.</p>
         </div>
       </div>
 
