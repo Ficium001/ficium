@@ -355,26 +355,6 @@ export default function NewRequest() {
     setStage("questions");
   };
 
-  const handleAnswer = (key: string, value: string) => {
-    const updated = { ...answers, [key]: value };
-    setAnswers(updated);
-    // Auto-advance for select and sliders
-    if (currentQ?.type === "select" || currentQ?.type === "amount" || currentQ?.type === "term") {
-      if (qIndex < questions.length - 1) {
-        setTimeout(() => setQIndex(i => i + 1), currentQ.type === "select" ? 200 : 0);
-      } else {
-        setTimeout(() => setStage("review"), currentQ.type === "select" ? 200 : 0);
-      }
-    }
-  };
-
-  const handleTextContinue = (key: string, value: string) => {
-    const updated = { ...answers, [key]: value };
-    setAnswers(updated);
-    if (qIndex < questions.length - 1) setQIndex(i => i + 1);
-    else setStage("review");
-  };
-
   const handleBack = () => {
     if (qIndex === 0) { setStage("product"); setProduct(null); }
     else setQIndex(i => i - 1);
