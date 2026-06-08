@@ -1,13 +1,13 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, FileText, Sparkles, TrendingUp, User } from "lucide-react";
+import { Home, Target, Sparkles, TrendingUp, User } from "lucide-react";
 import { useAuth } from "../../features/auth/context/AuthContext";
 
 const tabs = [
-  { to: "/dashboard", label: "Home",     icon: Home,        key: "home"     },
-  { to: "/requests",  label: "Requests", icon: FileText,    key: "requests" },
-  { to: "/advisor",   label: "AI",       icon: Sparkles,    key: "advisor"  },
-  { to: "/markets",   label: "Markets",  icon: TrendingUp,  key: "markets"  },
-  { to: "/profile",   label: "Profile",  icon: User,        key: "profile"  },
+  { to: "/dashboard", label: "Home",    icon: Home,       key: "home"      },
+  { to: "/goals",     label: "Goals",   icon: Target,     key: "goals"     },
+  { to: "/advisor",   label: "AI",      icon: Sparkles,   key: "advisor"   },
+  { to: "/markets",   label: "Market",  icon: TrendingUp, key: "markets"   },
+  { to: "/profile",   label: "Profile", icon: User,       key: "profile"   },
 ] as const;
 
 export function BottomNav() {
