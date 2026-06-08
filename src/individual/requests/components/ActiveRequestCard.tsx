@@ -18,21 +18,21 @@ const PRODUCT_CONFIG: Record<string, {
   to:          string;
   accent:      string;
 }> = {
-  mortgage:           { icon: Home,       label: "Home Loan",     from: "#c47b2b", to: "#7a4a1e", accent: "#d97706" },
-  personal_loan:      { icon: Building2,  label: "Personal Loan", from: "#0ea5e9", to: "#0369a1", accent: "#0284c7" },
-  credit_card:        { icon: CreditCard, label: "Credit Card",   from: "#db2777", to: "#9d174d", accent: "#db2777" },
-  leasing:            { icon: Car,        label: "Vehicle Loan",  from: "#4b5563", to: "#1f2937", accent: "#475569" },
-  business_loan:      { icon: Briefcase,  label: "Business Loan", from: "#7c3aed", to: "#4c1d95", accent: "#7c3aed" },
-  sme_loan:           { icon: Briefcase,  label: "SME Loan",      from: "#7c3aed", to: "#4c1d95", accent: "#7c3aed" },
-  fixed_deposit:      { icon: PiggyBank,  label: "Fixed Deposit", from: "#d97706", to: "#92400e", accent: "#f59e0b" },
-  investment_account: { icon: TrendingUp, label: "Investment",    from: "#1e1b4b", to: "#2A1FE6", accent: "#4f46e5" },
-  overdraft:          { icon: Banknote,   label: "Overdraft",     from: "#dc2626", to: "#991b1b", accent: "#dc2626" },
+  mortgage:           { icon: Home,       label: "Home Loan",     from: "#3730a3", to: "#1e1b4b", accent: "#4f46e5" },
+  personal_loan:      { icon: Building2,  label: "Personal Loan", from: "#2563eb", to: "#1e3a8a", accent: "#3b82f6" },
+  credit_card:        { icon: CreditCard, label: "Credit Card",   from: "#4f46e5", to: "#312e81", accent: "#6366f1" },
+  leasing:            { icon: Car,        label: "Vehicle Loan",  from: "#1d4ed8", to: "#1e3a8a", accent: "#3b82f6" },
+  business_loan:      { icon: Briefcase,  label: "Business Loan", from: "#4338ca", to: "#1e1b4b", accent: "#6366f1" },
+  sme_loan:           { icon: Briefcase,  label: "SME Loan",      from: "#4338ca", to: "#1e1b4b", accent: "#6366f1" },
+  fixed_deposit:      { icon: PiggyBank,  label: "Fixed Deposit", from: "#0369a1", to: "#0c4a6e", accent: "#0ea5e9" },
+  investment_account: { icon: TrendingUp, label: "Investment",    from: "#1e40af", to: "#1e1b4b", accent: "#3b82f6" },
+  overdraft:          { icon: Banknote,   label: "Overdraft",     from: "#1d4ed8", to: "#172554", accent: "#60a5fa" },
 };
 
 function getConfig(type: string) {
   return PRODUCT_CONFIG[type] ?? {
     icon: Building2, label: "Request",
-    from: "#6b7280", to: "#374151", accent: "#64748b",
+    from: "#3730a3", to: "#1e1b4b", accent: "#4f46e5",
   };
 }
 
