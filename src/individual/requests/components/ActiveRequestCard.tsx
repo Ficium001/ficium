@@ -71,21 +71,21 @@ export function ActiveRequestCard({ request }: { request: RequestSummary }) {
   return (
     <div
       onClick={() => navigate(`/requests/${request.id}`)}
-      className="bg-white rounded-[20px] border border-ink/[0.06] shadow-sm overflow-hidden cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all"
+      className="bg-white rounded-[24px] border border-ink/[0.06] shadow-md overflow-hidden cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all"
     >
       {/* Full-width gradient header */}
       <div
-        className="relative flex flex-col items-center justify-center py-7 px-4"
+        className="relative flex flex-col items-center justify-center py-10 px-4"
         style={{ background: `linear-gradient(135deg, ${cfg.from}, ${cfg.to})` }}
       >
         {/* Status pill top-right */}
-        <span className="absolute top-3 right-3 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide bg-white/25 text-white">
+        <span className="absolute top-4 right-4 text-[10px] font-bold px-3 py-1.5 rounded-full uppercase tracking-wide bg-white/25 text-white">
           {request.status}
         </span>
 
         {/* Centered icon */}
-        <div className="w-14 h-14 rounded-2xl bg-white/20 grid place-items-center mb-2">
-          <Icon size={28} className="text-white" />
+        <div className="w-16 h-16 rounded-2xl bg-white/20 grid place-items-center">
+          <Icon size={32} className="text-white" />
         </div>
 
         {/* Best rate */}
@@ -104,7 +104,7 @@ export function ActiveRequestCard({ request }: { request: RequestSummary }) {
         {/* Label + amount */}
         <div>
           <p className="text-[11px] text-muted font-medium mb-0.5">{cfg.label}</p>
-          <p className="font-display text-[28px] font-extrabold text-ink leading-none tracking-tight">
+          <p className="font-display text-[32px] font-extrabold text-ink leading-none tracking-tight">
             {fmtAmt(request.amount)}
           </p>
           <p className="text-[11px] text-muted mt-1 flex items-center gap-1">
