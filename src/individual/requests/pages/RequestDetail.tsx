@@ -7,8 +7,8 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   ArrowLeft, Lock, CheckCircle, Clock, TrendingDown,
   Building2, AlertCircle, MessageSquare, FileText,
-  User, Percent, LayoutGrid, Sparkles, Send,
-  BarChart3, CheckCircle2, Loader2,
+  User, Percent, LayoutGrid, Sparkles,
+  BarChart3, CheckCircle2,
 } from "lucide-react";
 import { useRequest, useRequestBids, useAcceptBid } from "../hooks/useRequests";
 import { formatProductType } from "../api/requests";
