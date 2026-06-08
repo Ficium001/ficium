@@ -13,17 +13,17 @@ import {
 } from "lucide-react";
 
 const BORROW_CATEGORIES = [
-  { id: "mortgage",   icon: Home,          label: "Home loan",       route: "/requests/new?type=mortgage"   },
-  { id: "personal",   icon: User,          label: "Personal loan",   route: "/requests/new?type=personal"   },
-  { id: "credit",     icon: CreditCard,    label: "Credit card",     route: "/requests/new?type=credit"     },
-  { id: "vehicle",    icon: Car,           label: "Vehicle loan",    route: "/requests/new?type=vehicle"    },
-  { id: "business",   icon: Briefcase,     label: "Business loan",   route: "/requests/new?type=business"   },
-  { id: "education",  icon: GraduationCap, label: "Education loan",  route: "/requests/new?type=education"  },
+  { id: "mortgage",   icon: Home,          label: "Home loan",       route: "/requests/new?type=mortgage",   iconBg: "#e8eaff", iconColor: "#2A1FE6" },
+  { id: "personal",   icon: User,          label: "Personal loan",   route: "/requests/new?type=personal",   iconBg: "#e0f2fe", iconColor: "#0369a1" },
+  { id: "credit",     icon: CreditCard,    label: "Credit card",     route: "/requests/new?type=credit",     iconBg: "#f3e8ff", iconColor: "#7c3aed" },
+  { id: "vehicle",    icon: Car,           label: "Vehicle loan",    route: "/requests/new?type=vehicle",    iconBg: "#fef3c7", iconColor: "#d97706" },
+  { id: "business",   icon: Briefcase,     label: "Business loan",   route: "/requests/new?type=business",   iconBg: "#ffe4e6", iconColor: "#e11d48" },
+  { id: "education",  icon: GraduationCap, label: "Education loan",  route: "/requests/new?type=education",  iconBg: "#d1fae5", iconColor: "#059669" },
 ];
 
 const SAVE_CATEGORIES = [
-  { id: "deposit",    icon: Building2,     label: "Place a deposit", route: "/requests/new?type=deposit"    },
-  { id: "savings",    icon: TrendingUp,    label: "Grow my savings", route: "/requests/new?type=savings"    },
+  { id: "deposit",    icon: Building2,     label: "Place a deposit", route: "/requests/new?type=deposit",    iconBg: "#ccfbf1", iconColor: "#0f766e" },
+  { id: "savings",    icon: TrendingUp,    label: "Grow my savings", route: "/requests/new?type=savings",    iconBg: "#dcfce7", iconColor: "#16a34a" },
 ];
 
 const ALL_CATEGORIES = [...BORROW_CATEGORIES, ...SAVE_CATEGORIES];
@@ -165,23 +165,30 @@ export function WhatAreYouPlanningSection() {
 
       {/* I need financing */}
       <div className="mb-4">
-        <p className="text-[10px] font-bold text-muted uppercase tracking-widest mb-2.5">I need financing</p>
-        <div className="flex flex-wrap gap-2">
-          {BORROW_CATEGORIES.map(({ id, icon: Icon, label, route }) => {
+        <p className="text-[10px] font-bold text-muted uppercase tracking-widest mb-3">I need financing</p>
+        <div className="flex flex-wrap gap-3">
+          {BORROW_CATEGORIES.map(({ id, icon: Icon, label, route, iconBg, iconColor }) => {
             const active = selectedId === id;
             return (
               <button
                 key={id}
                 onClick={() => handleCategory(id, route)}
-                className={[
-                  "flex items-center gap-2 px-3.5 py-2 rounded-full border text-[12px] sm:text-[13px] font-medium transition-all",
-                  active
-                    ? "border-ficium text-ficium bg-ficium/[0.06]"
-                    : "border-ink/[0.12] text-ink/70 hover:border-ink/30 hover:text-ink bg-white",
-                ].join(" ")}
+                className="flex flex-col items-center gap-1.5 w-[72px] group transition-all"
               >
-                <Icon size={14} />
-                {label}
+                <div
+                  className="w-[52px] h-[52px] rounded-[14px] flex items-center justify-center transition-all"
+                  style={{
+                    background:   iconBg,
+                    color:        iconColor,
+                    border:       active ? `2px solid ${iconColor}` : "1.5px solid transparent",
+                    transform:    active ? "translateY(-2px)" : undefined,
+                  }}
+                >
+                  <Icon size={22} />
+                </div>
+                <span className={["text-[11px] text-center leading-tight", active ? "font-semibold text-ink" : "text-muted"].join(" ")}>
+                  {label}
+                </span>
               </button>
             );
           })}
@@ -190,23 +197,30 @@ export function WhatAreYouPlanningSection() {
 
       {/* I have money to place */}
       <div className="mb-6">
-        <p className="text-[10px] font-bold text-muted uppercase tracking-widest mb-2.5">I have money to place</p>
-        <div className="flex flex-wrap gap-2">
-          {SAVE_CATEGORIES.map(({ id, icon: Icon, label, route }) => {
+        <p className="text-[10px] font-bold text-muted uppercase tracking-widest mb-3">I have money to place</p>
+        <div className="flex flex-wrap gap-3">
+          {SAVE_CATEGORIES.map(({ id, icon: Icon, label, route, iconBg, iconColor }) => {
             const active = selectedId === id;
             return (
               <button
                 key={id}
                 onClick={() => handleCategory(id, route)}
-                className={[
-                  "flex items-center gap-2 px-3.5 py-2 rounded-full border text-[12px] sm:text-[13px] font-medium transition-all",
-                  active
-                    ? "border-emerald-600 text-emerald-700 bg-emerald-50"
-                    : "border-ink/[0.12] text-ink/70 hover:border-ink/30 hover:text-ink bg-white",
-                ].join(" ")}
+                className="flex flex-col items-center gap-1.5 w-[72px] group transition-all"
               >
-                <Icon size={14} />
-                {label}
+                <div
+                  className="w-[52px] h-[52px] rounded-[14px] flex items-center justify-center transition-all"
+                  style={{
+                    background:   iconBg,
+                    color:        iconColor,
+                    border:       active ? `2px solid ${iconColor}` : "1.5px solid transparent",
+                    transform:    active ? "translateY(-2px)" : undefined,
+                  }}
+                >
+                  <Icon size={22} />
+                </div>
+                <span className={["text-[11px] text-center leading-tight", active ? "font-semibold text-ink" : "text-muted"].join(" ")}>
+                  {label}
+                </span>
               </button>
             );
           })}
