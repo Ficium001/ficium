@@ -3,8 +3,8 @@ import type { ReactNode, ErrorInfo } from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { PublicOnlyRoute, ClientOnlyRoute, BankOnlyRoute } from "./ProtectedRoute";
 
-import Splash from "../features/marketing/pages/Splash";
-import Login from "../features/auth/pages/Login";
+import Splash    from "../features/marketing/pages/Splash";
+import Login     from "../features/auth/pages/Login";
 import CheckEmail from "../features/auth/pages/CheckEmail";
 
 // ── Shared / marketing ────────────────────────────────────────
@@ -31,11 +31,6 @@ const Markets             = lazy(() => import("../individual/markets/pages/Marke
 const Advisor             = lazy(() => import("../individual/advisor/pages/Advisor"));
 const FinancialTools      = lazy(() => import("../individual/tools/pages/FinancialTools"));
 const ClientAudit         = lazy(() => import("../individual/audit/pages/ClientAudit"));
-const NewGoal             = lazy(() => import("../individual/goals/pages/NewGoal"));
-const GoalDetail          = lazy(() => import("../individual/goals/pages/GoalDetail"));
-const Journeys            = lazy(() => import("../individual/journeys/pages/Journeys"));
-const JourneyWizard       = lazy(() => import("../individual/journeys/pages/JourneyWizard"));
-const JourneyWorkspace    = lazy(() => import("../individual/journeys/pages/JourneyWorkspace"));
 const NetWorthPage        = lazy(() => import("../individual/networth/pages/NetWorth"));
 const FinancialHealthPage = lazy(() => import("../individual/health/pages/FinancialHealth"));
 
@@ -62,7 +57,6 @@ function PageLoader() {
   );
 }
 
-// Catches chunk-load failures (stale cache after deploy) and auto-reloads once
 class ChunkErrorBoundary extends Component<{ children: ReactNode }, { errored: boolean }> {
   state = { errored: false };
   static getDerivedStateFromError() { return { errored: true }; }
@@ -127,18 +121,18 @@ export const router = createBrowserRouter([
   { path: "/requests/new",           element: <ClientOnlyRoute><S><NewRequest /></S></ClientOnlyRoute> },
   { path: "/requests/:id",           element: <ClientOnlyRoute><S><RequestDetail /></S></ClientOnlyRoute> },
   { path: "/alerts",                 element: <ClientOnlyRoute><S><Alerts /></S></ClientOnlyRoute> },
-  { path: "/markets",               element: <ClientOnlyRoute><S><Markets /></S></ClientOnlyRoute> },
+  { path: "/markets",                element: <ClientOnlyRoute><S><Markets /></S></ClientOnlyRoute> },
   { path: "/advisor",                element: <ClientOnlyRoute><S><Advisor /></S></ClientOnlyRoute> },
   { path: "/tools",                  element: <ClientOnlyRoute><S><FinancialTools /></S></ClientOnlyRoute> },
   { path: "/activity",               element: <ClientOnlyRoute><S><ClientAudit /></S></ClientOnlyRoute> },
-  { path: "/goals",                  element: <Navigate to="/requests" replace /> },
-  { path: "/goals/new",              element: <ClientOnlyRoute><S><NewGoal /></S></ClientOnlyRoute> },
-  { path: "/goals/:id",              element: <ClientOnlyRoute><S><GoalDetail /></S></ClientOnlyRoute> },
-  { path: "/journeys",               element: <ClientOnlyRoute><S><Journeys /></S></ClientOnlyRoute> },
-  { path: "/journeys/new",           element: <ClientOnlyRoute><S><JourneyWizard /></S></ClientOnlyRoute> },
-  { path: "/journeys/:id",           element: <ClientOnlyRoute><S><JourneyWorkspace /></S></ClientOnlyRoute> },
   { path: "/networth",               element: <ClientOnlyRoute><S><NetWorthPage /></S></ClientOnlyRoute> },
   { path: "/health",                 element: <ClientOnlyRoute><S><FinancialHealthPage /></S></ClientOnlyRoute> },
+
+  // Dead route redirects
+  { path: "/goals",                  element: <Navigate to="/requests" replace /> },
+  { path: "/goals/*",               element: <Navigate to="/requests" replace /> },
+  { path: "/journeys",               element: <Navigate to="/requests" replace /> },
+  { path: "/journeys/*",             element: <Navigate to="/requests" replace /> },
 
   // ── Institution app ─────────────────────────────────────────
   { path: "/institution/login",        element: <S><InstitutionLogin /></S> },
@@ -150,14 +144,14 @@ export const router = createBrowserRouter([
     path: "/institution",
     element: <BankOnlyRoute><S><InstitutionPortalShell /></S></BankOnlyRoute>,
     children: [
-      { index: true,            element: <S><InstitutionDashboard /></S>   },
-      { path: "marketplace",    element: <S><InstitutionMarketplace /></S> },
-      { path: "bids",           element: <S><InstitutionBids /></S>        },
-      { path: "approvals",      element: <S><InstitutionApprovals /></S>   },
-      { path: "products",       element: <S><InstitutionProducts /></S>    },
-      { path: "webhooks",       element: <S><InstitutionWebhooks /></S>    },
-      { path: "audit",          element: <S><InstitutionAudit /></S>       },
-      { path: "settings",       element: <S><InstitutionSettings /></S>    },
+      { index: true,         element: <S><InstitutionDashboard /></S>   },
+      { path: "marketplace", element: <S><InstitutionMarketplace /></S> },
+      { path: "bids",        element: <S><InstitutionBids /></S>        },
+      { path: "approvals",   element: <S><InstitutionApprovals /></S>   },
+      { path: "products",    element: <S><InstitutionProducts /></S>    },
+      { path: "webhooks",    element: <S><InstitutionWebhooks /></S>    },
+      { path: "audit",       element: <S><InstitutionAudit /></S>       },
+      { path: "settings",    element: <S><InstitutionSettings /></S>    },
     ],
   },
 

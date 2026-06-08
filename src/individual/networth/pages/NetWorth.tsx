@@ -194,7 +194,7 @@ export default function NetWorthPage() {
         )}
 
         {/* CTA */}
-        <button onClick={() => navigate("/journeys/new")}
+        <button onClick={() => navigate("/requests/new")}
           className="w-full flex items-center justify-center gap-2 bg-ficium text-white py-4 rounded-2xl text-[15px] font-bold shadow-ficium hover:opacity-90">
           <Building2 size={16} /> Start a goal journey
         </button>

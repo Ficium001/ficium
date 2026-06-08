@@ -13,7 +13,6 @@ import {
   DashboardTopBar, OnboardingBanners,
   NetWorthHero, FlipCards,
   SmartInsightsFeed, MarketTile, NextActions,
-  FinancialGoalsSection, WhatAreYouPlanningSection,
 } from "@/individual/dashboard/components";
 import { BottomNav } from "@/shared/ui";
 import { ErrorBoundary } from "@/core/error-boundary";
@@ -71,16 +70,6 @@ export default function Dashboard() {
         {profile && (
           <OnboardingBanners kycVerified={kycVerified} hasDossier={hasDossier} />
         )}
-
-        {/* 1 — Planning */}
-        <ErrorBoundary name="Planning">
-          <WhatAreYouPlanningSection />
-        </ErrorBoundary>
-
-        {/* 2 — Goals */}
-        <ErrorBoundary name="Goals">
-          <FinancialGoalsSection />
-        </ErrorBoundary>
 
         {/* 3 — Net Worth + Financial Health */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
@@ -279,9 +268,9 @@ function SectionHeader({
 }
 
 const QUICK_ACTIONS = [
-  { icon: <HandCoins     size={20} className="text-ficium"      />, label: "Apply for Loan",  bg: "bg-ficium/10",  to: "/journeys/new?type=mortgage"          },
+  { icon: <HandCoins     size={20} className="text-ficium"      />, label: "Apply for Loan",  bg: "bg-ficium/10",  to: "/requests/new?type=mortgage"          },
   { icon: <CreditCard    size={20} className="text-violet-600"  />, label: "Credit Card",     bg: "bg-violet-50",  to: "/requests/new"                        },
-  { icon: <LineChart     size={20} className="text-emerald-600" />, label: "Invest Now",      bg: "bg-emerald-50", to: "/journeys/new?type=investment"        },
+  { icon: <LineChart     size={20} className="text-emerald-600" />, label: "Invest Now",      bg: "bg-emerald-50", to: "/requests/new?type=savings"        },
   { icon: <ShieldCheck   size={20} className="text-ficium"      />, label: "Eligibility",     bg: "bg-ficium/10",  to: "/health"                              },
   { icon: <Upload        size={20} className="text-muted"       />, label: "Upload Doc",      bg: "bg-ink/[0.05]", to: "/onboarding/kyc"                      },
   { icon: <MessageCircle size={20} className="text-ficium"      />, label: "AI Coach",        bg: "bg-ficium/10",  to: "/advisor"                             },
