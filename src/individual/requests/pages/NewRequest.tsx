@@ -356,8 +356,13 @@ export default function NewRequest() {
   };
 
   const handleBack = () => {
-    if (qIndex === 0) { setStage("product"); setProduct(null); }
+    if (qIndex === 0) { navigate("/dashboard"); }
     else setQIndex(i => i - 1);
+  };
+
+  const advanceFromQ = () => {
+    if (qIndex < questions.length - 1) setQIndex(i => i + 1);
+    else setStage("review");
   };
 
   const handleSkip = () => {
@@ -472,8 +477,8 @@ export default function NewRequest() {
               if (currentQ.type === "select") {
                 if (qIndex < questions.length - 1) setTimeout(() => setQIndex(i => i + 1), 200);
                 else setTimeout(() => setStage("review"), 200);
-              } else if (currentQ.type === "amount" || currentQ.type === "term") {
-                // sliders don't auto-advance, user clicks Continue
+              } else if (currentQ.type === "amount" || currentQ.type === "term" || currentQ.type === "text" || currentQ.type === "number") {
+                advanceFromQ();
               }
             }}
             onBack={handleBack}
