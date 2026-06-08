@@ -4,7 +4,7 @@
 // Steps: product → amount/term → purpose → review → submit
 // =============================================================
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft, ArrowRight, Lock, CheckCircle2,
   Loader2, AlertCircle, HandCoins, Building2,
@@ -55,9 +55,22 @@ function fmtMUR(n: number) {
   return `MUR ${new Intl.NumberFormat("en-MU").format(n)}`;
 }
 
+/* ─── URL type → ProductType map ────────────────────────── */
+const URL_TYPE_MAP: Record<string, ProductType> = {
+  mortgage:   "mortgage",
+  personal:   "personal_loan",
+  credit:     "credit_card",
+  vehicle:    "leasing",
+  business:   "business_loan",
+  education:  "personal_loan",   // education maps to personal_loan until dedicated type exists
+  deposit:    "fixed_deposit",
+  savings:    "investment_account",
+};
+
 /* ─── Main wizard ────────────────────────────────────────── */
 export default function NewRequest() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { data: profile, isLoading: profileLoading } = useProfile();
   const { getRates, getWinningBid } = useIntelligence();
 
@@ -77,6 +90,21 @@ export default function NewRequest() {
   const [submitting,  setSubmitting]  = useState(false);
   const [error,       setError]       = useState<string | null>(null);
   const [submitted,   setSubmitted]   = useState(false);
+
+  /* Pre-select product from URL ?type= param */
+  useEffect(() => {
+    const urlType = searchParams.get("type");
+    if (!urlType) return;
+    const productType = URL_TYPE_MAP[urlType];
+    if (!productType) return;
+    const matched = PRODUCTS.find((p) => p.type === productType);
+    if (matched) {
+      setProduct(matched);
+      setAmount(matched.defaultAmount);
+      setTermMonths(matched.defaultTerm);
+      setStep("details");
+    }
+  }, [searchParams]);
 
   const stepIdx = STEPS.indexOf(step);
 
@@ -118,7 +146,7 @@ export default function NewRequest() {
           <CheckCircle2 size={40} className="text-emerald-500" />
         </div>
         <h2 className="font-display text-3xl font-bold text-ink mb-2">Request posted!</h2>
-        <p className="text-muted text-[15px]">Banks are already reviewing your request. You'll be notified when bids arrive.</p>
+        <p className="text-muted text-[15px]">Providers are already reviewing your request. You'll be notified when offers arrive.</p>
         <p className="text-muted text-[13px] mt-2">Redirecting to dashboard…</p>
       </div>
     </div>
@@ -142,7 +170,7 @@ export default function NewRequest() {
           {/* Privacy pill */}
           <div className="flex items-center gap-1.5 bg-white/[0.08] border border-white/10 rounded-pill px-3 py-1.5">
             <Lock size={11} className="text-white/50" />
-            <span className="text-[11px] text-white/50 font-medium">Anonymous to banks</span>
+            <span className="text-[11px] text-white/50 font-medium">Anonymous to providers</span>
           </div>
         </div>
 
@@ -338,7 +366,7 @@ export default function NewRequest() {
                 What's this for?
               </label>
               <p className="text-[12px] text-muted mb-3">
-                Banks see this — not your name. Be specific to attract better bids.
+                Providers see this — not your name. Be specific to attract better offers.
               </p>
               <textarea
                 value={purpose}
@@ -392,7 +420,7 @@ export default function NewRequest() {
               <div className="mx-6 mb-5 flex items-start gap-2.5 bg-ficium/[0.04] border border-ficium/[0.12] rounded-xl px-4 py-3">
                 <Lock size={13} className="text-ficium flex-shrink-0 mt-0.5" />
                 <p className="text-[12px] text-ink/70 leading-relaxed">
-                  Your identity stays private. Banks see only the details above and bid anonymously.
+                  Your identity stays private. Providers see only the details above and respond anonymously.
                 </p>
               </div>
 
