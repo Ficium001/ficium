@@ -134,15 +134,20 @@ export default function Requests() {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 
-                {/* Goal cards */}
+                {/* Goal cards → post a request */}
                 {goals.map(g => {
                   const style = GOAL_STYLE[g.type] ?? GOAL_STYLE.other;
                   const Icon  = style.icon;
                   const pct   = goalProgress(g);
+                  const typeMap: Record<string, string> = {
+                    mortgage: "mortgage", vehicle: "vehicle", personal: "personal",
+                    investment: "savings", education: "education", business: "business",
+                    savings: "deposit", other: "personal",
+                  };
                   return (
                     <div
                       key={g.id}
-                      onClick={() => navigate(`/goals/${g.id}`)}
+                      onClick={() => navigate(`/requests/new?type=${typeMap[g.type] ?? "personal"}`)}
                       className="bg-white rounded-[18px] border border-ink/[0.06] shadow-sm overflow-hidden cursor-pointer hover:shadow-card hover:-translate-y-0.5 transition-all"
                     >
                       <div className="h-[100px] flex items-center justify-center"
@@ -167,10 +172,10 @@ export default function Requests() {
                           <Building2 size={10} /> {g.banksReady} providers ready
                         </div>
                         <button
-                          onClick={e => { e.stopPropagation(); navigate(g.loanRoute); }}
+                          onClick={e => { e.stopPropagation(); navigate(`/requests/new?type=${typeMap[g.type] ?? "personal"}`); }}
                           className="w-full py-2 rounded-xl text-[12px] font-bold text-white bg-ficium hover:opacity-90 mt-1"
                         >
-                          Find financing →
+                          Post a request →
                         </button>
                       </div>
                     </div>
