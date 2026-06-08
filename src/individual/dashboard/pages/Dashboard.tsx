@@ -91,9 +91,11 @@ export default function Dashboard() {
                 View all →
               </Link>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {requests.slice(0, 3).map(r => (
-                <ActiveRequestCard key={r.id} request={r} />
+            <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-10 lg:px-10">
+              {requests.map(r => (
+                <div key={r.id} className="flex-shrink-0 w-[260px]">
+                  <ActiveRequestCard request={r} />
+                </div>
               ))}
             </div>
           </div>

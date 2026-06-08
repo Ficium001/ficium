@@ -109,11 +109,11 @@ export default function Requests() {
         {/* Main grid */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
 
-          {/* Single unified card grid */}
+          {/* Single unified horizontal scroll — story style */}
           <div>
             {isLoading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {[1,2,3].map(i => <div key={i} className="bg-white rounded-[18px] h-56 animate-pulse border border-ink/[0.06]" />)}
+              <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+                {[1,2,3].map(i => <div key={i} className="flex-shrink-0 w-[260px] bg-white rounded-[24px] h-[480px] animate-pulse border border-ink/[0.06]" />)}
               </div>
             ) : (goals.length === 0 && requests.length === 0) ? (
               <div className="bg-white rounded-[28px] border border-ink/[0.06] p-10 text-center shadow-sm">
@@ -132,9 +132,9 @@ export default function Requests() {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-10 lg:px-10">
 
-                {/* Goal cards → post a request */}
+                {/* Goal cards */}
                 {goals.map(g => {
                   const style = GOAL_STYLE[g.type] ?? GOAL_STYLE.other;
                   const Icon  = style.icon;
@@ -145,56 +145,63 @@ export default function Requests() {
                     savings: "deposit", other: "personal",
                   };
                   return (
-                    <div
-                      key={g.id}
-                      onClick={() => navigate(`/requests/new?type=${typeMap[g.type] ?? "personal"}`)}
-                      className="bg-white rounded-[18px] border border-ink/[0.06] shadow-sm overflow-hidden cursor-pointer hover:shadow-card hover:-translate-y-0.5 transition-all"
-                    >
-                      <div className="h-[100px] flex items-center justify-center"
-                           style={{ background: `linear-gradient(135deg, ${style.imgFrom}, ${style.imgTo})` }}>
-                        <div className="w-12 h-12 rounded-2xl bg-white/20 grid place-items-center">
-                          <Icon size={24} className="text-white" />
+                    <div key={g.id} className="flex-shrink-0 w-[260px]">
+                      <div
+                        onClick={() => navigate(`/requests/new?type=${typeMap[g.type] ?? "personal"}`)}
+                        className="bg-white rounded-[24px] border border-ink/[0.06] shadow-md overflow-hidden cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all h-full"
+                      >
+                        <div className="h-[140px] flex items-center justify-center"
+                             style={{ background: `linear-gradient(135deg, ${style.imgFrom}, ${style.imgTo})` }}>
+                          <div className="w-14 h-14 rounded-2xl bg-white/20 grid place-items-center">
+                            <Icon size={28} className="text-white" />
+                          </div>
                         </div>
-                      </div>
-                      <div className="p-4 flex flex-col gap-1.5">
-                        <div className="font-bold text-[13px] text-ink">{g.title}</div>
-                        <div className="font-display text-[26px] font-extrabold text-ficium leading-none">
-                          {pct}<span className="text-[12px] font-semibold text-muted ml-0.5">%</span>
+                        <div className="p-4 flex flex-col gap-2">
+                          <div className="font-bold text-[13px] text-ink">{g.title}</div>
+                          <div className="font-display text-[28px] font-extrabold text-ficium leading-none">
+                            {pct}<span className="text-[13px] font-semibold text-muted ml-0.5">%</span>
+                          </div>
+                          <div className="h-[3px] bg-ink/[0.07] rounded-full overflow-hidden">
+                            <div className="h-full rounded-full bg-ficium" style={{ width: `${pct}%` }} />
+                          </div>
+                          <div className="text-[11px] text-ink/70 font-semibold">{fmt(g.savedAmount)} / {fmt(g.targetAmount)}</div>
+                          <span className={["self-start text-[10px] font-bold px-2 py-0.5 rounded-pill", STATUS_PILL[g.status]].join(" ")}>
+                            {STATUS_LABEL[g.status]}
+                          </span>
+                          <div className="text-[10px] font-bold text-ficium flex items-center gap-1">
+                            <Building2 size={10} /> {g.banksReady} providers ready
+                          </div>
+                          <button
+                            onClick={e => { e.stopPropagation(); navigate(`/requests/new?type=${typeMap[g.type] ?? "personal"}`); }}
+                            className="w-full py-2.5 rounded-xl text-[12px] font-bold text-white bg-ficium hover:opacity-90 mt-1"
+                          >
+                            Post a request →
+                          </button>
                         </div>
-                        <div className="h-[3px] bg-ink/[0.07] rounded-full overflow-hidden">
-                          <div className="h-full rounded-full bg-ficium" style={{ width: `${pct}%` }} />
-                        </div>
-                        <div className="text-[11px] text-ink/70 font-semibold">{fmt(g.savedAmount)} / {fmt(g.targetAmount)}</div>
-                        <span className={["self-start text-[10px] font-bold px-2 py-0.5 rounded-pill", STATUS_PILL[g.status]].join(" ")}>
-                          {STATUS_LABEL[g.status]}
-                        </span>
-                        <div className="text-[10px] font-bold text-ficium flex items-center gap-1">
-                          <Building2 size={10} /> {g.banksReady} providers ready
-                        </div>
-                        <button
-                          onClick={e => { e.stopPropagation(); navigate(`/requests/new?type=${typeMap[g.type] ?? "personal"}`); }}
-                          className="w-full py-2 rounded-xl text-[12px] font-bold text-white bg-ficium hover:opacity-90 mt-1"
-                        >
-                          Post a request →
-                        </button>
                       </div>
                     </div>
                   );
                 })}
 
                 {/* DB request cards */}
-                {requests.map(r => <ActiveRequestCard key={r.id} request={r} />)}
-
-                {/* Post new */}
-                <button
-                  onClick={() => navigate("/requests/new")}
-                  className="bg-white rounded-[18px] border-2 border-dashed border-ink/[0.12] min-h-[240px] flex flex-col items-center justify-center gap-3 hover:border-ficium/40 hover:bg-ficium/[0.02] transition-all group"
-                >
-                  <div className="w-11 h-11 rounded-full bg-ficium grid place-items-center shadow-ficium group-hover:scale-110 transition-transform">
-                    <Plus size={20} className="text-white" />
+                {requests.map(r => (
+                  <div key={r.id} className="flex-shrink-0 w-[260px]">
+                    <ActiveRequestCard request={r} />
                   </div>
-                  <span className="text-[12px] font-bold text-ink">Post New Request</span>
-                </button>
+                ))}
+
+                {/* Post new card */}
+                <div className="flex-shrink-0 w-[200px]">
+                  <button
+                    onClick={() => navigate("/requests/new")}
+                    className="bg-white rounded-[24px] border-2 border-dashed border-ink/[0.12] w-full h-full min-h-[400px] flex flex-col items-center justify-center gap-3 hover:border-ficium/40 hover:bg-ficium/[0.02] transition-all group"
+                  >
+                    <div className="w-12 h-12 rounded-full bg-ficium grid place-items-center shadow-ficium group-hover:scale-110 transition-transform">
+                      <Plus size={22} className="text-white" />
+                    </div>
+                    <span className="text-[12px] font-bold text-ink text-center px-4">Post New Request</span>
+                  </button>
+                </div>
               </div>
             )}
           </div>
