@@ -6,7 +6,7 @@
 // =============================================================
 import { useNavigate } from "react-router-dom";
 import { useGoals, goalProgress, type Goal, type GoalType } from "@/individual/dashboard/hooks/useGoals";
-import { Home, Car, TrendingUp, GraduationCap, Briefcase, PiggyBank, Plus, Building2, User, CreditCard } from "lucide-react";
+import { Home, Car, TrendingUp, GraduationCap, Briefcase, PiggyBank, Plus, Building2, User } from "lucide-react";
 
 const GOAL_STYLE: Record<GoalType, {
   icon:       React.ElementType;
