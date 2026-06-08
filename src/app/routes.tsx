@@ -31,7 +31,6 @@ const Markets             = lazy(() => import("../individual/markets/pages/Marke
 const Advisor             = lazy(() => import("../individual/advisor/pages/Advisor"));
 const FinancialTools      = lazy(() => import("../individual/tools/pages/FinancialTools"));
 const ClientAudit         = lazy(() => import("../individual/audit/pages/ClientAudit"));
-const Goals               = lazy(() => import("../individual/goals/pages/Goals"));
 const NewGoal             = lazy(() => import("../individual/goals/pages/NewGoal"));
 const GoalDetail          = lazy(() => import("../individual/goals/pages/GoalDetail"));
 const Journeys            = lazy(() => import("../individual/journeys/pages/Journeys"));
