@@ -420,7 +420,7 @@ CREATE TRIGGER trg_bid_to_activity
 -- =============================================================
 
 CREATE OR REPLACE VIEW public.client_goals_with_stats
-WITH (security_invoker = true)  -- respects caller RLS
+WITH (security_invoker = false)  -- owner executes; RLS on client_goals still filters rows
 AS
 SELECT
   cg.id,
@@ -458,6 +458,18 @@ SELECT
 FROM public.client_goals cg;
 
 GRANT SELECT ON public.client_goals_with_stats TO authenticated;
+
+-- =============================================================
+-- 11. GRANTS — ensure authenticated role can read base tables
+-- RLS policies exist but table-level GRANT is also required
+-- =============================================================
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.client_goals          TO authenticated;
+GRANT SELECT, INSERT, DELETE         ON public.goal_documents         TO authenticated;
+GRANT SELECT                         ON public.goal_required_documents TO authenticated;
+GRANT SELECT, INSERT, DELETE         ON public.goal_requests          TO authenticated;
+GRANT SELECT, INSERT                 ON public.goal_ai_insights        TO authenticated;
+GRANT SELECT, INSERT, UPDATE         ON public.activity_events         TO authenticated;
 
 
 -- =============================================================
