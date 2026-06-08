@@ -1,6 +1,6 @@
 import { lazy, Suspense, Component } from "react";
 import type { ReactNode, ErrorInfo } from "react";
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, Navigate } from "react-router-dom";
 import { PublicOnlyRoute, ClientOnlyRoute, BankOnlyRoute } from "./ProtectedRoute";
 
 import Splash from "../features/marketing/pages/Splash";
@@ -132,7 +132,7 @@ export const router = createBrowserRouter([
   { path: "/advisor",                element: <ClientOnlyRoute><S><Advisor /></S></ClientOnlyRoute> },
   { path: "/tools",                  element: <ClientOnlyRoute><S><FinancialTools /></S></ClientOnlyRoute> },
   { path: "/activity",               element: <ClientOnlyRoute><S><ClientAudit /></S></ClientOnlyRoute> },
-  { path: "/goals",                  element: <ClientOnlyRoute><S><Goals /></S></ClientOnlyRoute> },
+  { path: "/goals",                  element: <Navigate to="/requests" replace /> },
   { path: "/goals/new",              element: <ClientOnlyRoute><S><NewGoal /></S></ClientOnlyRoute> },
   { path: "/goals/:id",              element: <ClientOnlyRoute><S><GoalDetail /></S></ClientOnlyRoute> },
   { path: "/journeys",               element: <ClientOnlyRoute><S><Journeys /></S></ClientOnlyRoute> },

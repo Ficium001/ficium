@@ -385,7 +385,7 @@ export default function NewRequest() {
     });
     if (!result.ok) { setError(result.error); setSubmitting(false); return; }
     setSubmitted(true);
-    setTimeout(() => navigate("/goals"), 2000);
+    setTimeout(() => navigate("/requests"), 2000);
   };
 
   if (profileLoading) return (
