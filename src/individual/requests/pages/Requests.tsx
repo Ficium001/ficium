@@ -7,11 +7,10 @@ import { useNavigate, Link } from "react-router-dom";
 import {
   Plus, Target, Building2, FileText, TrendingUp,
   Clock, Activity, Brain, ArrowRight, ChevronRight,
-  Zap, Bell, MoreHorizontal, CheckCircle2,
+  Zap, Bell,
 } from "lucide-react";
 import { useGoals, goalProgress, type Goal, type GoalType } from "@/individual/dashboard/hooks/useGoals";
 import { useMyRequests, useBankReadiness } from "../../dashboard/hooks/useDashboard";
-import { formatMUR, formatProductType } from "../../dashboard/api/profile";
 import { BottomNav } from "@/shared/ui";
 import { Home, Car, Plane, TrendingUp as TrendUp, GraduationCap, Briefcase, PiggyBank } from "lucide-react";
 import type { RequestSummary } from "@/individual/requests/api/requests";
@@ -38,8 +37,6 @@ const STATUS_LABEL: Record<Goal["status"], string> = {
   "needs-attention": "Needs attention",
   "ahead":           "Ahead",
 };
-
-const JOURNEY_STEPS = ["Submitted", "Under Review", "Providers Bidding", "Offer Ready"];
 
 const MOCK_ACTIVITY = [
   { id: 1, text: "MCB submitted a new offer on your Personal Loan", time: "2 mins ago", dot: "bg-ficium" },
@@ -112,82 +109,13 @@ export default function Requests() {
         {/* Main grid */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
 
-          {/* Left: goal cards + submitted requests */}
-          <div className="space-y-6">
-
-            {/* Goal cards (savings + financing targets) */}
-            {!goalsLoading && goals.length > 0 && (
-              <div>
-                <div className="text-[12px] font-bold text-muted uppercase tracking-widest mb-3">Your financing needs</div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {goals.map(g => {
-                    const style = GOAL_STYLE[g.type] ?? GOAL_STYLE.other;
-                    const Icon  = style.icon;
-                    const pct   = goalProgress(g);
-                    return (
-                      <div
-                        key={g.id}
-                        onClick={() => navigate(`/goals/${g.id}`)}
-                        className="bg-white rounded-[18px] border border-ink/[0.06] shadow-sm overflow-hidden cursor-pointer hover:shadow-card hover:-translate-y-0.5 transition-all"
-                      >
-                        <div className="h-[100px] flex items-center justify-center"
-                             style={{ background: `linear-gradient(135deg, ${style.imgFrom}, ${style.imgTo})` }}>
-                          <div className="w-12 h-12 rounded-2xl bg-white/20 grid place-items-center">
-                            <Icon size={24} className="text-white" />
-                          </div>
-                        </div>
-                        <div className="p-4 flex flex-col gap-1.5">
-                          <div className="font-bold text-[13px] text-ink">{g.title}</div>
-                          <div className="font-display text-[26px] font-extrabold text-ficium leading-none">
-                            {pct}<span className="text-[12px] font-semibold text-muted ml-0.5">%</span>
-                          </div>
-                          <div className="h-[3px] bg-ink/[0.07] rounded-full overflow-hidden">
-                            <div className="h-full rounded-full bg-ficium" style={{ width: `${pct}%` }} />
-                          </div>
-                          <div className="text-[11px] text-ink/70 font-semibold">{fmt(g.savedAmount)} / {fmt(g.targetAmount)}</div>
-                          <span className={["self-start text-[10px] font-bold px-2 py-0.5 rounded-pill", STATUS_PILL[g.status]].join(" ")}>
-                            {STATUS_LABEL[g.status]}
-                          </span>
-                          <div className="text-[10px] font-bold text-ficium flex items-center gap-1">
-                            <Building2 size={10} /> {g.banksReady} providers ready
-                          </div>
-                          <button
-                            onClick={e => { e.stopPropagation(); navigate(g.loanRoute); }}
-                            className="w-full py-2 rounded-xl text-[12px] font-bold text-white bg-ficium hover:opacity-90 mt-1"
-                          >
-                            Find financing →
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-
-                  {/* Post new */}
-                  <button
-                    onClick={() => navigate("/requests/new")}
-                    className="bg-white rounded-[18px] border-2 border-dashed border-ink/[0.12] min-h-[240px] flex flex-col items-center justify-center gap-3 hover:border-ficium/40 hover:bg-ficium/[0.02] transition-all group"
-                  >
-                    <div className="w-11 h-11 rounded-full bg-ficium grid place-items-center shadow-ficium group-hover:scale-110 transition-transform">
-                      <Plus size={20} className="text-white" />
-                    </div>
-                    <span className="text-[12px] font-bold text-ink">Post New Request</span>
-                  </button>
-                </div>
+          {/* Single unified card grid */}
+          <div>
+            {isLoading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[1,2,3].map(i => <div key={i} className="bg-white rounded-[18px] h-56 animate-pulse border border-ink/[0.06]" />)}
               </div>
-            )}
-
-            {/* Submitted requests (from DB) */}
-            {!reqLoading && requests.length > 0 && (
-              <div>
-                <div className="text-[12px] font-bold text-muted uppercase tracking-widest mb-3">Submitted requests</div>
-                <div className="flex flex-col gap-4">
-                  {requests.map(r => <RequestCard key={r.id} request={r} />)}
-                </div>
-              </div>
-            )}
-
-            {/* Empty state */}
-            {!isLoading && goals.length === 0 && requests.length === 0 && (
+            ) : (goals.length === 0 && requests.length === 0) ? (
               <div className="bg-white rounded-[28px] border border-ink/[0.06] p-10 text-center shadow-sm">
                 <div className="w-16 h-16 rounded-[22px] bg-ficium/10 text-ficium grid place-items-center mx-auto mb-4">
                   <FileText size={28} />
@@ -201,6 +129,66 @@ export default function Requests() {
                   className="inline-flex items-center gap-2 bg-ficium text-white px-6 py-3.5 rounded-pill text-[14px] font-bold shadow-ficium"
                 >
                   <Plus size={16} /> Post a need
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
+                {/* Goal cards */}
+                {goals.map(g => {
+                  const style = GOAL_STYLE[g.type] ?? GOAL_STYLE.other;
+                  const Icon  = style.icon;
+                  const pct   = goalProgress(g);
+                  return (
+                    <div
+                      key={g.id}
+                      onClick={() => navigate(`/goals/${g.id}`)}
+                      className="bg-white rounded-[18px] border border-ink/[0.06] shadow-sm overflow-hidden cursor-pointer hover:shadow-card hover:-translate-y-0.5 transition-all"
+                    >
+                      <div className="h-[100px] flex items-center justify-center"
+                           style={{ background: `linear-gradient(135deg, ${style.imgFrom}, ${style.imgTo})` }}>
+                        <div className="w-12 h-12 rounded-2xl bg-white/20 grid place-items-center">
+                          <Icon size={24} className="text-white" />
+                        </div>
+                      </div>
+                      <div className="p-4 flex flex-col gap-1.5">
+                        <div className="font-bold text-[13px] text-ink">{g.title}</div>
+                        <div className="font-display text-[26px] font-extrabold text-ficium leading-none">
+                          {pct}<span className="text-[12px] font-semibold text-muted ml-0.5">%</span>
+                        </div>
+                        <div className="h-[3px] bg-ink/[0.07] rounded-full overflow-hidden">
+                          <div className="h-full rounded-full bg-ficium" style={{ width: `${pct}%` }} />
+                        </div>
+                        <div className="text-[11px] text-ink/70 font-semibold">{fmt(g.savedAmount)} / {fmt(g.targetAmount)}</div>
+                        <span className={["self-start text-[10px] font-bold px-2 py-0.5 rounded-pill", STATUS_PILL[g.status]].join(" ")}>
+                          {STATUS_LABEL[g.status]}
+                        </span>
+                        <div className="text-[10px] font-bold text-ficium flex items-center gap-1">
+                          <Building2 size={10} /> {g.banksReady} providers ready
+                        </div>
+                        <button
+                          onClick={e => { e.stopPropagation(); navigate(g.loanRoute); }}
+                          className="w-full py-2 rounded-xl text-[12px] font-bold text-white bg-ficium hover:opacity-90 mt-1"
+                        >
+                          Find financing →
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* DB request cards */}
+                {requests.map(r => <RequestGoalCard key={r.id} request={r} />)}
+
+                {/* Post new */}
+                <button
+                  onClick={() => navigate("/requests/new")}
+                  className="bg-white rounded-[18px] border-2 border-dashed border-ink/[0.12] min-h-[240px] flex flex-col items-center justify-center gap-3 hover:border-ficium/40 hover:bg-ficium/[0.02] transition-all group"
+                >
+                  <div className="w-11 h-11 rounded-full bg-ficium grid place-items-center shadow-ficium group-hover:scale-110 transition-transform">
+                    <Plus size={20} className="text-white" />
+                  </div>
+                  <span className="text-[12px] font-bold text-ink">Post New Request</span>
                 </button>
               </div>
             )}
@@ -286,93 +274,71 @@ export default function Requests() {
   );
 }
 
-/* ── Request card (submitted requests from DB) ── */
-function RequestCard({ request }: { request: RequestSummary }) {
-  const journeyProgress = request.status === "open" && request.bidCount > 0 ? 2
-    : request.status === "open" ? 1
-    : request.status === "accepted" ? 3 : 0;
+/* ── ProductType → card style ── */
+const PRODUCT_STYLE: Record<string, { icon: React.ElementType; imgFrom: string; imgTo: string; label: string }> = {
+  mortgage:           { icon: Home,          imgFrom: "#c47b2b", imgTo: "#7a4a1e", label: "Home Loan"        },
+  personal_loan:      { icon: Plane,         imgFrom: "#0ea5e9", imgTo: "#0369a1", label: "Personal Loan"    },
+  credit_card:        { icon: Briefcase,     imgFrom: "#db2777", imgTo: "#9d174d", label: "Credit Card"      },
+  leasing:            { icon: Car,           imgFrom: "#4b5563", imgTo: "#1f2937", label: "Vehicle Loan"     },
+  business_loan:      { icon: Briefcase,     imgFrom: "#7c3aed", imgTo: "#4c1d95", label: "Business Loan"   },
+  sme_loan:           { icon: Briefcase,     imgFrom: "#7c3aed", imgTo: "#4c1d95", label: "SME Loan"         },
+  fixed_deposit:      { icon: PiggyBank,     imgFrom: "#d97706", imgTo: "#92400e", label: "Deposit"          },
+  investment_account: { icon: TrendUp,       imgFrom: "#0f0c29", imgTo: "#2A1FE6", label: "Investment"       },
+  overdraft:          { icon: Target,        imgFrom: "#dc2626", imgTo: "#991b1b", label: "Overdraft"         },
+  other:              { icon: Target,        imgFrom: "#6b7280", imgTo: "#374151", label: "Request"           },
+};
 
-  const statusStyle = request.status === "open"
+function getProductStyle(type: string) {
+  return PRODUCT_STYLE[type] ?? PRODUCT_STYLE.other;
+}
+
+/* ── Request as goal card ── */
+function RequestGoalCard({ request }: { request: RequestSummary }) {
+  const navigate = useNavigate();
+  const style    = getProductStyle(request.productType);
+  const Icon     = style.icon;
+  const fmt      = (n: number) => `Rs ${new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(n)}`;
+
+  const statusColor = request.status === "open"
     ? "bg-emerald-50 text-emerald-700"
     : request.status === "accepted"
-    ? "bg-ficium text-white"
+    ? "bg-ficium/10 text-ficium"
     : "bg-ink/10 text-muted";
 
   return (
-    <div className="bg-white rounded-[28px] border border-ficium/10 shadow-sm hover:shadow-md transition-all overflow-hidden">
-      <Link to={`/requests/${request.id}`} className="no-underline block p-6 hover:bg-ink/[0.01] transition-colors">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-4 flex-1 min-w-0">
-            <div className="w-12 h-12 rounded-2xl bg-ficium/10 text-ficium grid place-items-center flex-shrink-0">
-              <FileText size={20} />
-            </div>
-            <div className="min-w-0">
-              <div className="text-[13px] text-muted font-medium mb-1">{formatProductType(request.productType)}</div>
-              <div className="font-display text-[36px] sm:text-[44px] font-extrabold text-ink leading-none tracking-tight">
-                {formatMUR(request.amount)}
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <span className={["text-[11px] font-bold px-3 py-1.5 rounded-pill uppercase tracking-wide", statusStyle].join(" ")}>
-              {request.status}
-            </span>
-            <button className="w-8 h-8 rounded-full bg-ink/[0.05] grid place-items-center hover:bg-ink/10 transition-colors">
-              <MoreHorizontal size={15} className="text-muted" />
-            </button>
-          </div>
+    <div
+      onClick={() => navigate(`/requests/${request.id}`)}
+      className="bg-white rounded-[18px] border border-ink/[0.06] shadow-sm overflow-hidden cursor-pointer hover:shadow-card hover:-translate-y-0.5 transition-all"
+    >
+      <div className="h-[100px] flex items-center justify-center relative"
+           style={{ background: `linear-gradient(135deg, ${style.imgFrom}, ${style.imgTo})` }}>
+        <div className="w-12 h-12 rounded-2xl bg-white/20 grid place-items-center">
+          <Icon size={24} className="text-white" />
         </div>
-        {request.bidCount > 0 && (
-          <div className="flex items-center gap-2 mt-4">
-            <div className="flex -space-x-2">
-              {[...Array(Math.min(request.bidCount, 3))].map((_, i) => (
-                <div key={i} className="w-6 h-6 rounded-full bg-ficium/20 border-2 border-white grid place-items-center">
-                  <Building2 size={10} className="text-ficium" />
-                </div>
-              ))}
-            </div>
-            <span className="text-[13px] font-semibold text-ficium">
-              {request.bidCount} provider{request.bidCount !== 1 ? "s" : ""} competing for you
-            </span>
+        <span className={["absolute top-3 right-3 text-[10px] font-bold px-2 py-0.5 rounded-pill uppercase", statusColor].join(" ")}>
+          {request.status}
+        </span>
+      </div>
+      <div className="p-4 flex flex-col gap-1.5">
+        <div className="text-[11px] text-muted font-medium">{style.label}</div>
+        <div className="font-display text-[22px] font-extrabold text-ink leading-none">
+          {fmt(request.amount)}
+        </div>
+        {request.bidCount > 0 ? (
+          <div className="text-[11px] font-bold text-ficium flex items-center gap-1">
+            <Building2 size={10} /> {request.bidCount} offer{request.bidCount !== 1 ? "s" : ""} received
+          </div>
+        ) : (
+          <div className="text-[11px] text-muted flex items-center gap-1">
+            <Clock size={10} /> Waiting for offers
           </div>
         )}
-      </Link>
-
-      <div className="px-6 pb-6 border-t border-ink/[0.05]">
-        {/* Journey */}
-        <div className="py-5">
-          <div className="text-[12px] font-bold text-muted uppercase tracking-widest mb-4">Application journey</div>
-          <div className="relative flex items-start justify-between">
-            <div className="absolute top-5 left-5 right-5 h-1 bg-ink/[0.08] rounded-pill" />
-            <div className="absolute top-5 left-5 h-1 bg-ficium rounded-pill transition-all duration-700"
-                 style={{ width: `${(journeyProgress / (JOURNEY_STEPS.length - 1)) * 85}%` }} />
-            {JOURNEY_STEPS.map((label, i) => {
-              const done = i <= journeyProgress;
-              return (
-                <div key={label} className="relative z-10 flex flex-col items-center gap-2 flex-1">
-                  <div className={["w-10 h-10 rounded-full grid place-items-center text-[13px] font-bold border-2 transition-all",
-                    done ? "bg-ficium border-ficium text-white" : "bg-white border-ink/20 text-muted"].join(" ")}>
-                    {done ? <CheckCircle2 size={16} /> : i + 1}
-                  </div>
-                  <span className={["text-[11px] font-semibold text-center leading-tight", done ? "text-ficium" : "text-muted"].join(" ")}>
-                    {label}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Waiting / no bids */}
-        {request.bidCount === 0 && (
-          <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4">
-            <Clock size={16} className="text-amber-600 flex-shrink-0" />
-            <div>
-              <div className="text-[14px] font-bold text-amber-800">Waiting for offers</div>
-              <div className="text-[12px] text-amber-600 mt-0.5">Providers typically respond within 24 hours.</div>
-            </div>
-          </div>
-        )}
+        <button
+          onClick={e => { e.stopPropagation(); navigate(`/requests/${request.id}`); }}
+          className="w-full py-2 rounded-xl text-[12px] font-bold text-white bg-ficium hover:opacity-90 mt-1"
+        >
+          View offers →
+        </button>
       </div>
     </div>
   );
