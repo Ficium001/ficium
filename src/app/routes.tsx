@@ -1,6 +1,7 @@
 import { lazy, Suspense, Component } from "react";
 import type { ReactNode, ErrorInfo } from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
+import { PublicOnlyRoute, ClientOnlyRoute } from "./ProtectedRoute";
 
 import Splash    from "../features/marketing/pages/Splash";
 import Login     from "../features/auth/pages/Login";
