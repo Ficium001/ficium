@@ -17,7 +17,7 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
 
 /**
  * Requires authentication AND role = client.
- * Banks/institutions get bounced to their portal.
+ * Bank users are redirected to the institution portal.
  */
 export function ClientOnlyRoute({ children }: { children: ReactNode }) {
   const { user, role, isLoading } = useAuth();
@@ -25,23 +25,11 @@ export function ClientOnlyRoute({ children }: { children: ReactNode }) {
 
   if (isLoading) return <LoadingScreen />;
   if (!user) return <Navigate to="/login" state={{ from: location.pathname }} replace />;
-  if (role === "bank") return <Navigate to="/institution" replace />;
-  if (role === "admin") return <Navigate to="/admin" replace />;
-
-  return <>{children}</>;
-}
-
-/**
- * Requires authentication AND role = bank (institution user).
- * Clients get bounced to their dashboard.
- */
-export function BankOnlyRoute({ children }: { children: ReactNode }) {
-  const { user, role, isLoading } = useAuth();
-  const location = useLocation();
-
-  if (isLoading) return <LoadingScreen />;
-  if (!user) return <Navigate to="/institution/login" state={{ from: location.pathname }} replace />;
-  if (role === "client") return <Navigate to="/dashboard" replace />;
+  // Bank users belong on portal.ficium.net — redirect them there
+  if (role === "bank") {
+    window.location.href = "https://portal.ficium.net";
+    return null;
+  }
   if (role === "admin") return <Navigate to="/admin" replace />;
 
   return <>{children}</>;
@@ -49,7 +37,6 @@ export function BankOnlyRoute({ children }: { children: ReactNode }) {
 
 /**
  * Routes only visible when logged out.
- * Smart redirect based on role on login.
  */
 export function PublicOnlyRoute({ children }: { children: ReactNode }) {
   const { user, role, isLoading } = useAuth();
@@ -57,7 +44,10 @@ export function PublicOnlyRoute({ children }: { children: ReactNode }) {
   if (isLoading) return <LoadingScreen />;
 
   if (user && role) {
-    if (role === "bank")  return <Navigate to="/institution" replace />;
+    if (role === "bank") {
+      window.location.href = "https://portal.ficium.net";
+      return null;
+    }
     if (role === "admin") return <Navigate to="/admin" replace />;
     return <Navigate to="/dashboard" replace />;
   }

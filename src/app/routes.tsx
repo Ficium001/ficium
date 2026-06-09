@@ -1,7 +1,6 @@
 import { lazy, Suspense, Component } from "react";
 import type { ReactNode, ErrorInfo } from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
-import { PublicOnlyRoute, ClientOnlyRoute, BankOnlyRoute } from "./ProtectedRoute";
 
 import Splash    from "../features/marketing/pages/Splash";
 import Login     from "../features/auth/pages/Login";
@@ -11,7 +10,6 @@ import CheckEmail from "../features/auth/pages/CheckEmail";
 const RegisterTypeSelect  = lazy(() => import("../features/auth/pages/RegisterTypeSelect"));
 const RegisterIndividual  = lazy(() => import("../individual/auth/pages/RegisterIndividual"));
 const RegisterBusiness    = lazy(() => import("../business/auth/pages/RegisterBusiness"));
-const RegisterInstitution = lazy(() => import("../institution/auth/pages/RegisterInstitution"));
 const ForgotPassword      = lazy(() => import("../features/auth/pages/ForgotPassword"));
 const ResetPassword       = lazy(() => import("../features/auth/pages/ResetPassword"));
 const HowItWorks          = lazy(() => import("../features/marketing/pages/HowItWorks"));
@@ -34,20 +32,7 @@ const ClientAudit         = lazy(() => import("../individual/audit/pages/ClientA
 const NetWorthPage        = lazy(() => import("../individual/networth/pages/NetWorth"));
 const FinancialHealthPage = lazy(() => import("../individual/health/pages/FinancialHealth"));
 
-// ── Institution app ───────────────────────────────────────────
-const InstitutionPending      = lazy(() => import("../institution/auth/pages/InstitutionPending"));
-const InstitutionLogin        = lazy(() => import("../institution/auth/pages/InstitutionLogin"));
-const InstitutionOnboarding   = lazy(() => import("../institution/auth/pages/InstitutionOnboarding"));
 const FiciumAdminPanel        = lazy(() => import("../admin/pages/FiciumAdminPanel"));
-const InstitutionPortalShell  = lazy(() => import("../institution/components/InstitutionPortalShell"));
-const InstitutionDashboard    = lazy(() => import("../institution/dashboard/pages/InstitutionDashboard"));
-const InstitutionMarketplace  = lazy(() => import("../institution/marketplace/pages/InstitutionMarketplace"));
-const InstitutionApprovals    = lazy(() => import("../institution/approvals/pages/InstitutionApprovals"));
-const InstitutionBids         = lazy(() => import("../institution/bids/pages/InstitutionBids"));
-const InstitutionProducts     = lazy(() => import("../institution/products/pages/InstitutionProducts"));
-const InstitutionWebhooks     = lazy(() => import("../institution/webhooks/pages/InstitutionWebhooks"));
-const InstitutionAudit        = lazy(() => import("../institution/audit/pages/InstitutionAudit"));
-const InstitutionSettings     = lazy(() => import("../institution/settings/pages/InstitutionSettings"));
 
 function PageLoader() {
   return (
@@ -109,7 +94,6 @@ export const router = createBrowserRouter([
   { path: "/register",               element: <S><RegisterTypeSelect /></S> },
   { path: "/register/individual",    element: <S><RegisterIndividual /></S> },
   { path: "/register/business",      element: <S><RegisterBusiness /></S> },
-  { path: "/register/institution",   element: <S><RegisterInstitution /></S> },
 
   // ── Individual (client) app ─────────────────────────────────
   { path: "/dashboard",              element: <ClientOnlyRoute><S><Dashboard /></S></ClientOnlyRoute> },
@@ -133,27 +117,6 @@ export const router = createBrowserRouter([
   { path: "/goals/*",               element: <Navigate to="/requests" replace /> },
   { path: "/journeys",               element: <Navigate to="/requests" replace /> },
   { path: "/journeys/*",             element: <Navigate to="/requests" replace /> },
-
-  // ── Institution app ─────────────────────────────────────────
-  { path: "/institution/login",        element: <S><InstitutionLogin /></S> },
-  { path: "/institution/register",     element: <S><RegisterInstitution /></S> },
-  { path: "/institution/pending",      element: <S><InstitutionPending /></S> },
-  { path: "/institution/onboarding",   element: <S><InstitutionOnboarding /></S> },
-
-  {
-    path: "/institution",
-    element: <BankOnlyRoute><S><InstitutionPortalShell /></S></BankOnlyRoute>,
-    children: [
-      { index: true,         element: <S><InstitutionDashboard /></S>   },
-      { path: "marketplace", element: <S><InstitutionMarketplace /></S> },
-      { path: "bids",        element: <S><InstitutionBids /></S>        },
-      { path: "approvals",   element: <S><InstitutionApprovals /></S>   },
-      { path: "products",    element: <S><InstitutionProducts /></S>    },
-      { path: "webhooks",    element: <S><InstitutionWebhooks /></S>    },
-      { path: "audit",       element: <S><InstitutionAudit /></S>       },
-      { path: "settings",    element: <S><InstitutionSettings /></S>    },
-    ],
-  },
 
   // ── Admin panel ─────────────────────────────────────────────
   { path: "/admin", element: <S><FiciumAdminPanel /></S> },
