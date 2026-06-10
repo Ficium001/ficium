@@ -65,7 +65,10 @@ export default async function handler(req: any, res: any) {
   // Call rating engine
   const ratingRes = await fetch(`${RATING_ENGINE_URL}/rate`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'X-API-Key': process.env.RATING_ENGINE_API_KEY!,
+    },
     body: JSON.stringify({ client_id, ...inputSnapshot }),
   })
 
