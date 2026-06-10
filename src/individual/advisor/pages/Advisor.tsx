@@ -8,14 +8,11 @@ import {
 import { useProfile } from "../../dashboard/hooks/useDashboard";
 import { BottomNav } from "../../../shared/ui";
 import { type ClaudeMessage } from "@/shared/lib/claude";
+import { apiPost } from "@/shared/lib/api";
 
 // Profile-aware Claude call — passes userId so Claude knows the user's finances
 async function askClaudeWithProfile(messages: ClaudeMessage[], userId?: string): Promise<string> {
-  const res = await fetch("/api/chat", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ messages, userId }),
-  });
+  const res = await apiPost("/api/chat", { messages, userId });
   if (!res.ok) throw new Error(`Claude error: ${res.status}`);
   const data = await res.json();
   return data.reply ?? "";

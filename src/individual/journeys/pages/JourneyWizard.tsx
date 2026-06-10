@@ -10,6 +10,7 @@ import {
   Building2, Sparkles,
 } from "lucide-react";
 import { useCreateJourney, type JourneyType, type JourneyAnswers, type JourneyAIResults } from "@/individual/journeys/hooks/useJourneys";
+import { apiPost } from "@/shared/lib/api";
 import { useProfile } from "@/individual/dashboard/hooks/useDashboard";
 
 // Call the real server-side affordability calculator
@@ -20,11 +21,7 @@ async function calculateAffordabilityReal(
 ): Promise<JourneyAIResults> {
   if (!userId) return buildFallback(type, answers);
   try {
-    const res = await fetch("/api/chat?action=journey-calculate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId, type, answers }),
-    });
+    const res = await apiPost("/api/chat?action=journey-calculate", { userId, type, answers });
     if (!res.ok) return buildFallback(type, answers);
     const data = await res.json();
     return data;

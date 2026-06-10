@@ -3,6 +3,7 @@
 // Fetches market intelligence from /api/intelligence and makes
 // it available to Claude prompts across the app.
 // =============================================================
+import { apiGet } from "./api";
 import { useState, useEffect, useRef } from "react";
 import type { FiciumIntelligence, MarketRate, RequestPattern, AcceptanceIntel, MarketCompetitiveness } from "@/shared/lib/intelligence-types";
 
@@ -15,7 +16,7 @@ let _cache: { data: FiciumIntelligence; ts: number } | null = null;
 
 async function fetchIntelligence(): Promise<FiciumIntelligence> {
   if (_cache && Date.now() - _cache.ts < CACHE_TTL_MS) return _cache.data;
-  const res  = await fetch("/api/intelligence");
+  const res  = await apiGet("/api/intelligence");
   const data = (await res.json()) as FiciumIntelligence;
   _cache = { data, ts: Date.now() };
   return data;

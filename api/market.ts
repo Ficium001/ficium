@@ -12,6 +12,7 @@
 import Anthropic          from "@anthropic-ai/sdk";
 import { Env }            from "./_lib/env.js";
 import { Response as R }  from "./_lib/response.js";
+import { requireUser, asAuthError } from "./_lib/auth.js";
 
 export const config = { runtime: "nodejs" };
 
@@ -54,6 +55,14 @@ export default async function handler(req: any, res: any) {
 
   const apiKey = Env.anthropicApiKey();
   if (!apiKey) return R.error(res, "AI not configured", 503, "NO_API_KEY");
+
+  try {
+    await requireUser(req);
+  } catch (e) {
+    const ae = asAuthError(e);
+    if (ae) return R.error(res, ae.message, ae.status, ae.code);
+    throw e;
+  }
 
   const action = (req.query?.action as string) ?? "";
 

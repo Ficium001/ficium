@@ -9,6 +9,7 @@ import Anthropic          from "@anthropic-ai/sdk";
 import { Env }            from "./_lib/env.js";
 import { IntelligenceService } from "./_lib/intelligence-service.js";
 import { Response }       from "./_lib/response.js";
+import { requireUser, asAuthError } from "./_lib/auth.js";
 
 export const config = { runtime: "nodejs" };
 
@@ -53,6 +54,14 @@ export default async function handler(req: any, res: any) { // eslint-disable-li
 
   const apiKey = Env.anthropicApiKey();
   if (!apiKey) return Response.error(res, "AI service not configured", 503, "NO_API_KEY");
+
+  try {
+    await requireUser(req);
+  } catch (e) {
+    const ae = asAuthError(e);
+    if (ae) return Response.error(res, ae.message, ae.status, ae.code);
+    throw e;
+  }
 
   const body = req.body as RequestBody;
   if (!body?.messages?.length) {

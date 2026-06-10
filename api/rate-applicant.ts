@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { requireService, asAuthError } from './_lib/auth'
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
@@ -9,6 +10,16 @@ const RATING_ENGINE_URL = process.env.RATING_ENGINE_URL!
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') return res.status(405).end()
+
+  // Internal/server-to-server only. No browser should reach this directly —
+  // it uses the service-role key and bypasses RLS.
+  try {
+    requireService(req)
+  } catch (e) {
+    const ae = asAuthError(e)
+    if (ae) return res.status(ae.status).json({ error: ae.message, code: ae.code })
+    throw e
+  }
 
   const { client_id } = req.body
   if (!client_id) return res.status(400).json({ error: 'client_id required' })

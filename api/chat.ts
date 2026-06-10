@@ -10,6 +10,7 @@ import Anthropic              from "@anthropic-ai/sdk";
 import { Env }                from "./_lib/env";
 import { IntelligenceService } from "./_lib/intelligence-service";
 import { Response }           from "./_lib/response";
+import { requireUser, requireOwnership, asAuthError } from "./_lib/auth";
 
 export const config = { runtime: "nodejs" };
 
@@ -145,6 +146,26 @@ export default async function handler(req: any, res: any): Promise<void> { // es
 
   const apiKey = Env.anthropicApiKey();
   if (!apiKey) return Response.error(res, "AI service not configured", 503, "NO_API_KEY");
+
+  // ── Verify caller + enforce resource ownership (IDOR guard) ──
+  let user;
+  try {
+    user = await requireUser(req);
+  } catch (e) {
+    const ae = asAuthError(e);
+    if (ae) return Response.error(res, ae.message, ae.status, ae.code);
+    throw e;
+  }
+  // A userId in the body may only ever be the caller's own id.
+  const bodyUserId = (req.body as { userId?: string })?.userId;
+  if (bodyUserId) {
+    try { requireOwnership(user, bodyUserId); }
+    catch (e) {
+      const ae = asAuthError(e);
+      if (ae) return Response.error(res, ae.message, ae.status, ae.code);
+      throw e;
+    }
+  }
 
   const action = (req.query?.action as string) ?? "";
 

@@ -3,6 +3,8 @@
    Handles streaming SSE from /api/* endpoints
 ───────────────────────────────────────────────────────────── */
 
+import { apiPost, apiFetch } from "./api";
+
 export type ClaudeMessage = { role: "user" | "assistant"; content: string };
 
 export type StreamCallbacks = {
@@ -22,7 +24,7 @@ export async function streamClaude(
 ): Promise<void> {
   let full = "";
   try {
-    const res = await fetch(endpoint, {
+    const res = await apiFetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -69,12 +71,7 @@ export async function askClaude(
   messages: ClaudeMessage[],
   signal?: AbortSignal,
 ): Promise<string> {
-  const res = await fetch("/api/chat", {
-    method:  "POST",
-    headers: { "Content-Type": "application/json" },
-    body:    JSON.stringify({ messages }),
-    signal,
-  });
+  const res = await apiPost("/api/chat", { messages }, { signal });
   if (!res.ok) throw new Error(`Claude error: ${res.status}`);
   const data = await res.json();
   return data.reply ?? "";
