@@ -7,6 +7,7 @@
 export const config = { runtime: "nodejs" };
 
 import { createHmac, createHash } from "crypto";
+import { requireAdmin, asAuthError } from "./_lib/auth";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const getEnv = (k: string) => (globalThis as any).process?.env?.[k] ?? "";
@@ -50,11 +51,14 @@ async function awsPost(target: string, body: object): Promise<unknown> {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default async function handler(req: any, res: any) {
-  // Simple admin check — require a secret header
-  const adminSecret = getEnv("ADMIN_SECRET") || getEnv("VITE_ADMIN_SECRET");
-  const provided    = req.headers["x-admin-secret"] ?? req.query?.secret;
-  if (!adminSecret || provided !== adminSecret) {
-    return res.status(401).json({ error: "Unauthorized" });
+  // Verify caller is an active Ficium admin (server-side; replaces the
+  // public VITE_ADMIN_SECRET which shipped in the browser bundle).
+  try {
+    await requireAdmin(req);
+  } catch (e) {
+    const ae = asAuthError(e);
+    if (ae) return res.status(ae.status).json({ error: ae.message, code: ae.code });
+    throw e;
   }
 
   const clientId = req.query?.clientId as string;

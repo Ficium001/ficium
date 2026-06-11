@@ -7,6 +7,7 @@
  */
 
 import { createHmac, createHash } from "crypto";
+import { requireService, asAuthError } from "./_lib/auth";
 
 export const config = { runtime: "nodejs" };
 
@@ -54,9 +55,14 @@ async function awsPost(target: string, body: object): Promise<unknown> {
 export default async function handler(req: any, res: any) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  const secret = getEnv("KYC_SETUP_SECRET");
-  if (secret && req.headers["x-setup-secret"] !== secret)
-    return res.status(401).json({ error: "Unauthorized" });
+  // One-time infra bootstrap — internal/service callers only.
+  try {
+    requireService(req);
+  } catch (e) {
+    const ae = asAuthError(e);
+    if (ae) return res.status(ae.status).json({ error: ae.message, code: ae.code });
+    throw e;
+  }
 
   try {
     await awsPost("RekognitionService.CreateCollection", { CollectionId: COLLECTION_ID });

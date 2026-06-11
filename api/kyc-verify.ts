@@ -24,6 +24,7 @@
  */
 
 import { createHmac, createHash } from "crypto";
+import { requireUser, requireOwnership, asAuthError } from "./_lib/auth";
 
 export const config = { runtime: "nodejs" };
 
@@ -371,6 +372,17 @@ export default async function handler(req: any, res: any) {
   }
   if (!input || !input.idB64 || !input.selfieB64 || !input.poaB64)
     return res.status(400).json({ error: "idB64, selfieB64, poaB64 required — body keys received: " + Object.keys(input ?? {}).join(", ") });
+
+  // Verify caller + enforce that any clientId is the caller's own (IDOR guard).
+  try {
+    const user = await requireUser(req);
+    if (input.clientId) requireOwnership(user, input.clientId);
+    else input.clientId = user.id; // default to the authenticated user
+  } catch (e) {
+    const ae = asAuthError(e);
+    if (ae) return res.status(ae.status).json({ error: ae.message, code: ae.code });
+    throw e;
+  }
 
   const poaIsPdf    = (input.poaMimeType ?? "").includes("pdf") || (input.poaFileName ?? "").endsWith(".pdf");
   const referenceId = `aws-${Date.now()}`;

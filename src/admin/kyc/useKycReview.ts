@@ -4,6 +4,7 @@
 // Reads from public.clients + public.storage (signed URLs).
 // =============================================================
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiFetch, apiPost, apiGet } from "@/shared/lib/api";
 import { supabase } from "../../shared/lib/supabase";
 
 export const KQK = {
@@ -67,11 +68,7 @@ async function sendKycEmail(
   note?:    string
 ): Promise<void> {
   try {
-    await fetch("/api/kyc-notify", {
-      method:  "POST",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ userId, decision, note }),
-    });
+    await apiPost("/api/kyc-notify", { userId, decision, note });
   } catch (err) {
     // Email failure should never block the admin action
     console.error("[KYC] Email notification failed:", err);

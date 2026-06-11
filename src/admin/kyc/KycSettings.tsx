@@ -4,6 +4,7 @@
 // Changes take effect immediately on next submission.
 // =============================================================
 import { useState } from "react";
+import { apiFetch, apiPost, apiGet } from "@/shared/lib/api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 /* ---------- Types ---------- */
@@ -114,7 +115,7 @@ function useKycSettings() {
   return useQuery({
     queryKey: ["kyc_settings"],
     queryFn: async () => {
-      const res = await fetch("/api/kyc-settings");
+      const res = await apiGet("/api/kyc-settings");
       if (!res.ok) throw new Error("Failed to load settings");
       return res.json() as Promise<KycSettings>;
     },
@@ -125,11 +126,7 @@ function useUpdateKycSetting() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ key, value }: { key: string; value: boolean }) => {
-      const res = await fetch("/api/kyc-settings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key, value }),
-      });
+      const res = await apiPost("/api/kyc-settings", { key, value });
       if (!res.ok) throw new Error("Failed to update setting");
     },
     onMutate: async ({ key, value }) => {

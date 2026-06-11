@@ -12,6 +12,7 @@
 // =============================================================
 
 import { supabase } from "../../../../shared/lib/supabase";
+import { apiFetch, apiPost, apiGet } from "@/shared/lib/api";
 import type { KycProvider, KycVerifyInput, KycVerifyResult } from "./types";
 
 /* ---------- Helpers ---------- */
@@ -105,7 +106,7 @@ export const inhouseProvider: KycProvider = {
       ]);
 
       // 3. Call server-side verify endpoint
-      const res = await fetch("/api/kyc-verify", {
+      const res = await apiFetch("/api/kyc-verify", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(Object.fromEntries(Object.entries({

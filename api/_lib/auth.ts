@@ -119,6 +119,47 @@ function timingSafeEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
+/**
+ * Enforce that the caller is an active Ficium admin.
+ * Verifies the JWT (requireUser) then checks admin.admin_users server-side
+ * with the service key. Source of truth matches the RLS policies:
+ *   EXISTS (SELECT 1 FROM admin.admin_users WHERE id = auth.uid() AND active)
+ * Throws AuthError(401) if unauthenticated, AuthError(403) if not an admin.
+ */
+export async function requireAdmin(req: Req): Promise<AuthedUser> {
+  const user = await requireUser(req);
+
+  const url = Env.supabaseUrl();
+  const key = Env.supabaseServiceKey();
+  if (!url || !key) {
+    throw new AuthError("Auth not configured", 503, "AUTH_NOT_CONFIGURED");
+  }
+
+  let res: globalThis.Response;
+  try {
+    // PostgREST on the `admin` schema. Filtered to this user + active only.
+    res = await fetch(
+      `${url}/rest/v1/admin_users?id=eq.${encodeURIComponent(user.id)}&active=eq.true&select=id`,
+      {
+        headers: {
+          apikey: key,
+          Authorization: `Bearer ${key}`,
+          "Accept-Profile": "admin",
+        },
+      },
+    );
+  } catch {
+    throw new AuthError("Admin check failed", 503, "AUTH_UNAVAILABLE");
+  }
+
+  if (!res.ok) throw new AuthError("Admin check failed", 503, "ADMIN_CHECK_FAILED");
+  const rows = (await res.json()) as Array<{ id: string }>;
+  if (!Array.isArray(rows) || rows.length === 0) {
+    throw new AuthError("Forbidden — admin only", 403, "NOT_ADMIN");
+  }
+  return user;
+}
+
 /** Map an unknown error to an AuthError-shaped response, or null if not auth. */
 export function asAuthError(e: unknown): AuthError | null {
   return e instanceof AuthError ? e : null;

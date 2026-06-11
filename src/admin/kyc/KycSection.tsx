@@ -6,6 +6,7 @@
 // to NAV and rendering <KycSection /> in the section switch.
 // =============================================================
 import { useState } from "react";
+import { apiFetch } from "@/shared/lib/api";
 import {
   useKycQueue, useKycStats, useApproveKyc, useRejectKyc,
   getSignedUrl, type KycQueueItem, type KycStatus,
@@ -118,11 +119,9 @@ function KycReviewModal({ item, onClose }: { item: KycQueueItem; onClose: () => 
     setResetting(true);
     setResetMsg(null);
     try {
-      const adminSecret = import.meta.env.VITE_ADMIN_SECRET ?? "";
-      // Delete face from Rekognition collection
-      const faceRes = await fetch(`/api/kyc-admin-faces?clientId=${item.id}`, {
+      // Delete face from Rekognition collection (admin auth via Bearer token)
+      const faceRes = await apiFetch(`/api/kyc-admin-faces?clientId=${item.id}`, {
         method: "DELETE",
-        headers: { "x-admin-secret": adminSecret },
       });
       const faceData = await faceRes.json() as { deleted?: number; message?: string; error?: string };
       if (faceData.error) throw new Error(faceData.error);

@@ -12,6 +12,48 @@ export const config = { runtime: "nodejs" };
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const getEnv = (k: string) => (globalThis as any).process?.env?.[k] ?? "";
 
+/* ---------- Admin auth (inlined — no _lib import) ---------- */
+
+// Verifies the caller's Supabase token, then confirms they're an active
+// admin in admin.admin_users. Returns null on success, or an error tuple.
+async function verifyAdmin(req: any): Promise<{ status: number; error: string } | null> { // eslint-disable-line @typescript-eslint/no-explicit-any
+  const url = getEnv("VITE_SUPABASE_URL") || getEnv("SUPABASE_URL");
+  const key = getEnv("SUPABASE_SERVICE_ROLE_KEY");
+  if (!url || !key) return { status: 503, error: "Auth not configured" };
+
+  const raw = req.headers?.authorization ?? req.headers?.Authorization ?? "";
+  const m = /^Bearer\s+(.+)$/i.exec(String(raw).trim());
+  if (!m) return { status: 401, error: "Missing bearer token" };
+
+  let userRes: Response;
+  try {
+    userRes = await fetch(`${url}/auth/v1/user`, {
+      headers: { apikey: key, Authorization: `Bearer ${m[1]}` },
+    });
+  } catch {
+    return { status: 503, error: "Auth provider unreachable" };
+  }
+  if (!userRes.ok) return { status: 401, error: "Invalid or expired token" };
+  const u = (await userRes.json()) as { id?: string };
+  if (!u?.id) return { status: 401, error: "Invalid token payload" };
+
+  let adminRes: Response;
+  try {
+    adminRes = await fetch(
+      `${url}/rest/v1/admin_users?id=eq.${encodeURIComponent(u.id)}&active=eq.true&select=id`,
+      { headers: { apikey: key, Authorization: `Bearer ${key}`, "Accept-Profile": "admin" } },
+    );
+  } catch {
+    return { status: 503, error: "Admin check failed" };
+  }
+  if (!adminRes.ok) return { status: 503, error: "Admin check failed" };
+  const rows = (await adminRes.json()) as Array<{ id: string }>;
+  if (!Array.isArray(rows) || rows.length === 0) {
+    return { status: 403, error: "Forbidden — admin only" };
+  }
+  return null;
+}
+
 /* ---------- Email templates ---------- */
 
 function approvedHtml(name: string, note?: string) {
@@ -70,6 +112,10 @@ function rejectedHtml(name: string, reason: string) {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default async function handler(req: any, res: any) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+
+  // Admin-only: sends KYC decision emails to clients.
+  const authErr = await verifyAdmin(req);
+  if (authErr) return res.status(authErr.status).json({ error: authErr.error });
 
   const resendKey   = getEnv("RESEND_API_KEY");
   const supabaseUrl = getEnv("VITE_SUPABASE_URL") || getEnv("SUPABASE_URL");

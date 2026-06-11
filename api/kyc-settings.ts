@@ -29,7 +29,18 @@ async function supabase(method: "GET" | "PATCH", body?: object) {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+import { requireAdmin, asAuthError } from "./_lib/auth";
+
 export default async function handler(req: any, res: any) {
+  // Admin-only: KYC provider settings.
+  try {
+    await requireAdmin(req);
+  } catch (e) {
+    const ae = asAuthError(e);
+    if (ae) return res.status(ae.status).json({ error: ae.message, code: ae.code });
+    throw e;
+  }
+
   if (req.method === "GET") {
     const r = await supabase("GET");
     if (!r.ok) return res.status(500).json({ error: "Failed to load settings", detail: r.data });

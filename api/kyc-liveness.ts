@@ -10,6 +10,7 @@
  */
 
 import { createHmac, createHash } from "crypto";
+import { requireUser, asAuthError } from "./_lib/auth";
 
 export const config = { runtime: "nodejs" };
 
@@ -57,6 +58,14 @@ async function awsPost(service: string, target: string, body: object): Promise<u
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default async function handler(req: any, res: any) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+
+  try {
+    await requireUser(req);
+  } catch (e) {
+    const ae = asAuthError(e);
+    if (ae) return res.status(ae.status).json({ error: ae.message, code: ae.code });
+    throw e;
+  }
 
   const { action, sessionId } = req.body as { action: "create" | "result"; sessionId?: string };
 

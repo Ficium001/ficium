@@ -10,6 +10,7 @@
  */
 
 import { createHmac, createHash } from "crypto";
+import { requireUser, requireOwnership, asAuthError } from "./_lib/auth";
 
 export const config = { runtime: "nodejs" };
 
@@ -59,11 +60,30 @@ async function awsPost(target: string, body: object): Promise<unknown> {
 export default async function handler(req: any, res: any) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
+  let _user;
+  try {
+    _user = await requireUser(req);
+  } catch (e) {
+    const ae = asAuthError(e);
+    if (ae) return res.status(ae.status).json({ error: ae.message, code: ae.code });
+    throw e;
+  }
+
   const { action, imageB64, clientId } = req.body as {
     action:    "create" | "search" | "index";
     imageB64?: string;
     clientId?: string;
   };
+
+  // A clientId, when supplied, must be the caller's own (IDOR guard).
+  if (clientId) {
+    try { requireOwnership(_user, clientId); }
+    catch (e) {
+      const ae = asAuthError(e);
+      if (ae) return res.status(ae.status).json({ error: ae.message, code: ae.code });
+      throw e;
+    }
+  }
 
   try {
     if (action === "create") {
