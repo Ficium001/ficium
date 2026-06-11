@@ -68,7 +68,7 @@ async function sendKycEmail(
   note?:    string
 ): Promise<void> {
   try {
-    await apiPost("/api/kyc-notify", { userId, decision, note });
+    await apiPost("/api/kyc-admin?action=notify", { userId, decision, note });
   } catch (err) {
     // Email failure should never block the admin action
     console.error("[KYC] Email notification failed:", err);

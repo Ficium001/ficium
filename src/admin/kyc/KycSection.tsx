@@ -120,7 +120,7 @@ function KycReviewModal({ item, onClose }: { item: KycQueueItem; onClose: () => 
     setResetMsg(null);
     try {
       // Delete face from Rekognition collection (admin auth via Bearer token)
-      const faceRes = await apiFetch(`/api/kyc-admin-faces?clientId=${item.id}`, {
+      const faceRes = await apiFetch(`/api/kyc-admin?action=faces&clientId=${item.id}`, {
         method: "DELETE",
       });
       const faceData = await faceRes.json() as { deleted?: number; message?: string; error?: string };

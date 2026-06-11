@@ -115,7 +115,7 @@ function useKycSettings() {
   return useQuery({
     queryKey: ["kyc_settings"],
     queryFn: async () => {
-      const res = await apiGet("/api/kyc-settings");
+      const res = await apiGet("/api/kyc-admin?action=settings");
       if (!res.ok) throw new Error("Failed to load settings");
       return res.json() as Promise<KycSettings>;
     },
@@ -126,7 +126,7 @@ function useUpdateKycSetting() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ key, value }: { key: string; value: boolean }) => {
-      const res = await apiPost("/api/kyc-settings", { key, value });
+      const res = await apiPost("/api/kyc-admin?action=settings", { key, value });
       if (!res.ok) throw new Error("Failed to update setting");
     },
     onMutate: async ({ key, value }) => {
