@@ -12,7 +12,7 @@
 // =============================================================
 
 import { supabase } from "../../../../shared/lib/supabase";
-import { apiFetch, apiPost, apiGet } from "@/shared/lib/api";
+import { apiFetch } from "@/shared/lib/api";
 import type { KycProvider, KycVerifyInput, KycVerifyResult } from "./types";
 
 /* ---------- Helpers ---------- */
