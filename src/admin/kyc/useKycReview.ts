@@ -4,7 +4,7 @@
 // Reads from public.clients + public.storage (signed URLs).
 // =============================================================
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiFetch, apiPost, apiGet } from "@/shared/lib/api";
+import { apiPost } from "@/shared/lib/api";
 import { supabase } from "../../shared/lib/supabase";
 
 export const KQK = {

@@ -4,7 +4,7 @@
 // Changes take effect immediately on next submission.
 // =============================================================
 import { useState } from "react";
-import { apiFetch, apiPost, apiGet } from "@/shared/lib/api";
+import { apiPost, apiGet } from "@/shared/lib/api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 /* ---------- Types ---------- */
