@@ -92,58 +92,62 @@ A reverse-banking marketplace for Mauritius: clients post anonymised financial r
 ### 5.2 The live (deployed) architecture
 
 ```
-   Browser SPAs (React 19 + Vite + TS)
-   ┌──────────────┐   ┌──────────────────┐
-   │  ficium      │   │  ficium-portal   │
-   │  client app  │   │  institution app │
-   └──────┬───────┘   └────────┬─────────┘
-          │   Supabase JS SDK   │
-          ▼                     ▼
-   ┌───────────────────────────────────────┐
-   │  Supabase                              │
-   │  Auth · Postgres (RLS) · Realtime      │
-   │  schemas: public / institution / admin │
-   └───────────────────────────────────────┘
-          ▲
-          │  service-role (RLS bypass)
-   ┌──────┴───────────────┐      ┌────────────────────────┐
-   │ ficium/api/* (Vercel │─────▶│ ficium-rating-engine   │
-   │ serverless functions)│ /rate│ (FastAPI, Railway)     │
-   │ chat, market, kyc-*, │      └────────────────────────┘
-   │ rate-applicant, …    │
-   └──────────────────────┘
+   ┌─────────────────────────────────────┐   ┌────────────────────────────────────────────┐
+   │  Ficium App  (public marketplace)   │   │  Ficium Portal  (institution platform)     │
+   │  React 19 · Vite · TS · Supabase   │   │  React 19 · Vite · TS · ficium-auth        │
+   └──────────────┬──────────────────────┘   └──────────────────────┬─────────────────────┘
+                  │ Supabase JS SDK                                   │ JWT / API keys
+                  ▼                                                   ▼
+   ┌──────────────────────────────┐          ┌──────────────────────────────────────────┐
+   │  Supabase                    │          │  ficium-auth  (FastAPI)                  │
+   │  Auth · Postgres (RLS)       │          │  RS256 JWT · Argon2id · MFA              │
+   │  Realtime                    │          │  API key issuance · role-based access    │
+   │  public / institution / admin│          │  asyncpg · Alembic · own Postgres        │
+   └──────────────┬───────────────┘          └──────────────────────────────────────────┘
+                  │ service-role
+   ┌──────────────┴───────────────┐          ┌──────────────────────────────────────────┐
+   │  ficium/api/*  (Vercel)      │          │  ficium-infra  (Docker Compose)          │
+   │  chat · market · kyc-*       │─────┐    │  Caddy · auth · api · Redis · Postgres   │
+   │  rate-applicant · …          │     │    │  3 deployment models:                    │
+   └──────────────────────────────┘     │    │  SaaS (Ficium hosted)                    │
+                                        │    │  Cloud (client cloud)                    │
+   ┌──────────────────────────────┐     │    │  On-premises (client datacenter)         │
+   │  ficium-rating-engine        │◀────┘    └──────────────────────────────────────────┘
+   │  FastAPI · Railway           │
+   │  Credit scoring · pillar model│
+   └──────────────────────────────┘
+         ▲ Feeds into Ficium App only
+           (no Portal connection)
 ```
 
-- **Frontends:** Two React 19 / Vite 8 / TypeScript 6 SPAs. Modern stack, TanStack Query for data, route-level code splitting.
-- **Backend-of-record:** Supabase — Auth, Postgres with RLS, Realtime. Both apps share one auth model. The schema is well-segmented (`public` / `institution` / `admin`) and the `v2` migration set is genuinely disciplined (backup → create → migrate → verify → swap → drop, with a rollback script).
-- **Serverless edge logic:** `ficium/api/*` functions on Vercel for AI features (Claude proxy), market intelligence, and the KYC pipeline (AWS Rekognition). These hold the service-role key — which is exactly why the auth work in §3.1–3.2 was critical.
-- **Rating engine:** A standalone FastAPI service (Railway) computing credit ratings from a pillar model. Clean separation; now key-gated.
+- **Ficium App** — public-facing marketplace (credit + investment products). React 19 / Vite 8 / TS, authenticated via Supabase Auth. Serverless functions on Vercel handle AI (Claude proxy), market intelligence, and the KYC pipeline (AWS Rekognition). These hold the service-role key — which is exactly why the auth work in §3.1–3.2 was critical.
+- **Ficium Portal** — institution-facing platform for banks and fintechs. Uses `ficium-auth` (in-house FastAPI service: RS256 JWT, Argon2id, MFA, API key issuance, role-based per-user module access). This is a deliberate separation: institutions need stronger auth guarantees, API key issuance, and the ability to run on-premises.
+- **Supabase** — backend-of-record for the App: Auth, Postgres with RLS, Realtime. Well-segmented schemas (`public` / `institution` / `admin`); the `v2` migration set is disciplined (backup → create → migrate → verify → swap → drop, with rollback).
+- **ficium-auth** — the Portal's standalone auth service. Not dormant; serves a distinct user group (FSC-licensed institutions) with distinct security requirements. The `storageKey: "ficium-auth"` in the client code is just a localStorage key name — the actual service runs separately.
+- **ficium-infra** — Docker Compose stack supporting the three Portal deployment models: SaaS (Ficium-hosted), Cloud (client's own cloud), and On-premises (client datacenter). Explains the self-hosted design.
+- **Rating engine** — FastAPI on Railway, called by `ficium/api/rate-applicant` only. Scores providers, products, and reviews for the **App**. No connection to the Portal.
 
-### 5.3 The architectural fork — *worth a decision*
+### 5.3 Two auth systems serving two different user groups — *intentional design*
 
-There is a **second, parallel architecture in the repos that the live apps do not use**:
+`ficium-auth` is **not** a dormant duplicate of Supabase Auth. The two systems serve distinct audiences with distinct security requirements:
 
-- `ficium-auth` — a full standalone FastAPI auth service (RS256 JWT, Argon2id, MFA, its own Postgres via asyncpg + Alembic). It is genuinely well-built.
-- `ficium-infra` — a self-hosted Docker Compose stack (Caddy reverse proxy, the `auth` service, an `api` service, Redis, self-hosted Postgres).
+| | Ficium App | Ficium Portal |
+|---|---|---|
+| Users | Public individuals | FSC-licensed banks + fintechs |
+| Auth | Supabase (managed) | `ficium-auth` (in-house FastAPI) |
+| Token | Supabase JWT | RS256 JWT · API keys |
+| MFA | Supabase built-in | Custom (Argon2id + TOTP) |
+| Access model | Role via `user_metadata` | Module-based, per institution user |
 
-**Nothing in `ficium` or `ficium-portal` calls `ficium-auth`.** Both frontends authenticate against Supabase. `ficium-auth` and `ficium-infra` are referenced only by each other and by docs. (The `storageKey: "ficium-auth"` in the client is just a localStorage key name — not a reference to the service.)
+The split is correct for the product. Institutions need API key issuance (for server-to-server integrations), fine-grained module access, and the ability to run `ficium-infra` on-premises (client datacenter) or on their own cloud — requirements that a shared Supabase project can't cleanly serve.
 
-This means the org is maintaining two divergent auth/identity designs:
-
-1. **Live:** Supabase Auth + RLS + Vercel serverless.
-2. **Dormant:** self-hosted FastAPI auth + Docker stack.
-
-For a "bank-grade" target this fork is the single most important architectural decision to resolve, because:
-- Two auth systems double the security surface and the chance they drift out of sync.
-- The dormant stack implies an intended migration off Supabase (e.g. for data residency / FSC compliance) that hasn't happened — so either it's a roadmap item that should be tracked and resourced, or it's abandoned and should be archived to stop implying a second source of truth.
-
-**Recommendation:** explicitly decide whether `ficium-auth`/`ficium-infra` is (a) the planned production architecture — in which case the migration needs a real plan and the Supabase auth in §3 becomes interim — or (b) deprecated — in which case archive those repos with a clear note, so future readers don't trust two conflicting models.
+**What this means for the security PRs:** The auth fixes in §3.1–3.2 apply to Ficium App's serverless routes only. Ficium Portal's auth surface (the `ficium-auth` service endpoints) is a separate review scope and should be assessed against the same standards: caller verification on every route, ownership checks where user ids are passed, API key rotation policy, and the infra deployment hardening in `ficium-infra`.
 
 ### 5.4 Strengths
 
 - Modern, coherent frontend stack; no legacy framework debt.
 - Disciplined schema segmentation and a real versioned `v2` migration set with rollback.
-- A genuinely solid standalone auth service (even if currently dormant).
+- A genuinely solid split auth design: Supabase for the public app, in-house `ficium-auth` for institutional access — each matched to its audience's security requirements.
 - Clear separation of the rating engine as its own service.
 
 ### 5.5 Risks (post-fix)
@@ -152,7 +156,7 @@ For a "bank-grade" target this fork is the single most important architectural d
 |------|--------|
 | Service-role serverless routes unauthenticated / IDOR | **Fixed** (PR #2, #4) |
 | Rating engine open | **Fixed** (engine PR #1) |
-| Two parallel auth architectures | **Open — needs a product/infra decision** (§5.3) |
+| ficium-auth / ficium-portal security review | **Not in scope** — separate surface, same standards apply (§5.3) |
 | `audit.ts` not yet shared | Open — minor (needs `createAudit` factory) |
 | Secrets in git history (anon key, `.env.local`) | Low — rotate at leisure |
 
@@ -173,7 +177,7 @@ For a "bank-grade" target this fork is the single most important architectural d
 
 | Item | Why deferred |
 |------|--------------|
-| Resolve the two-auth-systems fork (§5.3) | Product/infra decision, not a code change |
+| ficium-portal / ficium-auth security review | Same auth-gate principles as §3.1–3.2; separate scope |
 | `createAudit(client)` factory to finish deduping `audit.ts` | Needs call-site changes in both apps |
 | Adopt `@ficium/shared` in both apps | Depends on git-dep vs registry choice + each app's build |
 | Rotate the leaked anon key / `.env.local` value | Low risk; optional hygiene |
