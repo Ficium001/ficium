@@ -21,7 +21,7 @@
 import { type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
-import { useInView, usePrefersReducedMotion } from '../motion/Reveal'
+import { useInView, usePrefersReducedMotion } from '../motion/hooks'
 
 // ─── SectionHead ──────────────────────────────────────────────
 export function SectionHead({
@@ -236,6 +236,9 @@ export function Tag({
   )
 }
 
+// statusTone maps a domain status to a Tag tone. Co-located with Tag/TAG_STYLES
+// on purpose; fast-refresh only-export-components doesn't apply to this helper.
+// eslint-disable-next-line react-refresh/only-export-components
 export function statusTone(status: string): keyof typeof TAG_STYLES {
   switch (status) {
     case 'accepted': case 'approved': case 'success': return 'green'

@@ -38,5 +38,14 @@ jobs:
       - name: Typecheck API
         run: npx tsc --noEmit -p tsconfig.node.json
 
+      - name: Lint shared UI (gated — keep the design system clean)
+        run: npm run lint:ui
+
+      - name: Lint full repo (report-only for now — legacy debt)
+        run: npm run lint || true
+
+      - name: Test
+        run: npm test
+
       - name: Build
         run: npm run build
