@@ -12,6 +12,7 @@
 import Anthropic          from "@anthropic-ai/sdk";
 import { Env }            from "./_lib/env.js";
 import { Response as R }  from "./_lib/response.js";
+import { requireUser, sendAuthError } from "./_lib/auth.js";
 
 export const config = { runtime: "nodejs" };
 
@@ -51,6 +52,9 @@ Live market data is injected in the user message.`;
 
 export default async function handler(req: any, res: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
   if (req.method !== "POST") return R.methodNotAllowed(res, ["POST"]);
+
+  try { await requireUser(req); }
+  catch (e) { if (sendAuthError(res, e)) return; throw e; }
 
   const apiKey = Env.anthropicApiKey();
   if (!apiKey) return R.error(res, "AI not configured", 503, "NO_API_KEY");

@@ -1,3 +1,4 @@
+import { apiFetch } from "@/shared/lib/apiClient";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -11,7 +12,7 @@ import { type ClaudeMessage } from "@/shared/lib/claude";
 
 // Profile-aware Claude call — passes userId so Claude knows the user's finances
 async function askClaudeWithProfile(messages: ClaudeMessage[], userId?: string): Promise<string> {
-  const res = await fetch("/api/chat", {
+  const res = await apiFetch("/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ messages, userId }),

@@ -9,6 +9,7 @@ import Anthropic          from "@anthropic-ai/sdk";
 import { Env }            from "./_lib/env.js";
 import { IntelligenceService } from "./_lib/intelligence-service.js";
 import { Response }       from "./_lib/response.js";
+import { requireUser, sendAuthError } from "./_lib/auth";
 
 export const config = { runtime: "nodejs" };
 
@@ -50,6 +51,9 @@ Rules:
 // ── Handler ──────────────────────────────────────────────────
 export default async function handler(req: any, res: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
   if (req.method !== "POST") return Response.methodNotAllowed(res, ["POST"]);
+
+  try { await requireUser(req); }
+  catch (e) { if (sendAuthError(res, e)) return; throw e; }
 
   const apiKey = Env.anthropicApiKey();
   if (!apiKey) return Response.error(res, "AI service not configured", 503, "NO_API_KEY");

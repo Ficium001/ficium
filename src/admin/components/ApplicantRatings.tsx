@@ -1,3 +1,4 @@
+import { apiFetch } from "@/shared/lib/apiClient";
 import { useEffect, useState } from "react"
 import { supabase } from "@/shared/lib/supabase"
 
@@ -85,7 +86,7 @@ export default function ApplicantRatings() {
 
   async function triggerRating(client_id: string) {
     setTriggering(client_id)
-    await fetch("/api/rate-applicant", {
+    await apiFetch("/api/rate-applicant", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ client_id }),

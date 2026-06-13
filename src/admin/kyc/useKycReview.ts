@@ -3,6 +3,7 @@
 // TanStack Query hooks for the admin KYC review dashboard.
 // Reads from public.clients + public.storage (signed URLs).
 // =============================================================
+import { apiFetch } from "@/shared/lib/apiClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../../shared/lib/supabase";
 
@@ -67,7 +68,7 @@ async function sendKycEmail(
   note?:    string
 ): Promise<void> {
   try {
-    await fetch("/api/kyc?action=notify", {
+    await apiFetch("/api/kyc?action=notify", {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
       body:    JSON.stringify({ userId, decision, note }),
