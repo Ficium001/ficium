@@ -150,9 +150,6 @@ export default function Advisor() {
     setInput("");
     setThinking(true);
 
-    const used = incrementUsedMessages();
-    setUsedMsgs(used);
-
     // Build history with user context
     const history: ClaudeMessage[] = [...messages, userMsg].map((m) => ({
       role:    m.role === "ai" ? "assistant" : "user",
@@ -161,6 +158,9 @@ export default function Advisor() {
 
     try {
       const reply = await askClaudeWithProfile(history, profile?.userId);
+      // Only count the message once we know it succeeded — a network error
+      // shouldn't burn one of the user's 3 free messages.
+      setUsedMsgs(incrementUsedMessages());
       setMessages((prev) => [...prev, {
         id:   (Date.now() + 1).toString(),
         role: "ai",
