@@ -57,8 +57,8 @@ export async function streamClaude(
       }
     }
     callbacks.onDone(full);
-  } catch (e: any) {
-    callbacks.onError(e?.message ?? "Network error");
+  } catch (e: unknown) {
+    callbacks.onError(e instanceof Error ? e.message : "Network error");
   }
 }
 

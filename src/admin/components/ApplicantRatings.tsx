@@ -13,7 +13,7 @@ interface CreditRating {
   recommendation: string
   pillar_scores: Record<string, number>
   audit_trail: Array<{ factor: string; note: string; impact: string }>
-  input_snapshot: Record<string, any>
+  input_snapshot: Record<string, unknown>
   rated_at: string
   rating_version: string
   clients: {
@@ -44,7 +44,11 @@ function timeAgo(iso: string) {
 
 export default function ApplicantRatings() {
   const [ratings, setRatings] = useState<CreditRating[]>([])
-  const [unratedClients, setUnratedClients] = useState<any[]>([])
+  const [unratedClients, setUnratedClients] = useState<Array<{
+    id: string
+    full_name: string | null
+    user_type: string | null
+  }>>([])
   const [openAudit, setOpenAudit] = useState<string | null>(null)
   const [filterRisk, setFilterRisk] = useState("all")
   const [loading, setLoading] = useState(true)
@@ -67,7 +71,7 @@ export default function ApplicantRatings() {
       .order("rated_at", { ascending: false })
 
     // Fetch verified clients without a rating yet
-    const ratedClientIds = (ratingData || []).map((r: any) => r.client_id)
+    const ratedClientIds = (ratingData || []).map((r: { client_id: string }) => r.client_id)
     const { data: unrated } = await supabase
       .from("clients")
       .select("id, full_name, user_type, kyc_status")

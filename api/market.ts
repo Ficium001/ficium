@@ -49,7 +49,7 @@ Live market data is injected in the user message.`;
 
 // ── Handler ──────────────────────────────────────────────────────────────────
 
-export default async function handler(req: any, res: any) {
+export default async function handler(req: any, res: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
   if (req.method !== "POST") return R.methodNotAllowed(res, ["POST"]);
 
   const apiKey = Env.anthropicApiKey();
@@ -100,7 +100,7 @@ Write the one-sentence summary now.`;
       .map(([k, v]) => `- ${k}: ${v}`).join("\n");
     const userContent = `Live market data right now:\n${snapLines}\n\nMy question: ${body.question.trim()}`;
     const history = (body.history ?? []).slice(-6)
-      .map((m: any) => ({ role: m.role, content: String(m.content).slice(0, 2000) }));
+      .map((m: { role: string; content: unknown }) => ({ role: m.role, content: String(m.content).slice(0, 2000) }));
 
     R.sseStart(res);
     try {

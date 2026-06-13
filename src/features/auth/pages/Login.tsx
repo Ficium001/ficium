@@ -180,6 +180,9 @@ export default function Login() {
      the DOM node (the wrapper may not forward unknown attrs).
    ============================================================ */
 
+// Props are a passthrough of react-hook-form's useForm() bundle; typing the
+// full shape here adds noise without safety. Matches the api/chat.ts convention.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function LoginForm({ register, handleSubmit, onSubmit, errors, isSubmitting, submitError }: any) {
   const [showPassword, setShowPassword] = useState(false);
 
