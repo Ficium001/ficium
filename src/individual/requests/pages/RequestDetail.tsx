@@ -29,22 +29,6 @@ const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: "chat",      label: "Chat",      icon: MessageSquare},
 ];
 
-/* ── Product → gradient ── */
-const PRODUCT_GRADIENT: Record<string, { from: string; to: string }> = {
-  mortgage:           { from: "#c47b2b", to: "#7a4a1e" },
-  personal_loan:      { from: "#0ea5e9", to: "#0369a1" },
-  credit_card:        { from: "#db2777", to: "#9d174d" },
-  leasing:            { from: "#4b5563", to: "#1f2937" },
-  business_loan:      { from: "#7c3aed", to: "#4c1d95" },
-  sme_loan:           { from: "#7c3aed", to: "#4c1d95" },
-  fixed_deposit:      { from: "#d97706", to: "#92400e" },
-  investment_account: { from: "#0f0c29", to: "#2A1FE6" },
-  overdraft:          { from: "#dc2626", to: "#991b1b" },
-};
-
-function getGradient(type: string) {
-  return PRODUCT_GRADIENT[type] ?? { from: "#6b7280", to: "#374151" };
-}
 
 /* ── Journey steps for Plan tab ── */
 const JOURNEY_STEPS = ["Submitted", "Under Review", "Providers Bidding", "Offer Ready"];
@@ -244,7 +228,7 @@ function DetailsTab({ request, profile }: { request: RequestDetailType; profile:
         {request.purpose && (
           <div className="mt-4 pt-4 border-t border-ink/[0.06]">
             <div className="text-[11px] text-muted mb-1.5">Purpose</div>
-            <p className="text-[14px] text-ink/80 leading-relaxed bg-cream rounded-xl px-4 py-3">{request.purpose}</p>
+            <p className="text-[14px] text-ink/80 leading-relaxed bg-paper rounded-xl px-4 py-3">{request.purpose}</p>
           </div>
         )}
       </Card>
@@ -272,7 +256,7 @@ function DetailsTab({ request, profile }: { request: RequestDetailType; profile:
           <Percent size={15} className="text-ficium" />
           <span className="text-[12px] font-bold text-ficium uppercase tracking-wider">What to expect</span>
         </div>
-        <div className="bg-cream rounded-xl px-4 py-4 text-[13px] text-ink/70 space-y-2">
+        <div className="bg-paper rounded-xl px-4 py-4 text-[13px] text-ink/70 space-y-2">
           <p>Based on your profile, providers typically offer rates between <strong className="text-ink">7.5% – 12% APR</strong> for this product.</p>
           <p>A credit score above 70 usually attracts the most competitive offers.</p>
         </div>
@@ -345,17 +329,30 @@ export default function RequestDetail() {
 
   const loading  = reqLoading || bidsLoading;
   const isClosed = request?.status !== "open";
-  const gradient = request ? getGradient(request.productType) : { from: "#6b7280", to: "#374151" };
 
   if (loading) return <LoadingSkeleton />;
   if (!request) return <NotFound />;
 
   return (
-    <div className="min-h-screen bg-cream pb-28">
+    <div className="min-h-screen bg-paper pb-28">
 
-      {/* Gradient header */}
-      <div style={{ background: `linear-gradient(135deg, ${gradient.from}, ${gradient.to})` }}>
-        <div className="max-w-[680px] mx-auto px-4 sm:px-6 pt-8 pb-0">
+      {/* Hero header — brand ink radial + drifting blade */}
+      <div className="relative overflow-hidden text-white" style={{ background: "radial-gradient(120% 160% at 8% 0%, #181842 0%, #0B0B1E 55%)" }}>
+        <svg viewBox="0 0 310 153" aria-hidden
+          className="absolute w-[300px] -top-12 -right-12 opacity-40 blur-[2px] motion-safe:animate-drift will-change-transform pointer-events-none">
+          <defs>
+            <linearGradient id="rdBladeB" x1="85" y1="79" x2="266" y2="20" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stopColor="#3536DC" /><stop offset="0.5" stopColor="#356EF4" /><stop offset="1" stopColor="#4C90F6" />
+            </linearGradient>
+            <linearGradient id="rdBladeP" x1="85" y1="141" x2="238" y2="91" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stopColor="#3A148F" /><stop offset="1" stopColor="#8231EC" />
+            </linearGradient>
+          </defs>
+          <path d="M 121.78,31.83 Q 131,20 146,20 L 251,20 Q 266,20 257.28,32.21 L 244.72,49.79 Q 236,62 221.09,63.68 L 99.91,77.32 Q 85,79 94.22,67.17 Z" fill="url(#rdBladeB)" />
+          <path d="M 108.10,103.75 Q 116,91 131,91 L 223,91 Q 238,91 230.12,103.77 L 216.88,125.23 Q 209,138 194,138.36 L 100,140.64 Q 85,141 92.90,128.25 Z" fill="url(#rdBladeP)" />
+        </svg>
+
+        <div className="relative z-10 max-w-[680px] mx-auto px-4 sm:px-6 pt-8 pb-0">
 
           <button onClick={() => navigate("/requests")}
             className="flex items-center gap-1.5 text-[13px] text-white/70 hover:text-white mb-5">
@@ -368,7 +365,7 @@ export default function RequestDetail() {
               <div className="text-[11px] font-bold text-white/60 uppercase tracking-widest">
                 {formatProductType(request.productType)}
               </div>
-              <h1 className="font-display text-[28px] sm:text-[34px] font-extrabold text-white leading-tight">
+              <h1 className="font-display text-[28px] sm:text-[34px] font-extrabold tracking-display leading-tight">
                 {fmt(request.amount)}
               </h1>
             </div>
@@ -393,10 +390,14 @@ export default function RequestDetail() {
               const badgeCount = t.id === "bids" ? bids.length : 0;
               return (
                 <button key={t.id} onClick={() => setTab(t.id)}
-                  className={["flex-shrink-0 flex flex-col items-center gap-1 py-3 px-3 text-[10px] font-bold uppercase tracking-widest transition-all border-b-2",
-                    active ? "text-white border-white" : "text-white/40 border-transparent hover:text-white/70"].join(" ")}>
+                  className={["relative flex-shrink-0 flex flex-col items-center gap-1 py-3 px-3 text-[10px] font-bold uppercase tracking-widest transition-all",
+                    active ? "text-white" : "text-white/40 hover:text-white/70"].join(" ")}>
                   <TabIcon size={14} />
                   {t.label}{badgeCount > 0 ? ` (${badgeCount})` : ""}
+                  {active && (
+                    <span className="absolute bottom-0 left-2 right-2 h-[2px] rounded-pill"
+                      style={{ background: "linear-gradient(90deg,#356EF4,#8231EC)" }} />
+                  )}
                 </button>
               );
             })}
@@ -456,12 +457,12 @@ function BidCard({ bid, rank, isBest, canAccept, isAccepting, onAccept }: {
             </div>
             {bid.source === "institution" && bid.amountOffered > 0 && (
               <div className="flex gap-3 mt-2">
-                <div className="bg-cream rounded-lg px-3 py-1.5">
+                <div className="bg-paper rounded-lg px-3 py-1.5">
                   <div className="text-[9px] text-muted uppercase tracking-wide">Offered</div>
                   <div className="text-[12px] font-bold text-ink">MUR {Number(bid.amountOffered).toLocaleString()}</div>
                 </div>
                 {bid.termMonths > 0 && (
-                  <div className="bg-cream rounded-lg px-3 py-1.5">
+                  <div className="bg-paper rounded-lg px-3 py-1.5">
                     <div className="text-[9px] text-muted uppercase tracking-wide">Term</div>
                     <div className="text-[12px] font-bold text-ink">{bid.termMonths}m</div>
                   </div>
@@ -469,7 +470,7 @@ function BidCard({ bid, rank, isBest, canAccept, isAccepting, onAccept }: {
               </div>
             )}
             {typeof bid.conditions?.notes === "string" && bid.conditions.notes && (
-              <p className="text-xs text-muted mt-1 leading-relaxed bg-cream rounded-lg px-3 py-2">{bid.conditions.notes}</p>
+              <p className="text-xs text-muted mt-1 leading-relaxed bg-paper rounded-lg px-3 py-2">{bid.conditions.notes}</p>
             )}
           </div>
         </div>
@@ -487,7 +488,7 @@ function BidCard({ bid, rank, isBest, canAccept, isAccepting, onAccept }: {
 function ProfileStat({ label, value, accent }: { label: string; value: string; accent?: "green" | "amber" | "red" }) {
   const valueCls = accent === "green" ? "text-green-600 font-bold" : accent === "amber" ? "text-amber-600 font-bold" : accent === "red" ? "text-red-500 font-bold" : "font-semibold text-ink";
   return (
-    <div className="bg-cream rounded-xl px-3 py-2.5">
+    <div className="bg-paper rounded-xl px-3 py-2.5">
       <div className="text-[10px] text-muted mb-0.5">{label}</div>
       <div className={`text-[13px] capitalize ${valueCls}`}>{value}</div>
     </div>
@@ -505,7 +506,7 @@ function DetailRow({ label, value, bold }: { label: string; value: string; bold?
 
 function LoadingSkeleton() {
   return (
-    <div className="min-h-screen bg-cream pb-24">
+    <div className="min-h-screen bg-paper pb-24">
       <div className="mx-auto w-full max-w-[680px] px-5 py-6">
         <div className="h-4 w-16 bg-ink/10 rounded mb-6 animate-pulse" />
         <div className="h-8 w-40 bg-ink/10 rounded mb-2 animate-pulse" />
@@ -517,7 +518,7 @@ function LoadingSkeleton() {
 
 function NotFound() {
   return (
-    <div className="min-h-screen bg-cream flex items-center justify-center">
+    <div className="min-h-screen bg-paper flex items-center justify-center">
       <div className="text-center">
         <div className="text-4xl mb-3">🔍</div>
         <div className="font-display text-xl font-bold mb-2">Request not found</div>
