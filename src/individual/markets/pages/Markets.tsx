@@ -1,12 +1,17 @@
 import { useState }           from "react";
+import { RefreshCw }          from "lucide-react";
 import { BottomNav }          from "@/shared/ui";
+import {
+  Hero, HeroButton, GradText, Reveal, SectionHead, type HeroStat,
+}                             from "@/shared/ui/dashboard";
+import { FiciumLogo }         from "@/shared/ui/FiciumLogo";
+import { useNavigate }        from "react-router-dom";
 import {
   useMarketData,
   useMarketNews,
   useAiMarketSummary,
 }                             from "@/individual/markets/hooks";
 import {
-  MarketHeader,
   TickerStrip,
   StoryCallout,
   RatesSummaryBar,
@@ -20,27 +25,20 @@ import {
 import type { TickerId, StoryMode } from "@/individual/markets/types";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Markets page — thin orchestrator only.
-// Layout (top → bottom):
-//   1. Gradient header + MarketHeader bar
-//   2. TickerStrip (scroll on mobile, 8-col grid on desktop)
-//   3. StoryCallout (appears when a ticker is active)
-//   4. RatesSummaryBar — live-streaming AI one-liner
-//   5. AiMarketChat — inline "Ask AI" Q&A, grounded in live data
-//   6. FxBestRates — best rate across all Mauritius banks
-//   7. MarketNewsFeed — full-width news, 2-col on desktop
-//   8. StoryModeToggle + StoriesGrid — everyday / finance stories
-//   9. FiciumCTA
+// Markets page — thin orchestrator. 2026 revamp: storytelling Hero header
+// (replaces the bespoke gradient + MarketHeader), Reveal section entrances.
+// All market components and data hooks preserved.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function Markets() {
+  const navigate = useNavigate();
   const {
     tickers, fxRates, _rawResult,
     isRefreshing, lastUpdated, refresh,
   } = useMarketData();
 
-  const { news, stories }                    = useMarketNews();
-  const { summary, isStreaming: aiStreaming } = useAiMarketSummary(_rawResult);
+  const { news, stories }                     = useMarketNews();
+  const { summary, isStreaming: aiStreaming }  = useAiMarketSummary(_rawResult);
 
   const [activeId,  setActiveId]  = useState<TickerId | null>(null);
   const [storyMode, setStoryMode] = useState<StoryMode>("everyday");
@@ -49,74 +47,92 @@ export default function Markets() {
     ? tickers.find((t) => t.id === activeId) ?? null
     : null;
 
+  const timeLabel = lastUpdated
+    ? lastUpdated.toLocaleTimeString("en-MU", { hour: "2-digit", minute: "2-digit" })
+    : "—";
+
+  const heroStats: HeroStat[] = [
+    { label: "Indicators tracked", value: tickers.length },
+    { label: "Banks compared",     value: fxRates.length },
+    { label: "Stories today",      value: news.length },
+  ];
+
   return (
-    <div className="min-h-screen pb-28 relative">
+    <div className="min-h-screen bg-paper pb-28 relative">
+      <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-10 pt-4 space-y-5">
 
-      {/* ── Background gradient ─────────────────────────────────────────── */}
-      <div className="absolute top-0 left-0 right-0 h-[280px] overflow-hidden pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0f0c29] via-[#1a1040] to-[#302b63]" />
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(ellipse at 20% 50%, rgba(42,31,230,0.5) 0%, transparent 60%), " +
-              "radial-gradient(ellipse at 80% 30%, rgba(8,145,178,0.2) 0%, transparent 55%)",
-          }}
-        />
-        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-cream to-transparent" />
-      </div>
-
-      <div className="relative z-10 mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-10 pt-6 space-y-5">
-
-        {/* 1 ── Header */}
-        <MarketHeader
-          lastUpdated={lastUpdated}
-          isRefreshing={isRefreshing}
-          onRefresh={refresh}
-        />
-
-        {/* 2 ── Ticker strip */}
-        <TickerStrip
-          tickers={tickers}
-          activeId={activeId}
-          onSelect={setActiveId}
-        />
-
-        {/* 3 ── Ticker story callout */}
-        {activeTicker && <StoryCallout ticker={activeTicker} />}
-
-        {/* 4 ── AI streaming market summary */}
-        <RatesSummaryBar summary={summary} isStreaming={aiStreaming} />
-
-        {/* 5 ── AI market Q&A — grounded in live data */}
-        <AiMarketChat marketData={_rawResult} />
-
-        {/* 6 ── Best FX rates across all Mauritius banks */}
-        <FxBestRates rates={fxRates} />
-
-        {/* 7 ── Market news — full width, 2-col on desktop */}
-        <MarketNewsFeed news={news} />
-
-        {/* 8 ── Financial stories with mode toggle */}
-        <div className="space-y-3">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-[11px] font-bold text-muted uppercase tracking-widest">
-                  Financial Stories
-                </span>
-                <div className="h-px w-12 bg-ink/[0.07]" />
-              </div>
-              <p className="text-[12px] text-muted/70">
-                Understand how the market affects your money
-              </p>
-            </div>
-            <StoryModeToggle mode={storyMode} onChange={setStoryMode} />
-          </div>
-          <StoriesGrid stories={stories} mode={storyMode} />
+        {/* Chrome row: logo + live refresh control */}
+        <div className="flex items-center justify-between">
+          <FiciumLogo heightPx={24} withWordmark wordmarkClassName="text-[18px] text-ink" />
+          <button
+            onClick={refresh}
+            disabled={isRefreshing}
+            aria-label="Refresh market data"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-line text-ink/70 text-[12px] font-semibold hover:bg-ink/[0.03] disabled:opacity-50 transition-colors"
+          >
+            <RefreshCw size={13} className={isRefreshing ? "animate-spin" : ""} />
+            Updated {timeLabel}
+          </button>
         </div>
 
-        {/* 9 ── CTA */}
+        {/* Storytelling hero */}
+        <Hero
+          eyebrow="LIVE MARKET DATA"
+          live
+          headline={<>The market,<br /><GradText>in plain language.</GradText></>}
+          subline="Live rates and news for Mauritius — explained by AI, grounded in real numbers, so you know exactly how it affects your money."
+          actions={
+            <>
+              <HeroButton onClick={() => navigate("/requests/new")}>Compare provider rates</HeroButton>
+              <HeroButton variant="ghost" onClick={() => navigate("/advisor")}>Ask the AI</HeroButton>
+            </>
+          }
+          stats={heroStats}
+        />
+
+        {/* Ticker strip */}
+        <Reveal>
+          <TickerStrip tickers={tickers} activeId={activeId} onSelect={setActiveId} />
+        </Reveal>
+
+        {/* Ticker story callout */}
+        {activeTicker && <StoryCallout ticker={activeTicker} />}
+
+        {/* AI streaming market summary */}
+        <Reveal>
+          <RatesSummaryBar summary={summary} isStreaming={aiStreaming} />
+        </Reveal>
+
+        {/* AI market Q&A — grounded in live data */}
+        <Reveal>
+          <AiMarketChat marketData={_rawResult} />
+        </Reveal>
+
+        {/* Best FX rates across all Mauritius banks */}
+        <Reveal>
+          <FxBestRates rates={fxRates} />
+        </Reveal>
+
+        {/* Market news */}
+        <Reveal>
+          <MarketNewsFeed news={news} />
+        </Reveal>
+
+        {/* Financial stories with mode toggle */}
+        <Reveal>
+          <div className="space-y-3">
+            <div className="flex items-start justify-between gap-3">
+              <SectionHead
+                title="Financial stories"
+                subtitle="Understand how the market affects your money"
+              />
+              <StoryModeToggle mode={storyMode} onChange={setStoryMode} />
+            </div>
+            <StoriesGrid stories={stories} mode={storyMode} />
+          </div>
+        </Reveal>
+
+        {/* CTA */}
         <FiciumCTA />
 
       </div>
