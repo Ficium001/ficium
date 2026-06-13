@@ -5,7 +5,6 @@
  * Intentionally self-contained — no _lib imports to avoid ESM bundling issues.
  */
 
-export const config = { runtime: "nodejs" };
 
 /* ---------- Env (inlined — no _lib import) ---------- */
 
@@ -68,7 +67,7 @@ function rejectedHtml(name: string, reason: string) {
 /* ---------- Handler ---------- */
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export default async function handler(req: any, res: any) {
+export async function notifyHandler(req: any, res: any) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   const resendKey   = getEnv("RESEND_API_KEY");

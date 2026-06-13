@@ -8,7 +8,6 @@
 
 import { createHmac, createHash } from "crypto";
 
-export const config = { runtime: "nodejs" };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const getEnv = (k: string) => (globalThis as any).process?.env?.[k] ?? "";
@@ -51,7 +50,7 @@ async function awsPost(target: string, body: object): Promise<unknown> {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export default async function handler(req: any, res: any) {
+export async function setupHandler(req: any, res: any) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   const secret = getEnv("KYC_SETUP_SECRET");

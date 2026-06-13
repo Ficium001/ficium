@@ -11,7 +11,6 @@
 
 import { createHmac, createHash } from "crypto";
 
-export const config = { runtime: "nodejs" };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const getEnv = (k: string) => (globalThis as any).process?.env?.[k] ?? "";
@@ -55,7 +54,7 @@ async function awsPost(service: string, target: string, body: object): Promise<u
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export default async function handler(req: any, res: any) {
+export async function livenessHandler(req: any, res: any) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   const { action, sessionId } = req.body as { action: "create" | "result"; sessionId?: string };

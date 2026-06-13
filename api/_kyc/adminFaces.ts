@@ -4,7 +4,6 @@
  * DELETE /api/kyc-admin-faces?clientId=xxx  — removes faces for a client
  * GET    /api/kyc-admin-faces?clientId=xxx  — lists faces for a client
  */
-export const config = { runtime: "nodejs" };
 
 import { createHmac, createHash } from "crypto";
 
@@ -49,7 +48,7 @@ async function awsPost(target: string, body: object): Promise<unknown> {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export default async function handler(req: any, res: any) {
+export async function adminFacesHandler(req: any, res: any) {
   // Simple admin check — require a secret header
   const adminSecret = getEnv("ADMIN_SECRET") || getEnv("VITE_ADMIN_SECRET");
   const provided    = req.headers["x-admin-secret"] ?? req.query?.secret;

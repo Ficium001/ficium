@@ -105,7 +105,7 @@ export const inhouseProvider: KycProvider = {
       ]);
 
       // 3. Call server-side verify endpoint
-      const res = await fetch("/api/kyc-verify", {
+      const res = await fetch("/api/kyc?action=verify", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(Object.fromEntries(Object.entries({

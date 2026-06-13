@@ -67,7 +67,7 @@ async function sendKycEmail(
   note?:    string
 ): Promise<void> {
   try {
-    await fetch("/api/kyc-notify", {
+    await fetch("/api/kyc?action=notify", {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
       body:    JSON.stringify({ userId, decision, note }),

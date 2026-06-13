@@ -35,5 +35,8 @@ jobs:
       - name: Typecheck
         run: npx tsc --noEmit -p tsconfig.app.json
 
+      - name: Typecheck API
+        run: npx tsc --noEmit -p tsconfig.node.json
+
       - name: Build
         run: npm run build
