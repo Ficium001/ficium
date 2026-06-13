@@ -8,18 +8,18 @@ import {
 import { useInView }   from "@/features/marketing/hooks";
 import { SCENES }      from "@/features/marketing/config/scenes";
 import type { Scene }  from "@/features/marketing/config/scenes";
+import { FiciumLogo } from "@/shared/ui/FiciumLogo";
 
 // ── FLogo ─────────────────────────────────────────────────────────────────────
+// Thin wrapper over the shared FiciumLogo so marketing call sites are unchanged.
+// `size` maps to the mark height; the official mark is gradient, so `colorClass`
+// is honoured only for the mono/reverse case (white on dark).
 
-export function FLogo({ size = 32, className = "", colorClass = "text-white" }: {
+export function FLogo({ size = 32, className = "", colorClass = "" }: {
   size?: number; className?: string; colorClass?: string;
 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"
-         className={[className, colorClass].join(" ")}>
-      <path d="M28 18 H72 C75 18 76 21 74 24 L62 38 H44 V52 H58 C61 52 62 55 60 58 L52 68 H44 V82 C44 85 41 86 38 84 L26 76 C24 75 24 73 24 71 V22 C24 19 26 18 28 18 Z" fill="currentColor" />
-    </svg>
-  );
+  const mono = colorClass.includes("white") || colorClass.includes("cream");
+  return <FiciumLogo heightPx={size} mono={mono} className={[className, mono ? colorClass : ""].join(" ")} />;
 }
 
 // ── Nav ───────────────────────────────────────────────────────────────────────
