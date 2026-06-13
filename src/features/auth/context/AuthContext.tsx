@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import type { ReactNode }     from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase }           from "../../../shared/lib/supabase";
@@ -41,6 +41,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session,   setSession]   = useState<Session | null>(null);
   const [role,      setRole]      = useState<UserRole | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  // Tracks which user the cached React-Query data belongs to. If the
+  // authenticated user changes (sign-out, or switching accounts in the same
+  // tab), we wipe the ENTIRE cache so no query can ever serve the previous
+  // user's data. This is the client-side complement to row-level security:
+  // RLS stops the DB from returning another user's rows; this stops a stale
+  // cache from showing them before a refetch.
+  const cachedUserId = useRef<string | null>(null);
+
+  function resetCacheForUser(nextUserId: string | null): void {
+    if (cachedUserId.current !== nextUserId) {
+      queryClient.clear();              // drop every cached query, unconditionally
+      cachedUserId.current = nextUserId;
+    }
+  }
 
   async function fetchUserMeta(userId: string): Promise<void> {
     const { data: roleData } = await supabase.rpc("get_my_role");
@@ -59,6 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
+      resetCacheForUser(data.session?.user?.id ?? null);
       setSession(data.session);
       if (data.session?.user) {
         fetchUserMeta(data.session.user.id).finally(() => setIsLoading(false));
@@ -68,14 +83,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      // Wipe cache the moment the user changes — before any new query runs.
+      resetCacheForUser(newSession?.user?.id ?? null);
       setSession(newSession);
       if (newSession?.user) {
         fetchUserMeta(newSession.user.id);
       } else {
         setRole(null);
-        // Clear cached user data on sign-out
-        queryClient.removeQueries({ queryKey: ["profile"] });
-        queryClient.removeQueries({ queryKey: ["requests"] });
       }
     });
 
