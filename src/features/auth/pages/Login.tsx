@@ -7,6 +7,27 @@ import { z } from "zod";
 import { ArrowRight, Eye, EyeOff, Shield, Zap, Globe } from "lucide-react";
 import { signIn } from "../../../shared/lib/auth";
 import { Button, Field } from "../../../shared/ui";
+import { GradText } from "@/shared/ui/dashboard";
+
+// Drifting background blade — same motif as the dashboard hero.
+function Blade({ className, both = true }: { className: string; both?: boolean }) {
+  return (
+    <svg viewBox="0 0 310 153"
+      className={`absolute opacity-50 blur-[2px] motion-safe:animate-drift will-change-transform pointer-events-none ${className}`}
+      aria-hidden>
+      <defs>
+        <linearGradient id="loginBladeB" x1="85" y1="79" x2="266" y2="20" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#3536DC" /><stop offset="0.5" stopColor="#356EF4" /><stop offset="1" stopColor="#4C90F6" />
+        </linearGradient>
+        <linearGradient id="loginBladeP" x1="85" y1="141" x2="238" y2="91" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#3A148F" /><stop offset="1" stopColor="#8231EC" />
+        </linearGradient>
+      </defs>
+      {both && <path d="M 121.78,31.83 Q 131,20 146,20 L 251,20 Q 266,20 257.28,32.21 L 244.72,49.79 Q 236,62 221.09,63.68 L 99.91,77.32 Q 85,79 94.22,67.17 Z" fill="url(#loginBladeB)" />}
+      <path d="M 108.10,103.75 Q 116,91 131,91 L 223,91 Q 238,91 230.12,103.77 L 216.88,125.23 Q 209,138 194,138.36 L 100,140.64 Q 85,141 92.90,128.25 Z" fill="url(#loginBladeP)" />
+    </svg>
+  );
+}
 
 const schema = z.object({
   email: z.string().trim().toLowerCase().email("Enter a valid email address"),
@@ -66,24 +87,22 @@ export default function Login() {
     <div className="min-h-screen flex overflow-hidden">
 
       {/* ── LEFT PANEL ── */}
-      <div className="hidden lg:flex lg:w-[45%] xl:w-[40%] flex-col relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e]" />
-        <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at 30% 40%, rgba(79,70,229,0.5) 0%, transparent 60%), radial-gradient(ellipse at 80% 80%, rgba(139,92,246,0.3) 0%, transparent 50%)" }} />
-        <div className="absolute top-1/3 -left-10 w-72 h-72 rounded-full bg-ficium/20 blur-[80px] animate-pulse" />
-        <div className="absolute bottom-1/4 right-0 w-64 h-64 rounded-full bg-violet-500/20 blur-[80px] animate-pulse" style={{ animationDelay: "1.5s" }} />
+      <div className="hidden lg:flex lg:w-[45%] xl:w-[40%] flex-col relative overflow-hidden text-white">
+        <div className="absolute inset-0" style={{ background: "radial-gradient(120% 160% at 8% 0%, #181842 0%, #0B0B1E 55%)" }} />
+        <Blade className="w-[420px] -top-20 -right-16 [animation-delay:-2s]" />
+        <Blade className="w-[320px] bottom-[12%] -right-10 [animation-duration:18s]" both={false} />
         <div className="relative z-10 flex flex-col h-full p-10 xl:p-14">
-          <Link to="/" className="flex items-center gap-2.5 no-underline mb-auto">
-            <FLogo size={28} className="text-white" />
-            <span className="font-display text-xl font-bold text-white">Ficium</span>
+          <Link to="/" className="no-underline mb-auto">
+            <FiciumLogo heightPx={22} withWordmark wordmarkClassName="text-[20px] text-white" />
           </Link>
           <div className="py-16">
-            <div className="text-[11px] font-bold tracking-[0.15em] uppercase text-indigo-400 mb-5">
+            <div className="text-[11px] font-bold tracking-[0.15em] uppercase text-indigo-300/80 mb-5">
               The reverse-banking marketplace
             </div>
-            <h2 className="font-display text-5xl xl:text-6xl font-bold text-white leading-[1.08] mb-6">
-              Banks compete.<br />You choose.
+            <h2 className="font-display text-5xl xl:text-6xl font-bold tracking-display leading-[1.08] mb-6">
+              Banks compete.<br /><GradText>You choose.</GradText>
             </h2>
-            <p className="text-white/50 text-[17px] leading-relaxed max-w-[320px]">
+            <p className="text-[#A6A6C8] text-[17px] leading-relaxed max-w-[320px]">
               Post what you need once. Banks across Mauritius bid against each other with their best offer.
             </p>
             <div className="flex flex-col gap-4 mt-12">
@@ -93,10 +112,11 @@ export default function Login() {
                 { icon: Globe, text: "All major Mauritian banks" },
               ].map((item) => (
                 <div key={item.text} className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-white/10 grid place-items-center flex-shrink-0">
-                    <item.icon size={17} className="text-white/70" />
+                  <div className="w-9 h-9 rounded-lg grid place-items-center flex-shrink-0"
+                       style={{ background: "linear-gradient(135deg,rgba(30,108,245,.16),rgba(124,58,237,.16))" }}>
+                    <item.icon size={17} className="text-white/80" />
                   </div>
-                  <span className="text-[15px] text-white/60">{item.text}</span>
+                  <span className="text-[15px] text-[#8E8EB4]">{item.text}</span>
                 </div>
               ))}
             </div>
@@ -106,19 +126,18 @@ export default function Login() {
       </div>
 
       {/* ── RIGHT PANEL ── */}
-      <div className="flex-1 flex flex-col min-h-screen relative bg-[#f8f7f4]">
+      <div className="flex-1 flex flex-col min-h-screen relative bg-paper">
 
         {/* Mobile dark bg */}
-        <div className="absolute inset-0 lg:hidden bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e]" />
-        <div className="absolute inset-0 lg:hidden" style={{ background: "radial-gradient(ellipse at 20% 50%, rgba(79,70,229,0.4) 0%, transparent 60%)" }} />
+        <div className="absolute inset-0 lg:hidden" style={{ background: "radial-gradient(120% 160% at 8% 0%, #181842 0%, #0B0B1E 55%)" }} />
+        
 
         <div className="relative z-10 flex flex-col h-full">
 
           {/* Mobile top nav */}
           <div className="flex lg:hidden items-center justify-between px-5 py-5">
-            <Link to="/" className="flex items-center gap-2 no-underline">
-              <FLogo size={22} className="text-white" />
-              <span className="font-display text-base font-bold text-white">Ficium</span>
+            <Link to="/" className="no-underline">
+              <FiciumLogo heightPx={20} withWordmark wordmarkClassName="text-base text-white" />
             </Link>
             <Link to="/register" className="text-sm text-white/60 font-semibold no-underline">Register →</Link>
           </div>
@@ -278,10 +297,4 @@ function LoginForm({ register, handleSubmit, onSubmit, errors, isSubmitting, sub
       </div>
     </div>
   );
-}
-
-/* ── LOGO ── */
-function FLogo({ size = 24, className = "" }: { size?: number; className?: string }) {
-  const mono = className.includes("white") || className.includes("cream");
-  return <FiciumLogo heightPx={size} mono={mono} className={className} />;
 }
