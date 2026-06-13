@@ -1,19 +1,24 @@
 // =============================================================
 // Ficium — Requests page (/requests)
-// Merged from Goals + old Requests. Single source of truth.
-// Card grid from Goals. Journey + bids sidebar from old Requests.
+// 2026 revamp: storytelling Hero + shared dashboard kit.
+// Core content (goal/request card scroller) and data wiring preserved.
+// NOTE: the Activity feed still renders MOCK_ACTIVITY — pre-existing
+// placeholder, not yet wired to a real source.
 // =============================================================
 import { useNavigate, Link } from "react-router-dom";
 import {
-  Plus, Target, Building2, FileText, TrendingUp,
-  Activity, Brain, ArrowRight, ChevronRight,
-  Zap, Bell,
+  Plus, Target, Building2, FileText,
+  ArrowRight, ChevronRight, Zap, Bell,
+  Home, Car, Plane, TrendingUp as TrendUp, GraduationCap, Briefcase, PiggyBank,
 } from "lucide-react";
 import { useGoals, goalProgress, type Goal, type GoalType } from "@/individual/dashboard/hooks/useGoals";
 import { useMyRequests, useBankReadiness } from "../../dashboard/hooks/useDashboard";
-import { BottomNav } from "@/shared/ui";
-import { Home, Car, Plane, TrendingUp as TrendUp, GraduationCap, Briefcase, PiggyBank } from "lucide-react";
 import { ActiveRequestCard } from "@/individual/requests/components/ActiveRequestCard";
+import { BottomNav } from "@/shared/ui";
+import {
+  Hero, HeroButton, GradText, type HeroStat,
+  Reveal, SectionHead, Panel, PanelHead, Feed, FeedItem, DarkCallout, Tag,
+} from "@/shared/ui/dashboard";
 
 /* ── Goal card styles ── */
 const GOAL_STYLE: Record<GoalType, { icon: React.ElementType; imgFrom: string; imgTo: string }> = {
@@ -27,10 +32,10 @@ const GOAL_STYLE: Record<GoalType, { icon: React.ElementType; imgFrom: string; i
   other:      { icon: Target,        imgFrom: "#6b7280", imgTo: "#374151" },
 };
 
-const STATUS_PILL: Record<Goal["status"], string> = {
-  "on-track":        "bg-emerald-50 text-emerald-700",
-  "needs-attention": "bg-amber-50 text-amber-700",
-  "ahead":           "bg-ficium/10 text-ficium",
+const STATUS_TONE: Record<Goal["status"], "green" | "amber" | "blue"> = {
+  "on-track":        "green",
+  "needs-attention": "amber",
+  "ahead":           "blue",
 };
 const STATUS_LABEL: Record<Goal["status"], string> = {
   "on-track":        "On track",
@@ -38,11 +43,12 @@ const STATUS_LABEL: Record<Goal["status"], string> = {
   "ahead":           "Ahead",
 };
 
+// Pre-existing placeholder — not yet wired to a real activity source.
 const MOCK_ACTIVITY = [
-  { id: 1, text: "MCB submitted a new offer on your Personal Loan", time: "2 mins ago", dot: "bg-ficium" },
-  { id: 2, text: "SBM reviewed your application", time: "1 hour ago", dot: "bg-amber-400" },
-  { id: 3, text: "Your request entered bidding stage", time: "Today, 09:14", dot: "bg-emerald-400" },
-  { id: 4, text: "ABSA placed a competitive offer", time: "Yesterday", dot: "bg-ficium" },
+  { id: 1, text: "MCB submitted a new offer on your Personal Loan", time: "2 mins ago", tone: "violet" as const },
+  { id: 2, text: "SBM reviewed your application",                   time: "1 hour ago", tone: "warn"   as const },
+  { id: 3, text: "Your request entered bidding stage",              time: "Today, 09:14", tone: "good"  as const },
+  { id: 4, text: "ABSA placed a competitive offer",                 time: "Yesterday",  tone: "blue"   as const },
 ];
 
 export default function Requests() {
@@ -57,80 +63,64 @@ export default function Requests() {
 
   const fmt = (n: number) => `Rs ${new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(n)}`;
 
+  const heroStats: HeroStat[] = [
+    { label: "Active requests",    value: openRequests.length },
+    { label: "Providers offering", value: totalOffers, trend: totalOffers > 0 ? "live" : undefined, trendTone: "good" },
+    { label: "Best rate",          value: 8.2, decimals: 1, suffix: "%" },
+    { label: "Readiness",          value: readiness ?? 72, suffix: "%" },
+  ];
+
+  const empty = !isLoading && goals.length === 0 && requests.length === 0;
+
   return (
-    <div className="min-h-screen bg-cream pb-28 lg:pb-10">
+    <div className="min-h-screen bg-paper pb-28 lg:pb-10">
+      <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-10 pt-4">
 
-      {/* Gradient header */}
-      <div className="absolute top-0 left-0 right-0 h-[480px] overflow-hidden pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0f0c29] via-[#1a1040] to-[#302b63]" />
-        <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at 20% 50%, rgba(79,70,229,0.45) 0%, transparent 60%)" }} />
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-cream to-transparent" />
-      </div>
-
-      <div className="relative z-10 mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-10">
-
-        {/* Header */}
-        <div className="flex items-start justify-between pt-10 pb-8 gap-4 flex-wrap">
-          <div>
-            <div className="text-[12px] font-bold text-white/50 uppercase tracking-widest mb-2">Your marketplace</div>
-            <h1 className="font-display text-5xl sm:text-6xl font-extrabold text-white leading-tight tracking-tight">
-              Requests
-            </h1>
-            <p className="text-white/50 text-[16px] mt-2 max-w-[460px] leading-relaxed">
-              Post your need — providers compete to win your business.
-            </p>
-          </div>
-          <button
-            onClick={() => navigate("/requests/new")}
-            className="inline-flex items-center gap-2 bg-ficium text-white px-6 py-4 rounded-[22px] text-[15px] font-bold shadow-ficium hover:-translate-y-0.5 transition-transform flex-shrink-0 mt-2"
-          >
-            <Plus size={18} /> Post a need
-          </button>
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {[
-            { label: "Active Requests",    value: isLoading ? "—" : String(openRequests.length),  icon: FileText,   color: "text-indigo-300" },
-            { label: "Providers Offering", value: isLoading ? "—" : String(totalOffers),          icon: Building2,  color: "text-amber-300"  },
-            { label: "Best Rate",          value: "8.2%",                                         icon: TrendingUp, color: "text-emerald-300" },
-            { label: "Readiness",          value: `${readiness ?? 72}%`,                          icon: Target,     color: "text-rose-300"   },
-          ].map(s => (
-            <div key={s.label} className="rounded-[22px] bg-white/[0.08] backdrop-blur-xl border border-white/[0.10] p-5">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-[13px] text-white/55 font-medium">{s.label}</span>
-                <s.icon size={15} className={s.color} />
-              </div>
-              <div className="font-display text-[40px] font-extrabold text-white leading-none tracking-tight">{s.value}</div>
-            </div>
-          ))}
-        </div>
+        <Hero
+          eyebrow="YOUR MARKETPLACE"
+          live={totalOffers > 0}
+          headline={
+            totalOffers > 0
+              ? <>Providers are <GradText>competing for you.</GradText></>
+              : <>Post a need.<br /><GradText>Let providers compete.</GradText></>
+          }
+          subline="You post what you need — banks, fintechs and insurers come to you with their best rates."
+          actions={
+            <>
+              <HeroButton onClick={() => navigate("/requests/new")}>Post a need</HeroButton>
+              <HeroButton variant="ghost" onClick={() => navigate("/markets")}>Market rates</HeroButton>
+            </>
+          }
+          stats={heroStats}
+        />
 
         {/* Main grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 mt-10">
 
-          {/* Single unified horizontal scroll — story style */}
-          <div>
+          {/* Card scroller */}
+          <Reveal>
+            <SectionHead
+              title="Your requests"
+              subtitle="Goals and live requests — providers bid on each"
+              to="/requests/new"
+              toLabel="Post a need"
+            />
+
             {isLoading ? (
               <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
-                {[1,2,3].map(i => <div key={i} className="flex-shrink-0 w-[260px] bg-white rounded-[24px] h-[480px] animate-pulse border border-ink/[0.06]" />)}
+                {[1,2,3].map(i => <div key={i} className="flex-shrink-0 w-[260px] bg-white rounded-card h-[440px] animate-pulse border border-line" />)}
               </div>
-            ) : (goals.length === 0 && requests.length === 0) ? (
-              <div className="bg-white rounded-[28px] border border-ink/[0.06] p-10 text-center shadow-sm">
+            ) : empty ? (
+              <Panel className="text-center py-12">
                 <div className="w-16 h-16 rounded-[22px] bg-ficium/10 text-ficium grid place-items-center mx-auto mb-4">
                   <FileText size={28} />
                 </div>
-                <div className="font-display text-[24px] font-bold mb-2">No requests yet</div>
-                <p className="text-[15px] text-muted mb-6 max-w-[300px] mx-auto leading-relaxed">
+                <div className="font-display text-[22px] font-bold mb-2 text-ink">No requests yet</div>
+                <p className="text-[14px] text-muted mb-6 max-w-[300px] mx-auto leading-relaxed">
                   Post your financing need and let providers compete for you.
                 </p>
-                <button
-                  onClick={() => navigate("/requests/new")}
-                  className="inline-flex items-center gap-2 bg-ficium text-white px-6 py-3.5 rounded-pill text-[14px] font-bold shadow-ficium"
-                >
-                  <Plus size={16} /> Post a need
-                </button>
-              </div>
+                <HeroButton onClick={() => navigate("/requests/new")}>Post a need</HeroButton>
+              </Panel>
             ) : (
               <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-10 lg:px-10">
 
@@ -148,7 +138,7 @@ export default function Requests() {
                     <div key={g.id} className="flex-shrink-0 w-[260px]">
                       <div
                         onClick={() => navigate(`/requests/new?type=${typeMap[g.type] ?? "personal"}`)}
-                        className="bg-white rounded-[24px] border border-ink/[0.06] shadow-md overflow-hidden cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all h-full"
+                        className="bg-white rounded-card border border-line shadow-card overflow-hidden cursor-pointer hover:shadow-lift hover:-translate-y-1 transition-all duration-300 ease-swift h-full"
                       >
                         <div className="h-[140px] flex items-center justify-center"
                              style={{ background: `linear-gradient(135deg, ${style.imgFrom}, ${style.imgTo})` }}>
@@ -158,22 +148,21 @@ export default function Requests() {
                         </div>
                         <div className="p-4 flex flex-col gap-2">
                           <div className="font-bold text-[13px] text-ink">{g.title}</div>
-                          <div className="font-display text-[28px] font-extrabold text-ficium leading-none">
+                          <div className="font-display text-[28px] font-extrabold text-ficium leading-none tracking-display">
                             {pct}<span className="text-[13px] font-semibold text-muted ml-0.5">%</span>
                           </div>
-                          <div className="h-[3px] bg-ink/[0.07] rounded-full overflow-hidden">
-                            <div className="h-full rounded-full bg-ficium" style={{ width: `${pct}%` }} />
+                          <div className="h-[3px] bg-line rounded-full overflow-hidden">
+                            <div className="h-full rounded-full" style={{ width: `${pct}%`, background: "linear-gradient(90deg,#356EF4,#8231EC)" }} />
                           </div>
                           <div className="text-[11px] text-ink/70 font-semibold">{fmt(g.savedAmount)} / {fmt(g.targetAmount)}</div>
-                          <span className={["self-start text-[10px] font-bold px-2 py-0.5 rounded-pill", STATUS_PILL[g.status]].join(" ")}>
-                            {STATUS_LABEL[g.status]}
-                          </span>
+                          <span className="self-start"><Tag tone={STATUS_TONE[g.status]}>{STATUS_LABEL[g.status]}</Tag></span>
                           <div className="text-[10px] font-bold text-ficium flex items-center gap-1">
                             <Building2 size={10} /> {g.banksReady} providers ready
                           </div>
                           <button
                             onClick={e => { e.stopPropagation(); navigate(`/requests/new?type=${typeMap[g.type] ?? "personal"}`); }}
-                            className="w-full py-2.5 rounded-xl text-[12px] font-bold text-white bg-ficium hover:opacity-90 mt-1"
+                            className="w-full py-2.5 rounded-xl text-[12px] font-bold text-white mt-1 transition-transform active:scale-[.98]"
+                            style={{ background: "linear-gradient(92deg,#1E6CF5,#7C3AED 90%)" }}
                           >
                             Post a request →
                           </button>
@@ -194,9 +183,10 @@ export default function Requests() {
                 <div className="flex-shrink-0 w-[200px]">
                   <button
                     onClick={() => navigate("/requests/new")}
-                    className="bg-white rounded-[24px] border-2 border-dashed border-ink/[0.12] w-full h-full min-h-[400px] flex flex-col items-center justify-center gap-3 hover:border-ficium/40 hover:bg-ficium/[0.02] transition-all group"
+                    className="bg-white rounded-card border-2 border-dashed border-line w-full h-full min-h-[400px] flex flex-col items-center justify-center gap-3 hover:border-ficium/40 hover:bg-ficium/[0.02] transition-all group"
                   >
-                    <div className="w-12 h-12 rounded-full bg-ficium grid place-items-center shadow-ficium group-hover:scale-110 transition-transform">
+                    <div className="w-12 h-12 rounded-full grid place-items-center shadow-ficium group-hover:scale-110 transition-transform"
+                         style={{ background: "linear-gradient(135deg,#356EF4,#8231EC)" }}>
                       <Plus size={22} className="text-white" />
                     </div>
                     <span className="text-[12px] font-bold text-ink text-center px-4">Post New Request</span>
@@ -204,78 +194,75 @@ export default function Requests() {
                 </div>
               </div>
             )}
-          </div>
+          </Reveal>
 
-          {/* Right sidebar */}
+          {/* Sidebar */}
           <div className="flex flex-col gap-5">
 
-            {/* Activity Feed */}
-            <div className="bg-white rounded-[26px] border border-ink/[0.06] p-6 shadow-sm">
-              <div className="flex items-center justify-between mb-5">
-                <div className="flex items-center gap-2">
-                  <Activity size={15} className="text-ficium" />
-                  <span className="font-display text-[18px] font-bold">Activity</span>
-                </div>
-                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              </div>
-              <div className="flex flex-col gap-4">
-                {MOCK_ACTIVITY.map(a => (
-                  <div key={a.id} className="flex items-start gap-3">
-                    <div className={["w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1.5", a.dot].join(" ")} />
-                    <div>
-                      <p className="text-[13px] text-ink/80 leading-snug">{a.text}</p>
-                      <p className="text-[12px] text-muted mt-0.5">{a.time}</p>
+            <Reveal delay={80}>
+              <Panel className="!p-6">
+                <PanelHead
+                  title="Activity"
+                  subtitle="Latest across your requests"
+                  action={<span className="w-2 h-2 rounded-full bg-good animate-pulse-ring-green" aria-hidden />}
+                />
+                <Feed>
+                  {MOCK_ACTIVITY.map((a, i) => (
+                    <FeedItem
+                      key={a.id}
+                      tone={a.tone}
+                      title={a.text}
+                      time={a.time}
+                      last={i === MOCK_ACTIVITY.length - 1}
+                    />
+                  ))}
+                </Feed>
+              </Panel>
+            </Reveal>
+
+            <Reveal delay={160}>
+              <DarkCallout
+                title="Your profile is strong."
+                body="Based on your financial profile, you're likely to receive competitive offers within 24 hours of posting."
+                action={
+                  <div className="w-full">
+                    <div className="flex items-center gap-3 mb-5">
+                      <div className="flex-1 h-2 bg-white/10 rounded-pill overflow-hidden">
+                        <div className="h-2 rounded-pill" style={{ width: `${readiness ?? 72}%`, background: "linear-gradient(90deg,#356EF4,#8231EC)" }} />
+                      </div>
+                      <span className="text-[13px] font-bold text-white">{readiness ?? 72}%</span>
                     </div>
+                    <Link
+                      to="/advisor"
+                      className="inline-flex items-center gap-2 bg-white/15 hover:bg-white/25 transition-colors text-white text-[13px] font-bold px-4 py-3 rounded-xl no-underline"
+                    >
+                      Open AI analysis <ArrowRight size={13} />
+                    </Link>
                   </div>
-                ))}
-              </div>
-            </div>
+                }
+              />
+            </Reveal>
 
-            {/* AI Coach */}
-            <div className="rounded-[26px] overflow-hidden bg-gradient-to-br from-[#0f0c29] to-[#302b63] p-6 border border-ficium/20">
-              <div className="flex items-center gap-2 mb-1">
-                <Brain size={15} className="text-white/70" />
-                <span className="text-[12px] font-bold text-white/50 uppercase tracking-widest">Ficium AI</span>
-              </div>
-              <h3 className="font-display text-[20px] font-bold text-white leading-snug mb-3">
-                Your profile is strong
-              </h3>
-              <p className="text-[13px] text-white/60 leading-relaxed mb-5">
-                Based on your financial profile, you're likely to receive competitive offers from providers within 24 hours of posting.
-              </p>
-              <div className="flex items-center gap-3 mb-5">
-                <div className="flex-1 h-2 bg-white/10 rounded-pill overflow-hidden">
-                  <div className="h-2 bg-gradient-to-r from-indigo-400 to-emerald-400 rounded-pill" style={{ width: `${readiness ?? 72}%` }} />
+            <Reveal delay={240}>
+              <Panel className="!p-5">
+                <div className="font-display text-[16px] font-bold mb-3 text-ink">Quick actions</div>
+                <div className="flex flex-col gap-2">
+                  {[
+                    { label: "Update financial profile", to: "/onboarding/dossier", icon: FileText },
+                    { label: "Check notifications",      to: "/alerts",             icon: Bell    },
+                    { label: "View market rates",        to: "/markets",            icon: Zap     },
+                  ].map(q => (
+                    <Link key={q.label} to={q.to} className="no-underline flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-ink/[0.04] transition-colors group">
+                      <div className="w-8 h-8 rounded-lg bg-ficium/10 grid place-items-center flex-shrink-0">
+                        <q.icon size={14} className="text-ficium" />
+                      </div>
+                      <span className="text-[13px] font-semibold text-ink/80">{q.label}</span>
+                      <ChevronRight size={13} className="text-muted ml-auto group-hover:text-ink transition-colors" />
+                    </Link>
+                  ))}
                 </div>
-                <span className="text-[13px] font-bold text-white">{readiness ?? 72}%</span>
-              </div>
-              <Link
-                to="/advisor"
-                className="inline-flex items-center gap-2 bg-white/15 hover:bg-white/25 transition-colors text-white text-[13px] font-bold px-4 py-3 rounded-xl no-underline"
-              >
-                Open AI Analysis <ArrowRight size={13} />
-              </Link>
-            </div>
-
-            {/* Quick links */}
-            <div className="bg-white rounded-[26px] border border-ink/[0.06] p-5 shadow-sm">
-              <div className="font-display text-[16px] font-bold mb-3">Quick actions</div>
-              <div className="flex flex-col gap-2">
-                {[
-                  { label: "Update financial profile", to: "/onboarding/dossier", icon: FileText },
-                  { label: "Check notifications",      to: "/alerts",             icon: Bell    },
-                  { label: "View market rates",        to: "/markets",            icon: Zap     },
-                ].map(q => (
-                  <Link key={q.label} to={q.to} className="no-underline flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-ink/[0.04] transition-colors group">
-                    <div className="w-8 h-8 rounded-lg bg-ficium/10 grid place-items-center flex-shrink-0">
-                      <q.icon size={14} className="text-ficium" />
-                    </div>
-                    <span className="text-[13px] font-semibold text-ink/80">{q.label}</span>
-                    <ChevronRight size={13} className="text-muted ml-auto group-hover:text-ink transition-colors" />
-                  </Link>
-                ))}
-              </div>
-            </div>
+              </Panel>
+            </Reveal>
 
           </div>
         </div>
