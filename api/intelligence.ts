@@ -21,7 +21,7 @@ export default async function handler(req: any, res: any) { // eslint-disable-li
   try {
     const data = await IntelligenceService.fetch();
     return Response.ok(res, data);
-  } catch (e: unknown) {
+  } catch (_e: unknown) {
     
     // Return empty shell — never a 500, frontend degrades gracefully
     return Response.ok(res, {

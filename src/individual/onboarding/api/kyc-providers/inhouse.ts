@@ -124,7 +124,6 @@ export const inhouseProvider: KycProvider = {
           residenceStatus:         input.residenceStatus,
           sameNationalityResidence: input.sameNationalityResidence,
           permitB64:               permitB64 ?? null,
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         }).filter(([_k, v]) => v !== null && v !== undefined))),
       });
 

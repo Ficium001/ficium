@@ -18,5 +18,21 @@ export default defineConfig([
     languageOptions: {
       globals: globals.browser,
     },
+    rules: {
+      // Dev-only HMR hint — advisory, not a correctness rule. Keep visible
+      // as a warning so it doesn't block CI on legitimate const+component files.
+      'react-refresh/only-export-components': 'warn',
+      // Honor the established `_`-prefix convention for intentionally-unused
+      // bindings (args, vars, caught errors).
+      '@typescript-eslint/no-unused-vars': ['error', {
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+        caughtErrorsIgnorePattern: '^_',
+      }],
+      // Advisory React performance/immutability hints — surfaced as warnings
+      // pending a proper per-effect review (see CONTRIBUTING / tech-debt).
+      'react-hooks/set-state-in-effect': 'warn',
+      'react-hooks/immutability': 'warn',
+    },
   },
 ])

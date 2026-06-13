@@ -26,7 +26,7 @@ async function awsPost(target: string, body: object): Promise<unknown> {
   const accessKey = getEnv("AWS_ACCESS_KEY_ID");
   const secretKey = getEnv("AWS_SECRET_ACCESS_KEY");
   const now       = new Date();
-  const amzDate   = now.toISOString().replace(/[:\-]|\.\d{3}/g, "").slice(0, 15) + "Z";
+  const amzDate   = now.toISOString().replace(/[:-]|\.\d{3}/g, "").slice(0, 15) + "Z";
   const dateStamp = amzDate.slice(0, 8);
   const host      = `rekognition.${REGION}.amazonaws.com`;
   const bodyStr   = JSON.stringify(body);

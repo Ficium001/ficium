@@ -81,7 +81,7 @@ function extractNumber(html: string, near: RegExp, offset = 0): number | null {
 }
 
 /** Get last 7 stored values for a ticker (for sparkline history). */
-async function getHistory(tickerId: string): Promise<number[]> {
+async function _getHistory(tickerId: string): Promise<number[]> {
   const { data } = await supabase
     .from("market_data")
     .select("history,value")

@@ -7,7 +7,7 @@ const supabase = createClient(
 
 const RATING_ENGINE_URL = process.env.RATING_ENGINE_URL!
 
-export default async function handler(req: any, res: any) {
+export default async function handler(req: any, res: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
   if (req.method !== 'POST') return res.status(405).end()
 
   const { client_id } = req.body

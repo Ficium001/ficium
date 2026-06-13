@@ -111,7 +111,7 @@ function getUsedMessages(): number {
 }
 function incrementUsedMessages(): number {
   const next = getUsedMessages() + 1;
-  try { localStorage.setItem(STORAGE_KEY, String(next)); } catch {}
+  try { localStorage.setItem(STORAGE_KEY, String(next)); } catch { /* localStorage unavailable (private mode) */ }
   return next;
 }
 
