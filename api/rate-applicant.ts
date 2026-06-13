@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { requireUser, requireAdmin, sendAuthError } from './_lib/auth'
+import { requireUser, requireAdmin, sendAuthError } from './_lib/auth.js'
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
