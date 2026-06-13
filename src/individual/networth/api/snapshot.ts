@@ -3,6 +3,8 @@
 import { supabase } from "@/shared/lib/supabase";
 
 export type FinancialSnapshot = {
+  /** false when no snapshot row exists yet for this user (ZERO fallback). */
+  exists?:            boolean;
   // Assets
   cashSavings:        number;
   fixedDeposits:      number;
@@ -36,6 +38,7 @@ export type SnapshotInput = Omit<FinancialSnapshot,
 >;
 
 const ZERO: FinancialSnapshot = {
+  exists: false,
   cashSavings: 0, fixedDeposits: 0, investmentsValue: 0,
   propertyValue: 0, vehicleValue: 0, otherAssets: 0, totalAssets: 0,
   mortgageBalance: 0, personalLoanBalance: 0, creditCardBalance: 0,
@@ -59,6 +62,7 @@ export async function getSnapshot(): Promise<FinancialSnapshot> {
   if (error || !data) return ZERO;
 
   return {
+    exists: true,
     cashSavings:         Number(data.cash_savings         ?? 0),
     fixedDeposits:       Number(data.fixed_deposits        ?? 0),
     investmentsValue:    Number(data.investments_value     ?? 0),

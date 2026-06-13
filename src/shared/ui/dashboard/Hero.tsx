@@ -41,7 +41,8 @@ export function GradText({ children }: { children: ReactNode }) {
 // ─── Stat ticker entry ────────────────────────────────────────
 export type HeroStat = {
   label:     string
-  value:     number
+  /** numeric value (animated). Omit when using `display` for a non-numeric state. */
+  value?:    number
   decimals?: number
   format?:   'comma'
   prefix?:   string
@@ -49,6 +50,11 @@ export type HeroStat = {
   /** small green/red annotation e.g. "↑ 8%" */
   trend?:    string
   trendTone?: 'good' | 'bad'
+  /** non-numeric display (e.g. "—") shown instead of an animated value, for
+   *  empty states where a real number would be misleading. */
+  display?:  string
+  /** small muted prompt under the value, e.g. "Add finances". */
+  hint?:     string
 }
 
 // ─── Background blade ─────────────────────────────────────────
@@ -136,13 +142,17 @@ export default function Hero({
           {stats.map(s => (
             <div key={s.label}>
               <div className='font-display font-bold tracking-display text-[26px] lg:text-[34px]'>
-                <CountUp
-                  value={s.value}
-                  decimals={s.decimals}
-                  format={s.format}
-                  prefix={s.prefix}
-                  suffix={s.suffix}
-                />
+                {s.display !== undefined ? (
+                  <span className='text-[#8E8EB4]'>{s.display}</span>
+                ) : (
+                  <CountUp
+                    value={s.value ?? 0}
+                    decimals={s.decimals}
+                    format={s.format}
+                    prefix={s.prefix}
+                    suffix={s.suffix}
+                  />
+                )}
                 {s.trend && (
                   <span
                     className={`text-[12px] font-semibold ml-1.5 font-body tracking-normal ${
@@ -154,6 +164,9 @@ export default function Hero({
                 )}
               </div>
               <div className='text-[12.5px] text-[#8E8EB4] font-medium mt-0.5'>{s.label}</div>
+              {s.hint && (
+                <div className='text-[11px] text-[#6E6E96] font-medium mt-0.5'>{s.hint}</div>
+              )}
             </div>
           ))}
         </div>
