@@ -15,7 +15,7 @@
  * This is intentionally "fail closed": no token / bad token => rejected.
  */
 
-import { Env } from "./env";
+import { Env } from "./env.js";
 
 export class AuthError extends Error {
   status: number;

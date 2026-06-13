@@ -9,7 +9,7 @@ import Anthropic          from "@anthropic-ai/sdk";
 import { Env }            from "./_lib/env.js";
 import { IntelligenceService } from "./_lib/intelligence-service.js";
 import { Response }       from "./_lib/response.js";
-import { requireUser, sendAuthError } from "./_lib/auth";
+import { requireUser, sendAuthError } from "./_lib/auth.js";
 
 export const config = { runtime: "nodejs" };
 

@@ -25,7 +25,7 @@ import { livenessHandler }   from "./_kyc/liveness";
 import { setupHandler }      from "./_kyc/setup";
 import {
   requireUser, requireAdmin, requireService, sendAuthError,
-} from "./_lib/auth";
+} from "./_lib/auth.js";
 
 export const config = { runtime: "nodejs" };
 
