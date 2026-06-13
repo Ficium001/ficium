@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   Plus, HandCoins, CreditCard, PiggyBank, LineChart,
   Calculator, Wallet, ShieldCheck, Upload, MessageCircle,
+  Bell, LogOut,
 } from "lucide-react";
 import { useAuth }           from "@/features/auth/context/AuthContext";
 import { useProfile, useMyRequests, useNextActions, useBankReadiness } from "@/individual/dashboard/hooks/useDashboard";
@@ -10,13 +11,15 @@ import { useDashboardInsights }  from "@/individual/dashboard/hooks/useDashboard
 import { useSnapshot }           from "@/individual/networth/hooks/useSnapshot";
 import { getGreeting, formatAmount, healthLabel } from "@/individual/dashboard/config/dashboard";
 import {
-  DashboardTopBar, OnboardingBanners,
+  OnboardingBanners,
   NetWorthHero, FlipCards,
   SmartInsightsFeed, MarketTile, NextActions,
 } from "@/individual/dashboard/components";
 import { WhatAreYouPlanningSection } from "@/individual/dashboard/components/WhatAreYouPlanningSection";
 import { ActiveRequestCard } from "@/individual/requests/components/ActiveRequestCard";
 import { BottomNav } from "@/shared/ui";
+import { Hero, HeroButton, GradText, type HeroStat } from "@/shared/ui/dashboard";
+import { FiciumLogo } from "@/shared/ui/FiciumLogo";
 import { ErrorBoundary } from "@/core/error-boundary";
 
 export default function Dashboard() {
@@ -39,7 +42,6 @@ export default function Dashboard() {
   const activeRequests = requests.filter((r) => r.status === "open").length;
   const totalNewBids   = requests.reduce((s, r) => s + r.bidCount, 0);
   const name           = profileLoading ? "" : (profile?.firstName ?? profile?.fullName ?? "");
-  const initial        = name?.[0]?.toUpperCase() ?? (profileLoading ? "" : "?");
 
   // Real financial numbers from snapshot — zero if not entered yet
   const netWorth       = snapshot?.netWorth      ?? profile?.totalNetWorth ?? null;
@@ -54,17 +56,79 @@ export default function Dashboard() {
   const flip          = (id: string) => setFlipped((p) => ({ ...p, [id]: !p[id] }));
   const handleSignOut = async () => { await signOut(); navigate("/"); };
 
-  return (
-    <div className="min-h-screen bg-cream pb-28">
+  // Hero KPIs — real data, count up on view
+  const heroStats: HeroStat[] = [
+    { label: "Net worth", value: netWorth ?? 0, prefix: "Rs ", format: "comma" },
+    { label: "Active requests", value: activeRequests },
+    { label: "New bids", value: totalNewBids, trend: totalNewBids > 0 ? "live" : undefined, trendTone: "good" },
+    { label: "Health score", value: profile?.healthScore ?? 0, suffix: "/100" },
+  ];
 
-      {/* Top nav */}
-      <div className="bg-gradient-to-br from-[#0f0c29] via-[#1a1040] to-[#302b63]">
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-10">
-          <DashboardTopBar
-            initial={initial} name={name} greeting={getGreeting()}
-            totalNewBids={totalNewBids} onSignOut={handleSignOut}
-          />
+  return (
+    <div className="min-h-screen bg-paper pb-28">
+
+      {/* Storytelling hero header */}
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-10 pt-4">
+        {/* top chrome row: logo + actions */}
+        <div className="flex items-center justify-between mb-4">
+          <FiciumLogo heightPx={24} withWordmark wordmarkClassName="text-[18px] text-ink" />
+          <div className="flex items-center gap-2">
+            <Link
+              to="/alerts"
+              className="relative w-10 h-10 rounded-full bg-white border border-line grid place-items-center text-ink/70 hover:bg-ink/[0.03] transition-colors no-underline"
+              aria-label="Alerts"
+            >
+              <Bell size={16} />
+              {totalNewBids > 0 && (
+                <span
+                  className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full text-white text-[9px] font-bold grid place-items-center"
+                  style={{ background: "linear-gradient(135deg,#7C3AED,#C026D3)" }}
+                >
+                  {totalNewBids}
+                </span>
+              )}
+            </Link>
+            <button
+              onClick={handleSignOut}
+              aria-label="Sign out"
+              className="w-10 h-10 rounded-full bg-white border border-line grid place-items-center text-ink/70 hover:text-bad hover:bg-ink/[0.03] transition-colors"
+            >
+              <LogOut size={16} />
+            </button>
+          </div>
         </div>
+
+        <Hero
+          eyebrow={`${getGreeting().toUpperCase()} · ${new Date().toLocaleDateString("en-MU", { weekday: "short", day: "numeric", month: "short" }).toUpperCase()}`}
+          live={totalNewBids > 0}
+          headline={
+            name ? (
+              totalNewBids > 0 ? (
+                <>Hi {name}.<br /><GradText>{totalNewBids} new bid{totalNewBids > 1 ? "s" : ""}</GradText> {totalNewBids > 1 ? "are" : "is"} in.</>
+              ) : (
+                <>Hi {name}.<br />Let's get providers <GradText>competing for you.</GradText></>
+              )
+            ) : (
+              <>Welcome back.<br />Let's get providers <GradText>competing for you.</GradText></>
+            )
+          }
+          subline={
+            !readyToRequest
+              ? "Finish your profile to unlock competitive offers from providers."
+              : activeRequests > 0
+              ? "Your requests are live and providers are bidding. Track them below."
+              : "Post what you need and let providers come to you with their best rates."
+          }
+          actions={
+            <>
+              <HeroButton onClick={() => navigate(readyToRequest ? "/requests/new" : "/onboarding/kyc")}>
+                {readyToRequest ? "New request" : "Complete profile"}
+              </HeroButton>
+              <HeroButton variant="ghost" onClick={() => navigate("/markets")}>View markets</HeroButton>
+            </>
+          }
+          stats={heroStats}
+        />
       </div>
 
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-10 py-6 space-y-6">
