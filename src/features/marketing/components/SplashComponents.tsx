@@ -234,7 +234,7 @@ const STEPS = [
 
 export function HowItWorksSection({ reducedMotion }: { reducedMotion: boolean }) {
   return (
-    <section id="how-it-works" className="bg-ink text-paper relative overflow-hidden">
+    <section id="how-it-works" className="bg-ink text-paper relative overflow-x-clip">
       {/* Static version — mobile + reduced motion */}
       <div className={["px-5 sm:px-8 py-20 sm:py-28", reducedMotion ? "block" : "lg:hidden"].join(" ")}>
         <StoryIntro />

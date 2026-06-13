@@ -42,7 +42,7 @@ export default function Splash() {
   const scene = SCENES[sceneIndex];
 
   return (
-    <div className="min-h-screen bg-paper text-ink overflow-x-hidden">
+    <div className="min-h-screen bg-paper text-ink overflow-x-clip">
       <Nav scrollY={scrollY} progress={progress} />
       <Hero scene={scene} sceneIndex={sceneIndex} activeOffer={activeOffer} scrollY={scrollY} reducedMotion={reducedMotion} />
       <HowItWorksSection reducedMotion={reducedMotion} />
