@@ -39,15 +39,25 @@ export default function Profile() {
   const percent     = completion?.percent ?? 0;
 
   return (
-    <div className="min-h-screen pb-28">
+    <div className="min-h-screen bg-paper pb-28">
 
-      {/* Background */}
+      {/* Background — brand ink radial + drifting blade */}
       <div className="absolute top-0 left-0 right-0 h-[340px] overflow-hidden pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0f0c29] via-[#1a1040] to-[#302b63]" />
-        <div className="absolute inset-0" style={{
-          background: "radial-gradient(ellipse at 20% 40%, rgba(79,70,229,0.5) 0%, transparent 55%), radial-gradient(ellipse at 85% 70%, rgba(201,168,76,0.2) 0%, transparent 50%)"
-        }} />
-        <div className="absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-[#f8f7f4] to-transparent" />
+        <div className="absolute inset-0" style={{ background: "radial-gradient(120% 160% at 8% 0%, #181842 0%, #0B0B1E 55%)" }} />
+        <svg viewBox="0 0 310 153" aria-hidden
+          className="absolute w-[300px] -top-10 -right-10 opacity-40 blur-[2px] motion-safe:animate-drift will-change-transform">
+          <defs>
+            <linearGradient id="pfBladeB" x1="85" y1="79" x2="266" y2="20" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stopColor="#3536DC" /><stop offset="0.5" stopColor="#356EF4" /><stop offset="1" stopColor="#4C90F6" />
+            </linearGradient>
+            <linearGradient id="pfBladeP" x1="85" y1="141" x2="238" y2="91" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stopColor="#3A148F" /><stop offset="1" stopColor="#8231EC" />
+            </linearGradient>
+          </defs>
+          <path d="M 121.78,31.83 Q 131,20 146,20 L 251,20 Q 266,20 257.28,32.21 L 244.72,49.79 Q 236,62 221.09,63.68 L 99.91,77.32 Q 85,79 94.22,67.17 Z" fill="url(#pfBladeB)" />
+          <path d="M 108.10,103.75 Q 116,91 131,91 L 223,91 Q 238,91 230.12,103.77 L 216.88,125.23 Q 209,138 194,138.36 L 100,140.64 Q 85,141 92.90,128.25 Z" fill="url(#pfBladeP)" />
+        </svg>
+        <div className="absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-paper to-transparent" />
       </div>
 
       <div className="relative z-10 mx-auto w-full max-w-[720px] px-4 sm:px-6 lg:px-8">
