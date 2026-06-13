@@ -56,9 +56,14 @@ export default function Dashboard() {
   const flip          = (id: string) => setFlipped((p) => ({ ...p, [id]: !p[id] }));
   const handleSignOut = async () => { await signOut(); navigate("/"); };
 
-  // Hero KPIs — real data, count up on view
+  // Net worth: show the figure only when the user has actually entered
+  // financial data (a real snapshot row, or a profile net-worth value).
+  // Otherwise show a prompt — never a misleading "Rs 0".
+  const hasNetWorth = (snapshot?.exists ?? false) || profile?.totalNetWorth != null;
   const heroStats: HeroStat[] = [
-    { label: "Net worth", value: netWorth ?? 0, prefix: "Rs ", format: "comma" },
+    hasNetWorth
+      ? { label: "Net worth", value: netWorth ?? 0, prefix: "Rs ", format: "comma" }
+      : { label: "Net worth", display: "—", hint: "Add finances" },
     { label: "Active requests", value: activeRequests },
     { label: "New bids", value: totalNewBids, trend: totalNewBids > 0 ? "live" : undefined, trendTone: "good" },
     { label: "Health score", value: profile?.healthScore ?? 0, suffix: "/100" },
