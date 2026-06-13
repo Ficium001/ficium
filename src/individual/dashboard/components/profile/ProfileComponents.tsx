@@ -156,6 +156,7 @@ export function IdentityEditForm({ profile, onClose }: { profile: ProfileSummary
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     firstName: profile?.firstName ?? "",
+    lastName:  profile?.fullName?.split(" ").slice(1).join(" ") ?? "",
     country:   profile?.country   ?? "Mauritius",
     phone:     "",
   });
@@ -169,8 +170,11 @@ export function IdentityEditForm({ profile, onClose }: { profile: ProfileSummary
       // Write to public.clients (v2 schema) — the old public.users was dropped,
       // which is why this previously 404'd. Reads come from client_profile_view,
       // which is backed by clients.
+      // full_name is a separate stored column (not derived), and it's what
+      // the header / "Full name" row actually display — keep it in sync too.
+      const fullName = `${form.firstName} ${form.lastName}`.trim();
       const { error } = await supabase.from("clients")
-        .update({ first_name: form.firstName, country: form.country })
+        .update({ first_name: form.firstName, last_name: form.lastName, full_name: fullName, country: form.country })
         .eq("id", user.id);
       if (error) { console.error("Profile update failed:", error.message); setSaving(false); return; }
     }
@@ -182,7 +186,7 @@ export function IdentityEditForm({ profile, onClose }: { profile: ProfileSummary
     <div className="flex flex-col gap-3">
       <div className="grid grid-cols-2 gap-3">
         <EditField label="First name" value={form.firstName} onChange={set("firstName")} />
-        <EditField label="Last name"  value={profile?.fullName?.split(" ").slice(1).join(" ") ?? ""} onChange={set("firstName")} />
+        <EditField label="Last name"  value={form.lastName} onChange={set("lastName")} />
       </div>
       <EditField label="Phone" value={form.phone} onChange={set("phone")} type="tel" />
       <div>
