@@ -13,7 +13,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
-import { useInView, usePrefersReducedMotion } from './Reveal'
+import { useInView, usePrefersReducedMotion } from './hooks'
 
 const DURATION_MS = 1400
 
@@ -40,6 +40,9 @@ export default function CountUp({
 
   useEffect(() => {
     if (!inView && !reduced) return
+    // Synchronous snaps below are intentional: no animation when the user
+    // prefers reduced motion, or when data refreshes after the first run.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (reduced) { setDisplay(value); return }
 
     // First sight: animate. Subsequent data refreshes: snap.
