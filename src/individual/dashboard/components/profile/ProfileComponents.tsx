@@ -165,7 +165,15 @@ export function IdentityEditForm({ profile, onClose }: { profile: ProfileSummary
   const handleSave = async () => {
     setSaving(true);
     const { data: { user } } = await supabase.auth.getUser();
-    if (user) await supabase.from("users").update({ first_name: form.firstName, country: form.country }).eq("id", user.id);
+    if (user) {
+      // Write to public.clients (v2 schema) — the old public.users was dropped,
+      // which is why this previously 404'd. Reads come from client_profile_view,
+      // which is backed by clients.
+      const { error } = await supabase.from("clients")
+        .update({ first_name: form.firstName, country: form.country })
+        .eq("id", user.id);
+      if (error) { console.error("Profile update failed:", error.message); setSaving(false); return; }
+    }
     await queryClient.invalidateQueries({ queryKey: ["profile"] });
     setSaving(false); onClose();
   };
@@ -203,7 +211,12 @@ export function AddressEditForm({ profile, onClose }: { profile: ProfileSummary 
   const handleSave = async () => {
     setSaving(true);
     const { data: { user } } = await supabase.auth.getUser();
-    if (user) await supabase.from("users").update({ address_line_1: form.addressLine1, city: form.city, country: form.country }).eq("id", user.id);
+    if (user) {
+      const { error } = await supabase.from("clients")
+        .update({ address_line_1: form.addressLine1, city: form.city, country: form.country })
+        .eq("id", user.id);
+      if (error) { console.error("Address update failed:", error.message); setSaving(false); return; }
+    }
     await queryClient.invalidateQueries({ queryKey: ["profile"] });
     setSaving(false); onClose();
   };

@@ -70,6 +70,11 @@ export function db(schema: SchemaName = "public"): AnyClient {
       autoRefreshToken:   false,
       detectSessionInUrl: false,
       storage:            nullStorage,
+      // Unique per-schema key so each schema client's internal GoTrueClient
+      // owns a distinct storageKey. Without this they all default to the same
+      // key, which trips supabase-js's "multiple GoTrueClient instances"
+      // warning. Combined with nullStorage, nothing is ever persisted.
+      storageKey:         `ficium-${schema}-noauth`,
     },
     global: {
       fetch: async (input, init) => {
