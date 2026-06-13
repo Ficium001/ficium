@@ -77,7 +77,8 @@ export default function Profile() {
         {/* Identity hero card */}
         <div className="rounded-[24px] bg-white/[0.08] backdrop-blur-xl border border-white/[0.12] p-5 sm:p-6 mb-5">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-[20px] bg-gradient-to-br from-ficium to-violet-600 grid place-items-center flex-shrink-0 text-white font-bold text-2xl shadow-lg">
+            <div className="w-16 h-16 rounded-[20px] grid place-items-center flex-shrink-0 text-white font-bold text-2xl shadow-lg"
+              style={{ background: "linear-gradient(135deg, #3536DC 0%, #356EF4 50%, #8231EC 100%)" }}>
               {profile?.firstName?.[0]?.toUpperCase() ?? profile?.fullName?.[0]?.toUpperCase() ?? "?"}
             </div>
             <div className="flex-1 min-w-0">
@@ -87,8 +88,8 @@ export default function Profile() {
               <div className="text-[14px] text-white/55 mt-0.5">{profile?.email ?? "—"}</div>
               <div className="flex items-center gap-2 mt-2">
                 {kycVerified
-                  ? <span className="inline-flex items-center gap-1.5 bg-emerald-400/20 text-emerald-300 text-[11px] font-bold px-2.5 py-1 rounded-pill"><ShieldCheck size={11} /> Verified</span>
-                  : <span className="inline-flex items-center gap-1.5 bg-amber-400/20 text-amber-300 text-[11px] font-bold px-2.5 py-1 rounded-pill"><ShieldAlert size={11} /> Pending KYC</span>
+                  ? <span className="inline-flex items-center gap-1.5 bg-good/20 text-[#3DDCA6] text-[11px] font-bold px-2.5 py-1 rounded-pill"><ShieldCheck size={11} /> Verified</span>
+                  : <span className="inline-flex items-center gap-1.5 bg-warn/20 text-[#F5B65A] text-[11px] font-bold px-2.5 py-1 rounded-pill"><ShieldAlert size={11} /> Pending KYC</span>
                 }
                 <span className="text-[11px] text-white/40 font-medium">Individual</span>
               </div>
@@ -101,7 +102,7 @@ export default function Profile() {
             </div>
             <div className="h-2 bg-white/10 rounded-pill overflow-hidden">
               <div className="h-2 rounded-pill transition-all duration-700"
-                style={{ width: `${percent}%`, background: percent === 100 ? "#34d399" : percent >= 60 ? "#fbbf24" : "#4f46e5" }} />
+                style={{ width: `${percent}%`, background: percent === 100 ? "#0FA47A" : "linear-gradient(90deg, #3536DC 0%, #356EF4 60%, #8231EC 100%)" }} />
             </div>
           </div>
         </div>
@@ -115,18 +116,18 @@ export default function Profile() {
             { label: "Financial profile", done: completion?.financialProfileDone ?? false },
             { label: "Source of wealth",  done: completion?.sourceOfWealthDone ?? false },
           ].map((m) => (
-            <div key={m.label} className={["flex items-center gap-2.5 px-3.5 py-3 rounded-[16px] border", m.done ? "bg-emerald-50 border-emerald-200" : "bg-white border-ink/[0.08]"].join(" ")}>
-              {m.done ? <CheckCircle2 size={14} className="text-emerald-500 flex-shrink-0" /> : <Circle size={14} className="text-ink/20 flex-shrink-0" />}
-              <span className={["text-[12px] font-semibold truncate", m.done ? "text-emerald-800" : "text-muted"].join(" ")}>{m.label}</span>
+            <div key={m.label} className={["flex items-center gap-2.5 px-3.5 py-3 rounded-[16px] border", m.done ? "bg-good/[0.08] border-good/25" : "bg-white border-ink/[0.08]"].join(" ")}>
+              {m.done ? <CheckCircle2 size={14} className="text-good flex-shrink-0" /> : <Circle size={14} className="text-ink/20 flex-shrink-0" />}
+              <span className={["text-[12px] font-semibold truncate", m.done ? "text-[#0B7A5C]" : "text-muted"].join(" ")}>{m.label}</span>
             </div>
           ))}
         </div>
 
         {/* Score cards */}
         <div className="grid grid-cols-3 gap-3 mb-5">
-          <ScoreCard label="Financial Health" value={profile?.healthScore} suffix="/100" icon={Activity}   gradient="from-ficium to-violet-600"     light={false} />
-          <ScoreCard label="Bank Readiness"   value={bankReadiness}        suffix="%"    icon={Zap}        gradient="from-emerald-400 to-teal-500"  light />
-          <ScoreCard label="Risk Score"       value={profile?.riskScore}   suffix="/100" icon={TrendingUp} gradient={null}                          light={false} />
+          <ScoreCard label="Financial Health" value={profile?.healthScore} suffix="/100" icon={Activity}   tone="gradient" />
+          <ScoreCard label="Bank Readiness"   value={bankReadiness}        suffix="%"    icon={Zap}        tone="good" />
+          <ScoreCard label="Risk Score"       value={profile?.riskScore}   suffix="/100" icon={TrendingUp} tone="plain" />
         </div>
 
         {/* Identity section */}
@@ -140,7 +141,7 @@ export default function Profile() {
               <InfoRow icon={<Mail size={14} />}        label="Email"       value={profile?.email ?? "—"} />
               <InfoRow icon={<Globe size={14} />}       label="Country"     value={profile?.country ?? "—"} />
               <InfoRow icon={<ShieldCheck size={14} />} label="KYC status"  value={
-                <span className={["text-[12px] font-bold px-2.5 py-1 rounded-pill", kycVerified ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"].join(" ")}>
+                <span className={["text-[12px] font-bold px-2.5 py-1 rounded-pill", kycVerified ? "bg-good/10 text-good" : "bg-warn/10 text-warn"].join(" ")}>
                   {kycVerified ? "✓ Verified" : "Pending"}
                 </span>
               } />
@@ -160,8 +161,8 @@ export default function Profile() {
               <InfoRow icon={<Globe size={14} />}       label="Country"         value={profile.country ?? "—"} />
               <InfoRow icon={<CheckCircle2 size={14} />} label="Proof of address" value={
                 completion?.proofOfAddressDone
-                  ? <span className="text-[12px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-pill">✓ Uploaded</span>
-                  : <span className="text-[12px] font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-pill">Not uploaded</span>
+                  ? <span className="text-[12px] font-bold text-good bg-good/10 px-2.5 py-1 rounded-pill">✓ Uploaded</span>
+                  : <span className="text-[12px] font-bold text-warn bg-warn/10 px-2.5 py-1 rounded-pill">Not uploaded</span>
               } />
             </div>
           ) : (
@@ -182,8 +183,8 @@ export default function Profile() {
               <InfoRow icon={<AlertCircle size={14} />} label="Existing loans" value={profile.hasExistingLoans ? "Yes" : "No"} />
               <InfoRow icon={<ShieldCheck size={14} />} label="Compliance"     value={
                 profile.eddRequired
-                  ? <span className="text-[12px] font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-pill">EDD required</span>
-                  : <span className="text-[12px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-pill">✓ Clear</span>
+                  ? <span className="text-[12px] font-bold text-warn bg-warn/10 px-2.5 py-1 rounded-pill">EDD required</span>
+                  : <span className="text-[12px] font-bold text-good bg-good/10 px-2.5 py-1 rounded-pill">✓ Clear</span>
               } />
             </div>
           ) : (

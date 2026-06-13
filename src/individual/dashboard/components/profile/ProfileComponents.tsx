@@ -72,29 +72,36 @@ export function EmptySection({ message, cta, onCta }: { message: string; cta: st
   );
 }
 
-export function ScoreCard({ label, value, suffix, icon: Icon, gradient, light }: {
+const BRAND_GRADIENT = "linear-gradient(135deg, #3536DC 0%, #356EF4 50%, #8231EC 100%)";
+const GOOD_GRADIENT  = "linear-gradient(135deg, #12B98A 0%, #0B8A66 100%)";
+
+export function ScoreCard({ label, value, suffix, icon: Icon, tone }: {
   label: string; value: number | null | undefined; suffix: string;
-  icon: React.ElementType; gradient: string | null; light: boolean;
+  icon: React.ElementType; tone: "gradient" | "good" | "plain";
 }) {
-  const hasBg = gradient !== null;
+  const dark = tone !== "plain";
+  const bg = tone === "gradient" ? BRAND_GRADIENT : tone === "good" ? GOOD_GRADIENT : undefined;
   return (
-    <div className={[
-      "rounded-[20px] p-4 flex flex-col gap-1.5",
-      hasBg ? `bg-gradient-to-br ${gradient} shadow-sm` : "bg-white border border-ink/[0.06] shadow-sm",
-    ].join(" ")}>
-      <Icon size={15} className={hasBg ? (light ? "text-white/70" : "text-white/70") : "text-muted"} />
-      <div className={["font-display text-[28px] font-extrabold leading-none", hasBg ? "text-white" : "text-ink"].join(" ")}>
+    <div
+      className={[
+        "rounded-[20px] p-4 flex flex-col gap-1.5",
+        dark ? "shadow-sm" : "bg-white border border-line shadow-sm",
+      ].join(" ")}
+      style={bg ? { background: bg } : undefined}
+    >
+      <Icon size={15} className={dark ? "text-white/70" : "text-muted"} />
+      <div className={["font-display text-[28px] font-extrabold leading-none", dark ? "text-white" : "text-ink"].join(" ")}>
         {value == null ? "—" : value}
         <span className="text-[12px] font-semibold ml-0.5 opacity-60">{value != null ? suffix : ""}</span>
       </div>
-      <div className={["text-[11px] font-semibold leading-tight", hasBg ? "text-white/60" : "text-muted"].join(" ")}>{label}</div>
+      <div className={["text-[11px] font-semibold leading-tight", dark ? "text-white/65" : "text-muted"].join(" ")}>{label}</div>
     </div>
   );
 }
 
 export function LoadingScreen() {
   return (
-    <div className="min-h-screen bg-[#f8f7f4] flex items-center justify-center">
+    <div className="min-h-screen bg-paper flex items-center justify-center">
       <div className="w-8 h-8 rounded-full border-[3px] border-ink/15 border-t-ficium animate-spin" />
     </div>
   );
