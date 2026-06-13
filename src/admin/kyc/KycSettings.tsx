@@ -3,6 +3,7 @@
 // Toggles for each KYC check stored in Supabase kyc_settings table.
 // Changes take effect immediately on next submission.
 // =============================================================
+import { apiFetch } from "@/shared/lib/apiClient";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -114,7 +115,7 @@ function useKycSettings() {
   return useQuery({
     queryKey: ["kyc_settings"],
     queryFn: async () => {
-      const res = await fetch("/api/kyc?action=settings");
+      const res = await apiFetch("/api/kyc?action=settings");
       if (!res.ok) throw new Error("Failed to load settings");
       return res.json() as Promise<KycSettings>;
     },
@@ -125,7 +126,7 @@ function useUpdateKycSetting() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ key, value }: { key: string; value: boolean }) => {
-      const res = await fetch("/api/kyc?action=settings", {
+      const res = await apiFetch("/api/kyc?action=settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ key, value }),

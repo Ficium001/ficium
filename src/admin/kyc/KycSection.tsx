@@ -5,6 +5,7 @@
 //   { key: "kyc", label: "KYC Review", icon: "◉" }
 // to NAV and rendering <KycSection /> in the section switch.
 // =============================================================
+import { apiFetch } from "@/shared/lib/apiClient";
 import { useState } from "react";
 import {
   useKycQueue, useKycStats, useApproveKyc, useRejectKyc,
@@ -120,7 +121,7 @@ function KycReviewModal({ item, onClose }: { item: KycQueueItem; onClose: () => 
     try {
       const adminSecret = import.meta.env.VITE_ADMIN_SECRET ?? "";
       // Delete face from Rekognition collection
-      const faceRes = await fetch(`/api/kyc?action=admin-faces&clientId=${item.id}`, {
+      const faceRes = await apiFetch(`/api/kyc?action=admin-faces&clientId=${item.id}`, {
         method: "DELETE",
         headers: { "x-admin-secret": adminSecret },
       });

@@ -23,20 +23,29 @@ import { adminFacesHandler } from "./_kyc/adminFaces";
 import { facesHandler }      from "./_kyc/faces";
 import { livenessHandler }   from "./_kyc/liveness";
 import { setupHandler }      from "./_kyc/setup";
+import {
+  requireUser, requireAdmin, requireService, sendAuthError,
+} from "./_lib/auth.js";
 
 export const config = { runtime: "nodejs" };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Handler = (req: any, res: any) => unknown | Promise<unknown>;
 
-const ROUTES: Record<string, Handler> = {
-  "verify":      verifyHandler,
-  "settings":    settingsHandler,
-  "notify":      notifyHandler,
-  "admin-faces": adminFacesHandler,
-  "faces":       facesHandler,
-  "liveness":    livenessHandler,
-  "setup":       setupHandler,
+/** Auth level required per action. */
+type Gate = "user" | "admin" | "service";
+
+const ROUTES: Record<string, { handler: Handler; gate: Gate }> = {
+  // A logged-in user verifying their own identity.
+  "verify":      { handler: verifyHandler,     gate: "user"    },
+  // Admin console operations.
+  "settings":    { handler: settingsHandler,   gate: "admin"   },
+  "notify":      { handler: notifyHandler,     gate: "admin"   },
+  "admin-faces": { handler: adminFacesHandler, gate: "admin"   },
+  // Internal / server-to-server utilities — never called from a browser.
+  "faces":       { handler: facesHandler,      gate: "service" },
+  "liveness":    { handler: livenessHandler,   gate: "service" },
+  "setup":       { handler: setupHandler,      gate: "service" },
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -52,5 +61,18 @@ export default async function handler(req: any, res: any) {
     });
   }
 
-  return route(req, res);
+  // Fail-closed auth gate before any handler logic runs.
+  try {
+    if (route.gate === "service") {
+      requireService(req);
+    } else {
+      const user = await requireUser(req);
+      if (route.gate === "admin") await requireAdmin(user);
+    }
+  } catch (e) {
+    if (sendAuthError(res, e)) return;
+    throw e;
+  }
+
+  return route.handler(req, res);
 }

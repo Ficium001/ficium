@@ -2,6 +2,7 @@
 // Ficium — Journey Wizard (/journeys/new?type=X)
 // Adaptive Q&A → AI calculation → Journey created → Workspace
 // =============================================================
+import { apiFetch } from "@/shared/lib/apiClient";
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
@@ -20,7 +21,7 @@ async function calculateAffordabilityReal(
 ): Promise<JourneyAIResults> {
   if (!userId) return buildFallback(type, answers);
   try {
-    const res = await fetch("/api/chat?action=journey-calculate", {
+    const res = await apiFetch("/api/chat?action=journey-calculate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId, type, answers }),

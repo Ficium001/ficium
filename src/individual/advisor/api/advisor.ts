@@ -1,3 +1,4 @@
+import { apiFetch } from "@/shared/lib/apiClient";
 export type ChatMessage = { role: "user" | "assistant"; content: string };
 
 export type SendResult =
@@ -10,7 +11,7 @@ export type SendResult =
  */
 export async function sendToAdvisor(messages: ChatMessage[]): Promise<SendResult> {
   try {
-    const res = await fetch("/api/chat", {
+    const res = await apiFetch("/api/chat", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ messages }),

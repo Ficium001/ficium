@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { requireUser, requireAdmin, sendAuthError } from './_lib/auth.js'
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
@@ -9,6 +10,12 @@ const RATING_ENGINE_URL = process.env.RATING_ENGINE_URL!
 
 export default async function handler(req: any, res: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
   if (req.method !== 'POST') return res.status(405).end()
+
+  // Admin-only: rating applicants is a privileged operation.
+  try {
+    const user = await requireUser(req)
+    await requireAdmin(user)
+  } catch (e) { if (sendAuthError(res, e)) return; throw e }
 
   const { client_id } = req.body
   if (!client_id) return res.status(400).json({ error: 'client_id required' })
