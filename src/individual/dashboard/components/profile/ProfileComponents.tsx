@@ -265,12 +265,17 @@ export function FinancialEditForm({ profile, onClose, hidden, setHidden }: {
   const handleSave = async () => {
     setSaving(true);
     const { data: { user } } = await supabase.auth.getUser();
-    if (user) await supabase.from("financial_profiles").update({
-      employment_status:  form.employmentStatus,
-      monthly_income:     form.monthlyIncome  ? Number(form.monthlyIncome)  : null,
-      total_net_worth:    form.totalNetWorth   ? Number(form.totalNetWorth)   : null,
-      has_existing_loans: form.hasExistingLoans === "yes",
-    }).eq("user_id", user.id);
+    if (user) {
+      // v2 replaced financial_profiles with client_dossier (keyed on client_id).
+      // Writing to the old table silently no-op'd, so edits never persisted.
+      const { error } = await supabase.from("client_dossier").update({
+        employment_status:  form.employmentStatus,
+        monthly_income:     form.monthlyIncome  ? Number(form.monthlyIncome)  : null,
+        total_net_worth:    form.totalNetWorth   ? Number(form.totalNetWorth)   : null,
+        has_existing_loans: form.hasExistingLoans === "yes",
+      }).eq("client_id", user.id);
+      if (error) { console.error("Financial profile update failed:", error.message); setSaving(false); return; }
+    }
     await queryClient.invalidateQueries({ queryKey: ["profile"] });
     setSaving(false); onClose();
   };
