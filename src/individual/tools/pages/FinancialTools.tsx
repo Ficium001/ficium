@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { TrendingUp, HandCoins } from "lucide-react";
-import { BottomNav } from "../../../shared/ui";
+import { PageShell } from "../../../shared/ui";
 
 /* ─────────────────────────────────────────────
    Types
@@ -57,7 +57,7 @@ function SimSlider({
               const v = Number(e.target.value);
               if (!isNaN(v) && v >= min && v <= max) onChange(v);
             }}
-            className="w-36 text-right text-[14px] font-bold text-ink bg-cream border border-ink/[0.10] rounded-xl px-3 py-1.5 outline-none focus:border-ficium focus:ring-2 focus:ring-ficium/15 transition-colors"
+            className="w-36 text-right text-[14px] font-bold text-ink bg-paper border border-ink/[0.10] rounded-xl px-3 py-1.5 outline-none focus:border-ficium focus:ring-2 focus:ring-ficium/15 transition-colors"
           />
         ) : (
           <span className="text-[14px] font-bold text-ink">{display}</span>
@@ -167,10 +167,9 @@ export default function FinancialTools() {
     : `Estimated value after ${term} ${term === 1 ? "year" : "years"}`;
 
   return (
-    <div className="min-h-screen pb-28 bg-cream">
+    <PageShell max="1160px">
 
-      {/* ── Page wrapper ── */}
-      <div className="mx-auto w-full max-w-[1160px] px-4 sm:px-6 lg:px-10 pt-10 pb-10">
+      <div className="pt-6 pb-10">
 
         {/* ── Header ── */}
         <div className="flex items-start justify-between flex-wrap gap-4 mb-10">
@@ -269,16 +268,10 @@ export default function FinancialTools() {
           <div className="rounded-[24px] overflow-hidden border border-ink/[0.06] shadow-card">
 
             {/* Dark hero */}
-            <div
-              className="px-7 py-8 relative overflow-hidden"
-              style={{
-                background:
-                  "linear-gradient(145deg, #1a1040 0%, #0f0c29 45%, #302b63 100%)",
-              }}
-            >
+            <div className="px-7 py-8 relative overflow-hidden bg-hero">
               {/* Decorative glows */}
               <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-ficium/25 blur-[60px] pointer-events-none" />
-              <div className="absolute -bottom-10 -left-10 w-48 h-48 rounded-full bg-accent/10 blur-[60px] pointer-events-none" />
+              <div className="absolute -bottom-10 -left-10 w-48 h-48 rounded-full bg-ficium/15 blur-[60px] pointer-events-none" />
 
               <div className="relative z-10">
                 <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-white/40 mb-2">
@@ -348,8 +341,6 @@ export default function FinancialTools() {
           </div>
         </div>
       </div>
-
-      <BottomNav />
-    </div>
+    </PageShell>
   );
 }
