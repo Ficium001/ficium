@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, CheckCircle2, AlertTriangle, XCircle, ArrowRight, Loader2 } from "lucide-react";
 import { useSnapshot, computeHealthMetrics } from "@/individual/networth/hooks/useSnapshot";
 import { useProfile } from "@/individual/dashboard/hooks/useDashboard";
-import { BottomNav } from "@/shared/ui";
+import { PageShell } from "@/shared/ui";
 
 export default function FinancialHealth() {
   const navigate = useNavigate();
@@ -24,15 +24,14 @@ export default function FinancialHealth() {
   const hasData = snap && (snap.monthlyIncome > 0 || snap.totalAssets > 0);
 
   if (loading) return (
-    <div className="min-h-screen bg-cream flex items-center justify-center">
+    <div className="min-h-screen bg-paper flex items-center justify-center">
       <Loader2 size={32} className="text-ficium animate-spin" />
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-cream pb-28">
-      <div className="bg-gradient-to-br from-[#0f0c29] via-[#1a1040] to-[#302b63]">
-        <div className="max-w-[900px] mx-auto px-4 sm:px-6 pt-8 pb-10">
+    <PageShell max="900px">
+      <section className="relative overflow-hidden rounded-hero bg-hero text-white px-5 sm:px-9 py-8 mt-1">
           <button onClick={() => navigate(-1)} className="flex items-center gap-1.5 text-[13px] text-white/60 hover:text-white mb-6">
             <ArrowLeft size={15} /> Back
           </button>
@@ -68,10 +67,9 @@ export default function FinancialHealth() {
               </p>
             </div>
           </div>
-        </div>
-      </div>
+      </section>
 
-      <div className="max-w-[900px] mx-auto px-4 sm:px-6 py-6 space-y-5">
+      <div className="py-6 space-y-5">
 
         {!hasData && (
           <div className="bg-amber-50 border border-amber-200 rounded-[18px] px-5 py-4 flex items-start gap-3">
@@ -155,9 +153,7 @@ export default function FinancialHealth() {
           </button>
         </div>
       </div>
-
-      <BottomNav />
-    </div>
+    </PageShell>
   );
 }
 
