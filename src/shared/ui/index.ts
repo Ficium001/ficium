@@ -4,3 +4,5 @@ export { Field } from "./Field";
 export { Input } from "./Input";
 export { Select } from "./Select";
 export { BottomNav } from "./BottomNav";
+export { FiciumLogo } from "./FiciumLogo";
+export { FicoMark } from "./FicoMark";

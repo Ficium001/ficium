@@ -11,13 +11,14 @@
  */
 
 import { Link, useLocation } from "react-router-dom";
-import { Home, Target, Sparkles, TrendingUp, User } from "lucide-react";
+import { Home, Target, TrendingUp, User } from "lucide-react";
+import { FicoMark } from "./FicoMark";
 import { useAuth } from "../../features/auth/context/AuthContext";
 
 const tabs = [
   { to: "/dashboard", label: "Home",     icon: Home,       key: "home"     },
   { to: "/requests",  label: "Requests", icon: Target,     key: "requests" },
-  { to: "/advisor",   label: "AI",       icon: Sparkles,   key: "advisor", accent: true },
+  { to: "/advisor",   label: "FICO",     icon: Target,     key: "advisor", accent: true },
   { to: "/markets",   label: "Market",   icon: TrendingUp, key: "markets"  },
   { to: "/profile",   label: "Profile",  icon: User,       key: "profile"  },
 ] as const;
@@ -35,17 +36,13 @@ export function BottomNav() {
           const active = pathname === t.to || (t.to !== "/dashboard" && pathname.startsWith(t.to));
           const Icon   = t.icon;
 
-          // Centre AI tab: raised brand-gradient action
+          // Centre FICO tab: raised identity mark
           if ("accent" in t && t.accent) {
             return (
               <Link key={t.to} to={t.to} aria-label={t.label}
                 className="relative flex flex-col items-center justify-center py-2 gap-1 no-underline">
-                <span
-                  className="w-11 h-11 -mt-5 rounded-2xl grid place-items-center text-white shadow-ficium
-                             transition-transform duration-300 ease-swift active:scale-95"
-                  style={{ background: "linear-gradient(135deg,#356EF4,#8231EC)" }}
-                >
-                  <Icon size={20} />
+                <span className="-mt-5 transition-transform duration-300 ease-swift active:scale-95">
+                  <FicoMark size={44} glow />
                 </span>
                 <span className={`text-[10px] font-semibold ${active ? "text-ficium" : "text-muted"}`}>
                   {t.label}
