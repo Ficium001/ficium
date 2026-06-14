@@ -57,7 +57,8 @@ function SimSlider({
               const v = Number(e.target.value);
               if (!isNaN(v) && v >= min && v <= max) onChange(v);
             }}
-            className="w-36 text-right text-[14px] font-bold text-ink bg-surface border border-ink/[0.10] rounded-xl px-3 py-1.5 outline-none focus:border-ficium focus:ring-2 focus:ring-ficium/15 transition-colors"          />
+            className="w-36 text-right text-[14px] font-bold text-ink bg-paper border border-ink/[0.10] rounded-xl px-3 py-1.5 outline-none focus:border-ficium focus:ring-2 focus:ring-ficium/15 transition-colors"
+          />
         ) : (
           <span className="text-[14px] font-bold text-ink">{display}</span>
         )}
@@ -167,6 +168,7 @@ export default function FinancialTools() {
 
   return (
     <PageShell max="1160px">
+
       <div className="pt-6 pb-10">
 
         {/* ── Header ── */}

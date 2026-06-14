@@ -1,49 +1,52 @@
 # Skin Audit — screen alignment with the 2026 design system
 
-Audit of every live screen (+ feature components) vs the centralised skin:
-`PageShell`/`RegisterShell` (paper surfaces) · ink `bg-hero`/`bg-hero-deep` · dashboard kit · tokenised gradients.
+Audit of every screen (+ its feature components) vs the centralised skin:
+`PageShell` (bg-paper) · ink `bg-hero` · dashboard kit · tokenised gradients.
 
-**ON-SKIN** · **PARTIAL** (modern + leftover legacy) · **LEGACY** (bespoke).
+**ON-SKIN** · **PARTIAL** (modern + leftover legacy) · **LEGACY** (bespoke) · **RETIRED** (route redirects, not rendered).
 
-| Status | Screen | Modern | Legacy hex/cream | `[#hex]` |
+| Status | Screen | Modern | Legacy grad/cream | `[#hex]` |
 |---|---|:--:|:--:|:--:|
-| ON-SKIN | `individual/dashboard/Profile.tsx` | ✓ | — | 3 |
-| ON-SKIN | `features/auth/Login.tsx` | ✓ | — | 2 |
-| ON-SKIN | `features/marketing/HowItWorks.tsx` | ✓ | — | 2 |
-| ON-SKIN | `business/auth/RegisterBusiness.tsx` | ✓ | — | 0 |
-| ON-SKIN | `features/auth/CheckEmail.tsx` | ✓ | — | 0 |
-| ON-SKIN | `features/auth/ForgotPassword.tsx` | ✓ | — | 0 |
-| ON-SKIN | `features/auth/RegisterTypeSelect.tsx` | ✓ | — | 0 |
-| ON-SKIN | `features/auth/ResetPassword.tsx` | ✓ | — | 0 |
-| ON-SKIN | `features/marketing/Splash.tsx` | ✓ | — | 0 |
 | ON-SKIN | `individual/advisor/Advisor.tsx` | ✓ | — | 0 |
 | ON-SKIN | `individual/alerts/Alerts.tsx` | ✓ | — | 0 |
-| ON-SKIN | `individual/auth/RegisterIndividual.tsx` | ✓ | — | 0 |
-| ON-SKIN | `individual/dashboard/Dashboard.tsx` | ✓ | — | 0 |
 | ON-SKIN | `individual/health/FinancialHealth.tsx` | ✓ | — | 0 |
-| ON-SKIN | `individual/markets/Markets.tsx` | ✓ | — | 0 |
 | ON-SKIN | `individual/networth/NetWorth.tsx` | ✓ | — | 0 |
-| ON-SKIN | `individual/requests/NewRequest.tsx` | ✓ | — | 0 |
-| ON-SKIN | `individual/requests/RequestDetail.tsx` | ✓ | — | 0 |
-| ON-SKIN | `individual/requests/Requests.tsx` | ✓ | — | 0 |
 | ON-SKIN | `individual/tools/FinancialTools.tsx` | ✓ | — | 0 |
-| ON-SKIN | `shared/NotFound.tsx` | ✓ | — | 0 |
-| LEGACY | `admin/FiciumAdminPanel.tsx` | — | — | 0 |
-| LEGACY | `individual/audit/ClientAudit.tsx` | — | — | 0 |
-| LEGACY | `individual/onboarding/Dossier.tsx` | — | — | 0 |
-| LEGACY | `individual/onboarding/Kyc.tsx` | — | — | 0 |
-| LEGACY | `individual/onboarding/KycPending.tsx` | — | — | 0 |
+| PARTIAL | `individual/dashboard/Profile.tsx` | ✓ | ⚠️ | 3 |
+| PARTIAL | `individual/requests/NewRequest.tsx` | ✓ | ⚠️ | 3 |
+| PARTIAL | `features/auth/Login.tsx` | ✓ | ⚠️ | 2 |
+| PARTIAL | `features/auth/CheckEmail.tsx` | ✓ | ⚠️ | 0 |
+| PARTIAL | `features/auth/ForgotPassword.tsx` | ✓ | ⚠️ | 0 |
+| PARTIAL | `features/auth/RegisterTypeSelect.tsx` | ✓ | ⚠️ | 0 |
+| PARTIAL | `features/auth/ResetPassword.tsx` | ✓ | ⚠️ | 0 |
+| PARTIAL | `individual/dashboard/Dashboard.tsx` | ✓ | ⚠️ | 0 |
+| PARTIAL | `individual/markets/Markets.tsx` | ✓ | ⚠️ | 0 |
+| PARTIAL | `individual/requests/RequestDetail.tsx` | ✓ | ⚠️ | 0 |
+| PARTIAL | `individual/requests/Requests.tsx` | ✓ | ⚠️ | 0 |
+| PARTIAL | `shared/NotFound.tsx` | ✓ | ⚠️ | 0 |
+| LEGACY | `features/marketing/HowItWorks.tsx` | — | ⚠️ | 11 |
+| LEGACY | `admin/FiciumAdminPanel.tsx` | — | ⚠️ | 0 |
+| LEGACY | `business/auth/RegisterBusiness.tsx` | — | — | 0 |
+| LEGACY | `features/marketing/Splash.tsx` | — | ⚠️ | 0 |
+| LEGACY | `individual/audit/ClientAudit.tsx` | — | ⚠️ | 0 |
+| LEGACY | `individual/auth/RegisterIndividual.tsx` | — | — | 0 |
+| LEGACY | `individual/onboarding/Dossier.tsx` | — | ⚠️ | 0 |
+| LEGACY | `individual/onboarding/Kyc.tsx` | — | ⚠️ | 0 |
+| LEGACY | `individual/onboarding/KycPending.tsx` | — | ⚠️ | 0 |
+| RETIRED | `individual/journeys/Journeys.tsx` | — | ⚠️ | 15 |
+| RETIRED | `individual/journeys/JourneyWizard.tsx` | — | ⚠️ | 14 |
+| RETIRED | `individual/journeys/JourneyWorkspace.tsx` | — | ⚠️ | 14 |
+| RETIRED | `individual/goals/Goals.tsx` | — | ⚠️ | 3 |
+| RETIRED | `individual/goals/NewGoal.tsx` | — | ⚠️ | 3 |
+| RETIRED | `individual/goals/GoalDetail.tsx` | — | ⚠️ | 0 |
 
-**Totals:** 21 on-skin · 0 partial · 5 legacy (of 26 live screens).
+**Totals:** 5 on-skin · 12 partial · 9 legacy · 6 retired (delete candidates).
 
 ## Centralisation
-- `bg-cream` retired app-wide: page surfaces -> `bg-paper`, component fills (inputs/hover rows on white cards) -> new `bg-surface` (#F6F5FA) token.
-- All signature gradients are tokens in `tailwind.config.js` (`bg-hero`, `bg-hero-deep`, `bg-brand`, `bg-brand-cta`, `bg-brand-soft`, `bg-accent`, `bg-edge[-h]`, `bg-rail`, `bg-callout`, `bg-mark`).
-- `PageShell` centralises the page frame; `RegisterShell` centralises the auth split-panel; both consume the tokens.
-- `src/shared/ui` + advisor are gradient-token only — CI skin-guard enforces it.
-- Dead code removed: Goals/Journeys (6 files, prior commit) and unused `DashboardBackground` (this batch).
+- Gradients are tokens in `tailwind.config.js`; `src/shared/ui` + advisor are gradient-token only (CI-enforced).
+- `PageShell` centralises the page frame; `Hero`/`bg-hero` centralise the header band.
 
-## Remaining LEGACY screens
-Onboarding/auth/admin/marketing shells not yet on PageShell/Hero — next batch candidates.
-
-Widen the CI skin-guard folder scope as each migrates.
+## Remaining migration (live screens)
+- LEGACY client screens still bespoke: Dossier, Kyc, KycPending, ClientAudit, RegisterIndividual, RegisterBusiness, FiciumAdminPanel, Splash, HowItWorks.
+- RETIRED (Goals/Journeys) redirect to /requests — safe to delete the page files.
+- Widen the CI skin-guard folder scope as each migrates.
