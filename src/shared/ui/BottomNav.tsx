@@ -63,10 +63,9 @@ export function BottomNav() {
               {/* gradient active indicator */}
               <span
                 aria-hidden
-                className={`absolute top-0 left-1/2 -translate-x-1/2 h-[3px] w-8 rounded-b-pill transition-opacity duration-300 ${
+                className={`absolute top-0 left-1/2 -translate-x-1/2 h-[3px] w-8 rounded-b-pill bg-rail transition-opacity duration-300 ${
                   active ? "opacity-100" : "opacity-0"
                 }`}
-                style={{ background: "linear-gradient(90deg,#356EF4,#8231EC)" }}
               />
               <Icon size={20} />
               <span className="text-[10px] font-semibold">{t.label}</span>

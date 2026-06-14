@@ -19,8 +19,7 @@ export function MoveCard({ move }: { move: Move }) {
   return (
     <HoverCard className="!p-5 flex flex-col">
       <span
-        className="w-[42px] h-[42px] rounded-[13px] grid place-items-center mb-3.5"
-        style={{ background: 'linear-gradient(135deg,rgba(30,108,245,.10),rgba(124,58,237,.10))' }}
+        className="w-[42px] h-[42px] rounded-[13px] grid place-items-center mb-3.5 bg-brand-soft"
       >
         <Icon size={22} style={{ color }} aria-hidden />
       </span>

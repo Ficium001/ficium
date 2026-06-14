@@ -93,8 +93,7 @@ export function HoverCard({
       {/* gradient edge appears on hover */}
       <span
         aria-hidden
-        className='absolute left-0 top-0 bottom-0 w-[3px] opacity-0 group-hover:opacity-100 transition-opacity duration-300'
-        style={{ background: 'linear-gradient(180deg,#1E6CF5,#7C3AED)' }}
+        className='absolute left-0 top-0 bottom-0 w-[3px] opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-edge'
       />
       {children}
     </div>
@@ -104,8 +103,7 @@ export function HoverCard({
 export function CardIcon({ children }: { children: ReactNode }) {
   return (
     <div
-      className='w-[42px] h-[42px] rounded-[13px] grid place-items-center flex-shrink-0'
-      style={{ background: 'linear-gradient(135deg,rgba(30,108,245,.10),rgba(124,58,237,.10))' }}
+      className='w-[42px] h-[42px] rounded-[13px] grid place-items-center flex-shrink-0 bg-brand-soft'
     >
       {children}
     </div>
@@ -205,8 +203,7 @@ export function DarkCallout({
 }) {
   return (
     <div
-      className={`rounded-card p-6 lg:p-7 text-white flex flex-col justify-between ${className}`}
-      style={{ background: 'radial-gradient(130% 150% at 100% 0%, #1A1448 0%, #0B0B1E 60%)' }}
+      className={`rounded-card p-6 lg:p-7 text-white flex flex-col justify-between bg-callout ${className}`}
     >
       <div>
         <h3 className='font-display font-bold tracking-display text-[20px]'>{title}</h3>
@@ -267,10 +264,9 @@ export function ProgressBar({
       </div>
       <div className='h-1.5 rounded-pill bg-[#EFEFF5] overflow-hidden'>
         <div
-          className='h-full rounded-pill'
+          className='h-full rounded-pill bg-edge-h'
           style={{
             width: shown ? `${pct}%` : 0,
-            background: 'linear-gradient(90deg,#1E6CF5,#7C3AED)',
             transition: reduced ? undefined : 'width 1.2s cubic-bezier(.22,1,.36,1)',
           }}
         />

@@ -56,8 +56,7 @@ export function AskRail({ onAsk }: { onAsk: (q: string) => void }) {
         <Link
           to="/requests/new"
           className="m-2 flex items-center justify-center gap-2 text-white text-[14px] font-semibold rounded-[14px]
-                     py-3 no-underline shadow-ficium transition-transform hover:-translate-y-px"
-          style={{ background: 'linear-gradient(135deg,#356EF4,#8231EC)' }}
+                     py-3 no-underline shadow-ficium transition-transform hover:-translate-y-px bg-brand"
         >
           Get competing bids <ArrowRight size={16} aria-hidden />
         </Link>

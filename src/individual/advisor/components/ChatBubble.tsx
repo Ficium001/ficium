@@ -73,7 +73,7 @@ export function ChatBubble({ message, onChip }: { message: ChatMessage; onChip: 
         </div>
 
         <div className="flex items-center gap-1.5 mt-1.5 ml-1">
-          <span className="w-[13px] h-[13px] rounded-[5px]" style={{ background: 'linear-gradient(135deg,#356EF4,#8231EC)' }} />
+          <span className="w-[13px] h-[13px] rounded-[5px] bg-brand" />
           <span className="text-[11px] text-muted font-medium">{ASSISTANT.name} · {ASSISTANT.poweredBy}</span>
         </div>
       </div>

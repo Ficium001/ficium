@@ -8,7 +8,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { FiciumLogo, BottomNav } from "@/shared/ui";
+import { FiciumLogo, PageShell } from "@/shared/ui";
 import { RefreshCw } from "lucide-react";
 import { useProfile } from "../../dashboard/hooks/useDashboard";
 import { useAdvisorChat } from "../hooks/useAdvisorChat";
@@ -35,51 +35,47 @@ export default function Advisor() {
   const submit = () => { send(input); setInput(""); };
 
   return (
-    <div className="min-h-screen bg-paper pb-28 lg:pb-24">
-      <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-6 pt-4">
+    <PageShell>
 
-        {/* Chrome row — real brand lock-up + updated pill */}
-        <div className="flex items-center justify-between mb-[18px]">
-          <FiciumLogo heightPx={24} withWordmark />
-          <button className="inline-flex items-center gap-2 bg-white border border-line rounded-xl px-3 py-2
-                             text-[12px] font-semibold text-ink/60 hover:bg-ink/[0.03] transition-colors"
-                  onClick={reset} title="Refresh briefing">
-            <RefreshCw size={13} /> Updated just now
-          </button>
-        </div>
-
-        {/* Hero */}
-        <AdvisorHero firstName={firstName} onReset={reset} />
-
-        {/* Body grid: ask rail + briefing/chat stream */}
-        <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-5 mt-5 items-start">
-          <div className="order-2 lg:order-1">
-            <AskRail onAsk={ask} />
-          </div>
-
-          <main className="order-1 lg:order-2 flex flex-col gap-[18px]">
-            {messages.map((m) => (
-              <ChatBubble key={m.id} message={m} onChip={ask} />
-            ))}
-            {thinking && <ThinkingBubble />}
-            <div ref={bottomRef} />
-
-            <div className="sticky bottom-[88px] lg:bottom-4 pt-1">
-              <Composer
-                value={input}
-                onChange={setInput}
-                onSubmit={submit}
-                onChip={ask}
-                thinking={thinking}
-                exhausted={exhausted}
-                remaining={remaining}
-              />
-            </div>
-          </main>
-        </div>
+      {/* Chrome row — real brand lock-up + updated pill */}
+      <div className="flex items-center justify-between mb-[18px]">
+        <FiciumLogo heightPx={24} withWordmark />
+        <button className="inline-flex items-center gap-2 bg-white border border-line rounded-xl px-3 py-2
+                           text-[12px] font-semibold text-ink/60 hover:bg-ink/[0.03] transition-colors"
+                onClick={reset} title="Refresh briefing">
+          <RefreshCw size={13} /> Updated just now
+        </button>
       </div>
 
-      <BottomNav />
-    </div>
+      {/* Hero */}
+      <AdvisorHero firstName={firstName} onReset={reset} />
+
+      {/* Body grid: ask rail + briefing/chat stream */}
+      <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-5 mt-5 items-start">
+        <div className="order-2 lg:order-1">
+          <AskRail onAsk={ask} />
+        </div>
+
+        <main className="order-1 lg:order-2 flex flex-col gap-[18px]">
+          {messages.map((m) => (
+            <ChatBubble key={m.id} message={m} onChip={ask} />
+          ))}
+          {thinking && <ThinkingBubble />}
+          <div ref={bottomRef} />
+
+          <div className="sticky bottom-[88px] lg:bottom-4 pt-1">
+            <Composer
+              value={input}
+              onChange={setInput}
+              onSubmit={submit}
+              onChip={ask}
+              thinking={thinking}
+              exhausted={exhausted}
+              remaining={remaining}
+            />
+          </div>
+        </main>
+      </div>
+    </PageShell>
   );
 }

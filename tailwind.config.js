@@ -53,6 +53,22 @@ export default {
       },
       letterSpacing: { display: "-0.035em" },
       transitionTimingFunction: { swift: "cubic-bezier(.22,1,.36,1)" },
+      // ── Signature gradients (single source of truth for the skin) ──
+      // Re-skin the whole app by editing these. Reference as bg-hero,
+      // bg-brand, bg-accent (with bg-clip-text), bg-edge, etc. — never
+      // hand-write gradient strings in components.
+      backgroundImage: {
+        "hero":       "radial-gradient(120% 160% at 8% 0%, #181842 0%, #0B0B1E 55%)",
+        "callout":    "radial-gradient(130% 150% at 100% 0%, #1A1448 0%, #0B0B1E 60%)",
+        "mark":       "radial-gradient(135% 135% at 30% 22%, #23234F 0%, #0B0B1E 70%)",
+        "brand":      "linear-gradient(135deg,#356EF4,#8231EC)",
+        "brand-cta":  "linear-gradient(92deg,#1E6CF5,#7C3AED 90%)",
+        "brand-soft": "linear-gradient(135deg,rgba(30,108,245,.10),rgba(124,58,237,.10))",
+        "accent":     "linear-gradient(92deg,#62A8FF 0%,#22D3EE 40%,#A78BFA 75%,#E879F9 100%)",
+        "edge":       "linear-gradient(180deg,#1E6CF5,#7C3AED)",
+        "edge-h":     "linear-gradient(90deg,#1E6CF5,#7C3AED)",
+        "rail":       "linear-gradient(90deg,#356EF4,#8231EC)",
+      },
       keyframes: {
         pulseRing: {
           "0%":   { boxShadow: "0 0 0 0 rgba(192,38,211,.45)" },

@@ -27,11 +27,7 @@ import CountUp from '../motion/CountUp'
 export function GradText({ children }: { children: ReactNode }) {
   return (
     <span
-      className='bg-clip-text text-transparent'
-      style={{
-        backgroundImage:
-          'linear-gradient(92deg,#62A8FF 0%,#22D3EE 40%,#A78BFA 75%,#E879F9 100%)',
-      }}
+      className='bg-accent bg-clip-text text-transparent'
     >
       {children}
     </span>
@@ -103,12 +99,8 @@ export default function Hero({
 }) {
   return (
     <section
-      className='relative overflow-hidden rounded-hero text-white
+      className='relative overflow-hidden rounded-hero text-white bg-hero
                  px-7 py-9 sm:px-10 sm:py-12 lg:px-14 lg:py-14'
-      style={{
-        background:
-          'radial-gradient(120% 160% at 8% 0%, #181842 0%, #0B0B1E 55%)',
-      }}
     >
       <Blade className='w-[380px] -top-16 right-[6%] [animation-delay:-2s]' />
       <Blade className='w-[300px] -bottom-20 right-[24%] [animation-duration:18s]' both={false} />
@@ -187,18 +179,13 @@ export function HeroButton({
     'font-semibold text-[14.5px] px-6 py-3 rounded-[14px] transition-all duration-300 ease-swift active:scale-[.97]'
   const styles =
     variant === 'grad'
-      ? 'text-white shadow-ficium hover:-translate-y-0.5 hover:shadow-[0_14px_32px_rgba(124,58,237,.45)]'
+      ? 'bg-brand-cta text-white shadow-ficium hover:-translate-y-0.5 hover:shadow-[0_14px_32px_rgba(124,58,237,.45)]'
       : 'bg-white/[0.08] text-white border border-white/[0.16] hover:bg-white/[0.14]'
   return (
     <button
       type='button'
       onClick={onClick}
       className={`${base} ${styles}`}
-      style={
-        variant === 'grad'
-          ? { background: 'linear-gradient(92deg,#1E6CF5,#7C3AED 90%)' }
-          : undefined
-      }
     >
       {children}
     </button>

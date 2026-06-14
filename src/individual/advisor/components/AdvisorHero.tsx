@@ -47,8 +47,7 @@ function Blades() {
 export function AdvisorHero({ firstName, onReset }: { firstName: string; onReset: () => void }) {
   return (
     <section
-      className="relative overflow-hidden rounded-hero text-white px-7 py-9 sm:px-10 sm:py-10"
-      style={{ background: 'radial-gradient(120% 160% at 8% 0%, #181842 0%, #0B0B1E 55%)' }}
+      className="relative overflow-hidden rounded-hero text-white bg-hero px-7 py-9 sm:px-10 sm:py-10"
     >
       <Blades />
 

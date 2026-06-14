@@ -41,6 +41,19 @@ jobs:
       - name: Lint (gated — 0 errors; advisory rules surface as warnings)
         run: npm run lint
 
+      - name: Skin guard (design system stays centralised)
+        run: |
+          echo "Verifying src/shared/ui + advisor use skin tokens, not raw gradients…"
+          if grep -rnE "linear-gradient\(|radial-gradient\(" src/shared/ui src/individual/advisor --include=*.tsx; then
+            echo "::error::Raw CSS gradient found. Use a backgroundImage token (bg-hero, bg-brand, bg-brand-soft, bg-accent, bg-edge…) defined in tailwind.config.js so the skin stays centralised."
+            exit 1
+          fi
+          if grep -rniE "#0f0c29|#1a1040|#302b63" src/shared/ui src/individual/advisor --include=*.tsx; then
+            echo "::error::Legacy hero gradient hex found. Use the bg-hero token."
+            exit 1
+          fi
+          echo "Skin guard passed ✓"
+
       - name: Test
         run: npm test
 

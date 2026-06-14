@@ -40,12 +40,11 @@ export function FicoMark({
 
   return (
     <span
-      className={`relative inline-grid place-items-center flex-shrink-0 ${className}`}
+      className={`relative inline-grid place-items-center flex-shrink-0 bg-mark ${className}`}
       style={{
         width: size,
         height: size,
         borderRadius: r,
-        background: 'radial-gradient(135% 135% at 30% 22%, #23234F 0%, #0B0B1E 70%)',
         boxShadow: glow
           ? 'inset 0 0 0 1px rgba(124,58,237,.55), 0 10px 24px -6px rgba(130,49,236,.55)'
           : 'inset 0 0 0 1px rgba(124,58,237,.5)',

@@ -37,8 +37,7 @@ export function Composer({
           Upgrade to Ficium Premium for unlimited {ASSISTANT.name} coaching, deeper analysis across your
           whole financial life, and priority insights.
         </p>
-        <button className="w-full text-white font-semibold py-3.5 rounded-2xl text-[14px] shadow-ficium transition-transform hover:-translate-y-px"
-                style={{ background: 'linear-gradient(135deg,#356EF4,#8231EC)' }}>
+        <button className="w-full text-white font-semibold py-3.5 rounded-2xl text-[14px] shadow-ficium transition-transform hover:-translate-y-px bg-brand">
           Upgrade — MUR 199/month
         </button>
         <p className="text-[11px] text-muted mt-2">Resets on the 1st of each month</p>
@@ -74,8 +73,7 @@ export function Composer({
         />
         <button type="submit" disabled={!value.trim() || thinking} aria-label="Send"
           className="w-11 h-11 rounded-[13px] grid place-items-center text-white flex-shrink-0 shadow-ficium
-                     disabled:opacity-40 disabled:cursor-not-allowed transition-transform hover:scale-105 disabled:hover:scale-100"
-          style={{ background: 'linear-gradient(135deg,#356EF4,#8231EC)' }}>
+                     disabled:opacity-40 disabled:cursor-not-allowed transition-transform hover:scale-105 disabled:hover:scale-100 bg-brand">
           <Send size={18} />
         </button>
       </form>
