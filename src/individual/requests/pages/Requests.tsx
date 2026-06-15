@@ -1,47 +1,20 @@
 // =============================================================
 // Ficium — Requests page (/requests)
 // 2026 revamp: storytelling Hero + shared dashboard kit.
-// Core content (goal/request card scroller) and data wiring preserved.
 // NOTE: the Activity feed still renders MOCK_ACTIVITY — pre-existing
 // placeholder, not yet wired to a real source.
 // =============================================================
 import { useNavigate, Link } from "react-router-dom";
 import {
-  Plus, Target, Building2, FileText,
-  ArrowRight, ChevronRight, Zap, Bell,
-  Home, Car, Plane, TrendingUp as TrendUp, GraduationCap, Briefcase, PiggyBank,
+  Plus, FileText, ArrowRight, ChevronRight, Zap, Bell,
 } from "lucide-react";
-import { useGoals, goalProgress, type Goal, type GoalType } from "@/individual/dashboard/hooks/useGoals";
 import { useMyRequests, useBankReadiness } from "../../dashboard/hooks/useDashboard";
 import { ActiveRequestCard } from "@/individual/requests/components/ActiveRequestCard";
 import { BottomNav } from "@/shared/ui";
 import {
   Hero, HeroButton, GradText, type HeroStat,
-  Reveal, SectionHead, Panel, PanelHead, Feed, FeedItem, DarkCallout, Tag,
+  Reveal, SectionHead, Panel, PanelHead, Feed, FeedItem, DarkCallout,
 } from "@/shared/ui/dashboard";
-
-/* ── Goal card styles ── */
-const GOAL_STYLE: Record<GoalType, { icon: React.ElementType; imgFrom: string; imgTo: string }> = {
-  mortgage:   { icon: Home,          imgFrom: "#c47b2b", imgTo: "#7a4a1e" },
-  vehicle:    { icon: Car,           imgFrom: "#4b5563", imgTo: "#1f2937" },
-  personal:   { icon: Plane,         imgFrom: "#0ea5e9", imgTo: "#0369a1" },
-  investment: { icon: TrendUp,       imgFrom: "#0f0c29", imgTo: "#2A1FE6" },
-  education:  { icon: GraduationCap, imgFrom: "#059669", imgTo: "#065f46" },
-  business:   { icon: Briefcase,     imgFrom: "#7c3aed", imgTo: "#4c1d95" },
-  savings:    { icon: PiggyBank,     imgFrom: "#d97706", imgTo: "#92400e" },
-  other:      { icon: Target,        imgFrom: "#6b7280", imgTo: "#374151" },
-};
-
-const STATUS_TONE: Record<Goal["status"], "green" | "amber" | "blue"> = {
-  "on-track":        "green",
-  "needs-attention": "amber",
-  "ahead":           "blue",
-};
-const STATUS_LABEL: Record<Goal["status"], string> = {
-  "on-track":        "On track",
-  "needs-attention": "Needs attention",
-  "ahead":           "Ahead",
-};
 
 // Pre-existing placeholder — not yet wired to a real activity source.
 const MOCK_ACTIVITY = [
@@ -53,15 +26,11 @@ const MOCK_ACTIVITY = [
 
 export default function Requests() {
   const navigate = useNavigate();
-  const { data: goals = [], isLoading: goalsLoading } = useGoals();
-  const { data: requests = [], isLoading: reqLoading } = useMyRequests();
+  const { data: requests = [], isLoading } = useMyRequests();
   const { score: readiness } = useBankReadiness();
 
-  const isLoading     = goalsLoading || reqLoading;
   const openRequests  = requests.filter(r => r.status === "open");
   const totalOffers   = requests.reduce((s, r) => s + r.bidCount, 0);
-
-  const fmt = (n: number) => `Rs ${new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(n)}`;
 
   const heroStats: HeroStat[] = [
     { label: "Active requests",    value: openRequests.length },
@@ -70,7 +39,7 @@ export default function Requests() {
     { label: "Readiness",          value: readiness ?? 72, suffix: "%" },
   ];
 
-  const empty = !isLoading && goals.length === 0 && requests.length === 0;
+  const empty = !isLoading && requests.length === 0;
 
   return (
     <div className="min-h-screen bg-paper pb-28 lg:pb-10">
@@ -101,7 +70,7 @@ export default function Requests() {
           <Reveal>
             <SectionHead
               title="Your requests"
-              subtitle="Goals and live requests — providers bid on each"
+              subtitle="Live requests — providers bid on each"
               to="/requests/new"
               toLabel="Post a need"
             />
@@ -123,54 +92,6 @@ export default function Requests() {
               </Panel>
             ) : (
               <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-10 lg:px-10">
-
-                {/* Goal cards */}
-                {goals.map(g => {
-                  const style = GOAL_STYLE[g.type] ?? GOAL_STYLE.other;
-                  const Icon  = style.icon;
-                  const pct   = goalProgress(g);
-                  const typeMap: Record<string, string> = {
-                    mortgage: "mortgage", vehicle: "vehicle", personal: "personal",
-                    investment: "savings", education: "education", business: "business",
-                    savings: "deposit", other: "personal",
-                  };
-                  return (
-                    <div key={g.id} className="flex-shrink-0 w-[260px]">
-                      <div
-                        onClick={() => navigate(`/requests/new?type=${typeMap[g.type] ?? "personal"}`)}
-                        className="bg-white rounded-card border border-line shadow-card overflow-hidden cursor-pointer hover:shadow-lift hover:-translate-y-1 transition-all duration-300 ease-swift h-full"
-                      >
-                        <div className="h-[140px] flex items-center justify-center"
-                             style={{ background: `linear-gradient(135deg, ${style.imgFrom}, ${style.imgTo})` }}>
-                          <div className="w-14 h-14 rounded-2xl bg-white/20 grid place-items-center">
-                            <Icon size={28} className="text-white" />
-                          </div>
-                        </div>
-                        <div className="p-4 flex flex-col gap-2">
-                          <div className="font-bold text-[13px] text-ink">{g.title}</div>
-                          <div className="font-display text-[28px] font-extrabold text-ficium leading-none tracking-display">
-                            {pct}<span className="text-[13px] font-semibold text-muted ml-0.5">%</span>
-                          </div>
-                          <div className="h-[3px] bg-line rounded-full overflow-hidden">
-                            <div className="h-full rounded-full" style={{ width: `${pct}%`, background: "linear-gradient(90deg,#356EF4,#8231EC)" }} />
-                          </div>
-                          <div className="text-[11px] text-ink/70 font-semibold">{fmt(g.savedAmount)} / {fmt(g.targetAmount)}</div>
-                          <span className="self-start"><Tag tone={STATUS_TONE[g.status]}>{STATUS_LABEL[g.status]}</Tag></span>
-                          <div className="text-[10px] font-bold text-ficium flex items-center gap-1">
-                            <Building2 size={10} /> {g.banksReady} providers ready
-                          </div>
-                          <button
-                            onClick={e => { e.stopPropagation(); navigate(`/requests/new?type=${typeMap[g.type] ?? "personal"}`); }}
-                            className="w-full py-2.5 rounded-xl text-[12px] font-bold text-white mt-1 transition-transform active:scale-[.98]"
-                            style={{ background: "linear-gradient(92deg,#1E6CF5,#7C3AED 90%)" }}
-                          >
-                            Post a request →
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
 
                 {/* DB request cards */}
                 {requests.map(r => (

@@ -208,102 +208,60 @@ export async function getRequest(id: string): Promise<RequestDetail | null> {
 }
 
 /* ---------- Get bids for a request ----------
-   Reads from BOTH schemas and merges:
-   1. institution.institution_bids  — bids placed through institution portal
-   2. public.bids                   — legacy bids (existing data)
+   Reads institution.institution_bids (the live bid source).
    Sorted by rate ascending so cheapest offer is always first.
 ---------------------------------------------- */
 
 export async function getRequestBids(requestId: string): Promise<Bid[]> {
-  const [legacyResult, institutionResult] = await Promise.allSettled([
-    // Legacy public.bids table
-    supabase
-      .from("bids")
-      .select("id, request_id, bank_id, rate, terms, status, created_at, bank_profiles(institution_name)")
-      .eq("request_id", requestId)
-      .order("rate", { ascending: true }),
+  const { data, error } = await instSupabase
+    .from("institution_bids")
+    .select("id, request_id, institution_id, rate, rate_type, amount_offered, term_months, conditions, status, submitted_at, institutions(name)")
+    .eq("request_id", requestId)
+    .eq("status", "submitted")
+    .order("rate", { ascending: true });
 
-    // Institution schema bids
-    instSupabase
-      .from("institution_bids")
-      .select("id, request_id, institution_id, rate, rate_type, amount_offered, term_months, conditions, status, submitted_at, institutions(name)")
-      .eq("request_id", requestId)
-      .eq("status", "submitted")
-      .order("rate", { ascending: true }),
-  ]);
+  if (error || !data) return [];
 
-  const legacyBids: Bid[] = legacyResult.status === "fulfilled" && legacyResult.value.data
-    ? legacyResult.value.data.map((b: Record<string, unknown>) => ({
-        id:              b.id as string,
-        requestId:       b.request_id as string,
-        bankId:          b.bank_id as string,
-        institutionName: (b.bank_profiles as { institution_name: string } | null)?.institution_name ?? "Bank",
-        rate:            b.rate as number,
-        rateType:        "fixed" as const,
-        amountOffered:   0,
-        termMonths:      0,
-        conditions:      null,
-        terms:           (b.terms as string | null) ?? null,
-        status:          b.status as Bid["status"],
-        submittedAt:     b.created_at as string,
-        createdAt:       b.created_at as string,
-        source:          "legacy" as const,
-      }))
-    : [];
-
-  const institutionBids: Bid[] = institutionResult.status === "fulfilled" && institutionResult.value.data
-    ? institutionResult.value.data.map((b: Record<string, unknown>) => ({
-        id:              b.id as string,
-        requestId:       b.request_id as string,
-        bankId:          b.institution_id as string,
-        institutionName: (b.institutions as { name: string } | null)?.name ?? "Institution",
-        rate:            b.rate as number,
-        rateType:        (b.rate_type as "fixed" | "variable") ?? "fixed",
-        amountOffered:   b.amount_offered as number,
-        termMonths:      b.term_months as number,
-        conditions:      b.conditions as Record<string, unknown> | null,
-        terms:           null,
-        status:          "submitted" as const,
-        submittedAt:     b.submitted_at as string,
-        createdAt:       b.submitted_at as string,
-        source:          "institution" as const,
-      }))
-    : [];
-
-  // Merge and sort by rate ascending
-  return [...legacyBids, ...institutionBids].sort((a, b) => a.rate - b.rate);
+  return data.map((b: Record<string, unknown>) => ({
+    id:              b.id as string,
+    requestId:       b.request_id as string,
+    bankId:          b.institution_id as string,
+    institutionName: (b.institutions as { name: string } | null)?.name ?? "Institution",
+    rate:            b.rate as number,
+    rateType:        (b.rate_type as "fixed" | "variable") ?? "fixed",
+    amountOffered:   b.amount_offered as number,
+    termMonths:      b.term_months as number,
+    conditions:      b.conditions as Record<string, unknown> | null,
+    terms:           null,
+    status:          "submitted" as const,
+    submittedAt:     b.submitted_at as string,
+    createdAt:       b.submitted_at as string,
+    source:          "institution" as const,
+  }));
 }
 
 /* ---------- Accept a bid ---------- */
 
 export async function acceptBid(bidId: string, requestId: string): Promise<AcceptBidResult> {
-  // Determine which schema the bid belongs to
+  // Resolve the institution bid being accepted
   const { data: instBid } = await instSupabase
     .from("institution_bids")
     .select("id, institution_id")
     .eq("id", bidId)
     .single();
 
-  if (instBid) {
-    // Institution schema bid — insert into public.bid_acceptances
-    const { data: { user } } = await supabase.auth.getUser();
-    const { error } = await supabase
-      .from("bid_acceptances")
-      .insert({
-        bid_id:         bidId,
-        request_id:     requestId,
-        client_id:      user?.id,
-        institution_id: instBid.institution_id,
-      });
-    if (error) return { ok: false, error: error.message };
-  } else {
-    // Legacy public.bids
-    const { error } = await supabase
-      .from("bids")
-      .update({ status: "accepted" })
-      .eq("id", bidId);
-    if (error) return { ok: false, error: error.message };
-  }
+  if (!instBid) return { ok: false, error: "Bid not found." };
+
+  const { data: { user } } = await supabase.auth.getUser();
+  const { error } = await supabase
+    .from("bid_acceptances")
+    .insert({
+      bid_id:         bidId,
+      request_id:     requestId,
+      client_id:      user?.id,
+      institution_id: instBid.institution_id,
+    });
+  if (error) return { ok: false, error: error.message };
 
   // Close the request
   const { error: reqError } = await supabase
