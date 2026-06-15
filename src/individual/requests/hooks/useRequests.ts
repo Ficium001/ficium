@@ -4,6 +4,7 @@ import {
   getRequest,
   getRequestBids,
   acceptBid,
+  type Bid,
 } from "@/individual/requests/api/requests";
 
 // ── Query keys — single source of truth for cache invalidation ───────────────
@@ -52,7 +53,8 @@ export function useRequestBids(requestId: string) {
 export function useAcceptBid(requestId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (bidId: string) => acceptBid(bidId, requestId),
+    mutationFn: (bid: Bid) =>
+      acceptBid(bid.id, requestId, { source: bid.source, institutionId: bid.bankId }),
     onSuccess: () => {
       // Invalidate all requests-related cache so dashboard + list + detail sync
       queryClient.invalidateQueries({ queryKey: RequestQueryKeys.all });
