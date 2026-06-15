@@ -231,8 +231,7 @@ function Row({ label, icon, value, editing, onChange }: {
       <div className="w-6 grid place-items-center flex-shrink-0">{icon}</div>
       <div className="flex-1 text-[13px] font-medium text-ink">{label}</div>
       {editing ? (
-        <div className="flex items-center gap-1 border border-ink/[0.12] rounded-lg px-2.5 py-1.5 bg-paper">
-          <span className="text-[12px] text-muted">Rs</span>
+        <div className="flex items-center gap-1 border border-ink/[0.12] rounded-lg px-2.5 py-1.5 bg-surface">          <span className="text-[12px] text-muted">Rs</span>
           <input
             type="number"
             defaultValue={value}

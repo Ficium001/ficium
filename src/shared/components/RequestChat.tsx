@@ -106,7 +106,7 @@ export default function RequestChat({
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-cream/30 min-h-0">
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-surface/30 min-h-0">
         {loading ? (
           <div className="flex justify-center py-8">
             <Loader2 className="w-5 h-5 animate-spin text-muted" />
@@ -153,7 +153,7 @@ export default function RequestChat({
           onChange={e => setBody(e.target.value)}
           onKeyDown={handleKey}
           placeholder="Type a message…"
-          className="flex-1 bg-cream rounded-xl px-3.5 py-2.5 text-[13px] outline-none border border-transparent focus:border-ficium/30 transition-colors placeholder:text-muted"
+          className="flex-1 bg-surface rounded-xl px-3.5 py-2.5 text-[13px] outline-none border border-transparent focus:border-ficium/30 transition-colors placeholder:text-muted"
         />
         <button
           onClick={send}

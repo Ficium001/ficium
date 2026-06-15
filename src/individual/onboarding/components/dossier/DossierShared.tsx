@@ -54,8 +54,7 @@ export function StepHeader({
   step, h, onBack,
 }: { step: number; h: HealthResult; onBack: () => void }) {
   return (
-    <div className="sticky top-0 z-20 bg-paper/95 backdrop-blur-sm border-b border-ink/[0.06] px-5 py-3">
-      <div className="mx-auto max-w-[600px] flex items-center gap-4">
+    <div className="sticky top-0 z-20 bg-surface/95 backdrop-blur-sm border-b border-ink/[0.06] px-5 py-3">      <div className="mx-auto max-w-[600px] flex items-center gap-4">
         <button onClick={onBack}
           className="w-8 h-8 rounded-full bg-ink/[0.06] flex items-center justify-center flex-shrink-0">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

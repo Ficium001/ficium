@@ -64,7 +64,7 @@ function DocImage({ path, label }: { path: string | null; label: string }) {
 
   if (!path) {
     return (
-      <div className="rounded-xl border border-ink/10 bg-cream aspect-[4/3] flex items-center justify-center text-[12px] text-muted">
+      <div className="rounded-xl border border-ink/10 bg-surface aspect-[4/3] flex items-center justify-center text-[12px] text-muted">
         Not uploaded
       </div>
     );
@@ -202,7 +202,7 @@ function KycReviewModal({ item, onClose }: { item: KycQueueItem; onClose: () => 
                 ["Provider",        item.kyc_provider ?? "manual_review"],
                 ["Submitted",       fmt.date(item.kyc_submitted_at)],
               ].map(([k, v]) => (
-                <div key={k as string} className="bg-cream rounded-xl p-3">
+                <div key={k as string} className="bg-surface rounded-xl p-3">
                   <div className="text-[10px] text-muted uppercase tracking-wider mb-1">{k}</div>
                   {k === "Risk score"
                     ? riskBadge(item.kyc_risk_score)
@@ -400,7 +400,7 @@ export default function KycSection() {
                 <tr
                   key={item.id}
                   onClick={() => setSelected(item)}
-                  className="border-b border-ink/[0.04] hover:bg-cream/60 transition-colors cursor-pointer"
+                  className="border-b border-ink/[0.04] hover:bg-surface/60 transition-colors cursor-pointer"
                 >
                   <td className="px-5 py-4">
                     <div className="font-semibold text-[13px] text-ink">{item.full_name ?? "—"}</div>

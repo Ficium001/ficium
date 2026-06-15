@@ -56,7 +56,7 @@ export function ProductsSection() {
             </thead>
             <tbody>
               {filtered.map((p) => (
-                <tr key={p.id} className="border-b border-ink/[0.04] hover:bg-cream/60 transition-colors">
+                <tr key={p.id} className="border-b border-ink/[0.04] hover:bg-surface/60 transition-colors">
                   <td className="px-5 py-4">
                     <div className="font-semibold text-[13px] text-ink">{p.label}</div>
                     <div className="text-[11px] text-muted font-mono mt-0.5">{p.code}</div>

@@ -27,6 +27,9 @@ export default {
         good:   "#0FA47A",
         warn:   "#E8930C",
         bad:    "#E5484D",
+        // Subtle fill for inputs/hover rows on white cards — replaces
+        // legacy `cream` in component contexts (page bg uses `paper`).
+        surface: "#F6F5FA",
         // Logo gradient stops
         gblue:   { from: "#3536DC", mid: "#356EF4", to: "#4C90F6" },
         gpurple: { from: "#3A148F", to: "#8231EC" },

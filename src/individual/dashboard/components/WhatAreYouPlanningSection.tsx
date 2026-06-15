@@ -117,7 +117,7 @@ export function WhatAreYouPlanningSection() {
       </p>
 
       {/* Textarea */}
-      <div className="rounded-xl border border-ink/[0.10] px-4 py-3 mb-2 bg-cream focus-within:border-ficium/50 focus-within:ring-2 focus-within:ring-ficium/10 transition-all">
+      <div className="rounded-xl border border-ink/[0.10] px-4 py-3 mb-2 bg-surface focus-within:border-ficium/50 focus-within:ring-2 focus-within:ring-ficium/10 transition-all">
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
@@ -144,7 +144,7 @@ export function WhatAreYouPlanningSection() {
             {ATTACH_OPTIONS.map(({ icon, label, accept, capture }) => (
               <label
                 key={label}
-                className="flex items-center gap-3 px-4 py-2.5 hover:bg-cream cursor-pointer transition-colors"
+                className="flex items-center gap-3 px-4 py-2.5 hover:bg-surface cursor-pointer transition-colors"
                 onClick={() => setShowMenu(false)}
               >
                 <span className="w-7 h-7 rounded-lg bg-ink/[0.04] grid place-items-center flex-shrink-0">{icon}</span>
