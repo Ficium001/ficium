@@ -1,10 +1,7 @@
-import { supabase, institutionDb, db } from "@/shared/lib/supabase";
+import { supabase } from "@/shared/lib/supabase";
 import { audit } from "@/shared/lib/audit";
 import { formatProductType } from "@/shared/lib/format";
 export { formatProductType } from "@/shared/lib/format";
-
-/* ---------- Institution schema client (read-only for bids) ---------- */
-const instSupabase = institutionDb;
 
 /* ---------- Types ---------- */
 
@@ -101,11 +98,29 @@ export async function getMyRequests(): Promise<RequestSummary[]> {
   if (error || !requests?.length) return [];
 
   const ids = requests.map((r) => r.id);
-  const { data: bids } = await db("institution")
-    .from("institution_bids")
-    .select("request_id, rate")
-    .in("request_id", ids)
-    .eq("status", "submitted"); // only active bids
+
+  // Bids now come from the Portal via the App backend (RLS blocks direct reads).
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token ?? "";
+  const bidResults = await Promise.all(
+    ids.map(async (rid) => {
+      try {
+        const r = await fetch(`/api/request-bids?requestId=${encodeURIComponent(rid)}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!r.ok) return [];
+        const json = await r.json();
+        const bids = json?.ok ? json.data : null;
+        return (bids ?? []).map((b: { request_id: string; rate: number }) => ({
+          request_id: b.request_id,
+          rate: b.rate,
+        }));
+      } catch {
+        return [];
+      }
+    })
+  );
+  const bids = bidResults.flat();
 
   // O(n) aggregation in memory
   const bidMap = new Map<string, { count: number; bestRate: number | null }>();
@@ -213,20 +228,29 @@ export async function getRequest(id: string): Promise<RequestDetail | null> {
 ---------------------------------------------- */
 
 export async function getRequestBids(requestId: string): Promise<Bid[]> {
-  const { data, error } = await instSupabase
-    .from("institution_bids")
-    .select("id, request_id, institution_id, rate, rate_type, amount_offered, term_months, conditions, status, submitted_at, institutions(name)")
-    .eq("request_id", requestId)
-    .eq("status", "submitted")
-    .order("rate", { ascending: true });
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token ?? "";
 
-  if (error || !data) return [];
+  let data: Array<Record<string, unknown>> | null = null;
+  try {
+    const r = await fetch(`/api/request-bids?requestId=${encodeURIComponent(requestId)}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (r.ok) {
+      const json = await r.json();
+      data = json?.ok ? json.data : null;
+    }
+  } catch {
+    data = null;
+  }
+
+  if (!data) return [];
 
   return data.map((b: Record<string, unknown>) => ({
     id:              b.id as string,
     requestId:       b.request_id as string,
     bankId:          b.institution_id as string,
-    institutionName: (b.institutions as { name: string } | null)?.name ?? "Institution",
+    institutionName: (b.institution_name as string) ?? "Institution",
     rate:            b.rate as number,
     rateType:        (b.rate_type as "fixed" | "variable") ?? "fixed",
     amountOffered:   b.amount_offered as number,
@@ -242,16 +266,11 @@ export async function getRequestBids(requestId: string): Promise<Bid[]> {
 
 /* ---------- Accept a bid ---------- */
 
-export async function acceptBid(bidId: string, requestId: string): Promise<AcceptBidResult> {
-  // Resolve the institution bid being accepted
-  const { data: instBid } = await instSupabase
-    .from("institution_bids")
-    .select("id, institution_id")
-    .eq("id", bidId)
-    .single();
-
-  if (!instBid) return { ok: false, error: "Bid not found." };
-
+export async function acceptBid(
+  bidId: string,
+  requestId: string,
+  bid: { source: "institution" | "legacy"; institutionId?: string | null },
+): Promise<AcceptBidResult> {
   const { data: { user } } = await supabase.auth.getUser();
   const { error } = await supabase
     .from("bid_acceptances")
@@ -259,7 +278,7 @@ export async function acceptBid(bidId: string, requestId: string): Promise<Accep
       bid_id:         bidId,
       request_id:     requestId,
       client_id:      user?.id,
-      institution_id: instBid.institution_id,
+      institution_id: bid.institutionId ?? null,
     });
   if (error) return { ok: false, error: error.message };
 

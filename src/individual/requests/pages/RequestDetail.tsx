@@ -266,12 +266,12 @@ function DetailsTab({ request, profile }: { request: RequestDetailType; profile:
 }
 
 /* ── Bids tab ── */
-function BidsTab({ bids, isClosed, accepting, acceptingBidId, onAccept }: {
+function BidsTab({ bids, isClosed, accepting, acceptingBid, onAccept }: {
   bids: Bid[];
   isClosed: boolean;
   accepting: boolean;
-  acceptingBidId: string | undefined;
-  onAccept: (bidId: string) => void;
+  acceptingBid: Bid | undefined;
+  onAccept: (bid: Bid) => void;
 }) {
   const acceptedBid = bids.find(b => b.status === "accepted");
   return (
@@ -300,8 +300,8 @@ function BidsTab({ bids, isClosed, accepting, acceptingBidId, onAccept }: {
           {bids.map((bid, i) => (
             <BidCard key={bid.id} bid={bid} rank={i + 1}
               isBest={i === 0 && !isClosed} canAccept={!isClosed}
-              isAccepting={accepting && acceptingBidId === bid.id}
-              onAccept={() => onAccept(bid.id)}
+              isAccepting={accepting && acceptingBid?.id === bid.id}
+              onAccept={() => onAccept(bid)}
             />
           ))}
         </div>
@@ -325,7 +325,7 @@ export default function RequestDetail() {
   const { data: request, isLoading: reqLoading }    = useRequest(id!);
   const { data: bids = [], isLoading: bidsLoading } = useRequestBids(id!);
   const { data: profile }                            = useProfile();
-  const { mutate: accept, isPending: accepting, variables: acceptingBidId } = useAcceptBid(id!);
+  const { mutate: accept, isPending: accepting, variables: acceptingBid } = useAcceptBid(id!);
 
   const loading  = reqLoading || bidsLoading;
   const isClosed = request?.status !== "open";
@@ -416,8 +416,8 @@ export default function RequestDetail() {
             bids={bids}
             isClosed={isClosed}
             accepting={accepting}
-            acceptingBidId={acceptingBidId}
-            onAccept={(bidId) => accept(bidId, { onSuccess: () => navigate("/requests") })}
+            acceptingBid={acceptingBid}
+            onAccept={(bid) => accept(bid, { onSuccess: () => navigate("/requests") })}
           />
         )}
         {tab === "chat"      && (
