@@ -8,13 +8,7 @@ import { TrendingUp } from "lucide-react";
 
 export function FiciumCTA() {
   return (
-    <div
-      className="rounded-2xl overflow-hidden"
-      style={{
-        background:
-          "linear-gradient(135deg, #1a1040 0%, #0f0c29 60%, #302b63 100%)",
-      }}
-    >
+    <div className="rounded-2xl overflow-hidden bg-hero">
       <div className="p-5">
         <div className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-2">
           Ficium Tip

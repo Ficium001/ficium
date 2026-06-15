@@ -57,7 +57,7 @@ export function PublicOnlyRoute({ children }: { children: ReactNode }) {
 
 function LoadingScreen() {
   return (
-    <div className="min-h-screen bg-cream flex items-center justify-center">
+    <div className="min-h-screen bg-paper flex items-center justify-center">
       <div className="flex flex-col items-center gap-3">
         <div className="w-8 h-8 rounded-full border-[3px] border-ink/15 border-t-ficium animate-spin" />
         <p className="text-sm text-muted">Loading…</p>

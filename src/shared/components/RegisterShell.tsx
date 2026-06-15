@@ -14,7 +14,7 @@ export function RegisterShell({ back, children }: Props) {
       {/* ── LEFT PANEL — branding (desktop only) ── */}
       <div className="hidden lg:flex lg:w-[45%] xl:w-[40%] flex-col relative overflow-hidden">
         {/* Gradient bg */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e]" />
+        <div className="absolute inset-0 bg-hero-deep" />
         <div className="absolute inset-0"
           style={{
             background: "radial-gradient(ellipse at 30% 40%, rgba(79,70,229,0.5) 0%, transparent 60%), radial-gradient(ellipse at 80% 80%, rgba(139,92,246,0.3) 0%, transparent 50%)",
@@ -71,7 +71,7 @@ export function RegisterShell({ back, children }: Props) {
       {/* ── RIGHT PANEL — form ── */}
       <div className="flex-1 flex flex-col min-h-screen relative">
         {/* Mobile background */}
-        <div className="absolute inset-0 lg:hidden bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e]" />
+        <div className="absolute inset-0 lg:hidden bg-hero-deep" />
         <div className="absolute inset-0 lg:hidden"
           style={{
             background: "radial-gradient(ellipse at 20% 50%, rgba(79,70,229,0.4) 0%, transparent 60%)",

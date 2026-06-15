@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { useSnapshot, useUpsertSnapshot, type SnapshotInput } from "@/individual/networth/hooks/useSnapshot";
 import { useProfile } from "@/individual/dashboard/hooks/useDashboard";
-import { BottomNav } from "@/shared/ui";
+import { PageShell } from "@/shared/ui";
 
 const fmt = (n: number) => `Rs ${n.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
 
@@ -94,15 +94,14 @@ export default function NetWorthPage() {
   const netWorth = (data?.totalAssets ?? 0) - (data?.totalLiabilities ?? 0);
 
   if (isLoading) return (
-    <div className="min-h-screen bg-cream flex items-center justify-center">
+    <div className="min-h-screen bg-paper flex items-center justify-center">
       <Loader2 size={32} className="text-ficium animate-spin" />
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-cream pb-28">
-      <div className="bg-gradient-to-br from-[#0f0c29] via-[#1a1040] to-[#302b63]">
-        <div className="max-w-[900px] mx-auto px-4 sm:px-6 pt-8 pb-10">
+    <PageShell max="900px">
+      <section className="relative overflow-hidden rounded-hero bg-hero text-white px-5 sm:px-9 py-8 mt-1">
           <button onClick={() => navigate(-1)} className="flex items-center gap-1.5 text-[13px] text-white/60 hover:text-white mb-6">
             <ArrowLeft size={15} /> Back
           </button>
@@ -130,10 +129,9 @@ export default function NetWorthPage() {
               <Chip label="DTI ratio" value={`${data.debtToIncomeRatio}%`} warn={data.debtToIncomeRatio > 40} />
             )}
           </div>
-        </div>
-      </div>
+      </section>
 
-      <div className="max-w-[900px] mx-auto px-4 sm:px-6 py-6 space-y-5">
+      <div className="py-6 space-y-5">
 
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-[13px] text-red-600">{error}</div>
@@ -199,9 +197,7 @@ export default function NetWorthPage() {
           <Building2 size={16} /> Start a goal journey
         </button>
       </div>
-
-      <BottomNav />
-    </div>
+    </PageShell>
   );
 }
 
@@ -235,8 +231,7 @@ function Row({ label, icon, value, editing, onChange }: {
       <div className="w-6 grid place-items-center flex-shrink-0">{icon}</div>
       <div className="flex-1 text-[13px] font-medium text-ink">{label}</div>
       {editing ? (
-        <div className="flex items-center gap-1 border border-ink/[0.12] rounded-lg px-2.5 py-1.5 bg-cream">
-          <span className="text-[12px] text-muted">Rs</span>
+        <div className="flex items-center gap-1 border border-ink/[0.12] rounded-lg px-2.5 py-1.5 bg-surface">          <span className="text-[12px] text-muted">Rs</span>
           <input
             type="number"
             defaultValue={value}

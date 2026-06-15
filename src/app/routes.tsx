@@ -37,7 +37,7 @@ const FiciumAdminPanel        = lazy(() => import("../admin/pages/FiciumAdminPan
 
 function PageLoader() {
   return (
-    <div className="min-h-screen bg-cream flex items-center justify-center">
+    <div className="min-h-screen bg-paper flex items-center justify-center">
       <div className="w-8 h-8 rounded-full border-2 border-ficium border-t-transparent animate-spin" />
     </div>
   );
@@ -58,7 +58,7 @@ class ChunkErrorBoundary extends Component<{ children: ReactNode }, { errored: b
   render() {
     if (this.state.errored) {
       return (
-        <div className="min-h-screen bg-cream flex flex-col items-center justify-center gap-4 px-6 text-center">
+        <div className="min-h-screen bg-paper flex flex-col items-center justify-center gap-4 px-6 text-center">
           <p className="text-ink font-semibold">Something went wrong loading this page.</p>
           <button
             onClick={() => { sessionStorage.removeItem("chunk_reload"); window.location.reload(); }}

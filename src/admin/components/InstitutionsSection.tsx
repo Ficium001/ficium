@@ -40,7 +40,7 @@ function InstitutionModal({ inst, onClose }: { inst: AdminInstitution; onClose: 
               ["Total bids",  inst.total_bids ?? 0],
               ["Webhooks",    inst.active_webhooks ?? 0],
             ] as [string, unknown][]).map(([k, v]) => (
-              <div key={k} className="bg-cream rounded-xl p-3">
+              <div key={k} className="bg-surface rounded-xl p-3">
                 <div className="text-[10px] text-muted uppercase tracking-wider mb-1">{k}</div>
                 <div className="text-[13px] font-semibold text-ink">{String(v)}</div>
               </div>
@@ -165,7 +165,7 @@ export function InstitutionsSection() {
             <tbody>
               {filtered.map((inst) => (
                 <tr key={inst.id} onClick={() => setSelected(inst)}
-                  className="border-b border-ink/[0.04] hover:bg-cream/60 transition-colors cursor-pointer">
+                  className="border-b border-ink/[0.04] hover:bg-surface/60 transition-colors cursor-pointer">
                   <td className="px-5 py-4">
                     <div className="font-semibold text-[13px] text-ink">{inst.name}</div>
                     <div className="text-[11px] text-muted mt-0.5">{inst.primary_contact_email}</div>

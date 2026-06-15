@@ -7,7 +7,8 @@ import {
 import { useNotifications, useMarkAllRead, useMarkOneRead } from "../hooks/useAlerts";
 import { timeAgo } from "../api/notifications";
 import type { AppNotification, NotificationKind } from "../api/notifications";
-import { BottomNav } from "../../../shared/ui";
+import { PageShell } from "../../../shared/ui";
+import { Hero } from "../../../shared/ui/dashboard";
 
 /* ============================================================
    KIND CONFIG
@@ -55,86 +56,69 @@ export default function Alerts() {
   };
 
   return (
-    <div className="min-h-screen pb-28">
+    <PageShell max="720px">
 
-      {/* ── GRADIENT BG ── */}
-      <div className="absolute top-0 left-0 right-0 h-[260px] overflow-hidden pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0f0c29] via-[#1a1040] to-[#302b63]" />
-        <div className="absolute inset-0" style={{
-          background: "radial-gradient(ellipse at 20% 50%, rgba(79,70,229,0.45) 0%, transparent 60%)"
-        }} />
-        <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[#f8f7f4] to-transparent" />
-      </div>
-
-      <div className="relative z-10 mx-auto w-full max-w-[720px] px-4 sm:px-6 lg:px-8">
-
-        {/* ── HEADER ── */}
-        <div className="pt-10 pb-5 flex items-end justify-between gap-4">
-          <div>
-            <div className="text-[12px] font-bold text-white/50 uppercase tracking-widest mb-2">
-              Notifications
-            </div>
-            <div className="flex items-center gap-3">
-              <h1 className="font-display text-5xl sm:text-6xl font-extrabold text-white leading-none tracking-tight">
-                Alerts
-              </h1>
-              {unreadCount > 0 && (
-                <span className="inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-full bg-ficium text-white text-[13px] font-extrabold shadow-ficium">
-                  {unreadCount}
-                </span>
-              )}
-            </div>
-            <p className="text-white/50 text-[14px] mt-2 font-medium">
-              {unreadCount > 0
-                ? `${unreadCount} unread · ${actionCount} need action`
-                : "You're all caught up"}
-            </p>
-          </div>
-
-          {unreadCount > 0 && (
+      {/* ── HEADER ── */}
+      <Hero
+        eyebrow="Notifications"
+        headline={
+          <span className="inline-flex items-center gap-3">
+            Alerts
+            {unreadCount > 0 && (
+              <span className="inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-full bg-ficium text-white text-[13px] font-extrabold shadow-ficium">
+                {unreadCount}
+              </span>
+            )}
+          </span>
+        }
+        subline={
+          unreadCount > 0
+            ? `${unreadCount} unread · ${actionCount} need action`
+            : "You're all caught up"
+        }
+        actions={
+          unreadCount > 0 ? (
             <button
               onClick={() => markAll()}
               disabled={markingAll}
-              className="flex-shrink-0 flex items-center gap-1.5 bg-white/10 backdrop-blur-sm border border-white/15 text-white/80 text-[12px] font-semibold px-3.5 py-2 rounded-xl hover:bg-white/15 transition-colors disabled:opacity-40"
+              className="flex items-center gap-1.5 bg-white/[0.08] border border-white/[0.16] text-white/85 text-[12px] font-semibold px-3.5 py-2 rounded-xl hover:bg-white/[0.14] transition-colors disabled:opacity-40"
             >
               <CheckCheck size={13} />
               Mark all read
             </button>
-          )}
-        </div>
+          ) : undefined
+        }
+      />
 
-        {/* ── TABS ── */}
-        <div className="flex gap-2 mb-6">
-          <TabButton
-            active={activeTab === "all"}
-            onClick={() => setActiveTab("all")}
-            label="All"
-            count={items.length}
-          />
-          <TabButton
-            active={activeTab === "action"}
-            onClick={() => setActiveTab("action")}
-            label="Action required"
-            count={actionCount}
-            highlight
-          />
-        </div>
-
-        {/* ── CONTENT ── */}
-        {isLoading ? (
-          <SkeletonList />
-        ) : filtered.length === 0 ? (
-          <EmptyState tab={activeTab} />
-        ) : (
-          <div className="flex flex-col gap-6">
-            <NotificationGroup title="Today"   items={todayItems}   onMark={handleClick} />
-            <NotificationGroup title="Earlier" items={earlierItems} onMark={handleClick} />
-          </div>
-        )}
+      {/* ── TABS ── */}
+      <div className="flex gap-2 mt-6 mb-6">
+        <TabButton
+          active={activeTab === "all"}
+          onClick={() => setActiveTab("all")}
+          label="All"
+          count={items.length}
+        />
+        <TabButton
+          active={activeTab === "action"}
+          onClick={() => setActiveTab("action")}
+          label="Action required"
+          count={actionCount}
+          highlight
+        />
       </div>
 
-      <BottomNav />
-    </div>
+      {/* ── CONTENT ── */}
+      {isLoading ? (
+        <SkeletonList />
+      ) : filtered.length === 0 ? (
+        <EmptyState tab={activeTab} />
+      ) : (
+        <div className="flex flex-col gap-6">
+          <NotificationGroup title="Today"   items={todayItems}   onMark={handleClick} />
+          <NotificationGroup title="Earlier" items={earlierItems} onMark={handleClick} />
+        </div>
+      )}
+    </PageShell>
   );
 }
 

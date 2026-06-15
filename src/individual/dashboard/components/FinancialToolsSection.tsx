@@ -29,7 +29,7 @@ export function FTSlider({ label, value, min, max, step, display, onChange, type
           <input
             type="number" value={value} min={min} max={max} step={step}
             onChange={(e) => { const v = Number(e.target.value); if (!isNaN(v) && v >= min && v <= max) onChange(v); }}
-            className="w-36 text-right text-[13px] font-bold text-ink bg-cream border border-ink/[0.10] rounded-xl px-3 py-1.5 outline-none focus:border-ficium focus:ring-2 focus:ring-ficium/15 transition-colors"
+            className="w-36 text-right text-[13px] font-bold text-ink bg-surface border border-ink/[0.10] rounded-xl px-3 py-1.5 outline-none focus:border-ficium focus:ring-2 focus:ring-ficium/15 transition-colors"
           />
         ) : (
           <span className="text-[14px] font-bold text-ink">{display}</span>
@@ -123,8 +123,7 @@ export function FinancialToolsSection() {
           </div>
 
           {/* Result panel */}
-          <div className="rounded-2xl p-5 sm:p-6 text-white flex flex-col justify-between"
-               style={{ background: "linear-gradient(145deg, #1a1040 0%, #0f0c29 45%, #302b63 100%)" }}>
+          <div className="rounded-2xl p-5 sm:p-6 text-white flex flex-col justify-between bg-hero">
             <div>
               <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-white/40 mb-2">
                 {isCredit ? "Monthly Payment" : "Projected Value"}

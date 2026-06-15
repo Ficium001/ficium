@@ -27,6 +27,9 @@ export default {
         good:   "#0FA47A",
         warn:   "#E8930C",
         bad:    "#E5484D",
+        // Subtle fill for inputs/hover rows on white cards — replaces
+        // legacy `cream` in component contexts (page bg uses `paper`).
+        surface: "#F6F5FA",
         // Logo gradient stops
         gblue:   { from: "#3536DC", mid: "#356EF4", to: "#4C90F6" },
         gpurple: { from: "#3A148F", to: "#8231EC" },
@@ -59,6 +62,7 @@ export default {
       // hand-write gradient strings in components.
       backgroundImage: {
         "hero":       "radial-gradient(120% 160% at 8% 0%, #181842 0%, #0B0B1E 55%)",
+        "hero-deep":  "linear-gradient(135deg, #0f0c29 0%, #302b63 60%, #24243e 100%)",
         "callout":    "radial-gradient(130% 150% at 100% 0%, #1A1448 0%, #0B0B1E 60%)",
         "mark":       "radial-gradient(135% 135% at 30% 22%, #23234F 0%, #0B0B1E 70%)",
         "brand":      "linear-gradient(135deg,#356EF4,#8231EC)",

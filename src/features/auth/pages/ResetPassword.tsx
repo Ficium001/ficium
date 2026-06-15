@@ -60,7 +60,7 @@ export default function ResetPassword() {
   // ---- Link invalid / expired ----
   if (linkValid === "invalid") {
     return (
-      <div className="min-h-screen bg-cream px-5 py-8 sm:px-6 sm:py-10 flex items-center justify-center">
+      <div className="min-h-screen bg-paper px-5 py-8 sm:px-6 sm:py-10 flex items-center justify-center">
         <div className="mx-auto w-full max-w-[440px] text-center">
           <h1 className="font-display text-3xl sm:text-4xl font-bold mb-3">Link expired</h1>
           <p className="text-sm sm:text-base text-muted leading-relaxed mb-8">
@@ -80,7 +80,7 @@ export default function ResetPassword() {
   // ---- Success ----
   if (success) {
     return (
-      <div className="min-h-screen bg-cream px-5 py-8 sm:px-6 sm:py-10 flex items-center justify-center">
+      <div className="min-h-screen bg-paper px-5 py-8 sm:px-6 sm:py-10 flex items-center justify-center">
         <div className="mx-auto w-full max-w-[440px] text-center">
           <div className="w-16 h-16 mx-auto rounded-2xl bg-mint/30 text-ink grid place-items-center mb-6">
             <CheckCircle2 size={28} />
@@ -97,7 +97,7 @@ export default function ResetPassword() {
   // ---- Loading state while AuthContext settles ----
   if (linkValid === "checking") {
     return (
-      <div className="min-h-screen bg-cream flex items-center justify-center">
+      <div className="min-h-screen bg-paper flex items-center justify-center">
         <div className="w-8 h-8 rounded-full border-[3px] border-ink/15 border-t-ficium animate-spin" />
       </div>
     );
@@ -105,7 +105,7 @@ export default function ResetPassword() {
 
   // ---- Form ----
   return (
-    <div className="min-h-screen bg-cream px-5 py-8 sm:px-6 sm:py-10">
+    <div className="min-h-screen bg-paper px-5 py-8 sm:px-6 sm:py-10">
       <div className="mx-auto w-full max-w-[440px]">
         <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold mt-4">
           Set a new password

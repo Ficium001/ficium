@@ -226,7 +226,7 @@ function QuestionScreen({
             </div>
             <input type="number" value={amountVal}
               onChange={e => onAnswer("__amount", String(Math.min(product.maxAmount, Math.max(product.minAmount, Number(e.target.value)))))}
-              className="w-full bg-cream border border-ink/10 rounded-xl px-4 py-3 text-[16px] font-bold text-ink outline-none focus:border-ficium transition-colors" />
+              className="w-full bg-surface border border-ink/10 rounded-xl px-4 py-3 text-[16px] font-bold text-ink outline-none focus:border-ficium transition-colors" />
           </div>
         )}
 
@@ -272,7 +272,7 @@ function QuestionScreen({
             onKeyDown={handleKeyDown}
             placeholder={question.placeholder}
             rows={3}
-            className="w-full bg-cream border border-ink/10 rounded-xl px-4 py-3 text-[15px] text-ink placeholder:text-muted/50 outline-none focus:border-ficium focus:ring-2 focus:ring-ficium/10 resize-none transition-all"
+            className="w-full bg-surface border border-ink/10 rounded-xl px-4 py-3 text-[15px] text-ink placeholder:text-muted/50 outline-none focus:border-ficium focus:ring-2 focus:ring-ficium/10 resize-none transition-all"
           />
         )}
 
@@ -285,7 +285,7 @@ function QuestionScreen({
             onChange={e => setLocalVal(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={question.placeholder}
-            className="w-full bg-cream border border-ink/10 rounded-xl px-5 py-4 text-[20px] font-bold text-ink placeholder:text-muted/40 placeholder:font-normal outline-none focus:border-ficium focus:ring-2 focus:ring-ficium/10 transition-all"
+            className="w-full bg-surface border border-ink/10 rounded-xl px-5 py-4 text-[20px] font-bold text-ink placeholder:text-muted/40 placeholder:font-normal outline-none focus:border-ficium focus:ring-2 focus:ring-ficium/10 transition-all"
           />
         )}
       </div>
@@ -389,13 +389,13 @@ export default function NewRequest() {
   };
 
   if (profileLoading) return (
-    <div className="min-h-screen bg-cream flex items-center justify-center">
+    <div className="min-h-screen bg-paper flex items-center justify-center">
       <Loader2 size={32} className="text-ficium animate-spin" />
     </div>
   );
 
   if (submitted) return (
-    <div className="min-h-screen bg-cream flex items-center justify-center px-5">
+    <div className="min-h-screen bg-paper flex items-center justify-center px-5">
       <div className="text-center">
         <div className="w-20 h-20 rounded-full bg-emerald-100 grid place-items-center mx-auto mb-6">
           <CheckCircle2 size={40} className="text-emerald-500" />
@@ -408,10 +408,10 @@ export default function NewRequest() {
   );
 
   return (
-    <div className="min-h-screen bg-cream flex flex-col">
+    <div className="min-h-screen bg-paper flex flex-col">
       <div className="absolute top-0 left-0 right-0 h-[160px] overflow-hidden pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0f0c29] via-[#1a1040] to-[#302b63]" />
-        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-cream to-transparent" />
+        <div className="absolute inset-0 bg-hero" />
+        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-paper to-transparent" />
       </div>
 
       <div className="relative z-10 max-w-[680px] mx-auto w-full px-5 pt-6">
