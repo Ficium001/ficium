@@ -7,7 +7,7 @@ import { ShieldCheck, Clock, Mail } from "lucide-react";
 
 export default function KycPending() {
   return (
-    <div className="min-h-screen bg-cream flex items-center justify-center px-5 py-12">
+    <div className="min-h-screen bg-paper flex items-center justify-center px-5 py-12">
       <div className="w-full max-w-[440px] text-center">
 
         {/* Icon */}
@@ -33,7 +33,7 @@ export default function KycPending() {
           ].map((step) => (
             <div key={step.title} className="flex gap-3.5 items-start">
               <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                step.done ? "bg-mint text-ink" : "bg-ink/[0.06] text-muted"
+                step.done ? "bg-good/15 text-good" : "bg-ink/[0.06] text-muted"
               }`}>
                 {step.icon}
               </div>

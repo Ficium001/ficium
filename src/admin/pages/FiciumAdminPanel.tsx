@@ -25,7 +25,7 @@ export default function FiciumAdminPanel() {
   const { data: pending = [] } = useAdminPendingApprovals();
 
   return (
-    <div className="flex h-screen bg-cream font-body overflow-hidden">
+    <div className="flex h-screen bg-paper font-body overflow-hidden">
 
       {/* Sidebar */}
       <aside className="w-56 bg-white border-r border-ink/[0.07] flex flex-col flex-shrink-0">

@@ -16,7 +16,7 @@ export default function HowItWorks() {
       ══════════════════════════════════════ */}
       <section className="relative overflow-hidden">
         {/* Dark gradient bg */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0f0c29] via-[#1a1040] to-[#302b63]" />
+        <div className="absolute inset-0 bg-hero" />
         <div className="absolute inset-0" style={{
           background: "radial-gradient(ellipse at 20% 50%, rgba(79,70,229,0.5) 0%, transparent 55%), radial-gradient(ellipse at 85% 30%, rgba(201,168,76,0.2) 0%, transparent 50%)"
         }} />
@@ -104,7 +104,7 @@ export default function HowItWorks() {
       {/* ══════════════════════════════════════
           VISUAL DIVIDER — "The old way vs Ficium"
       ══════════════════════════════════════ */}
-      <section className="bg-gradient-to-br from-[#0f0c29] via-[#1a1040] to-[#302b63] py-20 px-5 sm:px-8 mb-24 overflow-hidden relative">
+      <section className="bg-hero py-20 px-5 sm:px-8 mb-24 overflow-hidden relative">
         <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at 70% 50%, rgba(79,70,229,0.3) 0%, transparent 60%)" }} />
         <div className="relative z-10 mx-auto max-w-[1100px]">
           <div className="text-center mb-12">
@@ -220,7 +220,7 @@ export default function HowItWorks() {
           CTA
       ══════════════════════════════════════ */}
       <section className="relative overflow-hidden mb-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0f0c29] via-[#1a1040] to-[#302b63]" />
+        <div className="absolute inset-0 bg-hero" />
         <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at 50% 60%, rgba(79,70,229,0.4) 0%, transparent 60%)" }} />
         <div className="relative z-10 mx-auto max-w-[700px] px-5 sm:px-8 py-24 text-center">
           <h2 className="font-display text-5xl sm:text-6xl font-bold text-white leading-tight mb-5">

@@ -130,7 +130,7 @@ export default function Kyc() {
         </div>
       </div>
     )}
-    <div className="min-h-screen bg-cream px-5 py-8 sm:px-6 sm:py-10">
+    <div className="min-h-screen bg-paper px-5 py-8 sm:px-6 sm:py-10">
       <div className="mx-auto w-full max-w-[520px]">
         <Link to="/dashboard" className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-ink transition-colors mb-6 sm:mb-8">
           <ArrowLeft size={16} /> Back
@@ -319,10 +319,10 @@ function UploadZone({
   return (
     <label htmlFor={inputId} className={[
       "block cursor-pointer rounded-xl border-[1.5px] border-dashed transition-colors px-4 py-5",
-      file ? "bg-mint/[0.15] border-mint" : "bg-cream border-ink/15 hover:border-ficium/50 hover:bg-ficium/[0.03]",
+      file ? "bg-good/[0.10] border-good" : "bg-paper border-ink/15 hover:border-ficium/50 hover:bg-ficium/[0.03]",
     ].join(" ")}>
       <div className="flex items-start gap-3">
-        <div className={["w-10 h-10 rounded-xl grid place-items-center flex-shrink-0", file ? "bg-mint text-ink" : "bg-ficium/10 text-ficium"].join(" ")}>
+        <div className={["w-10 h-10 rounded-xl grid place-items-center flex-shrink-0", file ? "bg-good/15 text-good" : "bg-ficium/10 text-ficium"].join(" ")}>
           {icon}
         </div>
         <div className="min-w-0 flex-1">
