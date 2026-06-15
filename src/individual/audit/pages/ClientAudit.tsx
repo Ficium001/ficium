@@ -108,7 +108,7 @@ export default function ClientAudit() {
         </div>
         <button
           onClick={exportCSV}
-          className="flex items-center gap-2 border border-ink/10 text-muted text-[13px] font-semibold px-4 py-2 rounded-xl hover:bg-cream transition-colors"
+          className="flex items-center gap-2 border border-ink/10 text-muted text-[13px] font-semibold px-4 py-2 rounded-xl hover:bg-ink/[0.03] transition-colors"
         >
           ↓ Export CSV
         </button>
@@ -152,7 +152,7 @@ export default function ClientAudit() {
             </thead>
             <tbody>
               {events.map(e => (
-                <tr key={e.id} className="border-b border-ink/[0.04] hover:bg-cream/60 transition-colors">
+                <tr key={e.id} className="border-b border-ink/[0.04] hover:bg-ink/[0.02] transition-colors">
                   <td className="px-5 py-4 whitespace-nowrap">
                     <div className="text-[13px] font-semibold text-ink">{fmt.date(e.created_at)}</div>
                     <div className="text-[11px] text-muted font-mono">{fmt.time(e.created_at)}</div>
@@ -173,7 +173,7 @@ export default function ClientAudit() {
           <div className="px-6 py-4 border-t border-ink/[0.07] flex justify-center">
             <button
               onClick={() => setLimit(l => l + 50)}
-              className="border border-ink/10 text-muted text-[13px] font-semibold px-5 py-2 rounded-xl hover:bg-cream transition-colors"
+              className="border border-ink/10 text-muted text-[13px] font-semibold px-5 py-2 rounded-xl hover:bg-ink/[0.03] transition-colors"
             >
               Load more (showing {limit})
             </button>
