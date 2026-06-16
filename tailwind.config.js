@@ -10,6 +10,7 @@ export default {
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
+    "./node_modules/@ficium/shared/src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
     extend: {
@@ -27,10 +28,7 @@ export default {
         good:   "#0FA47A",
         warn:   "#E8930C",
         bad:    "#E5484D",
-        // Subtle fill for inputs/hover rows on white cards — replaces
-        // legacy `cream` in component contexts (page bg uses `paper`).
         surface: "#F6F5FA",
-        // Logo gradient stops
         gblue:   { from: "#3536DC", mid: "#356EF4", to: "#4C90F6" },
         gpurple: { from: "#3A148F", to: "#8231EC" },
         // Legacy (retained for unmigrated screens)
@@ -56,10 +54,6 @@ export default {
       },
       letterSpacing: { display: "-0.035em" },
       transitionTimingFunction: { swift: "cubic-bezier(.22,1,.36,1)" },
-      // ── Signature gradients (single source of truth for the skin) ──
-      // Re-skin the whole app by editing these. Reference as bg-hero,
-      // bg-brand, bg-accent (with bg-clip-text), bg-edge, etc. — never
-      // hand-write gradient strings in components.
       backgroundImage: {
         "hero":       "radial-gradient(120% 160% at 8% 0%, #181842 0%, #0B0B1E 55%)",
         "hero-deep":  "linear-gradient(135deg, #0f0c29 0%, #302b63 60%, #24243e 100%)",
