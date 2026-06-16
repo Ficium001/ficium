@@ -10,19 +10,19 @@
  *   ?action=verify        → full KYC verification pipeline   (POST)   [was /api/kyc-verify]
  *   ?action=settings      → read/write KYC settings          (GET|POST) [was /api/kyc-settings]
  *   ?action=notify        → send applicant notification      (POST)   [was /api/kyc-notify]
- *   ?action=admin-faces   → list/delete a client's faces     (GET|DELETE) [was /api/kyc-admin-faces]
+ *   ?action=admin-faces   → list/delete a clients faces     (GET|DELETE) [was /api/kyc-admin-faces]
  *   ?action=faces         → face collection (create/search/index) (POST) [was /api/kyc-faces]
  *   ?action=liveness      → liveness session/result          (POST)   [was /api/kyc-liveness]
  *   ?action=setup         → one-time collection setup         (POST)   [was /api/kyc-setup]
  */
 
-import { verifyHandler }     from "./_kyc/verify";
-import { settingsHandler }   from "./_kyc/settings";
-import { notifyHandler }     from "./_kyc/notify";
-import { adminFacesHandler } from "./_kyc/adminFaces";
-import { facesHandler }      from "./_kyc/faces";
-import { livenessHandler }   from "./_kyc/liveness";
-import { setupHandler }      from "./_kyc/setup";
+import { verifyHandler }     from "./_kyc/verify.js";
+import { settingsHandler }   from "./_kyc/settings.js";
+import { notifyHandler }     from "./_kyc/notify.js";
+import { adminFacesHandler } from "./_kyc/adminFaces.js";
+import { facesHandler }      from "./_kyc/faces.js";
+import { livenessHandler }   from "./_kyc/liveness.js";
+import { setupHandler }      from "./_kyc/setup.js";
 import {
   requireUser, requireAdmin, requireService, sendAuthError,
 } from "./_lib/auth.js";
