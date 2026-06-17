@@ -27,5 +27,3 @@ export function PageShell({
     </SharedPageShell>
   );
 }
-
-export default PageShell;
