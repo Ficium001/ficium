@@ -29,6 +29,13 @@ jobs:
           node-version: 20
           cache: npm
 
+      - name: Authenticate private @ficium/shared (SSH -> HTTPS with token)
+        run: |
+          git config --global url."https://${FICIUM_SHARED_TOKEN}@github.com/".insteadOf "ssh://git@github.com/"
+          git config --global url."https://${FICIUM_SHARED_TOKEN}@github.com/".insteadOf "git@github.com:"
+        env:
+          FICIUM_SHARED_TOKEN: ${{ secrets.FICIUM_SHARED_TOKEN }}
+
       - name: Install dependencies
         run: npm ci
 
@@ -40,6 +47,9 @@ jobs:
 
       - name: Lint (gated — 0 errors; advisory rules surface as warnings)
         run: npm run lint
+
+      - name: Dead-code guard (no orphaned files or unused deps)
+        run: npx knip --include files,dependencies
 
       - name: Skin guard (design system stays centralised)
         run: |
