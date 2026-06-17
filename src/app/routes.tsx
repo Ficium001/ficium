@@ -11,6 +11,7 @@ import CheckEmail from "../features/auth/pages/CheckEmail";
 const RegisterTypeSelect  = lazy(() => import("../features/auth/pages/RegisterTypeSelect"));
 const RegisterIndividual  = lazy(() => import("../individual/auth/pages/RegisterIndividual"));
 const RegisterBusiness    = lazy(() => import("../business/auth/pages/RegisterBusiness"));
+const RegisterInstitution = lazy(() => import("../features/auth/pages/RegisterInstitution"));
 const ForgotPassword      = lazy(() => import("../features/auth/pages/ForgotPassword"));
 const ResetPassword       = lazy(() => import("../features/auth/pages/ResetPassword"));
 const HowItWorks          = lazy(() => import("../features/marketing/pages/HowItWorks"));
@@ -33,7 +34,10 @@ const ClientAudit         = lazy(() => import("../individual/audit/pages/ClientA
 const NetWorthPage        = lazy(() => import("../individual/networth/pages/NetWorth"));
 const FinancialHealthPage = lazy(() => import("../individual/health/pages/FinancialHealth"));
 
-const FiciumAdminPanel        = lazy(() => import("../admin/pages/FiciumAdminPanel"));
+// ── Institution app ───────────────────────────────────────────
+// Institution & admin experiences now live in the Ficium Portal (canonical).
+// The App only retains institution *registration* (see /register/institution),
+// after which users are handed off to the Portal to log in.
 
 function PageLoader() {
   return (
@@ -119,8 +123,11 @@ export const router = createBrowserRouter([
   { path: "/journeys",               element: <Navigate to="/requests" replace /> },
   { path: "/journeys/*",             element: <Navigate to="/requests" replace /> },
 
-  // ── Admin panel ─────────────────────────────────────────────
-  { path: "/admin", element: <S><FiciumAdminPanel /></S> },
+  // ── Institution & admin ─────────────────────────────────────
+  // The logged-in institution portal and admin panel now live in the
+  // Ficium Portal (canonical). The App only handles institution sign-up,
+  // then redirects bank/admin roles out to the Portal (see ProtectedRoute).
+  { path: "/institution/register",     element: <S><RegisterInstitution /></S> },
 
   // ── Fallback ────────────────────────────────────────────────
   { path: "*", element: <S><NotFound /></S> },
