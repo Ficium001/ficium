@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { useMyRequests, useBankReadiness } from "../../dashboard/hooks/useDashboard";
 import { ActiveRequestCard } from "@/individual/requests/components/ActiveRequestCard";
-import { BottomNav } from "@/shared/ui";
+import { BottomNav, CardScroller } from "@/shared/ui";
 import {
   Hero, HeroButton, GradText, type HeroStat,
   Reveal, SectionHead, Panel, PanelHead, Feed, FeedItem, DarkCallout,
@@ -91,7 +91,7 @@ export default function Requests() {
                 <HeroButton onClick={() => navigate("/requests/new")}>Post a need</HeroButton>
               </Panel>
             ) : (
-              <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-10 lg:px-10">
+              <CardScroller className="gap-4 pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
 
                 {/* DB request cards */}
                 {requests.map(r => (
@@ -113,7 +113,7 @@ export default function Requests() {
                     <span className="text-[12px] font-bold text-ink text-center px-4">Post New Request</span>
                   </button>
                 </div>
-              </div>
+              </CardScroller>
             )}
           </Reveal>
 
