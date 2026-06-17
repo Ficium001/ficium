@@ -38,6 +38,9 @@ npm run build                 # type-check + production bundle
 | [docs/API.md](docs/API.md) | All API endpoints — request/response shapes |
 | [docs/SCALING.md](docs/SCALING.md) | Growth path — when to add what infrastructure |
 | [docs/SCHEMA_REFERENCE.sql](docs/SCHEMA_REFERENCE.sql) | Executable schema reference and inspection queries |
+| [docs/API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md) | Full API reference (detailed; supersedes API.md where they overlap) |
+| [docs/USER_MANUAL.md](docs/USER_MANUAL.md) | Comprehensive user manual (clients, banks, admins) |
+| [docs/ROADMAP_SECURITY_AND_MIGRATION.md](docs/ROADMAP_SECURITY_AND_MIGRATION.md) | Strategic roadmap, security hardening & migration plan |
 
 ---
 
