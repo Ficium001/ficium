@@ -11,6 +11,7 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
     "./node_modules/@ficium/shared/src/**/*.{js,ts,jsx,tsx}",
+    "./node_modules/@ficium/shared/dist/**/*.js",
   ],
   theme: {
     extend: {
