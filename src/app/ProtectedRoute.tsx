@@ -8,11 +8,11 @@ import { useAuth } from "../features/auth/context/AuthContext";
  * users. When such a user is authenticated inside the consumer App, we redirect
  * them out to the Portal rather than serving an in-App institution experience.
  *
- * TODO(ficium): set this to the Portal's production URL (e.g. via a
- * VITE_PORTAL_URL env var) before deploying. Until then it points at a
- * placeholder so the handoff is obvious in non-prod.
+ * The target URL comes from VITE_PORTAL_URL (set per-environment in Vercel),
+ * falling back to the production Portal URL.
  */
-const PORTAL_URL = "https://portal.ficium.net"; // TODO: confirm / move to env
+const PORTAL_URL =
+  (import.meta.env.VITE_PORTAL_URL as string | undefined) || "https://portal.ficium.net";
 
 /** Full-page redirect out to the Portal for bank/admin roles. */
 function PortalRedirect() {
