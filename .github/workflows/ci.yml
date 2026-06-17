@@ -41,6 +41,9 @@ jobs:
       - name: Lint (gated — 0 errors; advisory rules surface as warnings)
         run: npm run lint
 
+      - name: Dead-code guard (no orphaned files or unused deps)
+        run: npx knip --include files,dependencies
+
       - name: Skin guard (design system stays centralised)
         run: |
           echo "Verifying src/shared/ui + advisor use skin tokens, not raw gradients…"
