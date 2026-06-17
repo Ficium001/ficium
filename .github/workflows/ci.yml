@@ -29,6 +29,13 @@ jobs:
           node-version: 20
           cache: npm
 
+      - name: Authenticate private @ficium/shared (SSH -> HTTPS with token)
+        run: |
+          git config --global url."https://${FICIUM_SHARED_TOKEN}@github.com/".insteadOf "ssh://git@github.com/"
+          git config --global url."https://${FICIUM_SHARED_TOKEN}@github.com/".insteadOf "git@github.com:"
+        env:
+          FICIUM_SHARED_TOKEN: ${{ secrets.FICIUM_SHARED_TOKEN }}
+
       - name: Install dependencies
         run: npm ci
 
