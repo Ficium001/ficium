@@ -56,7 +56,12 @@ export function CardScroller({ children, className = "" }: CardScrollerProps) {
   };
 
   return (
-    <div className="relative">
+    // min-w-0 is critical here: as a grid/flex item, this wrapper defaults
+    // to min-width:auto and grows to fit its content's intrinsic width
+    // instead of shrinking to the available column width. That silently
+    // defeats overflow-x-auto (clientWidth ends up == scrollWidth) and
+    // hides the scroll arrows entirely.
+    <div className="relative min-w-0">
       {/* Left edge fade + arrow */}
       {canScrollLeft && (
         <>

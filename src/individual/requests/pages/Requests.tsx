@@ -67,7 +67,12 @@ export default function Requests() {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 mt-10">
 
           {/* Card scroller */}
-          <Reveal>
+          {/* min-w-0: without it, this grid item defaults to min-width:auto
+              and expands to fit the request-cards row's full content width,
+              blowing out the 1fr column (and the whole grid) instead of
+              containing the row — which silently breaks both the bounded
+              scroll container and the visible sidebar next to it. */}
+          <Reveal className="min-w-0">
             <SectionHead
               title="Your requests"
               subtitle="Live requests — providers bid on each"
