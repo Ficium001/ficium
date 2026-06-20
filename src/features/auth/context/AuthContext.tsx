@@ -40,54 +40,51 @@ function prefetchDashboardData(): void {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session,   setSession]   = useState<Session | null>(null);
   const [role,      setRole]      = useState<UserRole | null>(null);
+  // isLoading is only true until we know whether a session exists.
+  // Role resolution (get_my_role RPC) happens async and does NOT block rendering.
   const [isLoading, setIsLoading] = useState(true);
-  // Tracks which user the cached React-Query data belongs to. If the
-  // authenticated user changes (sign-out, or switching accounts in the same
-  // tab), we wipe the ENTIRE cache so no query can ever serve the previous
-  // user's data. This is the client-side complement to row-level security:
-  // RLS stops the DB from returning another user's rows; this stops a stale
-  // cache from showing them before a refetch.
   const cachedUserId = useRef<string | null>(null);
 
   function resetCacheForUser(nextUserId: string | null): void {
     if (cachedUserId.current !== nextUserId) {
-      queryClient.clear();              // drop every cached query, unconditionally
+      queryClient.clear();
       cachedUserId.current = nextUserId;
     }
   }
 
-  async function fetchUserMeta(userId: string): Promise<void> {
-    const { data: roleData } = await supabase.rpc("get_my_role");
-    if (!roleData) {
-      await supabase.auth.signOut();
-      setSession(null);
-      setRole(null);
-      window.location.href = "/";
-      return;
-    }
-    void userId;
-    setRole((roleData as UserRole) ?? "client");
-    // Kick off dashboard prefetch in parallel — don't await it
-    if ((roleData as UserRole) === "client") prefetchDashboardData();
+  // Resolves role in the background — never blocks the loading gate.
+  function resolveRole(userId: string): void {
+    supabase.rpc("get_my_role").then(({ data: roleData }) => {
+      if (!roleData) {
+        void supabase.auth.signOut();
+        setSession(null);
+        setRole(null);
+        window.location.href = "/";
+        return;
+      }
+      void userId;
+      const resolved = (roleData as UserRole) ?? "client";
+      setRole(resolved);
+      if (resolved === "client") prefetchDashboardData();
+    });
   }
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       resetCacheForUser(data.session?.user?.id ?? null);
       setSession(data.session);
+      // Unblock the app immediately — role resolves in background
+      setIsLoading(false);
       if (data.session?.user) {
-        fetchUserMeta(data.session.user.id).finally(() => setIsLoading(false));
-      } else {
-        setIsLoading(false);
+        resolveRole(data.session.user.id);
       }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
-      // Wipe cache the moment the user changes — before any new query runs.
       resetCacheForUser(newSession?.user?.id ?? null);
       setSession(newSession);
       if (newSession?.user) {
-        fetchUserMeta(newSession.user.id);
+        resolveRole(newSession.user.id);
       } else {
         setRole(null);
       }
