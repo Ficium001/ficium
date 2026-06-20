@@ -78,10 +78,11 @@ export type RequestSummary = {
 };
 
 /* ---------- Get my requests (list) ----------
-   One round-trip: requests + bids fetched separately then merged in memory.
-   Bids are filtered to status="submitted" so expired/withdrawn bids don't
-   inflate the count. This is the only implementation — dashboard, requests
-   page, and any future consumer all use this.
+   Two round-trips total regardless of request count:
+     1. Supabase → fetch own requests
+     2. /api/request-bids-bulk → all bids for all requests in ONE call
+   Previously N parallel calls to /api/request-bids (one per request),
+   each waking the Railway portal-api independently.
 ------------------------------------------------ */
 
 export async function getMyRequests(): Promise<RequestSummary[]> {
@@ -99,39 +100,40 @@ export async function getMyRequests(): Promise<RequestSummary[]> {
 
   const ids = requests.map((r) => r.id);
 
-  // Bids now come from the Portal via the App backend (RLS blocks direct reads).
+  // Single bulk call — one Vercel invocation, one portal-api hit, one DB query
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token ?? "";
-  const bidResults = await Promise.all(
-    ids.map(async (rid) => {
-      try {
-        const r = await fetch(`/api/request-bids?requestId=${encodeURIComponent(rid)}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!r.ok) return [];
-        const json = await r.json();
-        const bids = json?.ok ? json.data : null;
-        return (bids ?? []).map((b: { request_id: string; rate: number }) => ({
-          request_id: b.request_id,
-          rate: b.rate,
-        }));
-      } catch {
-        return [];
-      }
-    })
-  );
-  const bids = bidResults.flat();
 
-  // O(n) aggregation in memory
-  const bidMap = new Map<string, { count: number; bestRate: number | null }>();
+  let bidMap = new Map<string, { count: number; bestRate: number | null }>();
   for (const id of ids) bidMap.set(id, { count: 0, bestRate: null });
-  for (const bid of bids ?? []) {
-    const entry = bidMap.get(bid.request_id);
-    if (!entry) continue;
-    entry.count += 1;
-    if (entry.bestRate === null || bid.rate < entry.bestRate) {
-      entry.bestRate = bid.rate;
+
+  try {
+    const r = await fetch("/api/request-bids-bulk", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ requestIds: ids }),
+    });
+    if (r.ok) {
+      const json = await r.json() as { ok: boolean; data?: Record<string, Array<{ rate: number }>> };
+      const bulkData = json?.ok ? json.data : null;
+      if (bulkData) {
+        for (const [rid, bids] of Object.entries(bulkData)) {
+          const entry = bidMap.get(rid);
+          if (!entry) continue;
+          entry.count = bids.length;
+          for (const bid of bids) {
+            if (entry.bestRate === null || bid.rate < entry.bestRate) {
+              entry.bestRate = bid.rate;
+            }
+          }
+        }
+      }
     }
+  } catch {
+    // bids unavailable — requests still render, just without bid counts
   }
 
   return requests.map((r) => ({
