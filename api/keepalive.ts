@@ -1,21 +1,32 @@
-import { createClient } from "@supabase/supabase-js";
+import { Env } from "./_lib/env.js";
+import { Response } from "./_lib/response.js";
 
-const supabase = createClient(
-  process.env.VITE_SUPABASE_URL!,
-  process.env.VITE_SUPABASE_ANON_KEY!
-);
+export const config = { runtime: "nodejs" };
 
 /**
  * Lightweight DB keepalive — called by Vercel Cron every 5 minutes.
  * Prevents Supabase free-plan auto-pause which causes 2-3 min cold starts on login.
+ * Uses raw fetch against Supabase REST — no SDK import needed.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default async function handler(_req: any, res: any): Promise<void> {
-  const start = Date.now();
-  const { error } = await supabase.from("kyc_settings").select("id").limit(1);
-  const ms = Date.now() - start;
-  if (error) {
-    return res.status(500).json({ ok: false, error: error.message, ms });
+  const url = Env.supabaseUrl();
+  const key = Env.supabaseServiceKey();
+
+  if (!url || !key) {
+    return Response.error(res, "Supabase not configured", 503, "NOT_CONFIGURED");
   }
-  return res.status(200).json({ ok: true, ms });
+
+  const start = Date.now();
+  try {
+    const r = await fetch(`${url}/rest/v1/kyc_settings?select=id&limit=1`, {
+      headers: { apikey: key, Authorization: `Bearer ${key}` },
+    });
+    const ms = Date.now() - start;
+    if (!r.ok) return Response.error(res, "DB ping failed", 502, "PING_FAILED");
+    return Response.ok(res, { ok: true, ms });
+  } catch (e) {
+    const ms = Date.now() - start;
+    return Response.error(res, `Ping error: ${String(e)}`, 502, "PING_ERROR");
+  }
 }
