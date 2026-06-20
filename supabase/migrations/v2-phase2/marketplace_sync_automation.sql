@@ -34,7 +34,7 @@ BEGIN
     url     := v_url || '/marketplace/sync-requests',
     headers := jsonb_build_object('Content-Type','application/json','X-Service-Secret', v_secret),
     body    := '{}'::jsonb,
-    timeout_milliseconds := 5000
+    timeout_milliseconds := 15000
   );
 END; $$;
 REVOKE ALL ON FUNCTION marketplace_sync.dispatch() FROM PUBLIC;
