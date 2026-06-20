@@ -1,4 +1,3 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -10,7 +9,8 @@ const supabase = createClient(
  * Lightweight DB keepalive — called by Vercel Cron every 5 minutes.
  * Prevents Supabase free-plan auto-pause which causes 2-3 min cold starts on login.
  */
-export default async function handler(_req: VercelRequest, res: VercelResponse) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export default async function handler(_req: any, res: any): Promise<void> {
   const start = Date.now();
   const { error } = await supabase.from("kyc_settings").select("id").limit(1);
   const ms = Date.now() - start;
