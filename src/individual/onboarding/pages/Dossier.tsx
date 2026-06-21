@@ -98,7 +98,7 @@ export default function Dossier() {
   const onBack = () => step > 1 ? setStep((s) => s - 1) : window.history.back();
 
   return (
-    <div className="min-h-screen bg-cream">
+    <div className="min-h-screen bg-paper">
       <StepHeader step={step} h={h} onBack={onBack} />
       <HealthBar h={h} />
 

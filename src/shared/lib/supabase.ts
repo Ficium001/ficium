@@ -1,17 +1,12 @@
 // =============================================================
 // Ficium — Supabase client (single source of truth)
 //
-// One GoTrueClient (one auth session, one storageKey) shared across
-// every schema-scoped data client. Creating multiple createClient()
-// instances with their own auth produces divergent sessions where
-// one client is signed in and another is anonymous, silently
-// breaking RLS-gated reads (the root cause of the empty marketplace).
-//
-// Usage:
-//   import { supabase }      from "@/shared/lib/supabase"; // public schema
-//   import { institutionDb } from "@/shared/lib/supabase"; // institution schema
-//   import { adminDb }       from "@/shared/lib/supabase"; // admin schema
-//   import { db }            from "@/shared/lib/supabase"; // db("institution")
+// ONE active GoTrueClient — owned by `supabase` (public schema).
+// Schema-scoped clients (institutionDb, adminDb) are created with
+// a no-op in-memory storage so their GoTrueClient never touches
+// localStorage and never collides with the primary session key.
+// Auth tokens are injected per-request via a fetch interceptor
+// that reads the live session from the primary client.
 // =============================================================
 import { createClient } from "@supabase/supabase-js";
 
@@ -30,20 +25,28 @@ if (!URL || !KEY) {
 const url = URL ?? "";
 const key = KEY ?? "";
 
-/** Shared auth configuration — one session under one storageKey. */
-const AUTH_CONFIG = {
-  persistSession:     true,
-  autoRefreshToken:   true,
-  detectSessionInUrl: true,
-  storageKey:         "ficium-auth",
-} as const;
-
-/** Default client — public schema. This owns the auth session. */
+/** Primary client — public schema. Owns the ONE real GoTrueClient / auth session. */
 export const supabase: AnyClient = createClient(url, key, {
-  auth: AUTH_CONFIG,
+  auth: {
+    persistSession:     true,
+    autoRefreshToken:   true,
+    detectSessionInUrl: true,
+    storageKey:         "ficium-auth",
+  },
 });
 
 export type SchemaName = "public" | "institution" | "admin";
+
+/**
+ * A no-op storage adapter — schema clients use this so their internal
+ * GoTrueClient never reads/writes localStorage and never triggers the
+ * "multiple GoTrueClient instances" warning.
+ */
+const nullStorage = {
+  getItem:    (_key: string) => null,
+  setItem:    (_key: string, _val: string) => {},
+  removeItem: (_key: string) => {},
+};
 
 // Schema-scoped clients are cached — no duplicate instances.
 const schemaClients = new Map<SchemaName, AnyClient>();
@@ -51,17 +54,39 @@ schemaClients.set("public", supabase);
 
 /**
  * Returns a Supabase client scoped to the given Postgres schema.
- * All clients share the same auth session via the same storageKey,
- * so RLS sees a consistent authenticated user regardless of schema.
+ * Uses a no-op storage + fetch interceptor so:
+ *  - No extra GoTrueClient warnings
+ *  - RLS always sees the authenticated user via injected Bearer token
  */
 export function db(schema: SchemaName = "public"): AnyClient {
+  if (schema === "public") return supabase;
   const cached = schemaClients.get(schema);
   if (cached) return cached;
 
   const client: AnyClient = createClient(url, key, {
-    auth: AUTH_CONFIG,
     db:   { schema },
+    auth: {
+      persistSession:     false,
+      autoRefreshToken:   false,
+      detectSessionInUrl: false,
+      storage:            nullStorage,
+      // Unique per-schema key so each schema client's internal GoTrueClient
+      // owns a distinct storageKey. Without this they all default to the same
+      // key, which trips supabase-js's "multiple GoTrueClient instances"
+      // warning. Combined with nullStorage, nothing is ever persisted.
+      storageKey:         `ficium-${schema}-noauth`,
+    },
+    global: {
+      fetch: async (input, init) => {
+        const { data } = await supabase.auth.getSession();
+        const token = data.session?.access_token;
+        const headers = new Headers((init as RequestInit | undefined)?.headers);
+        if (token) headers.set("Authorization", `Bearer ${token}`);
+        return fetch(input as RequestInfo, { ...(init as RequestInit | undefined), headers });
+      },
+    },
   });
+
   schemaClients.set(schema, client);
   return client;
 }

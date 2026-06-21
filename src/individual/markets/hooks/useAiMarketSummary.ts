@@ -56,7 +56,7 @@ export function useAiMarketSummary(
     setError(null);
 
     streamClaude(
-      "/api/market-summary",
+      "/api/market?action=summary",
       snap,
       {
         onToken: (t) => {

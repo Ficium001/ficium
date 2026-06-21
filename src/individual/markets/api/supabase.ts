@@ -46,6 +46,12 @@ export async function fetchMarketData(): Promise<MarketDataResult> {
     supabase.from("market_lending_rates").select("*"),
   ]);
 
+  // Surface any Supabase errors to the browser console for debugging
+  if (tickerRes.error)  console.error("[markets] market_data error:",          tickerRes.error);
+  if (fxRes.error)      console.error("[markets] market_fx_rates error:",      fxRes.error);
+  if (depositRes.error) console.error("[markets] market_deposit_rates error:", depositRes.error);
+  if (lendingRes.error) console.error("[markets] market_lending_rates error:", lendingRes.error);
+
   // ── Ticker readings ──
   const readings = {} as MarketDataResult["readings"];
 
@@ -148,17 +154,12 @@ export async function fetchMarketData(): Promise<MarketDataResult> {
 
 export async function fetchMarketNews(): Promise<NewsResult> {
   const [newsRes, storiesRes] = await Promise.all([
-    supabase
-      .from("market_news")
-      .select("*")
-      .order("published_at", { ascending: false })
-      .limit(8),
-    supabase
-      .from("market_stories")
-      .select("*")
-      .order("generated_at", { ascending: false })
-      .limit(6),
+    supabase.from("market_news").select("*").order("published_at", { ascending: false }).limit(8),
+    supabase.from("market_stories").select("*").order("generated_at", { ascending: false }).limit(6),
   ]);
+
+  if (newsRes.error)    console.error("[markets] market_news error:",    newsRes.error);
+  if (storiesRes.error) console.error("[markets] market_stories error:", storiesRes.error);
 
   const items: NewsItem[] = (newsRes.data ?? []).map((row) => ({
     id:               row.id,

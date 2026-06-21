@@ -25,6 +25,9 @@ export const Env = {
   resendApiKey:       () => getEnv("RESEND_API_KEY"),
   awsAccessKeyId:     () => getEnv("VITE_AWS_ACCESS_KEY_ID")     || getEnv("AWS_ACCESS_KEY_ID"),
   awsSecretAccessKey: () => getEnv("VITE_AWS_SECRET_ACCESS_KEY") || getEnv("AWS_SECRET_ACCESS_KEY"),
+  internalApiSecret:  () => getEnv("INTERNAL_API_SECRET"),
+  portalApiUrl:       () => getEnv("PORTAL_API_URL"),
+  appServiceSecret:   () => getEnv("APP_SERVICE_SECRET"),
   isProduction:       () => getEnv("NODE_ENV") === "production",
 } as const;
 

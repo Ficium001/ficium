@@ -1,14 +1,8 @@
 import { ArrowRight, Sparkles, Check } from "lucide-react";
 import type { HealthResult }           from "@/individual/onboarding/utils/calcHealth";
 import { STEP_LABELS }                 from "@/individual/onboarding/config/dossierOptions";
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-export function formatMUR(n: number): string {
-  return new Intl.NumberFormat("en-MU", {
-    style: "currency", currency: "MUR", maximumFractionDigits: 0,
-  }).format(n || 0);
-}
+import { formatMUR }                   from "@/shared/lib/format";
+export { formatMUR }                   from "@/shared/lib/format";
 
 // ── StepButton ────────────────────────────────────────────────────────────────
 
@@ -60,7 +54,7 @@ export function StepHeader({
   step, h, onBack,
 }: { step: number; h: HealthResult; onBack: () => void }) {
   return (
-    <div className="sticky top-0 z-20 bg-cream/95 backdrop-blur-sm border-b border-ink/[0.06] px-5 py-3">
+    <div className="sticky top-0 z-20 bg-surface/95 backdrop-blur-sm border-b border-ink/[0.06] px-5 py-3">
       <div className="mx-auto max-w-[600px] flex items-center gap-4">
         <button onClick={onBack}
           className="w-8 h-8 rounded-full bg-ink/[0.06] flex items-center justify-center flex-shrink-0">

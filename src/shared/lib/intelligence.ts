@@ -3,6 +3,7 @@
 // Fetches market intelligence from /api/intelligence and makes
 // it available to Claude prompts across the app.
 // =============================================================
+import { apiFetch } from "./apiClient";
 import { useState, useEffect, useRef } from "react";
 import type { FiciumIntelligence, MarketRate, RequestPattern, AcceptanceIntel, MarketCompetitiveness } from "@/shared/lib/intelligence-types";
 
@@ -15,7 +16,7 @@ let _cache: { data: FiciumIntelligence; ts: number } | null = null;
 
 async function fetchIntelligence(): Promise<FiciumIntelligence> {
   if (_cache && Date.now() - _cache.ts < CACHE_TTL_MS) return _cache.data;
-  const res  = await fetch("/api/intelligence");
+  const res  = await apiFetch("/api/intelligence");
   const data = (await res.json()) as FiciumIntelligence;
   _cache = { data, ts: Date.now() };
   return data;
@@ -38,13 +39,13 @@ export function useIntelligence() {
 
   // Convenience: get rate data for a specific product type
   const getRates = (productType: string) =>
-    intel?.marketRates.find((r) => r.product_type === productType) ?? null;
+    intel?.marketRates?.find((r) => r.product_type === productType) ?? null;
 
   const getPattern = (productType: string) =>
-    intel?.requestPatterns.find((p) => p.product_type === productType) ?? null;
+    intel?.requestPatterns?.find((p) => p.product_type === productType) ?? null;
 
   const getWinningBid = (productType: string) =>
-    intel?.acceptanceIntel.find((a) => a.product_type === productType) ?? null;
+    intel?.acceptanceIntel?.find((a) => a.product_type === productType) ?? null;
 
   // Top 3 most active product types by request volume
   const topProducts = [...(intel?.requestPatterns ?? [])]

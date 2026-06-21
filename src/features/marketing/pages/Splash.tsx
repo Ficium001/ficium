@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { useReducedMotion, useScrollY } from "@/features/marketing/hooks";
+import { useReducedMotion, useScrollY, useScrollProgress } from "@/features/marketing/hooks";
 import { SCENES }   from "@/features/marketing/config/scenes";
-import { Nav, Hero, HowItWorks, Products, Trust, CTA, Footer } from "@/features/marketing/components/SplashComponents";
+import { Nav, Hero, HowItWorksSection, Products, Trust, CTA, Footer } from "@/features/marketing/components/SplashComponents";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Splash — marketing landing page orchestrator.
@@ -12,6 +12,7 @@ import { Nav, Hero, HowItWorks, Products, Trust, CTA, Footer } from "@/features/
 export default function Splash() {
   const reducedMotion  = useReducedMotion();
   const scrollY        = useScrollY();
+  const progress       = useScrollProgress();
   const [sceneIndex,   setSceneIndex]  = useState(0);
   const [activeOffer,  setActiveOffer] = useState(0);
 
@@ -41,10 +42,10 @@ export default function Splash() {
   const scene = SCENES[sceneIndex];
 
   return (
-    <div className="min-h-screen bg-cream text-ink overflow-x-hidden">
-      <Nav scrollY={scrollY} />
-      <Hero scene={scene} sceneIndex={sceneIndex} activeOffer={activeOffer} />
-      <HowItWorks />
+    <div className="min-h-screen bg-paper text-ink overflow-x-clip">
+      <Nav scrollY={scrollY} progress={progress} />
+      <Hero scene={scene} sceneIndex={sceneIndex} activeOffer={activeOffer} scrollY={scrollY} reducedMotion={reducedMotion} />
+      <HowItWorksSection reducedMotion={reducedMotion} />
       <Products />
       <Trust />
       <CTA />

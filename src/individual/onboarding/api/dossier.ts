@@ -121,6 +121,39 @@ function requiresEDD(d: DossierInput): boolean {
   return false;
 }
 
+/**
+ * Map the onboarding dossier onto the flat client_financial_snapshot shape that
+ * NetWorth / FinancialHealth / the AI advisor read from. Fields the dossier
+ * doesn't capture (fixed deposits, monthly expenses/savings) are left for the
+ * NetWorth editor to fill — we never fabricate them. Generated columns
+ * (total_*, net_worth, debt_to_income_ratio) are intentionally omitted.
+ */
+export function snapshotFromDossier(input: DossierInput, clientId: string) {
+  const loans = input.hasExistingLoans ? input.loans : [];
+  const balByType = (t: LoanType) =>
+    loans.filter((l) => l.loanType === t).reduce((s, l) => s + (l.outstandingAmount || 0), 0);
+  return {
+    client_id: clientId,
+    // assets
+    cash_savings:      input.assets.savings,
+    investments_value: input.assets.investments,
+    property_value:    input.assets.propertyValue,
+    vehicle_value:     input.assets.vehicleValue,
+    other_assets:      input.assets.businessAssets + input.assets.otherAssets,
+    // liabilities — bucketed from the typed loan list (snapshot has no business
+    // or generic bucket, so business + other fold into other_liabilities)
+    mortgage_balance:      balByType("mortgage"),
+    personal_loan_balance: balByType("personal"),
+    credit_card_balance:   balByType("credit_card"),
+    vehicle_loan_balance:  balByType("vehicle"),
+    other_liabilities:     balByType("business") + balByType("other"),
+    // monthly cashflow
+    monthly_income:        input.monthlyIncome + input.additionalIncome,
+    monthly_loan_payments: loans.reduce((s, l) => s + (l.monthlyRepayment || 0), 0),
+    // fixed_deposits / monthly_expenses / monthly_savings: no dossier source → DB defaults (0)
+  };
+}
+
 export async function submitDossier(input: DossierInput): Promise<DossierResult> {
   const { data: authData } = await supabase.auth.getUser();
   const userId = authData.user?.id;
@@ -221,6 +254,18 @@ export async function submitDossier(input: DossierInput): Promise<DossierResult>
     { onConflict: "user_id" }
   );
   if (compError) return { ok: false, error: `Compliance: ${compError.message}` };
+
+  // 6. Seed client_financial_snapshot so NetWorth / FinancialHealth / the AI
+  //    advisor have data immediately after onboarding — without this, those
+  //    screens read an empty snapshot and show zeros despite the user having
+  //    entered everything here. Seed-once: ignoreDuplicates → INSERT ... ON
+  //    CONFLICT DO NOTHING, so we never clobber a snapshot the user has since
+  //    refined in the NetWorth editor. Best-effort: the dossier already
+  //    succeeded, so a snapshot hiccup must not fail onboarding.
+  const { error: snapError } = await supabase
+    .from("client_financial_snapshot")
+    .upsert(snapshotFromDossier(input, userId), { onConflict: "client_id", ignoreDuplicates: true });
+  if (snapError) console.error("Snapshot seed (non-fatal):", snapError.message);
 
   await audit.financialProfileCreated(userId);
   return { ok: true, healthScore, riskScore, affordabilityScore };

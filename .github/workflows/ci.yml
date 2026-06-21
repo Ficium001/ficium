@@ -1,0 +1,71 @@
+name: CI
+
+# Validates every push and pull request: install → typecheck → build.
+# Keeps main always shippable and gives PRs a green/red signal before merge.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel superseded runs on the same ref to save minutes.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Typecheck & build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Authenticate private @ficium/shared (SSH -> HTTPS with token)
+        run: |
+          git config --global url."https://${FICIUM_SHARED_TOKEN}@github.com/".insteadOf "ssh://git@github.com/"
+          git config --global url."https://${FICIUM_SHARED_TOKEN}@github.com/".insteadOf "git@github.com:"
+        env:
+          FICIUM_SHARED_TOKEN: ${{ secrets.FICIUM_SHARED_TOKEN }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit -p tsconfig.app.json
+
+      - name: Typecheck API
+        run: npx tsc --noEmit -p tsconfig.node.json
+
+      - name: Lint (gated — 0 errors; advisory rules surface as warnings)
+        run: npm run lint
+
+      - name: Dead-code guard (no orphaned files or unused deps)
+        run: npx knip --include files,dependencies
+
+      - name: Skin guard (design system stays centralised)
+        run: |
+          echo "Verifying src/shared/ui + advisor use skin tokens, not raw gradients…"
+          if grep -rnE "linear-gradient\(|radial-gradient\(" src/shared/ui src/individual/advisor --include=*.tsx; then
+            echo "::error::Raw CSS gradient found. Use a backgroundImage token (bg-hero, bg-brand, bg-brand-soft, bg-accent, bg-edge…) defined in tailwind.config.js so the skin stays centralised."
+            exit 1
+          fi
+          if grep -rniE "#0f0c29|#1a1040|#302b63" src/shared/ui src/individual/advisor --include=*.tsx; then
+            echo "::error::Legacy hero gradient hex found. Use the bg-hero token."
+            exit 1
+          fi
+          echo "Skin guard passed ✓"
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build

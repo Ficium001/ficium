@@ -72,29 +72,36 @@ export function EmptySection({ message, cta, onCta }: { message: string; cta: st
   );
 }
 
-export function ScoreCard({ label, value, suffix, icon: Icon, gradient, light }: {
+const BRAND_GRADIENT = "linear-gradient(135deg, #3536DC 0%, #356EF4 50%, #8231EC 100%)";
+const GOOD_GRADIENT  = "linear-gradient(135deg, #12B98A 0%, #0B8A66 100%)";
+
+export function ScoreCard({ label, value, suffix, icon: Icon, tone }: {
   label: string; value: number | null | undefined; suffix: string;
-  icon: React.ElementType; gradient: string | null; light: boolean;
+  icon: React.ElementType; tone: "gradient" | "good" | "plain";
 }) {
-  const hasBg = gradient !== null;
+  const dark = tone !== "plain";
+  const bg = tone === "gradient" ? BRAND_GRADIENT : tone === "good" ? GOOD_GRADIENT : undefined;
   return (
-    <div className={[
-      "rounded-[20px] p-4 flex flex-col gap-1.5",
-      hasBg ? `bg-gradient-to-br ${gradient} shadow-sm` : "bg-white border border-ink/[0.06] shadow-sm",
-    ].join(" ")}>
-      <Icon size={15} className={hasBg ? (light ? "text-white/70" : "text-white/70") : "text-muted"} />
-      <div className={["font-display text-[28px] font-extrabold leading-none", hasBg ? "text-white" : "text-ink"].join(" ")}>
+    <div
+      className={[
+        "rounded-[20px] p-4 flex flex-col gap-1.5",
+        dark ? "shadow-sm" : "bg-white border border-line shadow-sm",
+      ].join(" ")}
+      style={bg ? { background: bg } : undefined}
+    >
+      <Icon size={15} className={dark ? "text-white/70" : "text-muted"} />
+      <div className={["font-display text-[28px] font-extrabold leading-none", dark ? "text-white" : "text-ink"].join(" ")}>
         {value == null ? "—" : value}
         <span className="text-[12px] font-semibold ml-0.5 opacity-60">{value != null ? suffix : ""}</span>
       </div>
-      <div className={["text-[11px] font-semibold leading-tight", hasBg ? "text-white/60" : "text-muted"].join(" ")}>{label}</div>
+      <div className={["text-[11px] font-semibold leading-tight", dark ? "text-white/65" : "text-muted"].join(" ")}>{label}</div>
     </div>
   );
 }
 
 export function LoadingScreen() {
   return (
-    <div className="min-h-screen bg-[#f8f7f4] flex items-center justify-center">
+    <div className="min-h-screen bg-paper flex items-center justify-center">
       <div className="w-8 h-8 rounded-full border-[3px] border-ink/15 border-t-ficium animate-spin" />
     </div>
   );
@@ -156,6 +163,7 @@ export function IdentityEditForm({ profile, onClose }: { profile: ProfileSummary
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     firstName: profile?.firstName ?? "",
+    lastName:  profile?.fullName?.split(" ").slice(1).join(" ") ?? "",
     country:   profile?.country   ?? "Mauritius",
     phone:     "",
   });
@@ -165,7 +173,18 @@ export function IdentityEditForm({ profile, onClose }: { profile: ProfileSummary
   const handleSave = async () => {
     setSaving(true);
     const { data: { user } } = await supabase.auth.getUser();
-    if (user) await supabase.from("users").update({ first_name: form.firstName, country: form.country }).eq("id", user.id);
+    if (user) {
+      // Write to public.clients (v2 schema) — the old public.users was dropped,
+      // which is why this previously 404'd. Reads come from client_profile_view,
+      // which is backed by clients.
+      // full_name is a separate stored column (not derived), and it's what
+      // the header / "Full name" row actually display — keep it in sync too.
+      const fullName = `${form.firstName} ${form.lastName}`.trim();
+      const { error } = await supabase.from("clients")
+        .update({ first_name: form.firstName, last_name: form.lastName, full_name: fullName, country: form.country })
+        .eq("id", user.id);
+      if (error) { console.error("Profile update failed:", error.message); setSaving(false); return; }
+    }
     await queryClient.invalidateQueries({ queryKey: ["profile"] });
     setSaving(false); onClose();
   };
@@ -174,7 +193,7 @@ export function IdentityEditForm({ profile, onClose }: { profile: ProfileSummary
     <div className="flex flex-col gap-3">
       <div className="grid grid-cols-2 gap-3">
         <EditField label="First name" value={form.firstName} onChange={set("firstName")} />
-        <EditField label="Last name"  value={profile?.fullName?.split(" ").slice(1).join(" ") ?? ""} onChange={set("firstName")} />
+        <EditField label="Last name"  value={form.lastName} onChange={set("lastName")} />
       </div>
       <EditField label="Phone" value={form.phone} onChange={set("phone")} type="tel" />
       <div>
@@ -203,7 +222,12 @@ export function AddressEditForm({ profile, onClose }: { profile: ProfileSummary 
   const handleSave = async () => {
     setSaving(true);
     const { data: { user } } = await supabase.auth.getUser();
-    if (user) await supabase.from("users").update({ address_line_1: form.addressLine1, city: form.city, country: form.country }).eq("id", user.id);
+    if (user) {
+      const { error } = await supabase.from("clients")
+        .update({ address_line_1: form.addressLine1, city: form.city, country: form.country })
+        .eq("id", user.id);
+      if (error) { console.error("Address update failed:", error.message); setSaving(false); return; }
+    }
     await queryClient.invalidateQueries({ queryKey: ["profile"] });
     setSaving(false); onClose();
   };
@@ -241,12 +265,17 @@ export function FinancialEditForm({ profile, onClose, hidden, setHidden }: {
   const handleSave = async () => {
     setSaving(true);
     const { data: { user } } = await supabase.auth.getUser();
-    if (user) await supabase.from("financial_profiles").update({
-      employment_status:  form.employmentStatus,
-      monthly_income:     form.monthlyIncome  ? Number(form.monthlyIncome)  : null,
-      total_net_worth:    form.totalNetWorth   ? Number(form.totalNetWorth)   : null,
-      has_existing_loans: form.hasExistingLoans === "yes",
-    }).eq("user_id", user.id);
+    if (user) {
+      // v2 replaced financial_profiles with client_dossier (keyed on client_id).
+      // Writing to the old table silently no-op'd, so edits never persisted.
+      const { error } = await supabase.from("client_dossier").update({
+        employment_status:  form.employmentStatus,
+        monthly_income:     form.monthlyIncome  ? Number(form.monthlyIncome)  : null,
+        total_net_worth:    form.totalNetWorth   ? Number(form.totalNetWorth)   : null,
+        has_existing_loans: form.hasExistingLoans === "yes",
+      }).eq("client_id", user.id);
+      if (error) { console.error("Financial profile update failed:", error.message); setSaving(false); return; }
+    }
     await queryClient.invalidateQueries({ queryKey: ["profile"] });
     setSaving(false); onClose();
   };
@@ -301,9 +330,7 @@ export function FinancialEditForm({ profile, onClose, hidden, setHidden }: {
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function formatMUR(amount: number): string {
-  return `MUR ${new Intl.NumberFormat("en-MU", { maximumFractionDigits: 0 }).format(amount)}`;
-}
+export { formatMUR } from "@/shared/lib/format";
 
 export function formatEmployment(status: string | null): string {
   if (!status) return "—";

@@ -13,15 +13,15 @@
  *   `SELECT * FROM platform_intelligence ORDER BY created_at DESC LIMIT 1`
  *   Zero other changes needed.
  */
-import { ServerCache, CacheKeys } from "./cache";
-import { getServiceDb } from "./db";
+import { ServerCache, CacheKeys } from "./cache.js";
+import { getServiceDb } from "./db.js";
 import type {
   FiciumIntelligence,
   MarketRate,
   RequestPattern,
   AcceptanceIntel,
   MarketCompetitiveness,
-} from "../../src/shared/lib/intelligence-types";
+} from "../../src/shared/lib/intelligence-types.js";
 
 const CACHE_TTL_SECS = 300; // 5 minutes
 

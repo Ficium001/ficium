@@ -1,3 +1,4 @@
+import { apiFetch } from "./apiClient";
 /* ─────────────────────────────────────────────────────────────
    Ficium — shared Claude API client utility
    Handles streaming SSE from /api/* endpoints
@@ -57,8 +58,8 @@ export async function streamClaude(
       }
     }
     callbacks.onDone(full);
-  } catch (e: any) {
-    callbacks.onError(e?.message ?? "Network error");
+  } catch (e: unknown) {
+    callbacks.onError(e instanceof Error ? e.message : "Network error");
   }
 }
 
@@ -69,7 +70,7 @@ export async function askClaude(
   messages: ClaudeMessage[],
   signal?: AbortSignal,
 ): Promise<string> {
-  const res = await fetch("/api/chat", {
+  const res = await apiFetch("/api/chat", {
     method:  "POST",
     headers: { "Content-Type": "application/json" },
     body:    JSON.stringify({ messages }),

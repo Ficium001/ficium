@@ -1,14 +1,13 @@
 import { lazy, Suspense, Component } from "react";
 import type { ReactNode, ErrorInfo } from "react";
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, Navigate } from "react-router-dom";
 import { PublicOnlyRoute, ClientOnlyRoute } from "./ProtectedRoute";
 
-import Splash from "../features/marketing/pages/Splash";
-import Login from "../features/auth/pages/Login";
+import Splash    from "../features/marketing/pages/Splash";
+import Login     from "../features/auth/pages/Login";
 import CheckEmail from "../features/auth/pages/CheckEmail";
 import PortalRedirect from "../shared/components/PortalRedirect";
 
-// ── Shared / marketing ────────────────────────────────────────
 const RegisterTypeSelect  = lazy(() => import("../features/auth/pages/RegisterTypeSelect"));
 const RegisterIndividual  = lazy(() => import("../individual/auth/pages/RegisterIndividual"));
 const RegisterBusiness    = lazy(() => import("../business/auth/pages/RegisterBusiness"));
@@ -17,7 +16,6 @@ const ResetPassword       = lazy(() => import("../features/auth/pages/ResetPassw
 const HowItWorks          = lazy(() => import("../features/marketing/pages/HowItWorks"));
 const NotFound            = lazy(() => import("../shared/pages/NotFound"));
 
-// ── Individual (client) app ───────────────────────────────────
 const Dashboard           = lazy(() => import("../individual/dashboard/pages/Dashboard"));
 const Profile             = lazy(() => import("../individual/dashboard/pages/Profile"));
 const Kyc                 = lazy(() => import("../individual/onboarding/pages/Kyc"));
@@ -31,22 +29,22 @@ const Markets             = lazy(() => import("../individual/markets/pages/Marke
 const Advisor             = lazy(() => import("../individual/advisor/pages/Advisor"));
 const FinancialTools      = lazy(() => import("../individual/tools/pages/FinancialTools"));
 const ClientAudit         = lazy(() => import("../individual/audit/pages/ClientAudit"));
-const Goals               = lazy(() => import("../individual/goals/pages/Goals"));
-const NewGoal             = lazy(() => import("../individual/goals/pages/NewGoal"));
-const GoalDetail          = lazy(() => import("../individual/goals/pages/GoalDetail"));
-const Journeys            = lazy(() => import("../individual/journeys/pages/Journeys"));
-const JourneyWizard       = lazy(() => import("../individual/journeys/pages/JourneyWizard"));
-const JourneyWorkspace    = lazy(() => import("../individual/journeys/pages/JourneyWorkspace"));
+const NetWorthPage        = lazy(() => import("../individual/networth/pages/NetWorth"));
+const FinancialHealthPage = lazy(() => import("../individual/health/pages/FinancialHealth"));
+
+// ── Institution app ───────────────────────────────────────────
+// Institution & admin experiences now live in the Ficium Portal (canonical).
+// The App no longer handles institution registration either — see the
+// /register/institution and /institution/* redirects below.
 
 function PageLoader() {
   return (
-    <div className="min-h-screen bg-cream flex items-center justify-center">
+    <div className="min-h-screen bg-paper flex items-center justify-center">
       <div className="w-8 h-8 rounded-full border-2 border-ficium border-t-transparent animate-spin" />
     </div>
   );
 }
 
-// Catches chunk-load failures (stale cache after deploy) and auto-reloads once
 class ChunkErrorBoundary extends Component<{ children: ReactNode }, { errored: boolean }> {
   state = { errored: false };
   static getDerivedStateFromError() { return { errored: true }; }
@@ -62,7 +60,7 @@ class ChunkErrorBoundary extends Component<{ children: ReactNode }, { errored: b
   render() {
     if (this.state.errored) {
       return (
-        <div className="min-h-screen bg-cream flex flex-col items-center justify-center gap-4 px-6 text-center">
+        <div className="min-h-screen bg-paper flex flex-col items-center justify-center gap-4 px-6 text-center">
           <p className="text-ink font-semibold">Something went wrong loading this page.</p>
           <button
             onClick={() => { sessionStorage.removeItem("chunk_reload"); window.location.reload(); }}
@@ -87,12 +85,10 @@ function S({ children }: { children: React.ReactNode }) {
 
 export const router = createBrowserRouter([
 
-  // ── Marketing ───────────────────────────────────────────────
   { path: "/",                       element: <Splash /> },
   { path: "/how-it-works",           element: <S><HowItWorks /></S> },
   { path: "/onboarding/check-email", element: <CheckEmail /> },
 
-  // ── Auth (shared) ───────────────────────────────────────────
   { path: "/login",                  element: <PublicOnlyRoute><Login /></PublicOnlyRoute> },
   { path: "/forgot-password",        element: <S><ForgotPassword /></S> },
   { path: "/auth/reset-password",    element: <S><ResetPassword /></S> },
@@ -103,7 +99,6 @@ export const router = createBrowserRouter([
   // Institutions register/sign in on the Portal app, not here.
   { path: "/register/institution",   element: <PortalRedirect to="/register" /> },
 
-  // ── Individual (client) app ─────────────────────────────────
   { path: "/dashboard",              element: <ClientOnlyRoute><S><Dashboard /></S></ClientOnlyRoute> },
   { path: "/profile",                element: <ClientOnlyRoute><S><Profile /></S></ClientOnlyRoute> },
   { path: "/onboarding/kyc",         element: <ClientOnlyRoute><S><Kyc /></S></ClientOnlyRoute> },
@@ -117,21 +112,20 @@ export const router = createBrowserRouter([
   { path: "/advisor",                element: <ClientOnlyRoute><S><Advisor /></S></ClientOnlyRoute> },
   { path: "/tools",                  element: <ClientOnlyRoute><S><FinancialTools /></S></ClientOnlyRoute> },
   { path: "/activity",               element: <ClientOnlyRoute><S><ClientAudit /></S></ClientOnlyRoute> },
-  { path: "/goals",                  element: <ClientOnlyRoute><S><Goals /></S></ClientOnlyRoute> },
-  { path: "/goals/new",              element: <ClientOnlyRoute><S><NewGoal /></S></ClientOnlyRoute> },
-  { path: "/goals/:id",              element: <ClientOnlyRoute><S><GoalDetail /></S></ClientOnlyRoute> },
-  { path: "/journeys",               element: <ClientOnlyRoute><S><Journeys /></S></ClientOnlyRoute> },
-  { path: "/journeys/new",           element: <ClientOnlyRoute><S><JourneyWizard /></S></ClientOnlyRoute> },
-  { path: "/journeys/:id",           element: <ClientOnlyRoute><S><JourneyWorkspace /></S></ClientOnlyRoute> },
+  { path: "/networth",               element: <ClientOnlyRoute><S><NetWorthPage /></S></ClientOnlyRoute> },
+  { path: "/health",                 element: <ClientOnlyRoute><S><FinancialHealthPage /></S></ClientOnlyRoute> },
+
+  // Dead route redirects
+  { path: "/goals",                  element: <Navigate to="/requests" replace /> },
+  { path: "/goals/*",               element: <Navigate to="/requests" replace /> },
+  { path: "/journeys",               element: <Navigate to="/requests" replace /> },
+  { path: "/journeys/*",             element: <Navigate to="/requests" replace /> },
 
   // ── Institution app → moved to ficium-portal ────────────────
-  // All institution + admin surfaces now live in the Portal. Any old
-  // /institution/* or /admin link bounces there instead of 404-ing.
   { path: "/institution",            element: <PortalRedirect /> },
   { path: "/institution/*",          element: <PortalRedirect /> },
   { path: "/admin",                  element: <PortalRedirect to="/admin" /> },
   { path: "/admin/*",                element: <PortalRedirect to="/admin" /> },
 
-  // ── Fallback ────────────────────────────────────────────────
   { path: "*", element: <S><NotFound /></S> },
 ]);

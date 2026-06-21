@@ -11,6 +11,7 @@
 // AWS keys never touch the browser.
 // =============================================================
 
+import { apiFetch } from "@/shared/lib/apiClient";
 import { supabase } from "../../../../shared/lib/supabase";
 import type { KycProvider, KycVerifyInput, KycVerifyResult } from "./types";
 
@@ -105,7 +106,7 @@ export const inhouseProvider: KycProvider = {
       ]);
 
       // 3. Call server-side verify endpoint
-      const res = await fetch("/api/kyc-verify", {
+      const res = await apiFetch("/api/kyc?action=verify", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(Object.fromEntries(Object.entries({
@@ -124,7 +125,6 @@ export const inhouseProvider: KycProvider = {
           residenceStatus:         input.residenceStatus,
           sameNationalityResidence: input.sameNationalityResidence,
           permitB64:               permitB64 ?? null,
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         }).filter(([_k, v]) => v !== null && v !== undefined))),
       });
 
@@ -133,7 +133,6 @@ export const inhouseProvider: KycProvider = {
         throw new Error(`kyc-verify ${res.status}: ${errText.slice(0, 300)}`);
       }
       const result = await res.json() as KycVerifyResult & { flags?: string[] };
-      console.log("[KYC inhouse] result:", JSON.stringify({ ok: result.ok, riskScore: result.riskScore, reason: result.reason }));
       return result;
 
     } catch (err) {

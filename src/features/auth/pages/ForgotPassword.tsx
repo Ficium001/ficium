@@ -52,7 +52,7 @@ export default function ForgotPassword() {
   // ---- After-submit success view ----
   if (sentTo) {
     return (
-      <div className="min-h-screen bg-cream px-5 py-8 sm:px-6 sm:py-10 flex items-center justify-center">
+      <div className="min-h-screen bg-paper px-5 py-8 sm:px-6 sm:py-10 flex items-center justify-center">
         <div className="mx-auto w-full max-w-[440px] text-center">
           <div className="w-16 h-16 mx-auto rounded-2xl bg-ficium/10 text-ficium grid place-items-center mb-6">
             <Mail size={28} />
@@ -80,7 +80,7 @@ export default function ForgotPassword() {
 
   // ---- Form ----
   return (
-    <div className="min-h-screen bg-cream px-5 py-8 sm:px-6 sm:py-10">
+    <div className="min-h-screen bg-paper px-5 py-8 sm:px-6 sm:py-10">
       <div className="mx-auto w-full max-w-[440px]">
         <Link
           to="/login"

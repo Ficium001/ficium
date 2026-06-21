@@ -5,7 +5,7 @@
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from "@supabase/supabase-js";
-import { Env } from "./env";
+import { Env } from "./env.js";
 
 export type ServiceDb = ReturnType<typeof createClient<any, any, any>>;
 
