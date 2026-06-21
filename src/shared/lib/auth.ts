@@ -1,4 +1,4 @@
-import { supabase, institutionDb } from "./supabase";
+import { supabase } from "./supabase";
 import { audit } from "./audit";
 
 /* ============================================================
@@ -111,95 +111,6 @@ export async function signUpBusiness(input: SignUpBusinessInput): Promise<SignUp
   return { ok: true, userId: data.user.id, needsEmailConfirmation: !data.session };
 }
 
-/* ============================================================
-   INSTITUTION SIGN UP
-   ============================================================ */
-
-export type SignUpInstitutionInput = {
-  email: string;
-  password: string;
-  firstName: string;
-  lastName: string;
-  institutionName: string;
-  institutionType: "commercial_bank" | "fintech" | "micro_credit" | "leasing" | "insurance" | "cooperative" | "other";
-  licenseNumber?: string;
-  regulatoryBody?: string;
-  phone?: string;
-  country: string;
-};
-
-export async function signUpInstitution(input: SignUpInstitutionInput): Promise<SignUpResult> {
-  const { email, password, firstName, lastName, institutionName, institutionType, licenseNumber, regulatoryBody, phone, country } = input;
-  const fullName = [firstName, lastName].filter(Boolean).join(" ").trim();
-
-  // Step 1: Create auth user
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        full_name: fullName,
-        first_name: firstName,
-        last_name: lastName,
-        phone: phone || "",
-        role: "bank",
-        user_type: "institution",
-        institution_name: institutionName,
-        institution_type: institutionType,
-        license_number: licenseNumber || "",
-        regulatory_body: regulatoryBody || "",
-        country,
-      },
-    },
-  });
-
-  if (error) return { ok: false, error: mapAuthError(error) };
-  if (!data.user) return { ok: false, error: { code: "unknown", message: "Sign up did not return a user." } };
-
-  // Step 2: Create institution row in institution schema
-  const { data: instData, error: instError } = await institutionDb
-    .from("institutions")
-    .insert({
-      name:                  institutionName,
-      legal_name:            institutionName,
-      institution_type:      institutionType,
-      reg_number:            licenseNumber || null,
-      regulator:             regulatoryBody || null,
-      country,
-      deployment_model:      "saas",
-      modules:               ["marketplace"],
-      onboarding_stage:      "registered",
-      compliance_status:     "not_submitted",
-      approved:              false,
-      primary_contact_email: email,
-      primary_contact_name:  fullName,
-      primary_contact_phone: phone || null,
-    })
-    .select("id")
-    .single();
-
-  if (instError || !instData) {
-    // Auth user created but institution row failed — still let them proceed
-    // They will see the pending page and can contact support
-    console.error("Institution row creation failed:", instError?.message);
-    return { ok: true, userId: data.user.id, needsEmailConfirmation: !data.session };
-  }
-
-  // Step 3: Link user to institution as primary admin
-  await institutionDb
-    .from("institution_members")
-    .insert({
-      institution_id:   instData.id,
-      auth_user_id:     data.user.id,
-      email:            email,
-      full_name:        fullName,
-      role:             "admin",
-      is_primary_admin: true,
-      active:           true,
-    });
-
-  return { ok: true, userId: data.user.id, needsEmailConfirmation: !data.session };
-}
 
 /* ============================================================
    SIGN IN
