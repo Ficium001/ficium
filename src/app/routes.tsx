@@ -20,6 +20,7 @@ const Dashboard           = lazy(() => import("../individual/dashboard/pages/Das
 const Profile             = lazy(() => import("../individual/dashboard/pages/Profile"));
 const Kyc                 = lazy(() => import("../individual/onboarding/pages/Kyc"));
 const KycPending          = lazy(() => import("../individual/onboarding/pages/KycPending"));
+const KycAdmin            = lazy(() => import("../admin/kyc/KycSettings"));
 const Dossier             = lazy(() => import("../individual/onboarding/pages/Dossier"));
 const Requests            = lazy(() => import("../individual/requests/pages/Requests"));
 const NewRequest          = lazy(() => import("../individual/requests/pages/NewRequest"));
@@ -115,6 +116,8 @@ export const router = createBrowserRouter([
   { path: "/networth",               element: <ClientOnlyRoute><S><NetWorthPage /></S></ClientOnlyRoute> },
   { path: "/health",                 element: <ClientOnlyRoute><S><FinancialHealthPage /></S></ClientOnlyRoute> },
 
+  { path: "/kyc-admin",           element: <S><KycAdmin /></S> },
+
   // Dead route redirects
   { path: "/goals",                  element: <Navigate to="/requests" replace /> },
   { path: "/goals/*",               element: <Navigate to="/requests" replace /> },
@@ -129,3 +132,4 @@ export const router = createBrowserRouter([
 
   { path: "*", element: <S><NotFound /></S> },
 ]);
+
