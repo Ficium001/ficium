@@ -33,13 +33,13 @@ export const config = { runtime: "nodejs" };
 type Handler = (req: any, res: any) => unknown | Promise<unknown>;
 
 /** Auth level required per action. */
-type Gate = "user" | "admin" | "service";
+type Gate = "user" | "admin" | "service" | "none";
 
 const ROUTES: Record<string, { handler: Handler; gate: Gate }> = {
   // A logged-in user verifying their own identity.
   "verify":      { handler: verifyHandler,     gate: "user"    },
   // Admin console operations.
-  "settings":    { handler: settingsHandler,   gate: "user"    }, // admin page uses service-role key internally
+  "settings":    { handler: settingsHandler,   gate: "none"    }, // handler uses service-role key; no client session needed
   "notify":      { handler: notifyHandler,     gate: "admin"   },
   "admin-faces": { handler: adminFacesHandler, gate: "admin"   },
   // Internal / server-to-server utilities — never called from a browser.
@@ -63,7 +63,9 @@ export default async function handler(req: any, res: any) {
 
   // Fail-closed auth gate before any handler logic runs.
   try {
-    if (route.gate === "service") {
+    if (route.gate === "none") {
+      // no auth required — handler is self-contained with service-role key
+    } else if (route.gate === "service") {
       requireService(req);
     } else {
       const user = await requireUser(req);
