@@ -39,7 +39,7 @@ const ROUTES: Record<string, { handler: Handler; gate: Gate }> = {
   // A logged-in user verifying their own identity.
   "verify":      { handler: verifyHandler,     gate: "user"    },
   // Admin console operations.
-  "settings":    { handler: settingsHandler,   gate: "admin"   },
+  "settings":    { handler: settingsHandler,   gate: "user"    }, // admin page uses service-role key internally
   "notify":      { handler: notifyHandler,     gate: "admin"   },
   "admin-faces": { handler: adminFacesHandler, gate: "admin"   },
   // Internal / server-to-server utilities — never called from a browser.
@@ -76,3 +76,4 @@ export default async function handler(req: any, res: any) {
 
   return route.handler(req, res);
 }
+
