@@ -33,7 +33,7 @@ export function BottomNav({ role }: { role: string | null | undefined }) {
   if (role !== "client") return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-paper/85 backdrop-blur-xl border-t border-line">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-paper/85 backdrop-blur-xl border-t border-line">
       <div className="max-w-[640px] mx-auto grid grid-cols-5">
         {tabs.map((t) => {
           const active = pathname === t.to || (t.to !== "/dashboard" && pathname.startsWith(t.to));
