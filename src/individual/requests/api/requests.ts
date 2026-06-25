@@ -104,7 +104,7 @@ export async function getMyRequests(): Promise<RequestSummary[]> {
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token ?? "";
 
-  let bidMap = new Map<string, { count: number; bestRate: number | null }>();
+  const bidMap = new Map<string, { count: number; bestRate: number | null }>();
   for (const id of ids) bidMap.set(id, { count: 0, bestRate: null });
 
   try {
