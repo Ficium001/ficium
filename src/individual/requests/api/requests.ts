@@ -125,8 +125,9 @@ export async function getMyRequests(): Promise<RequestSummary[]> {
           if (!entry) continue;
           entry.count = bids.length;
           for (const bid of bids) {
-            if (entry.bestRate === null || bid.rate < entry.bestRate) {
-              entry.bestRate = bid.rate;
+            const rate = Number(bid.rate); // postgres numeric comes over JSON as string
+            if (entry.bestRate === null || rate < entry.bestRate) {
+              entry.bestRate = rate;
             }
           }
         }

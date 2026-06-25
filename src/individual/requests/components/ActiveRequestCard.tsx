@@ -92,7 +92,7 @@ export function ActiveRequestCard({ request }: { request: RequestSummary }) {
         {request.bestRate !== null && (
           <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/20 rounded-full px-3 py-1">
             <span className="text-[11px] font-bold text-white whitespace-nowrap">
-              Best {request.bestRate.toFixed(2)}% APR
+              Best {Number(request.bestRate).toFixed(2)}% APR
             </span>
           </div>
         )}
