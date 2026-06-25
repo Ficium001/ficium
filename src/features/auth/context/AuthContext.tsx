@@ -39,6 +39,8 @@ function prefetchDashboardData(): void {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session,   setSession]   = useState<Session | null>(null);
+  // Optimistically default to 'client' so nav renders immediately while the
+  // get_my_role RPC resolves in the background. Corrected once the RPC returns.
   const [role,      setRole]      = useState<UserRole | null>(null);
   // isLoading is only true until we know whether a session exists.
   // Role resolution (get_my_role RPC) happens async and does NOT block rendering.
@@ -54,15 +56,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Resolves role in the background — never blocks the loading gate.
   function resolveRole(userId: string): void {
+    void userId;
     supabase.rpc("get_my_role").then(({ data: roleData }) => {
       if (!roleData) {
-        void supabase.auth.signOut();
-        setSession(null);
-        setRole(null);
-        window.location.href = "/";
+        // RPC returned null — keep the optimistic 'client' default.
+        // Don't force sign-out on a transient RPC failure.
         return;
       }
-      void userId;
       const resolved = (roleData as UserRole) ?? "client";
       setRole(resolved);
       if (resolved === "client") prefetchDashboardData();
@@ -76,6 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Unblock the app immediately — role resolves in background
       setIsLoading(false);
       if (data.session?.user) {
+        setRole("client"); // optimistic default so nav renders immediately
         resolveRole(data.session.user.id);
       }
     });
@@ -84,6 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       resetCacheForUser(newSession?.user?.id ?? null);
       setSession(newSession);
       if (newSession?.user) {
+        setRole("client"); // optimistic default
         resolveRole(newSession.user.id);
       } else {
         setRole(null);
