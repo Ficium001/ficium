@@ -1,1 +1,1 @@
-export { FiciumLogo } from "@ficium/shared/ui";
+export { FiciumLogo } from './base/FiciumLogo';

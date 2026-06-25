@@ -1,1 +1,1 @@
-export { Select } from "@ficium/shared/ui";
+export { Select } from './base/Select';

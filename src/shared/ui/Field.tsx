@@ -1,1 +1,1 @@
-export { Field } from "@ficium/shared/ui";
+export { Field } from './base/Field';

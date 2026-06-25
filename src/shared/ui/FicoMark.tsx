@@ -1,1 +1,1 @@
-export { FicoMark } from "@ficium/shared/ui";
+export { FicoMark } from './base/FicoMark';

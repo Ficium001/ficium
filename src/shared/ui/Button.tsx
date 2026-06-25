@@ -1,1 +1,1 @@
-export { Button } from "@ficium/shared/ui";
+export { Button } from './base/Button';

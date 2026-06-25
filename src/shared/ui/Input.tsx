@@ -1,1 +1,1 @@
-export { Input } from "@ficium/shared/ui";
+export { Input } from './base/Input';
