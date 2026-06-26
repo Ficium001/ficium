@@ -289,7 +289,7 @@ function NoBidsState({
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token ?? "";
-      const res = await fetch("/api/relist-request", {
+      const res = await fetch("/api/request-actions?action=relist", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ requestId }),

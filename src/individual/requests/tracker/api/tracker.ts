@@ -8,7 +8,7 @@ export async function fetchLoanTracker(
   const token = session?.access_token ?? "";
 
   const res = await fetch(
-    `/api/loan-tracker?requestId=${encodeURIComponent(requestId)}`,
+    `/api/request-actions?action=tracker&requestId=${encodeURIComponent(requestId)}`,
     { headers: { Authorization: `Bearer ${token}` } },
   );
 
