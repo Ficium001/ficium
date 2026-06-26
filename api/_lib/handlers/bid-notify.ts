@@ -1,31 +1,5 @@
-/**
- * api/bid-notify.ts
- * POST /api/bid-notify
- *
- * Triggered by bid_notify.dispatch() via pg_net immediately after a
- * marketplace.bid INSERT on the Portal DB.
- *
- * ┌─────────────────────────────────────────────────────────────────┐
- * │  FLOW                                                           │
- * │  Portal DB bid INSERT → pg_net trigger → this endpoint         │
- * │    1. Receive enriched payload (bid + request + product data)  │
- * │    2. Resolve consumer from App DB via request_id              │
- * │    3. Write in-app notification (idempotent)                   │
- * │    4. Send Resend email                                        │
- * │                                                                 │
- * │  Double-blind preserved: institution name NEVER in payload      │
- * │  Zero round-trips to portal-api — all data in pg_net body      │
- * └─────────────────────────────────────────────────────────────────┘
- *
- * Auth:    X-Service-Secret header
- * Idempotent: metadata->>'bid_id' checked before insert
- *
- * Env: APP_SERVICE_SECRET, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
- *      RESEND_API_KEY
- */
-
-import { Env }                          from "./_lib/env.js";
-import { getServiceDb, type ServiceDb } from "./_lib/db.js";
+import { Env }                          from "../env.js";
+import { getServiceDb, type ServiceDb } from "../db.js";
 
 export const config = { runtime: "nodejs" };
 
@@ -217,22 +191,17 @@ async function sendEmail(client: AppClient, p: BidPayload): Promise<void> {
 // ── Handler ────────────────────────────────────────────────────────────────
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export default async function handler(req: any, res: any): Promise<void> {
-  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  const secret = (req.headers["x-service-secret"] as string) ?? "";
-  if (!secret || secret !== Env.appServiceSecret()) {
-    return res.status(403).json({ error: "Forbidden" });
-  }
-
-  const p = req.body as Partial<BidPayload>;
+// ── Named export for internal router ──────────────────────────────────────
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function handle(body: unknown, res: any): Promise<void> {
+  const p = body as Partial<BidPayload>;
   if (!p.bid_id || !p.request_id) {
     return res.status(400).json({ error: "bid_id and request_id required" });
   }
 
   const db = getServiceDb();
 
-  // ── 1. Resolve consumer from App DB ─────────────────────────────────────
   const { data: appReq } = await (db as any)
     .from("requests")
     .select("client_id")
@@ -240,7 +209,6 @@ export default async function handler(req: any, res: any): Promise<void> {
     .single() as { data: { client_id: string } | null };
 
   if (!appReq) {
-    // Request may not be synced to App DB yet (edge case) — log and 200
     console.warn("[bid-notify] request not found on App DB:", p.request_id);
     return res.status(200).json({ ok: false, reason: "request_not_found" });
   }
@@ -256,10 +224,8 @@ export default async function handler(req: any, res: any): Promise<void> {
     return res.status(200).json({ ok: false, reason: "client_not_found" });
   }
 
-  // ── 2. Write in-app notification ─────────────────────────────────────────
   const written = await writeInApp(db, client.id, p as BidPayload);
 
-  // ── 3. Send email (fire-and-forget) ──────────────────────────────────────
   if (written) {
     sendEmail(client, p as BidPayload).catch((e) =>
       console.error("[bid-notify] email error:", e),

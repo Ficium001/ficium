@@ -25,8 +25,8 @@
  *               APP_SERVICE_SECRET
  */
 
-import { Env }         from "./_lib/env.js";
-import { getServiceDb, type ServiceDb } from "./_lib/db.js";
+import { Env }         from "../env.js";
+import { getServiceDb, type ServiceDb } from "../db.js";
 
 export const config = { runtime: "nodejs" };
 
@@ -431,20 +431,15 @@ function pluckMeta(data: Record<string, unknown>): {
 // ── Handler ─────────────────────────────────────────────────────────────────
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export default async function handler(req: any, res: any): Promise<void> {
-  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  const secret = (req.headers["x-service-secret"] as string) ?? "";
-  if (!secret || secret !== Env.appServiceSecret()) {
-    return res.status(403).json({ error: "Forbidden" });
-  }
-
-  const { document_id } = (req.body ?? {}) as { document_id?: string };
+// ── Named export for internal router ──────────────────────────────────────
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function handle(body: unknown, res: any): Promise<void> {
+  const { document_id } = (body ?? {}) as { document_id?: string };
   if (!document_id) return res.status(400).json({ error: "document_id required" });
 
   const db = getServiceDb();
 
-  // ── 1. Fetch document record ─────────────────────────────────────────────
   const { data: docRaw, error: docErr } = await (db as any)
     .from("client_vault_document")
     .select("id, client_id, doc_type, storage_path, mime_type")
@@ -459,7 +454,6 @@ export default async function handler(req: any, res: any): Promise<void> {
   const now = new Date().toISOString();
 
   try {
-    // ── 2. Download from Storage ───────────────────────────────────────────
     const { data: fileData, error: dlErr } = await (db as any).storage
       .from("documents")
       .download(doc.storage_path) as { data: Blob | null; error: { message: string } | null };
@@ -470,11 +464,9 @@ export default async function handler(req: any, res: any): Promise<void> {
     const base64   = buffer.toString("base64");
     const mimeType = doc.mime_type ?? "image/jpeg";
 
-    // ── 3. Extract with Claude Vision ──────────────────────────────────────
     const { raw, confidence } = await extractWithClaude(base64, mimeType, doc.doc_type);
 
-    // ── 4. Determine status ────────────────────────────────────────────────
-    const hasError     = "error" in raw;
+    const hasError      = "error" in raw;
     const lowConfidence = confidence < 0.4;
     const status: ExtractStatus = hasError
       ? "failed"
@@ -482,7 +474,6 @@ export default async function handler(req: any, res: any): Promise<void> {
 
     const meta = pluckMeta(raw);
 
-    // ── 5. Write extraction result ─────────────────────────────────────────
     await (db as any).from("client_vault_document").update({
       extract_status: status,
       extract_raw:    raw,
@@ -495,7 +486,6 @@ export default async function handler(req: any, res: any): Promise<void> {
       updated_at:     now,
     }).eq("id", document_id);
 
-    // ── 6. Attest into snapshot (only if confident) ────────────────────────
     if (!hasError && !lowConfidence) {
       await attest(db, doc, raw, now);
 
@@ -506,7 +496,6 @@ export default async function handler(req: any, res: any): Promise<void> {
       }).eq("id", document_id);
     }
 
-    // ── 7. Audit log ───────────────────────────────────────────────────────
     await (db as any).from("client_vault_access_log").insert({
       document_id,
       client_id: doc.client_id,
@@ -514,7 +503,11 @@ export default async function handler(req: any, res: any): Promise<void> {
       actor_id:  null,
     });
 
-    return res.status(200).json({ ok: true, status: hasError || lowConfidence ? status : "attested", confidence });
+    return res.status(200).json({
+      ok:         true,
+      status:     hasError || lowConfidence ? status : "attested",
+      confidence,
+    });
 
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
