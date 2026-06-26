@@ -46,7 +46,11 @@ export function useAcceptBid(requestId: string) {
   return useMutation({
     mutationFn: (bid: Bid) => acceptBid(bid.id, requestId),
     onSuccess: () => {
+      // Invalidate request detail (status: open → accepted), list, bids, and tracker
       queryClient.invalidateQueries({ queryKey: RequestQueryKeys.all });
+      queryClient.invalidateQueries({ queryKey: RequestQueryKeys.detail(requestId) });
+      queryClient.invalidateQueries({ queryKey: RequestQueryKeys.bids(requestId) });
+      queryClient.invalidateQueries({ queryKey: ["tracker", requestId] });
     },
   });
 }
