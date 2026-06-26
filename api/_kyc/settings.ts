@@ -12,7 +12,7 @@ async function supabase(method: "GET" | "PATCH", body?: object) {
   const key  = getEnv("SUPABASE_SERVICE_ROLE_KEY")
             || getEnv("SUPABASE_SERVICE_KEY")
             || getEnv("VITE_SUPABASE_SERVICE_ROLE_KEY");
-  console.log("[kyc-settings] url:", url?.slice(0,40), "key:", key ? key.slice(0,12)+"…" : "MISSING");
+  if (!key) console.warn("[kyc-settings] SUPABASE_SERVICE_ROLE_KEY is not set");
   const res  = await fetch(`${url}/rest/v1/kyc_settings?id=eq.1`, {
     method,
     headers: {
