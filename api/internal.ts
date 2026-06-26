@@ -27,16 +27,18 @@ import { handle as handleBidNotify }       from "./_lib/handlers/bid-notify.js";
 import { handle as handleVaultExtract }    from "./_lib/handlers/vault-extract.js";
 import { handle as handleRequestExpiring } from "./_lib/handlers/request-expiring.js";
 import { handle as handleRequestExpired }  from "./_lib/handlers/request-expired.js";
+import { handle as handleBidAccepted }     from "./_lib/handlers/bid-accepted.js";
 
 export const config = { runtime: "nodejs" };
 
-type Action = "bid-notify" | "vault-extract" | "request-expiring" | "request-expired";
+type Action = "bid-notify" | "vault-extract" | "request-expiring" | "request-expired" | "bid-accepted";
 
 const HANDLERS: Record<Action, (body: unknown, res: any) => Promise<void>> = {
   "bid-notify":        handleBidNotify,
   "vault-extract":     handleVaultExtract,
   "request-expiring":  handleRequestExpiring,
   "request-expired":   handleRequestExpired,
+  "bid-accepted":      handleBidAccepted,
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

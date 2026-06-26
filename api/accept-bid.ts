@@ -20,6 +20,7 @@
 import { Env }                                    from "./_lib/env.js";
 import { Response }                               from "./_lib/response.js";
 import { requireUser, requireOwnership, sendAuthError } from "./_lib/auth.js";
+import { writeBidAcceptedNotification }           from "./_lib/handlers/bid-accepted.js";
 
 export const config = { runtime: "nodejs" };
 
@@ -129,6 +130,18 @@ export default async function handler(req: any, res: any): Promise<void> {
       },
     ),
   ]);
+
+  // ── 5. Write bid_accepted notification (fire-and-forget) ──────────────────
+  writeBidAcceptedNotification({
+    client_id:        consumerId,
+    request_id:       requestId,
+    bid_id:           bidId,
+    institution_name: (reveal.institution_name as string) ?? "your lender",
+    rate:             Number(reveal.rate)          || 0,
+    rate_type:        (reveal.rate_type as string) ?? "fixed",
+    amount_offered:   Number(reveal.amount_offered) || 0,
+    term_months:      reveal.term_months ? Number(reveal.term_months) : null,
+  }).catch((e) => console.error("[accept-bid] notification error:", e));
 
   return Response.ok(res, reveal);
 }
