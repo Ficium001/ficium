@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { useRequest, useRequestBids, useAcceptBid } from "../hooks/useRequests";
 import { formatProductType } from "../api/requests";
-import type { Bid, RequestDetail as RequestDetailType } from "../api/requests";
+import type { Bid, RequestDetail as RequestDetailType, Phase2Reveal } from "../api/requests";
 import { Button, Card, BottomNav } from "../../../shared/ui";
 import RequestChat from "../../../shared/components/RequestChat";
 import { supabase } from "../../../shared/lib/supabase";
@@ -346,11 +346,99 @@ function BidsTab({ bids, request, isClosed, accepting, acceptingBid, onAccept }:
   );
 }
 
+/* ── Phase 2 Reveal Modal ── */
+function Phase2RevealModal({ reveal, onClose }: { reveal: Phase2Reveal; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/50 backdrop-blur-sm p-4">
+      <div className="w-full max-w-md bg-white rounded-[28px] shadow-2xl overflow-hidden">
+
+        {/* Header */}
+        <div className="relative px-6 pt-8 pb-6 text-center"
+          style={{ background: "linear-gradient(135deg, #1B1B4B 0%, #3536DC 60%, #8231EC 100%)" }}>
+          <div className="w-14 h-14 rounded-2xl bg-white/20 grid place-items-center mx-auto mb-4">
+            <CheckCircle size={28} className="text-white" />
+          </div>
+          <h2 className="font-display text-[22px] font-extrabold text-white leading-tight">
+            Offer accepted
+          </h2>
+          <p className="text-[13px] text-white/70 mt-1.5">
+            Your identity has been securely shared with {reveal.institution_name}
+          </p>
+        </div>
+
+        {/* Body */}
+        <div className="px-6 py-5 space-y-4">
+
+          {/* Institution */}
+          <div className="bg-paper rounded-2xl px-4 py-4">
+            <div className="text-[10px] font-bold text-muted uppercase tracking-widest mb-2">
+              Your new lender
+            </div>
+            <div className="font-display text-[18px] font-bold text-ink">
+              {reveal.institution_name}
+            </div>
+            {reveal.legal_name && reveal.legal_name !== reveal.institution_name && (
+              <div className="text-[12px] text-muted mt-0.5">{reveal.legal_name}</div>
+            )}
+          </div>
+
+          {/* Contact details */}
+          {(reveal.contact_person || reveal.contact_email || reveal.contact_phone) && (
+            <div className="bg-paper rounded-2xl px-4 py-4 space-y-3">
+              <div className="text-[10px] font-bold text-muted uppercase tracking-widest">
+                Your relationship contact
+              </div>
+              {reveal.contact_person && (
+                <div className="flex items-center gap-3">
+                  <User size={14} className="text-ficium flex-shrink-0" />
+                  <span className="text-[14px] font-semibold text-ink">{reveal.contact_person}</span>
+                </div>
+              )}
+              {reveal.contact_email && (
+                <a href={`mailto:${reveal.contact_email}`}
+                  className="flex items-center gap-3 group">
+                  <MessageSquare size={14} className="text-ficium flex-shrink-0" />
+                  <span className="text-[13px] text-ficium group-hover:underline">{reveal.contact_email}</span>
+                </a>
+              )}
+              {reveal.contact_phone && (
+                <a href={`tel:${reveal.contact_phone}`}
+                  className="flex items-center gap-3 group">
+                  <AlertCircle size={14} className="text-ficium flex-shrink-0" />
+                  <span className="text-[13px] text-ficium group-hover:underline">{reveal.contact_phone}</span>
+                </a>
+              )}
+            </div>
+          )}
+
+          {/* What happens next */}
+          <div className="bg-ficium/[0.04] border border-ficium/10 rounded-2xl px-4 py-3">
+            <div className="text-[12px] text-ink/70 leading-relaxed">
+              <strong className="text-ink">{reveal.institution_name}</strong> will contact
+              you within <strong className="text-ink">2 business days</strong> to begin
+              the loan processing. Please have your documents ready.
+            </div>
+          </div>
+
+          <button
+            onClick={onClose}
+            className="w-full py-4 rounded-2xl text-[15px] font-bold text-white transition-opacity hover:opacity-90"
+            style={{ background: "linear-gradient(135deg,#3536DC,#8231EC)" }}
+          >
+            Done
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Main workspace ── */
 export default function RequestDetail() {
   const { id }     = useParams<{ id: string }>();
   const navigate   = useNavigate();
   const [tab, setTab] = useState<TabId>("plan");
+  const [reveal, setReveal] = useState<Phase2Reveal | null>(null);
 
   const { data: request, isLoading: reqLoading }    = useRequest(id!);
   const { data: bids = [], isLoading: bidsLoading } = useRequestBids(id!);
@@ -362,6 +450,14 @@ export default function RequestDetail() {
 
   if (loading) return <LoadingSkeleton />;
   if (!request) return <NotFound />;
+
+  const handleAccept = (bid: Bid) => {
+    accept(bid, {
+      onSuccess: (result) => {
+        if (result.ok) setReveal(result.reveal);
+      },
+    });
+  };
 
   return (
     <div className="min-h-screen bg-paper pb-28">
@@ -448,7 +544,7 @@ export default function RequestDetail() {
             isClosed={isClosed}
             accepting={accepting}
             acceptingBid={acceptingBid}
-            onAccept={(bid) => accept(bid, { onSuccess: () => navigate("/requests") })}
+            onAccept={handleAccept}
           />
         )}
         {tab === "chat"      && (
@@ -459,6 +555,13 @@ export default function RequestDetail() {
       </div>
 
       <BottomNav />
+
+      {reveal && (
+        <Phase2RevealModal
+          reveal={reveal}
+          onClose={() => { setReveal(null); navigate("/requests"); }}
+        />
+      )}
     </div>
   );
 }
