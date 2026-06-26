@@ -32,6 +32,7 @@ const FinancialTools      = lazy(() => import("../individual/tools/pages/Financi
 const ClientAudit         = lazy(() => import("../individual/audit/pages/ClientAudit"));
 const NetWorthPage        = lazy(() => import("../individual/networth/pages/NetWorth"));
 const FinancialHealthPage = lazy(() => import("../individual/health/pages/FinancialHealth"));
+const Vault               = lazy(() => import("../individual/vault/pages/Vault"));
 
 // ── Institution app ───────────────────────────────────────────
 // Institution & admin experiences now live in the Ficium Portal (canonical).
@@ -114,6 +115,7 @@ export const router = createBrowserRouter([
   { path: "/tools",                  element: <ClientOnlyRoute><S><FinancialTools /></S></ClientOnlyRoute> },
   { path: "/activity",               element: <ClientOnlyRoute><S><ClientAudit /></S></ClientOnlyRoute> },
   { path: "/networth",               element: <ClientOnlyRoute><S><NetWorthPage /></S></ClientOnlyRoute> },
+  { path: "/vault",                  element: <ClientOnlyRoute><S><Vault /></S></ClientOnlyRoute> },
   { path: "/health",                 element: <ClientOnlyRoute><S><FinancialHealthPage /></S></ClientOnlyRoute> },
 
   { path: "/kyc-admin",           element: <S><KycAdmin /></S> },

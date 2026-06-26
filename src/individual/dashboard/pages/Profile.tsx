@@ -1,8 +1,8 @@
-import { useState }   from "react";
-import { useNavigate } from "react-router-dom";
+import { useState }             from "react";
+import { useNavigate, Link }    from "react-router-dom";
 import {
   LogOut, ShieldCheck, ShieldAlert, MapPin, Briefcase,
-  TrendingUp, CheckCircle2, Circle,
+  TrendingUp, CheckCircle2, Circle, ChevronRight,
   Wallet, Activity, Zap,
   User, Mail, Globe, Building2, DollarSign, AlertCircle,
 } from "lucide-react";
@@ -191,6 +191,23 @@ export default function Profile() {
             <EmptySection message="No financial profile yet." cta="Complete profile" onCta={() => setEditing("financial")} />
           )}
         </ProfileSection>
+
+        {/* Vault entry */}
+        <Link
+          to="/vault"
+          className="flex items-center gap-4 p-5 bg-white rounded-2xl border border-line hover:border-ficium/30 hover:shadow-sm transition-all no-underline group"
+        >
+          <div className="w-10 h-10 rounded-xl bg-ficium/[0.08] flex items-center justify-center flex-shrink-0">
+            <ShieldCheck size={18} className="text-ficium" />
+          </div>
+          <div className="flex-1">
+            <p className="text-[14px] font-semibold text-ink">Document Vault</p>
+            <p className="text-[12px] text-muted mt-0.5">
+              Store payslips, title deeds, and more — verify your profile automatically
+            </p>
+          </div>
+          <ChevronRight size={16} className="text-muted/40 group-hover:text-ficium transition-colors" />
+        </Link>
 
       </div>
       <BottomNav />
