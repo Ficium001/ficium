@@ -273,6 +273,89 @@ function DetailsTab({ request, profile }: { request: RequestDetailType; profile:
   );
 }
 
+/* ── No-bids / closed state ── */
+function NoBidsState({
+  requestId, status, bidCount,
+}: {
+  requestId: string; status: string; bidCount: number;
+}) {
+  const navigate = useNavigate();
+  const [relisting, setRelisting] = useState(false);
+  const [done, setDone]           = useState(false);
+
+  const handleRelist = async () => {
+    setRelisting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token ?? "";
+      const res = await fetch("/api/relist-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ requestId }),
+      });
+      if (res.ok) { setDone(true); setTimeout(() => navigate("/requests"), 2000); }
+    } finally { setRelisting(false); }
+  };
+
+  if (done) return (
+    <div className="mt-5 px-4 py-4 bg-green-50 border border-green-200 rounded-2xl text-center">
+      <div className="text-[22px] mb-1">✓</div>
+      <div className="font-semibold text-green-800 text-[13px]">Request relisted!</div>
+      <div className="text-[12px] text-green-700 mt-0.5">Redirecting to your requests…</div>
+    </div>
+  );
+
+  const isExpired = status === "expired";
+
+  return (
+    <div className="mt-5 space-y-3">
+      {isExpired ? (
+        <div className="px-4 py-4 bg-amber-50 border border-amber-200 rounded-2xl">
+          <div className="font-semibold text-amber-900 text-[14px] mb-1">No bids received</div>
+          <p className="text-[12px] text-amber-800 leading-relaxed mb-3">
+            Your bid window closed without any offers. You can relist to give institutions
+            another 72 hours to respond.
+          </p>
+          <ul className="text-[11px] text-amber-700 space-y-1 mb-4 pl-3">
+            <li>• Consider increasing your max rate slightly</li>
+            <li>• Complete any missing profile sections</li>
+            <li>• Check that your dossier is fully verified</li>
+          </ul>
+          <button
+            onClick={handleRelist}
+            disabled={relisting}
+            className="w-full py-3 rounded-xl text-[13px] font-bold text-white
+                       transition-opacity hover:opacity-90 disabled:opacity-60"
+            style={{ background: "linear-gradient(135deg,#3536DC,#8231EC)" }}
+          >
+            {relisting ? "Relisting…" : "Relist my request"}
+          </button>
+        </div>
+      ) : (
+        <div className="px-4 py-3 bg-ink/[0.04] border border-ink/10 rounded-2xl">
+          <div className="font-semibold text-ink text-[13px] mb-0.5">Bid window closed</div>
+          <p className="text-[12px] text-muted">
+            {bidCount > 0
+              ? `You have ${bidCount} offer${bidCount !== 1 ? "s" : ""} to review above.`
+              : "No offers were received. You can relist to try again."}
+          </p>
+          {bidCount === 0 && (
+            <button
+              onClick={handleRelist}
+              disabled={relisting}
+              className="mt-3 w-full py-2.5 rounded-xl text-[12px] font-bold text-white
+                         transition-opacity hover:opacity-90 disabled:opacity-60"
+              style={{ background: "linear-gradient(135deg,#3536DC,#8231EC)" }}
+            >
+              {relisting ? "Relisting…" : "Relist request"}
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── Bids tab ── */
 function BidsTab({ bids, request, isClosed, accepting, acceptingBid, onAccept }: {
   bids: Bid[];
@@ -338,10 +421,7 @@ function BidsTab({ bids, request, isClosed, accepting, acceptingBid, onAccept }:
         </div>
       )}
       {isClosed && !acceptedBid && (
-        <div className="flex items-start gap-3 mt-5 px-4 py-3 bg-ink/[0.04] border border-ink/10 rounded-xl">
-          <AlertCircle size={18} className="text-muted flex-shrink-0 mt-0.5" />
-          <p className="text-[13px] text-muted">This request is closed.</p>
-        </div>
+        <NoBidsState requestId={request.id} status={request.status} bidCount={bids.length} />
       )}
     </div>
   );
