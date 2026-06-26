@@ -37,6 +37,13 @@ const JOURNEY_STEPS = ["Submitted", "Under Review", "Providers Bidding", "Offer 
 const fmt     = (v: number) => v >= 1_000_000 ? `MUR ${(v/1_000_000).toFixed(1)}M` : `MUR ${Number(v).toLocaleString()}`;
 const fmtDate = (s: string) => new Date(s).toLocaleDateString("en-MU", { day: "numeric", month: "short", year: "numeric" });
 
+function monthlyRepayment(principal: number, annualRate: number, months: number): number | null {
+  if (!principal || !annualRate || !months) return null;
+  const r = annualRate / 12;
+  if (r === 0) return principal / months;
+  return (principal * r * Math.pow(1 + r, months)) / (Math.pow(1 + r, months) - 1);
+}
+
 /* ── Plan tab ── */
 function PlanTab({ request, bidCount }: { request: RequestDetailType; bidCount: number }) {
   const journeyProgress = request.status === "accepted" ? 3
@@ -266,16 +273,39 @@ function DetailsTab({ request, profile }: { request: RequestDetailType; profile:
 }
 
 /* ── Bids tab ── */
-function BidsTab({ bids, isClosed, accepting, acceptingBid, onAccept }: {
+function BidsTab({ bids, request, isClosed, accepting, acceptingBid, onAccept }: {
   bids: Bid[];
+  request: RequestDetailType;
   isClosed: boolean;
   accepting: boolean;
   acceptingBid: Bid | undefined;
   onAccept: (bid: Bid) => void;
 }) {
   const acceptedBid = bids.find(b => b.status === "accepted");
+  const deadline    = request.decisionDeadline
+    ? new Date(request.decisionDeadline)
+    : null;
+  const deadlineMs  = deadline ? deadline.getTime() - Date.now() : null;
+  const deadlineFmt = deadline ? fmtDate(request.decisionDeadline!) : null;
+
   return (
     <div>
+      {/* Bid window banner */}
+      {!isClosed && deadlineFmt && (
+        <div className={`flex items-center gap-3 px-4 py-3 mb-4 rounded-2xl border text-[12px] ${
+          deadlineMs !== null && deadlineMs < 2 * 3_600_000
+            ? "bg-red-50 border-red-200 text-red-700"
+            : "bg-amber-50 border-amber-100 text-amber-700"
+        }`}>
+          <Clock size={14} className="flex-shrink-0" />
+          <span>
+            Bidding closes <strong>{deadlineFmt}</strong>
+            {deadlineMs !== null && deadlineMs > 0 && deadlineMs < 48 * 3_600_000 && (
+              <> · {Math.ceil(deadlineMs / 3_600_000)}h remaining</>
+            )}
+          </span>
+        </div>
+      )}
       {acceptedBid && (
         <div className="flex items-start gap-3 px-4 py-4 mb-5 bg-ficium/[0.06] border border-ficium/20 rounded-2xl">
           <CheckCircle size={20} className="text-ficium flex-shrink-0 mt-0.5" />
@@ -414,6 +444,7 @@ export default function RequestDetail() {
         {tab === "bids"      && (
           <BidsTab
             bids={bids}
+            request={request}
             isClosed={isClosed}
             accepting={accepting}
             acceptingBid={acceptingBid}
@@ -436,7 +467,10 @@ export default function RequestDetail() {
 function BidCard({ bid, rank, isBest, canAccept, isAccepting, onAccept }: {
   bid: Bid; rank: number; isBest: boolean; canAccept: boolean; isAccepting: boolean; onAccept: () => void;
 }) {
-  const isAccepted = bid.status === "accepted";
+  const isAccepted  = bid.status === "accepted";
+  const annualRate  = bid.source === "institution" ? bid.rate : bid.rate / 100;
+  const monthly     = monthlyRepayment(bid.amountOffered, annualRate, bid.termMonths);
+
   return (
     <Card padded={false} className={["p-4", isBest ? "border-ficium/30 bg-ficium/[0.02]" : "", isAccepted ? "border-green-300 bg-green-50/50" : ""].join(" ")}>
       <div className="flex items-start justify-between gap-3">
@@ -456,7 +490,7 @@ function BidCard({ bid, rank, isBest, canAccept, isAccepting, onAccept }: {
               <span className="text-sm font-normal text-muted ml-1">{bid.rateType === "variable" ? "variable" : "fixed"} APR</span>
             </div>
             {bid.source === "institution" && bid.amountOffered > 0 && (
-              <div className="flex gap-3 mt-2">
+              <div className="flex flex-wrap gap-2 mt-2">
                 <div className="bg-paper rounded-lg px-3 py-1.5">
                   <div className="text-[9px] text-muted uppercase tracking-wide">Offered</div>
                   <div className="text-[12px] font-bold text-ink">MUR {Number(bid.amountOffered).toLocaleString()}</div>
@@ -465,6 +499,12 @@ function BidCard({ bid, rank, isBest, canAccept, isAccepting, onAccept }: {
                   <div className="bg-paper rounded-lg px-3 py-1.5">
                     <div className="text-[9px] text-muted uppercase tracking-wide">Term</div>
                     <div className="text-[12px] font-bold text-ink">{bid.termMonths}m</div>
+                  </div>
+                )}
+                {monthly !== null && (
+                  <div className="bg-ficium/[0.06] border border-ficium/15 rounded-lg px-3 py-1.5">
+                    <div className="text-[9px] text-ficium uppercase tracking-wide font-bold">Monthly</div>
+                    <div className="text-[12px] font-bold text-ficium">MUR {Math.round(monthly).toLocaleString()}</div>
                   </div>
                 )}
               </div>
