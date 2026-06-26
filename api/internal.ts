@@ -23,16 +23,20 @@ import { Env }  from "./_lib/env.js";
 // Each module exports a named `handle` function that receives (body, res).
 // They never look at headers — auth is checked once here at the router level.
 
-import { handle as handleBidNotify }    from "./_lib/handlers/bid-notify.js";
-import { handle as handleVaultExtract } from "./_lib/handlers/vault-extract.js";
+import { handle as handleBidNotify }       from "./_lib/handlers/bid-notify.js";
+import { handle as handleVaultExtract }    from "./_lib/handlers/vault-extract.js";
+import { handle as handleRequestExpiring } from "./_lib/handlers/request-expiring.js";
+import { handle as handleRequestExpired }  from "./_lib/handlers/request-expired.js";
 
 export const config = { runtime: "nodejs" };
 
-type Action = "bid-notify" | "vault-extract";
+type Action = "bid-notify" | "vault-extract" | "request-expiring" | "request-expired";
 
 const HANDLERS: Record<Action, (body: unknown, res: any) => Promise<void>> = {
-  "bid-notify":    handleBidNotify,
-  "vault-extract": handleVaultExtract,
+  "bid-notify":        handleBidNotify,
+  "vault-extract":     handleVaultExtract,
+  "request-expiring":  handleRequestExpiring,
+  "request-expired":   handleRequestExpired,
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
