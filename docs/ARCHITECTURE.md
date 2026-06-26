@@ -1,332 +1,219 @@
-# Ficium — System Architecture
+# Ficium App — Architecture
 
-_Last updated: June 2026 · Version: 3.0_
+_Last updated: 27 June 2026_
 
----
-
-## 1. Overview
-
-Ficium is a **reverse-banking marketplace** for Mauritius and the Indian Ocean region. Instead of clients approaching banks, clients post anonymised financial requests and FSC-licensed institutions compete with bids. The client picks the winner.
-
-The platform serves three distinct user groups — individuals, financial institutions, and platform admins — each with different security requirements, workflows, and data access patterns. The architecture reflects this from the ground up.
+This document covers the consumer-facing Ficium App (`ficium.vercel.app`). For the full platform picture including the Portal, ficium-auth, and ficium-portal-api, see `ficium-portal/ARCHITECTURE.md`.
 
 ---
 
-## 2. System map
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                     Browser (React 19 SPA)                       │
-│                                                                   │
-│  Marketing  │  Individual App  │  Institution Portal  │  Admin   │
-│  (public)   │  /dashboard      │  /institution        │  /admin  │
-└──────┬──────┴────────┬─────────┴──────────┬───────────┴────┬────┘
-       │               │                    │                │
-       │         Supabase JS SDK (one auth session)          │
-       │               │                    │                │
-       ▼               ▼                    ▼                ▼
-┌─────────────────────────────────────────────────────────────────┐
-│               Supabase (Postgres 15 + Auth + Realtime)           │
-│                                                                   │
-│  public schema      │  institution schema  │  admin schema       │
-│  ─────────────      │  ──────────────────  │  ────────────       │
-│  clients            │  institutions        │  config             │
-│  requests           │  institution_members │  overrides          │
-│  bids               │  institution_bids    │                     │
-│  audit_events       │  products            │                     │
-│  client_goals       │  pending_actions     │                     │
-│  client_dossier     │  marketplace_requests│                     │
-│  …                  │  …                   │                     │
-└──────────────────────────────────────────────────────────────────┘
-       │
-       ▼
-┌──────────────────────────────────────────┐
-│        Vercel Serverless Functions        │
-│                                           │
-│  POST /api/chat          → Claude AI coach│
-│  GET  /api/intelligence  → Market data    │
-│  POST /api/kyc-verify    → KYC engine     │
-│  POST /api/kyc-liveness  → Liveness check │
-│  POST /api/market        → Market feed    │
-│  POST /api/request-builder → AI drafting  │
-└──────────────────────────────────────────┘
-```
-
----
-
-## 3. Frontend architecture
-
-### 3.1 Feature-folder structure
-
-Code is organised by **domain + role**, not by technical type. Every feature is a self-contained folder with its own `api/`, `hooks/`, `components/`, `pages/`, and `types/`.
+## 1. Frontend structure
 
 ```
 src/
 ├── app/              # Router, protected routes, app shell
-├── core/             # Error boundary, query client
-├── features/         # Cross-cutting features (auth, marketing)
-│   ├── auth/         # Login, register, reset
+├── core/             # Error boundary, React Query client
+├── features/
+│   ├── auth/         # Login, register, reset, auth context
 │   └── marketing/    # Splash, HowItWorks
-├── individual/       # Everything the client user sees
-│   ├── dashboard/
-│   ├── requests/
-│   ├── goals/
-│   ├── journeys/
-│   ├── markets/
-│   ├── onboarding/
-│   ├── networth/
-│   └── health/
-├── institution/      # Everything the institution user sees
-│   ├── marketplace/
-│   ├── bids/
-│   ├── products/
-│   └── settings/
-├── admin/            # Platform administration
-└── shared/           # Used by ≥2 domains
-    ├── components/   # RequestChat, RegisterShell
-    ├── lib/          # supabase, format, audit, errors, claude
-    └── ui/           # Button, Card, Input, Select, Field
+├── individual/       # Consumer-facing features
+│   ├── dashboard/    # Home, profile, net worth summary
+│   ├── requests/     # Request list, detail, bids, accept
+│   ├── vault/        # Document vault + extraction
+│   │   ├── api/      # vault.ts — upload, list, signed URLs, status poll
+│   │   ├── hooks/    # useVault.ts — all vault state, upload lifecycle, polling
+│   │   ├── components/ # UploadSheet, ExtractionBanner, DocumentCard, PropertyCard
+│   │   └── pages/    # Vault.tsx
+│   ├── alerts/       # In-app notifications
+│   │   ├── api/      # notifications.ts — fetch, mark read, unread count
+│   │   ├── hooks/    # useAlerts.ts — React Query, mark mutations
+│   │   └── pages/    # Alerts.tsx
+│   ├── markets/      # Market rates feed
+│   ├── onboarding/   # KYC + dossier
+│   ├── networth/     # Net worth calculator
+│   └── health/       # Financial health score
+├── business/         # Business user flows (future)
+├── admin/            # Internal admin panel
+└── shared/
+    ├── lib/          # supabase.ts, apiClient.ts, format.ts, audit.ts
+    └── ui/           # Button, Card, Input, Select, Field, PageShell,
+                      # BottomNav, FiciumLogo, CardScroller
 ```
 
-### 3.2 Data fetching — React Query
+---
 
-All server state is managed by TanStack Query v5. Rules:
+## 2. Auth
 
-- Every query has a key from `src/shared/lib/query-keys.ts` — no inline strings
-- `staleTime` is always set explicitly — never rely on the default
-- Mutations always `invalidateQueries` against the relevant key namespace
-- Dashboard data is **prefetched** in `AuthContext` the moment the user's role is confirmed — before the route renders
+Consumers authenticate via **Supabase Auth** (email/password). The Supabase session is stored in `localStorage` under `ficium-auth`.
 
-### 3.3 Auth context
+`AuthContext` (`src/features/auth/context/AuthContext.tsx`):
+- Initialises from the Supabase session on mount
+- Resolves `role` via `get_my_role()` RPC (async, non-blocking)
+- Pre-fetches dashboard data the moment role is confirmed
+- `useAuth()` is the single hook for all auth state
 
-`AuthContext` owns one piece of derived state: the user's `role` (`client | bank | admin`), fetched from the `get_my_role()` Postgres RPC. Route guards (`ClientOnlyRoute`, `BankOnlyRoute`) read from this context.
+The portal (institution) app uses a completely separate auth system (ficium-auth RS256 JWT). The two auth systems never interact.
 
-The auth session itself is owned entirely by Supabase (`ficium-auth` storage key). No JWT handling in application code.
+---
 
-### 3.4 Supabase client factory
+## 3. Data fetching
 
-**One `GoTrueClient` for the entire app.** The `supabase` client (public schema) owns the auth session. Schema-scoped clients (`institutionDb`, `adminDb`) are created with a no-op storage adapter so they never spin up a second `GoTrueClient`. A custom fetch interceptor injects the live `Authorization` header on every request to these secondary clients.
+All server state is managed by **TanStack Query v5**:
+- Every query key is declared in a `*QueryKeys` object within the feature's hook file
+- `staleTime` is always set explicitly
+- Mutations always `invalidateQueries` on the relevant key namespace
+- Dashboard data is prefetched in `AuthContext` before the router renders
 
-```
-src/shared/lib/supabase.ts
-  supabase      → public schema  (owns auth session)
-  institutionDb → institution schema (no-op storage, token injected)
-  adminDb       → admin schema        (no-op storage, token injected)
-```
+Direct Supabase calls (`src/shared/lib/supabase.ts` client) are used for:
+- All consumer data reads (requests, notifications, vault documents, profile)
+- Writes that don't need server-side orchestration
 
-This design prevents the "multiple GoTrueClient" warning and the 403 errors caused by RLS seeing an unauthenticated session on secondary clients.
+Vercel API routes (`/api/*`) are used for:
+- KYC (needs server-side AWS Rekognition + Claude)
+- Bid operations (need to call portal-api server-side)
+- Claude AI features (chat, request builder, market intelligence)
 
-### 3.5 Code splitting
+---
 
-Every page is `lazy()` loaded. Vendor code is split into four named chunks:
+## 4. Vercel serverless functions
 
-| Chunk | Contents |
+12 root-level functions (`api/*.ts`) — exactly at the Hobby plan limit.
+
+**Consumer-facing (called from browser):**
+- `accept-bid.ts` — Phase 2 identity reveal + atomic bid acceptance
+- `request-bids.ts` — fetch bids for a single request
+- `request-bids-bulk.ts` — fetch bids for multiple requests (dashboard)
+- `request-actions.ts` — cancel, extend request
+- `request-builder.ts` — AI-assisted request drafting
+- `chat.ts` — Claude AI financial coach
+- `intelligence.ts` — market intelligence
+- `market.ts` — market data
+- `rate-applicant.ts` — applicant risk scoring
+- `kyc.ts` — identity verification
+
+**Internal (called by pg_net triggers only):**
+- `internal.ts` — router for all pg_net-triggered handlers
+
+  | Action | Handler | Trigger |
+  |--------|---------|---------|
+  | `bid-notify` | `_lib/handlers/bid-notify.ts` | `trg_bid_notify` on `marketplace.bid` INSERT (Portal DB) |
+  | `vault-extract` | `_lib/handlers/vault-extract.ts` | `trg_vault_extract` on `client_vault_document` INSERT (App DB) |
+  | `request-expiring` | `_lib/handlers/request-expiring.ts` | pg_cron hourly, 23-25h before deadline (App DB) |
+  | `request-expired` | `_lib/handlers/request-expired.ts` | `close_expired_windows()` on status→expired (Portal DB) |
+  | `bid-accepted` | `_lib/handlers/bid-accepted.ts` | Called directly from `accept-bid.ts` |
+
+**Keepalive:**
+- `keepalive.ts` — pings Railway services to prevent cold starts
+
+---
+
+## 5. App DB schema (Supabase `wixfhjlsjkiwfvqewvmt`)
+
+Key tables in `public.*`:
+
+| Table | Purpose |
 |---|---|
-| `vendor-react` | react-dom, react-router |
-| `vendor-query` | @tanstack/react-query |
-| `vendor-supabase` | @supabase/supabase-js |
-| `vendor-ui` | lucide-react, react-hook-form, zod |
+| `clients` | Consumer PII — full name, email, phone, DOB, address |
+| `requests` | Consumer financing requests |
+| `bid_acceptances` | Accepted bid record (App DB side) |
+| `notifications` | In-app notifications (kind: text, idempotent by metadata) |
+| `client_financial_snapshot` | Computed + verified financial profile |
+| `client_dossier` | Employment, income, net worth (self-declared) |
+| `client_loan_details` | Per-loan breakdown (from vault or self-declared) |
+| `client_vault_document` | Vault document registry + extraction lifecycle |
+| `client_vault_property` | Verified property records (from title deeds + valuations) |
+| `client_vault_access_log` | Append-only audit trail on every document access |
+| `kyc_submissions` | KYC verification attempts |
+| `audit_events` | Consumer-facing audit trail |
 
-A `ChunkErrorBoundary` wraps every lazy route — if a chunk fails to load (stale deploy cache), it auto-reloads once.
+Key DB schemas:
+- `marketplace_sync.*` — pg_net dispatcher for App→Portal request sync
+- `vault_extract.*` — pg_net dispatcher for document extraction
 
 ---
 
-## 4. Backend architecture
+## 6. Migrations
 
-### 4.1 Vercel serverless functions
-
-All AI, KYC, and market data operations run as Node.js serverless functions under `api/`. They share:
-
-- `api/_lib/env.ts` — centralised env var access
-- `api/_lib/db.ts` — service-role Supabase client factory
-- `api/_lib/cache.ts` — in-process TTL cache (swappable for Redis)
-- `api/_lib/response.ts` — standard `{ ok, data/error, code }` response shape
-- `api/_lib/intelligence-service.ts` — market intelligence with 5-min cache
-
-No function creates its own Supabase client — all use `getServiceDb()` from `api/_lib/db.ts`.
-
-### 4.2 Intelligence service
+All App DB migrations live in `supabase/migrations/`. Applied in order via Supabase SQL editor.
 
 ```
-DB views (v_market_rates, v_request_patterns, v_acceptance_intelligence, v_market_competitiveness)
-  → IntelligenceService.fetch()     ← all 4 queries in parallel, one round-trip
-  → ServerCache (5-min TTL)
-  → /api/intelligence (GET, CDN-cached 5 min)
-  → useIntelligence() hook (module-level cache, 5 min)
-  → Claude prompts (injected as context)
-  → UI components (MarketTile, SmartInsightsFeed, etc.)
+v2/                       Core v2 consumer schema
+v2-phase2/
+  marketplace_sync_automation.sql   pg_net sync trigger + pg_cron safety net
+  notifications.sql                 public.notifications table + RLS
+  bid_notify_trigger.sql            bid_notify schema (runs on Portal DB)
+  vault_documents.sql               client_vault_document, _property, _access_log
+  expiry_notifications.sql          notify_expiring_requests() + pg_cron
 ```
 
 ---
 
-## 5. Database architecture
-
-### 5.1 Schema isolation
-
-Three Postgres schemas provide hard security boundaries:
-
-| Schema | Purpose | Accessible by |
-|---|---|---|
-| `public` | Client data, requests, bids, audit | Authenticated clients via RLS |
-| `institution` | Institution data, bids, approvals | Institution members via RLS |
-| `admin` | Platform config, overrides | Admin users only |
-
-No cross-schema queries from client code — each schema has its own Supabase client.
-
-### 5.2 Row Level Security
-
-Every table has RLS enabled. Key policies:
-
-- Clients can only read/write their own rows (`auth.uid() = client_id`)
-- Institutions can only see marketplace requests (anonymised view, not raw client data)
-- Institution members can only see data for their own institution
-- Service role bypasses RLS — used only in serverless functions
-
-### 5.3 Key tables
-
-See [DATABASE.md](DATABASE.md) for the full data dictionary.
-
-**Critical paths:**
+## 7. Vault extraction pipeline
 
 ```
-Client posts request:
-  public.requests ← INSERT (status: open)
-  public.audit_events ← INSERT
+Upload (browser)
+  → supabase.from('client_vault_document').insert(...)     # DB record first
+  → supabase.storage.from('documents').upload(...)         # then file
+  → trg_vault_extract fires on INSERT
+  → vault_extract.dispatch(document_id) via pg_net
+  → POST ficium.vercel.app/api/internal { action: 'vault-extract' }
 
-Institution bids:
-  institution.institution_bids ← INSERT (via submit_for_approval RPC)
-  institution.pending_actions  ← INSERT (maker-checker queue)
-  institution.audit_events     ← INSERT
+Extraction (Vercel)
+  → Download file from Supabase Storage
+  → POST anthropic /v1/messages (claude-sonnet-4-6, doc-type prompt)
+  → Parse JSON, score confidence (fieldCount / expectedFields)
+  → confidence < 0.4 → manual_review; error → failed; else → extracted
 
-Second admin approves:
-  institution.pending_actions  ← UPDATE (status: approved)
-  institution.institution_bids ← INSERT (actual bid)
-
-Client accepts bid:
-  public.bid_acceptances ← INSERT
-  public.requests        ← UPDATE (status: closed)
-  public.audit_events    ← INSERT
+Attestation (if confident)
+  → payslip/employment_letter/tax_return → attestIncome()
+      → client_dossier.monthly_income
+      → client_financial_snapshot.income_verified = true
+  → loan_statement/credit_card_statement → attestLiabilities()
+      → client_loan_details upsert (on conflict client_id,loan_type)
+      → client_financial_snapshot.monthly_loan_payments, liabilities_verified
+  → valuation_report → attestProperty()
+      → client_vault_property upsert (on conflict client_id,address)
+      → client_financial_snapshot.property_value, property_verified
+  → title_deed → property record without value (needs valuation separately)
+  → extract_status → 'attested'
 ```
 
-### 5.4 Maker-checker enforcement
+Income priority: `payslip > employment_letter > tax_return > bank_statement`. Higher-confidence source never overwritten by lower.
 
-All material institution actions (bid submission, bid withdrawal, product changes) go through a maker-checker workflow enforced entirely in Postgres:
-
-1. Maker calls `submit_for_approval(category, payload)`
-2. `pending_actions` row is inserted with `action_status = pending`
-3. Second admin calls `approve_action(action_id)` — Postgres checks `approver ≠ maker`
-4. On approval, the payload is executed and the result is inserted into the target table
-
-This is a compliance requirement for FSC-regulated institutions.
+Mauritius note: Registrar General title deeds carry no market value — upload both title deed and valuation report to get verified property value.
 
 ---
 
-## 6. Security architecture
+## 8. Double-blind bid flow
 
-### 6.1 Authentication
+```
+Consumer side (App DB)          Portal side (Institution DB)
+──────────────────────          ────────────────────────────
+requests.id = '35572ab8...'     marketplace.request.id = '35572ab8...'
+  client_id = 'd6439707...'       consumer_id = _anon_uuid('d6439707...')
+  (real UUID)                     (anonymised: MD5 of real_id+salt → UUID)
 
-- Supabase Auth with email/password
-- JWT signed by Supabase, validated on every DB request
-- Custom `storageKey: "ficium-auth"` to isolate the session cookie
-- Role determined by `get_my_role()` Postgres RPC (not stored in the JWT)
+Institution sees:
+  product, amount, term, purpose
+  verified income flag, risk tier, DSR
+  NEVER: client_id, name, email, NIC
 
-### 6.2 Data anonymisation
-
-Clients' identities are never exposed to institutions in the marketplace. Institutions see:
-
-- `client_ref` — first 8 chars of UUID (not reversible)
-- Financial indicators — income range, health score, risk score
-- Request details — product type, amount, term
-- No name, email, address, phone, or NIC number
-
-### 6.3 Audit trail
-
-Every material action writes to `public.audit_events` or `institution.audit_events`. The audit module (`src/shared/lib/audit.ts`) wraps all writes — never throws, never blocks user flows.
+On accept:
+  portal-api fetches PII from App DB using real consumer_id
+  writes to marketplace.bid_acceptance (institution DB)
+  returns institution contact to consumer
+```
 
 ---
 
-## 7. AI architecture
+## 9. TypeScript constraints
 
-### 7.1 Claude integration
+`tsconfig.node.json` (covers `api/*.ts`):
+- `erasableSyntaxOnly: true` — no enums, no namespaces, no parameter properties
+- `noUnusedLocals: true`, `noUnusedParameters: true`
+- `verbatimModuleSyntax: true` — use `import type` for type-only imports
 
-Claude is used for three distinct features:
+`tsconfig.app.json` (covers `src/**`):
+- Strict mode
+- Path alias: `@/` → `src/`
 
-| Feature | Endpoint | Model | Mode |
-|---|---|---|---|
-| AI Financial Coach | `/api/chat` | claude-sonnet-4 | Streaming SSE |
-| Journey Calculator | `/api/chat?action=journey-calculate` | claude-sonnet-4 | Streaming SSE |
-| Market Ask | `/api/chat` | claude-sonnet-4 | Non-streaming |
-
-All Claude calls are server-side. The API key is never exposed to the browser.
-
-### 7.2 Intelligence injection
-
-Before every Claude call, the server fetches the current market intelligence (rates, patterns, winning bids) from `IntelligenceService` and injects it into the system prompt. Claude is instructed to use this data and not invent rates.
-
-### 7.3 User profile injection
-
-For the financial coach, the server fetches the user's `client_profile_view` (income, assets, debts, scores) and includes it in the system prompt. Claude sees real numbers, not generic advice.
-
----
-
-## 8. Performance architecture
-
-### 8.1 Perceived latency optimisations
-
-| Technique | Where | Effect |
-|---|---|---|
-| Dashboard prefetch | `AuthContext.fetchUserMeta()` | Profile + requests cached before route renders |
-| Stale-while-revalidate | React Query `staleTime` | Instant render from cache, silent refresh |
-| Vendor chunk splitting | `vite.config.ts` | Parallel browser downloads |
-| Lazy page loading | `app/routes.tsx` | Only load JS for the current page |
-| Intelligence cache | Module-level + ServerCache | Zero DB queries for 5 min on intelligence |
-| Asset immutable caching | Vercel headers | CDN serves assets forever (hash in filename) |
-
-### 8.2 Query efficiency
-
-- `getMyRequests()` fetches requests + bids in two parallel queries, merges in memory — no N+1
-- `IntelligenceService` runs 4 DB queries in parallel via `Promise.all`
-- `useIntelligence` has a module-level cache — single fetch per browser session per 5 min
-
----
-
-## 9. Modularity and extensibility
-
-### 9.1 Adding a new individual feature
-
-1. Create `src/individual/<domain>/`
-2. Add `api/<domain>.ts` (Supabase queries), `hooks/use<Domain>.ts` (React Query), `pages/<Page>.tsx`
-3. Add query keys to `src/shared/lib/query-keys.ts`
-4. Add route to `src/app/routes.tsx`
-5. Add navigation item to `BottomNav`
-
-No changes needed to AuthContext, ProtectedRoute, or any shared infrastructure.
-
-### 9.2 Adding a new institution feature
-
-Same pattern under `src/institution/<domain>/`. Use `institutionSupabase` (re-export of `institutionDb`) for all queries.
-
-### 9.3 Adding a new API endpoint
-
-1. Create `api/<name>.ts`
-2. Import `Env`, `getServiceDb`, `Response`, `ServerCache` from `api/_lib/`
-3. Add to `vercel.json` if special config needed (duration, includes)
-
-### 9.4 Swapping the cache backend (scaling)
-
-Replace `InProcessCache` in `api/_lib/cache.ts` with a Redis/Upstash implementation that exposes the same `get(key, ttlSecs, fetcher)` interface. Zero consumer changes.
-
----
-
-## 10. Known technical debt
-
-| Item | Impact | Effort | Priority |
-|---|---|---|---|
-| `InstitutionMarketplace.tsx` — inline `console.error` in catch | Low | Trivial | Low |
-| `audit.ts` — `toActionCategory` maps many events to `"request.submit"` (wrong) | Medium | Small | Medium |
-| `calcHealth.ts` vs `computeHealthScore` in `dossier.ts` — two health calculation functions | Medium | Small | Medium |
-| No integration tests on the maker-checker RPC flow | High | Large | High |
-| No end-to-end test for the request → bid → accept flow | High | Large | High |
-| `intelligence.ts` module-level cache is not shared across React renders in StrictMode (double fetch) | Low | Small | Low |
-
-See [ARCHITECTURE_REVIEW.md](ARCHITECTURE_REVIEW.md) for the full audit.
+Always run `npm run build` (not just `tsc --noEmit`) before pushing. Vercel runs `tsc -b` which enforces both configs.
