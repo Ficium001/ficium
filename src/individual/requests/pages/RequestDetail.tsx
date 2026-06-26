@@ -1,6 +1,6 @@
 // =============================================================
 // Ficium — Request Workspace (/requests/:id)
-// Unified 6-tab workspace: Plan | Documents | Insights | Details | Bids | Chat
+// Unified 7-tab workspace: Plan | Documents | Insights | Details | Bids | Progress | Chat
 // =============================================================
 import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
@@ -8,9 +8,9 @@ import {
   ArrowLeft, Lock, CheckCircle, Clock, TrendingDown,
   Building2, AlertCircle, MessageSquare, FileText,
   User, Percent, LayoutGrid, Sparkles,
-  BarChart3, CheckCircle2,
+  BarChart3, CheckCircle2, MapPin,
 } from "lucide-react";
-import { useRequest, useRequestBids, useAcceptBid } from "../hooks/useRequests";
+import { TrackerTab } from "../tracker/tabs/TrackerTab";
 import { formatProductType } from "../api/requests";
 import type { Bid, RequestDetail as RequestDetailType, Phase2Reveal } from "../api/requests";
 import { Button, Card, BottomNav } from "../../../shared/ui";
@@ -19,13 +19,14 @@ import { supabase } from "../../../shared/lib/supabase";
 import { useProfile } from "../../dashboard/hooks/useDashboard";
 
 /* ── Tab definition ── */
-type TabId = "plan" | "documents" | "insights" | "details" | "bids" | "chat";
-const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
+type TabId = "plan" | "documents" | "insights" | "details" | "bids" | "tracker" | "chat";
+const TABS: { id: TabId; label: string; icon: React.ElementType; acceptedOnly?: boolean }[] = [
   { id: "plan",      label: "Plan",      icon: LayoutGrid   },
   { id: "documents", label: "Documents", icon: FileText     },
   { id: "insights",  label: "Insights",  icon: Sparkles     },
   { id: "details",   label: "Details",   icon: FileText     },
   { id: "bids",      label: "Bids",      icon: TrendingDown },
+  { id: "tracker",   label: "Progress",  icon: MapPin, acceptedOnly: true },
   { id: "chat",      label: "Chat",      icon: MessageSquare},
 ];
 
@@ -437,7 +438,8 @@ function Phase2RevealModal({ reveal, onClose }: { reveal: Phase2Reveal; onClose:
 export default function RequestDetail() {
   const { id }     = useParams<{ id: string }>();
   const navigate   = useNavigate();
-  const [tab, setTab] = useState<TabId>("plan");
+  const isAccepted = request?.status === "accepted";
+  const [tab, setTab] = useState<TabId>(() => isAccepted ? "tracker" : "plan");
   const [reveal, setReveal] = useState<Phase2Reveal | null>(null);
 
   const { data: request, isLoading: reqLoading }    = useRequest(id!);
@@ -510,7 +512,7 @@ export default function RequestDetail() {
 
           {/* Tabs */}
           <div className="flex border-t border-white/10 overflow-x-auto">
-            {TABS.map(t => {
+            {TABS.filter(t => !t.acceptedOnly || isAccepted).map(t => {
               const TabIcon = t.icon;
               const active  = tab === t.id;
               const badgeCount = t.id === "bids" ? bids.length : 0;
@@ -547,6 +549,7 @@ export default function RequestDetail() {
             onAccept={handleAccept}
           />
         )}
+        {tab === "tracker"   && <TrackerTab requestId={id!} />}
         {tab === "chat"      && (
           <div className="rounded-2xl overflow-hidden border border-ink/[0.08] bg-white" style={{ height: "520px", display: "flex", flexDirection: "column" }}>
             <RequestChat requestId={id!} senderType="client" client={supabase} height="flex-1" />
