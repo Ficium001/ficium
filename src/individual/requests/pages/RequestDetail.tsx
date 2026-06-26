@@ -17,6 +17,7 @@ import { Button, Card, BottomNav } from "../../../shared/ui";
 import RequestChat from "../../../shared/components/RequestChat";
 import { supabase } from "../../../shared/lib/supabase";
 import { useProfile } from "../../dashboard/hooks/useDashboard";
+import { useRequest, useRequestBids, useAcceptBid } from "../hooks/useRequests";
 
 /* ── Tab definition ── */
 type TabId = "plan" | "documents" | "insights" | "details" | "bids" | "tracker" | "chat";
@@ -518,14 +519,15 @@ function Phase2RevealModal({ reveal, onClose }: { reveal: Phase2Reveal; onClose:
 export default function RequestDetail() {
   const { id }     = useParams<{ id: string }>();
   const navigate   = useNavigate();
-  const isAccepted = request?.status === "accepted";
-  const [tab, setTab] = useState<TabId>(() => isAccepted ? "tracker" : "plan");
+  const [tab, setTab] = useState<TabId>("plan");
   const [reveal, setReveal] = useState<Phase2Reveal | null>(null);
 
   const { data: request, isLoading: reqLoading }    = useRequest(id!);
   const { data: bids = [], isLoading: bidsLoading } = useRequestBids(id!);
   const { data: profile }                            = useProfile();
   const { mutate: accept, isPending: accepting, variables: acceptingBid } = useAcceptBid(id!);
+
+  const isAccepted = request?.status === "accepted";
 
   const loading  = reqLoading || bidsLoading;
   const isClosed = request?.status !== "open";

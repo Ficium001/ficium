@@ -1,4 +1,4 @@
-import { CheckCircle2, Circle, Clock, Loader2 } from "lucide-react";
+import { CheckCircle2, Circle, Loader2 } from "lucide-react";
 import type { TrackerStage, TrackerStageStatus } from "../types/tracker";
 
 /* ── Helpers ─────────────────────────────────────────────────────────────── */
