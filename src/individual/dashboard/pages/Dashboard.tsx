@@ -9,6 +9,7 @@ import { useAuth }           from "@/features/auth/context/AuthContext";
 import { useProfile, useMyRequests, useNextActions, useBankReadiness } from "@/individual/dashboard/hooks/useDashboard";
 import { useDashboardInsights }  from "@/individual/dashboard/hooks/useDashboardInsights";
 import { useSnapshot }           from "@/individual/networth/hooks/useSnapshot";
+import { useUnreadCount }        from "@/individual/alerts/hooks/useAlerts";
 import { getGreeting, formatAmount, healthLabel } from "@/individual/dashboard/config/dashboard";
 import {
   OnboardingBanners,
@@ -34,6 +35,8 @@ export default function Dashboard() {
   const { actions }      = useNextActions();
   const { score: bankReadiness } = useBankReadiness();
   const { insights, activeIdx, next } = useDashboardInsights();
+  const { user }         = useAuth();
+  const { data: unreadCount = 0 } = useUnreadCount(user?.id ?? null);
 
   const loading        = profileLoading || requestsLoading;
   const kycVerified    = profile?.kycStatus === "verified";
@@ -232,7 +235,7 @@ export default function Dashboard() {
                 healthScore={profile?.healthScore ?? null}
                 bankReadiness={bankReadiness ?? null}
                 activeRequests={activeRequests}
-                totalNewBids={totalNewBids}
+                totalNewBids={unreadCount}
                 flipped={flipped}
                 onFlip={flip}
               />
