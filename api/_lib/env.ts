@@ -8,11 +8,9 @@
 
 function getEnv(key: string): string {
   // Node.js runtime (Vercel serverless / local)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const nodeVal = (globalThis as any).process?.env?.[key];
   if (nodeVal) return nodeVal;
   // Edge runtime (Vercel Edge Functions)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const edgeVal = (globalThis as any)[key];
   if (edgeVal) return edgeVal;
   return "";
