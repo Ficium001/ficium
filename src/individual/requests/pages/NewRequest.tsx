@@ -68,27 +68,17 @@ const QUESTION_SETS: Partial<Record<ProductType, Question[]>> = {
     { key: "property_location", question: "Where is the property?",              subtext: "Town or region",                                                    type: "text",    placeholder: "e.g. Flic en Flac, Grand Baie", required: true },
     { key: "property_value",  question: "What is the property value? (MUR)",      subtext: "Estimated market value",                                            type: "number",  placeholder: "e.g. 6000000", required: true },
     { key: "deposit_amount",  question: "How much deposit do you have? (MUR)",    subtext: "Leave 0 if none",                                                   type: "number",  placeholder: "e.g. 500000", required: true },
-    { key: "employment_status", question: "What is your employment status?",      type: "select",  options: ["Salaried", "Self-employed", "Business owner", "Retired", "Other"], required: true },
-    { key: "monthly_income",  question: "What is your monthly income? (MUR)",     subtext: "Net take-home pay",                                                 type: "number",  placeholder: "e.g. 50000", required: true },
-    { key: "monthly_debt",    question: "Any existing monthly debt? (MUR)",       subtext: "Car loans, credit cards, other loans. Enter 0 if none",             type: "number",  placeholder: "0", required: true },
-    { key: "max_rate",        question: "Maximum rate you'd accept? (%)",         subtext: "Providers won't respond above this. Skip if no limit",              type: "number",  placeholder: "e.g. 7", required: false },
   ],
   personal_loan: [
     { key: "__amount",        question: "How much do you need?",                  subtext: "Loan amount in MUR",                                                type: "amount"  },
     { key: "__term",          question: "Over how many months?",                  subtext: "Repayment period",                                                  type: "term"    },
     { key: "purpose",         question: "What do you need it for?",               subtext: "Providers see this — not your name",                                type: "text",    placeholder: "e.g. Debt consolidation, home renovation", required: true },
     { key: "urgency",         question: "How soon do you need it?",               type: "select",  options: ["Within 1 week", "Within 1 month", "1–3 months", "No rush"], required: false },
-    { key: "employment_status", question: "What is your employment status?",      type: "select",  options: ["Salaried", "Self-employed", "Business owner", "Retired", "Other"], required: true },
-    { key: "monthly_income",  question: "What is your monthly income? (MUR)",     subtext: "Net take-home pay",                                                 type: "number",  placeholder: "e.g. 50000", required: true },
-    { key: "monthly_debt",    question: "Any existing monthly debt? (MUR)",       subtext: "Car loans, credit cards, other loans. Enter 0 if none",             type: "number",  placeholder: "0", required: true },
-    { key: "max_rate",        question: "Maximum rate you'd accept? (%)",         subtext: "Skip if no limit",                                                  type: "number",  placeholder: "e.g. 12", required: false },
   ],
   credit_card: [
     { key: "credit_limit",    question: "What credit limit do you want? (MUR)",   subtext: "Desired monthly limit",                                             type: "number",  placeholder: "e.g. 50000", required: true },
     { key: "primary_use",     question: "What will you use it for mainly?",       type: "select",  options: ["Everyday spend", "Travel", "Business expenses", "Online shopping"], required: true },
     { key: "existing_cards",  question: "Do you have existing credit cards?",     type: "select",  options: ["No cards", "1 card", "2 cards", "3 or more"],     required: false },
-    { key: "employment_status", question: "What is your employment status?",      type: "select",  options: ["Salaried", "Self-employed", "Business owner", "Retired", "Other"], required: true },
-    { key: "monthly_income",  question: "What is your monthly income? (MUR)",     type: "number",  placeholder: "e.g. 50000", required: true },
   ],
   leasing: [
     { key: "__amount",        question: "How much do you need to finance?",       subtext: "Loan amount in MUR",                                                type: "amount"  },
@@ -97,9 +87,6 @@ const QUESTION_SETS: Partial<Record<ProductType, Question[]>> = {
     { key: "vehicle_condition", question: "New or used?",                         type: "select",  options: ["New", "Used"],                                    required: true  },
     { key: "vehicle_value",   question: "What is the vehicle value? (MUR)",       type: "number",  placeholder: "e.g. 800000", required: true },
     { key: "deposit_amount",  question: "Deposit available? (MUR)",               subtext: "Enter 0 if none",                                                   type: "number",  placeholder: "0", required: true },
-    { key: "employment_status", question: "What is your employment status?",      type: "select",  options: ["Salaried", "Self-employed", "Business owner", "Retired", "Other"], required: true },
-    { key: "monthly_income",  question: "What is your monthly income? (MUR)",     type: "number",  placeholder: "e.g. 50000", required: true },
-    { key: "monthly_debt",    question: "Any existing monthly debt? (MUR)",       subtext: "Enter 0 if none",                                                   type: "number",  placeholder: "0", required: true },
   ],
   business_loan: [
     { key: "__amount",        question: "How much does your business need?",      subtext: "Loan amount in MUR",                                                type: "amount"  },
@@ -108,7 +95,6 @@ const QUESTION_SETS: Partial<Record<ProductType, Question[]>> = {
     { key: "business_type",   question: "What type of business?",                 type: "select",  options: ["Sole trader", "SME", "Company / Ltd", "Partnership"], required: true },
     { key: "years_operating", question: "How long have you been operating?",      type: "select",  options: ["Less than 1 year", "1–2 years", "3–5 years", "5+ years"], required: true },
     { key: "annual_turnover", question: "Annual turnover? (MUR)",                 subtext: "Most recent financial year",                                        type: "number",  placeholder: "e.g. 5000000", required: true },
-    { key: "max_rate",        question: "Maximum rate you'd accept? (%)",         subtext: "Skip if no limit",                                                  type: "number",  placeholder: "e.g. 10", required: false },
   ],
   sme_loan: [
     { key: "__amount",        question: "How much does your business need?",      type: "amount"  },
@@ -140,7 +126,7 @@ function fmtMUR(n: number) {
 
 function buildPurpose(answers: Record<string, string>): string {
   return Object.entries(answers)
-    .filter(([k, v]) => v && !k.startsWith("__") && k !== "max_rate")
+    .filter(([k, v]) => v && !k.startsWith("__"))
     .map(([k, v]) => `${k.replace(/_/g, " ")}: ${v}`)
     .join(" | ");
 }
@@ -375,13 +361,11 @@ export default function NewRequest() {
     setSubmitting(true); setError(null);
     const amount      = Number(answers["__amount"] || product.defaultAmount);
     const termMonths  = Number(answers["__term"]   || product.defaultTerm);
-    const maxRateRaw  = answers["max_rate"];
     const result = await createRequest({
       productType:         product.type,
       amount,
       purpose:             buildPurpose(answers),
       preferredTermMonths: termMonths,
-      maxRate:             maxRateRaw ? Number(maxRateRaw) : undefined,
     });
     if (!result.ok) { setError(result.error); setSubmitting(false); return; }
     setSubmitted(true);
@@ -503,10 +487,9 @@ export default function NewRequest() {
                   <ReviewRow label="Term" value={`${answers["__term"]} months`} />
                 )}
                 {Object.entries(answers)
-                  .filter(([k, v]) => v && !k.startsWith("__") && k !== "max_rate")
+                  .filter(([k, v]) => v && !k.startsWith("__"))
                   .map(([k, v]) => <ReviewRow key={k} label={k.replace(/_/g, " ")} value={v} />)
                 }
-                {answers["max_rate"] && <ReviewRow label="Max rate" value={`${answers["max_rate"]}% APR`} />}
               </div>
 
               <div className="mx-6 mb-5 flex items-start gap-2.5 bg-ficium/[0.04] border border-ficium/[0.12] rounded-xl px-4 py-3">
