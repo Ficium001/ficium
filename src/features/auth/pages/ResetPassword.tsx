@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -25,14 +25,12 @@ export default function ResetPassword() {
   const { isLoading: authLoading, user } = useAuth();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [linkValid, setLinkValid] = useState<"checking" | "valid" | "invalid">("checking");
 
-  // When the user arrives via the recovery email, Supabase's client auto-detects
-  // the token in the URL hash, exchanges it for a session, and fires
-  // PASSWORD_RECOVERY. After AuthContext settles, user should be non-null.
-  useEffect(() => {
-    if (authLoading) return;
-    setLinkValid(user ? "valid" : "invalid");
+  // Derived: once auth settles, determine link validity from session state.
+  // No effect needed — this is pure synchronous derivation from auth props.
+  const linkValid = useMemo<"checking" | "valid" | "invalid">(() => {
+    if (authLoading) return "checking";
+    return user ? "valid" : "invalid";
   }, [authLoading, user]);
 
   const {
