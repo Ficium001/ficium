@@ -42,8 +42,7 @@ export default function CountUp({
     if (!inView && !reduced) return
     // Synchronous snaps below are intentional: no animation when the user
     // prefers reduced motion, or when data refreshes after the first run.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (reduced) { setDisplay(value); return }
+        if (reduced) { setDisplay(value); return }
 
     // First sight: animate. Subsequent data refreshes: snap.
     if (animated.current) { setDisplay(value); return }
