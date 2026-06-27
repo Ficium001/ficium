@@ -11,15 +11,13 @@ import { Response }                   from "./_lib/response.js";
 import { requireUser, sendAuthError } from "./_lib/auth.js";
 
 export const config = { runtime: "nodejs" };
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default async function handler(req: any, res: any): Promise<void> {
   // ── Auth (all actions require a valid session) ─────────────────────────────
   let consumerId: string;
   try {
     const user = await requireUser(req);
     consumerId = user.id;
-  } catch (e) {
+  } catch (_e) {
     if (sendAuthError(res, e)) return;
     return Response.error(res, "Auth check failed", 500, "AUTH_ERROR");
   }
@@ -48,7 +46,7 @@ export default async function handler(req: any, res: any): Promise<void> {
         return Response.error(res, await portalRes.text(), portalRes.status, "PORTAL_ERROR");
       }
       return Response.ok(res, await portalRes.json());
-    } catch (e) {
+    } catch (_e) {
       return Response.error(res, "Portal request failed", 502, "PORTAL_REQUEST_FAILED");
     }
   }
@@ -73,7 +71,7 @@ export default async function handler(req: any, res: any): Promise<void> {
         return Response.error(res, await portalRes.text(), portalRes.status, "PORTAL_ERROR");
       }
       return Response.ok(res, await portalRes.json());
-    } catch (e) {
+    } catch (_e) {
       return Response.error(res, "Portal request failed", 502, "REQUEST_FAILED");
     }
   }
