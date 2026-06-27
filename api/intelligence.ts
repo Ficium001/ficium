@@ -11,7 +11,7 @@ import { requireUser, sendAuthError } from "./_lib/auth.js";
 
 export const config = { runtime: "nodejs" };
 
-export default async function handler(req: any, res: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+export default async function handler(req: any, res: any) {
   if (req.method !== "GET" && req.method !== "POST") {
     return Response.methodNotAllowed(res, ["GET", "POST"]);
   }
