@@ -33,8 +33,6 @@ export interface AuthedUser {
   email: string | null;
   role: string | null;
 }
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Req = any;
 
 function bearer(req: Req): string | null {
@@ -166,7 +164,6 @@ export function asAuthError(e: unknown): AuthError | null {
  * If `e` is an AuthError, write the matching status+JSON and return true.
  * Handlers use: `if (sendAuthError(res, e)) return;` then rethrow/handle rest.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function sendAuthError(res: any, e: unknown): boolean {
   const ae = asAuthError(e);
   if (!ae) return false;
