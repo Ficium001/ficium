@@ -33,8 +33,6 @@ function fmtProductLabel(code: string): string {
   };
   return labels[code] ?? code.replace(/_/g, " ");
 }
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function handle(body: unknown, res: any): Promise<void> {
   const p = body as Partial<ExpiringPayload>;
   if (!p.request_id || !p.client_id) {
