@@ -8,8 +8,6 @@
 export type ApiSuccess<T> = { ok: true; data: T };
 export type ApiError      = { ok: false; error: string; code?: string };
 export type ApiResponse<T> = ApiSuccess<T> | ApiError;
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Res = any;
 
 export const Response = {
