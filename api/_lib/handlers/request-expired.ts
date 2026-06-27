@@ -12,8 +12,6 @@ interface ExpiredPayload {
   consumer_ref: string;
   bid_count:    number;
 }
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function handle(body: unknown, res: any): Promise<void> {
   const p = body as Partial<ExpiredPayload>;
   if (!p.request_id) {
