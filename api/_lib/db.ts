@@ -3,7 +3,6 @@
  * Server-side Supabase client factory (service role).
  * Never exposed to the browser.
  */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from "@supabase/supabase-js";
 import { Env } from "./env.js";
 
