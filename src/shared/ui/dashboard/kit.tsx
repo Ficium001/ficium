@@ -235,7 +235,6 @@ export function Tag({
 
 // statusTone maps a domain status to a Tag tone. Co-located with Tag/TAG_STYLES
 // on purpose; fast-refresh only-export-components doesn't apply to this helper.
-// eslint-disable-next-line react-refresh/only-export-components
 export function statusTone(status: string): keyof typeof TAG_STYLES {
   switch (status) {
     case 'accepted': case 'approved': case 'success': return 'green'
