@@ -22,8 +22,6 @@ import { Response } from "./_lib/response.js";
 import { requireUser, requireOwnership, sendAuthError } from "./_lib/auth.js";
 
 export const config = { runtime: "nodejs" };
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default async function handler(req: any, res: any): Promise<void> {
   if (req.method !== "GET") return Response.methodNotAllowed(res, ["GET"]);
 
