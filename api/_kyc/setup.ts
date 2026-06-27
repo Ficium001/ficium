@@ -7,9 +7,6 @@
  */
 
 import { createHmac, createHash } from "crypto";
-
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const getEnv = (k: string) => (globalThis as any).process?.env?.[k] ?? "";
 
 const AWS_REGION    = "ap-south-1";
@@ -48,8 +45,6 @@ async function awsPost(target: string, body: object): Promise<unknown> {
   if (!res.ok) { const t = await res.text(); throw new Error(`${target} ${res.status}: ${t}`); }
   return res.json();
 }
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function setupHandler(req: any, res: any) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
