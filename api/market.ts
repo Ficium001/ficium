@@ -50,7 +50,7 @@ Live market data is injected in the user message.`;
 
 // ── Handler ──────────────────────────────────────────────────────────────────
 
-export default async function handler(req: any, res: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+export default async function handler(req: any, res: any) {
   if (req.method !== "POST") return R.methodNotAllowed(res, ["POST"]);
 
   try { await requireUser(req); }
