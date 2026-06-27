@@ -54,8 +54,6 @@ export async function writeBidAcceptedNotification(p: AcceptedPayload): Promise<
     console.error("[bid-accepted] notification failed:", e);
   }
 }
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function handle(body: unknown, res: any): Promise<void> {
   const p = body as Partial<AcceptedPayload>;
   if (!p.client_id || !p.request_id || !p.bid_id) {
