@@ -62,7 +62,7 @@ function fmtProfile(p: Record<string, unknown>): string {
 }
 
 // ── Route 1: AI Coach ─────────────────────────────────────────
-async function handleChat(body: ChatBody, apiKey: string, res: any): Promise<void> { // eslint-disable-line @typescript-eslint/no-explicit-any
+async function handleChat(body: ChatBody, apiKey: string, res: any): Promise<void> {
   if (!body?.messages?.length) {
     return Response.error(res, "messages array required", 400, "INVALID_BODY");
   }
@@ -106,7 +106,7 @@ Keep responses under 200 words unless asked for detail. Tone: warm, direct, prac
 }
 
 // ── Route 2: Journey affordability calculator ─────────────────
-async function handleJourneyCalculate(body: JourneyBody, apiKey: string, res: any): Promise<void> { // eslint-disable-line @typescript-eslint/no-explicit-any
+async function handleJourneyCalculate(body: JourneyBody, apiKey: string, res: any): Promise<void> {
   const { userId, type, answers } = body;
   if (!userId || !type || !answers) return Response.error(res, "userId, type, answers required", 400, "INVALID_BODY");
 
@@ -141,7 +141,7 @@ Return ONLY valid JSON (no markdown):
 }
 
 // ── Main handler ──────────────────────────────────────────────
-export default async function handler(req: any, res: any): Promise<void> { // eslint-disable-line @typescript-eslint/no-explicit-any
+export default async function handler(req: any, res: any): Promise<void> {
   if (req.method !== "POST") return Response.methodNotAllowed(res, ["POST"]);
 
   try { await requireUser(req); }
