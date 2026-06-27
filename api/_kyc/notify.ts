@@ -7,8 +7,6 @@
 
 
 /* ---------- Env (inlined — no _lib import) ---------- */
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const getEnv = (k: string) => (globalThis as any).process?.env?.[k] ?? "";
 
 /* ---------- Email templates ---------- */
@@ -65,8 +63,6 @@ function rejectedHtml(name: string, reason: string) {
 }
 
 /* ---------- Handler ---------- */
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function notifyHandler(req: any, res: any) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
