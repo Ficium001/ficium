@@ -190,10 +190,7 @@ async function sendEmail(client: AppClient, p: BidPayload): Promise<void> {
 
 // ── Handler ────────────────────────────────────────────────────────────────
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-
 // ── Named export for internal router ──────────────────────────────────────
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function handle(body: unknown, res: any): Promise<void> {
   const p = body as Partial<BidPayload>;
   if (!p.bid_id || !p.request_id) {
