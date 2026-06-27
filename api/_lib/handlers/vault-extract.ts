@@ -430,10 +430,7 @@ function pluckMeta(data: Record<string, unknown>): {
 
 // ── Handler ─────────────────────────────────────────────────────────────────
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-
 // ── Named export for internal router ──────────────────────────────────────
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function handle(body: unknown, res: any): Promise<void> {
   const { document_id } = (body ?? {}) as { document_id?: string };
   if (!document_id) return res.status(400).json({ error: "document_id required" });
