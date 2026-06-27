@@ -23,8 +23,6 @@ import { requireUser, requireOwnership, sendAuthError } from "./_lib/auth.js";
 import { writeBidAcceptedNotification }           from "./_lib/handlers/bid-accepted.js";
 
 export const config = { runtime: "nodejs" };
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default async function handler(req: any, res: any): Promise<void> {
   try {
     return await _handler(req, res);
@@ -34,8 +32,6 @@ export default async function handler(req: any, res: any): Promise<void> {
     return Response.error(res, `Unexpected error: ${msg}`, 500, "UNEXPECTED");
   }
 }
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function _handler(req: any, res: any): Promise<void> {
   if (req.method !== "POST") return Response.methodNotAllowed(res, ["POST"]);
 
