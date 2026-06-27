@@ -6,8 +6,6 @@
  */
 
 import { createHmac, createHash } from "crypto";
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const getEnv = (k: string) => (globalThis as any).process?.env?.[k] ?? "";
 const COLLECTION_ID = "ficium-kyc-faces";
 const REGION        = "ap-south-1";
@@ -46,8 +44,6 @@ async function awsPost(target: string, body: object): Promise<unknown> {
   if (!res.ok) throw new Error(`AWS ${res.status}: ${await res.text()}`);
   return res.json();
 }
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function adminFacesHandler(req: any, res: any) {
   // Simple admin check — require a secret header
   const adminSecret = getEnv("ADMIN_SECRET") || getEnv("VITE_ADMIN_SECRET");
