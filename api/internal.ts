@@ -40,8 +40,6 @@ const HANDLERS: Record<Action, (body: unknown, res: any) => Promise<void>> = {
   "request-expired":   handleRequestExpired,
   "bid-accepted":      handleBidAccepted,
 };
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default async function handler(req: any, res: any): Promise<void> {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
