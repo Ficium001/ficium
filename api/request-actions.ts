@@ -18,7 +18,7 @@ export default async function handler(req: any, res: any): Promise<void> {
     const user = await requireUser(req);
     consumerId = user.id;
   } catch (_e) {
-    if (sendAuthError(res, e)) return;
+    if (sendAuthError(res, _e)) return;
     return Response.error(res, "Auth check failed", 500, "AUTH_ERROR");
   }
 
