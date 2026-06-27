@@ -2,7 +2,7 @@
 // Ficium — Request Workspace (/requests/:id)
 // Unified 7-tab workspace: Plan | Documents | Insights | Details | Bids | Progress | Chat
 // =============================================================
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   ArrowLeft, Lock, CheckCircle, Clock, TrendingDown,
@@ -18,6 +18,8 @@ import RequestChat from "../../../shared/components/RequestChat";
 import { supabase } from "../../../shared/lib/supabase";
 import { useProfile } from "../../dashboard/hooks/useDashboard";
 import { useRequest, useRequestBids, useAcceptBid } from "../hooks/useRequests";
+import { useVault } from "../../vault/hooks/useVault";
+import type { VaultDocType } from "../../vault/api/vault";
 
 /* ── Tab definition ── */
 type TabId = "plan" | "documents" | "insights" | "details" | "bids" | "tracker" | "chat";
@@ -142,72 +144,161 @@ function PlanTab({ request, bidCount }: { request: RequestDetailType; bidCount: 
   );
 }
 
-/* ── Documents tab ── */
+/* ── Documents tab — real vault data ── */
 function DocumentsTab() {
   const navigate = useNavigate();
-  const docs = [
-    { label: "Payslips (last 3)",           status: "verified" as const },
-    { label: "Bank Statements (6 months)",  status: "verified" as const },
-    { label: "NIC / Passport",              status: "verified" as const },
-    { label: "Proof of Address",            status: "missing"  as const },
+  const { documents, loading } = useVault();
+
+  // Required doc types for a loan request — map to friendly labels
+  const REQUIRED_DOCS: { type: VaultDocType; label: string }[] = [
+    { type: "payslip",          label: "Payslips (last 3)"         },
+    { type: "bank_statement",   label: "Bank Statements (6 months)" },
+    { type: "nic",              label: "NIC / Passport"             },
+    { type: "employment_letter",label: "Employment Letter"          },
   ];
+
+  const verified = (type: VaultDocType) =>
+    documents.some(d => d.doc_type === type && (d.extract_status === "attested" || d.extract_status === "extracted"));
+
+  const missingCount = REQUIRED_DOCS.filter(d => !verified(d.type)).length;
+
   return (
     <div className="space-y-4">
       <div className="bg-white rounded-[22px] border border-ink/[0.06] shadow-sm p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="text-[12px] font-bold text-muted uppercase tracking-widest">Document vault</div>
-          <div className="text-[11px] font-semibold text-amber-600">
-            {docs.filter(d => d.status === "missing").length} missing
-          </div>
-        </div>
-        <div className="space-y-2">
-          {docs.map(doc => (
-            <div key={doc.label} className={["flex items-center justify-between p-3 rounded-xl border",
-              doc.status === "verified" ? "border-emerald-100 bg-emerald-50/50" : "border-amber-100 bg-amber-50/50"].join(" ")}>
-              <div className="flex items-center gap-3">
-                <FileText size={16} className={doc.status === "verified" ? "text-emerald-600" : "text-amber-500"} />
-                <span className="text-[13px] font-medium text-ink">{doc.label}</span>
-              </div>
-              {doc.status === "verified"
-                ? <span className="text-[11px] font-bold text-emerald-600">✓ Verified</span>
-                : <button className="text-[11px] font-bold text-amber-600 underline">Upload</button>}
+          {loading ? (
+            <div className="h-3 w-16 bg-ink/10 rounded animate-pulse" />
+          ) : (
+            <div className={`text-[11px] font-semibold ${missingCount > 0 ? "text-amber-600" : "text-emerald-600"}`}>
+              {missingCount > 0 ? `${missingCount} missing` : "All verified"}
             </div>
-          ))}
+          )}
         </div>
+        {loading ? (
+          <div className="space-y-2">
+            {[0, 1, 2, 3].map(i => <div key={i} className="h-12 bg-ink/5 rounded-xl animate-pulse" />)}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {REQUIRED_DOCS.map(doc => {
+              const ok = verified(doc.type);
+              return (
+                <div key={doc.type} className={["flex items-center justify-between p-3 rounded-xl border",
+                  ok ? "border-emerald-100 bg-emerald-50/50" : "border-amber-100 bg-amber-50/50"].join(" ")}>
+                  <div className="flex items-center gap-3">
+                    <FileText size={16} className={ok ? "text-emerald-600" : "text-amber-500"} />
+                    <span className="text-[13px] font-medium text-ink">{doc.label}</span>
+                  </div>
+                  {ok
+                    ? <span className="text-[11px] font-bold text-emerald-600">✓ Verified</span>
+                    : <button onClick={() => navigate("/vault")} className="text-[11px] font-bold text-amber-600 underline">Upload</button>}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
-      <button onClick={() => navigate("/onboarding/dossier")}
+      <button onClick={() => navigate("/vault")}
         className="w-full py-3.5 rounded-2xl text-[14px] font-semibold text-ficium border-2 border-ficium/20 hover:bg-ficium/[0.04] transition-colors">
-        Manage full dossier →
+        Manage full vault →
       </button>
     </div>
   );
 }
 
-/* ── Insights tab ── */
-function InsightsTab() {
+/* ── Insights tab — derived from real bids and profile ── */
+function InsightsTab({ bids, request, profile }: {
+  bids: Bid[];
+  request: RequestDetailType;
+  profile: ReturnType<typeof useProfile>["data"];
+}) {
   const navigate = useNavigate();
+
+  // Compute insights from real data
+  const bidCount   = bids.length;
+  const bestRate   = bids.length > 0
+    ? Math.min(...bids.map(b => b.source === "institution" ? b.rate * 100 : b.rate))
+    : null;
+  const avgRate    = bids.length > 0
+    ? bids.reduce((s, b) => s + (b.source === "institution" ? b.rate * 100 : b.rate), 0) / bids.length
+    : null;
+  const healthScore = profile?.healthScore ?? null;
+  const dsr         = profile?.monthlyIncome && request.amount
+    ? Math.round((request.amount / (request.preferredTermMonths * (profile.monthlyIncome))) * 100)
+    : null;
+
+  const coachInsight = (() => {
+    if (bidCount === 0) return "Your request is live. Institutions typically review within 24 hours. Ensure your dossier is complete to attract better offers.";
+    if (bidCount === 1) return `You have 1 offer so far. Waiting for the bid window to close often yields better competing rates.`;
+    return `${bidCount} institutions are competing for you. The best rate is ${bestRate?.toFixed(2)}% APR — compare total cost, not just rate.`;
+  })();
+
   return (
     <div className="space-y-4">
       <div className="bg-ficium/[0.04] border border-ficium/[0.12] rounded-[18px] px-5 py-4 flex items-start gap-3">
         <Sparkles size={18} className="text-ficium mt-0.5 flex-shrink-0" />
         <div>
           <div className="text-[12px] font-bold text-ficium uppercase tracking-widest mb-1">AI Coach</div>
-          <p className="text-[13px] text-ink/80 leading-relaxed">
-            Your debt-to-income ratio is healthy. Rates have dropped this month — now is a strong window to send your request to more providers.
-          </p>
+          <p className="text-[13px] text-ink/80 leading-relaxed">{coachInsight}</p>
         </div>
       </div>
-      <div className="bg-white rounded-[22px] border border-ink/[0.06] shadow-sm p-5 space-y-3">
-        <div className="text-[12px] font-bold text-muted uppercase tracking-widest">Market signals</div>
-        <div className="flex items-center gap-3 p-3 rounded-xl bg-emerald-50 border border-emerald-100">
-          <BarChart3 size={16} className="text-emerald-600 flex-shrink-0" />
-          <span className="text-[13px] font-medium text-ink">Mortgage rates dropped 0.25% this month</span>
+
+      {/* Live bid signals */}
+      {bidCount > 0 && (
+        <div className="bg-white rounded-[22px] border border-ink/[0.06] shadow-sm p-5 space-y-3">
+          <div className="text-[12px] font-bold text-muted uppercase tracking-widest">Live bid signals</div>
+          {bestRate !== null && (
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-emerald-50 border border-emerald-100">
+              <BarChart3 size={16} className="text-emerald-600 flex-shrink-0" />
+              <span className="text-[13px] font-medium text-ink">
+                Best rate so far: <strong>{bestRate.toFixed(2)}%</strong> APR
+              </span>
+            </div>
+          )}
+          {avgRate !== null && bestRate !== null && (
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-blue-50 border border-blue-100">
+              <BarChart3 size={16} className="text-blue-600 flex-shrink-0" />
+              <span className="text-[13px] font-medium text-ink">
+                Market avg: <strong>{avgRate.toFixed(2)}%</strong> — you are{" "}
+                <strong className="text-emerald-600">{(avgRate - bestRate).toFixed(2)}%</strong> below average
+              </span>
+            </div>
+          )}
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-ficium/[0.04] border border-ficium/10">
+            <Building2 size={16} className="text-ficium flex-shrink-0" />
+            <span className="text-[13px] font-medium text-ink">
+              {bidCount} provider{bidCount !== 1 ? "s" : ""} competing for this request
+            </span>
+          </div>
         </div>
-        <div className="flex items-center gap-3 p-3 rounded-xl bg-blue-50 border border-blue-100">
-          <Building2 size={16} className="text-blue-600 flex-shrink-0" />
-          <span className="text-[13px] font-medium text-ink">MCB currently has the most competitive rates</span>
+      )}
+
+      {/* Profile signals */}
+      {(healthScore !== null || dsr !== null) && (
+        <div className="bg-white rounded-[22px] border border-ink/[0.06] shadow-sm p-5 space-y-3">
+          <div className="text-[12px] font-bold text-muted uppercase tracking-widest">Your profile signals</div>
+          {healthScore !== null && (
+            <div className={["flex items-center gap-3 p-3 rounded-xl border",
+              healthScore >= 70 ? "bg-emerald-50 border-emerald-100" : healthScore >= 50 ? "bg-amber-50 border-amber-100" : "bg-red-50 border-red-100"].join(" ")}>
+              <span className="text-[13px] font-medium text-ink">
+                Credit health score: <strong>{healthScore}/100</strong>
+                {healthScore >= 70 ? " · Likely to attract competitive offers" : healthScore >= 50 ? " · Good — room to improve" : " · Consider building history first"}
+              </span>
+            </div>
+          )}
+          {dsr !== null && (
+            <div className={["flex items-center gap-3 p-3 rounded-xl border",
+              dsr <= 30 ? "bg-emerald-50 border-emerald-100" : dsr <= 50 ? "bg-amber-50 border-amber-100" : "bg-red-50 border-red-100"].join(" ")}>
+              <span className="text-[13px] font-medium text-ink">
+                Estimated DSR: <strong>{dsr}%</strong>
+                {dsr <= 30 ? " · Healthy — lenders prefer below 35%" : dsr <= 50 ? " · Moderate — may affect rates" : " · High — consider smaller amount"}
+              </span>
+            </div>
+          )}
         </div>
-      </div>
+      )}
+
       <button onClick={() => navigate("/advisor")}
         className="w-full py-4 rounded-2xl text-[15px] font-bold text-white bg-ficium shadow-ficium hover:opacity-90 transition-all">
         Open full AI Coach →
@@ -357,7 +448,24 @@ function NoBidsState({
   );
 }
 
-/* ── Bids tab ── */
+/* ── Live countdown hook ── */
+function useCountdown(deadline: string | null) {
+  const [ms, setMs] = useState(() => deadline ? new Date(deadline).getTime() - Date.now() : null);
+  useEffect(() => {
+    if (!deadline) return;
+    const tick = () => setMs(new Date(deadline).getTime() - Date.now());
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [deadline]);
+  if (ms === null || ms <= 0) return null;
+  const h = Math.floor(ms / 3_600_000);
+  const m = Math.floor((ms % 3_600_000) / 60_000);
+  const s = Math.floor((ms % 60_000) / 1000);
+  return { h, m, s, ms, urgent: ms < 2 * 3_600_000 };
+}
+
+/* ── Bids tab — side-by-side comparison + live countdown ── */
 function BidsTab({ bids, request, isClosed, accepting, acceptingBid, onAccept }: {
   bids: Bid[];
   request: RequestDetailType;
@@ -366,42 +474,54 @@ function BidsTab({ bids, request, isClosed, accepting, acceptingBid, onAccept }:
   acceptingBid: Bid | undefined;
   onAccept: (bid: Bid) => void;
 }) {
+  const [view, setView] = useState<"table" | "cards">(bids.length >= 2 ? "table" : "cards");
+  const countdown  = useCountdown(request.decisionDeadline ?? null);
   const acceptedBid = bids.find(b => b.status === "accepted");
-  const deadline    = request.decisionDeadline
-    ? new Date(request.decisionDeadline)
-    : null;
-  const deadlineMs  = deadline ? deadline.getTime() - Date.now() : null;
-  const deadlineFmt = deadline ? fmtDate(request.decisionDeadline!) : null;
+
+  // Sort bids: best rate first
+  const sorted = [...bids].sort((a, b) => {
+    const ra = a.source === "institution" ? a.rate * 100 : a.rate;
+    const rb = b.source === "institution" ? b.rate * 100 : b.rate;
+    return ra - rb;
+  });
 
   return (
     <div>
-      {/* Bid window banner */}
-      {!isClosed && deadlineFmt && (
+      {/* Live countdown banner */}
+      {!isClosed && countdown && (
         <div className={`flex items-center gap-3 px-4 py-3 mb-4 rounded-2xl border text-[12px] ${
-          deadlineMs !== null && deadlineMs < 2 * 3_600_000
+          countdown.urgent
             ? "bg-red-50 border-red-200 text-red-700"
             : "bg-amber-50 border-amber-100 text-amber-700"
         }`}>
           <Clock size={14} className="flex-shrink-0" />
-          <span>
-            Bidding closes <strong>{deadlineFmt}</strong>
-            {deadlineMs !== null && deadlineMs > 0 && deadlineMs < 48 * 3_600_000 && (
-              <> · {Math.ceil(deadlineMs / 3_600_000)}h remaining</>
-            )}
+          <span>Bidding closes in{" "}
+            <strong className="tabular-nums">
+              {countdown.h > 0 ? `${countdown.h}h ` : ""}{String(countdown.m).padStart(2,"0")}m {String(countdown.s).padStart(2,"0")}s
+            </strong>
           </span>
         </div>
       )}
+      {isClosed && !acceptedBid && (
+        <div className="flex items-center gap-3 px-4 py-3 mb-4 rounded-2xl border bg-ink/[0.04] border-ink/10 text-[12px] text-muted">
+          <Clock size={14} className="flex-shrink-0" />
+          <span>Bid window closed</span>
+        </div>
+      )}
+
       {acceptedBid && (
         <div className="flex items-start gap-3 px-4 py-4 mb-5 bg-ficium/[0.06] border border-ficium/20 rounded-2xl">
           <CheckCircle size={20} className="text-ficium flex-shrink-0 mt-0.5" />
           <div>
             <div className="text-sm font-semibold">Offer accepted</div>
             <div className="text-[13px] text-muted mt-0.5">
-              You accepted {acceptedBid.institutionName}'s offer at {acceptedBid.source === "institution" ? (acceptedBid.rate * 100).toFixed(2) : acceptedBid.rate.toFixed(2)}% APR.
+              You accepted {acceptedBid.institutionName}'s offer at{" "}
+              {(acceptedBid.source === "institution" ? acceptedBid.rate * 100 : acceptedBid.rate).toFixed(2)}% APR.
             </div>
           </div>
         </div>
       )}
+
       {bids.length === 0 ? (
         <Card className="text-center py-10">
           <div className="w-12 h-12 rounded-2xl bg-ink/5 grid place-items-center mx-auto mb-3">
@@ -411,16 +531,97 @@ function BidsTab({ bids, request, isClosed, accepting, acceptingBid, onAccept }:
           <div className="text-sm text-muted max-w-[240px] mx-auto">Providers will submit offers once they review your request.</div>
         </Card>
       ) : (
-        <div className="flex flex-col gap-3">
-          {bids.map((bid, i) => (
-            <BidCard key={bid.id} bid={bid} rank={i + 1}
-              isBest={i === 0 && !isClosed} canAccept={!isClosed}
-              isAccepting={accepting && acceptingBid?.id === bid.id}
-              onAccept={() => onAccept(bid)}
-            />
-          ))}
-        </div>
+        <>
+          {/* View toggle — only show if 2+ bids */}
+          {bids.length >= 2 && (
+            <div className="flex items-center gap-2 mb-4">
+              <button onClick={() => setView("table")}
+                className={`px-3 py-1.5 rounded-xl text-[12px] font-semibold transition-all ${view === "table" ? "bg-ficium text-white" : "bg-ink/[0.06] text-muted"}`}>
+                Compare
+              </button>
+              <button onClick={() => setView("cards")}
+                className={`px-3 py-1.5 rounded-xl text-[12px] font-semibold transition-all ${view === "cards" ? "bg-ficium text-white" : "bg-ink/[0.06] text-muted"}`}>
+                Cards
+              </button>
+            </div>
+          )}
+
+          {/* Comparison table */}
+          {view === "table" && bids.length >= 2 ? (
+            <div className="overflow-x-auto rounded-[18px] border border-ink/[0.08] bg-white">
+              <table className="w-full text-[12px]">
+                <thead>
+                  <tr className="border-b border-ink/[0.06]">
+                    <th className="text-left px-4 py-3 text-[10px] font-bold text-muted uppercase tracking-wider">Provider</th>
+                    <th className="text-right px-4 py-3 text-[10px] font-bold text-muted uppercase tracking-wider">Rate</th>
+                    <th className="text-right px-4 py-3 text-[10px] font-bold text-muted uppercase tracking-wider">Amount</th>
+                    <th className="text-right px-4 py-3 text-[10px] font-bold text-muted uppercase tracking-wider">Term</th>
+                    <th className="text-right px-4 py-3 text-[10px] font-bold text-muted uppercase tracking-wider">Monthly</th>
+                    <th className="text-right px-4 py-3 text-[10px] font-bold text-muted uppercase tracking-wider">Total cost</th>
+                    <th className="px-4 py-3" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {sorted.map((bid, i) => {
+                    const annualRate  = bid.source === "institution" ? bid.rate : bid.rate / 100;
+                    const monthly     = monthlyRepayment(bid.amountOffered, annualRate, bid.termMonths);
+                    const totalCost   = monthly ? monthly * bid.termMonths : null;
+                    const rateDisplay = (bid.source === "institution" ? bid.rate * 100 : bid.rate).toFixed(2);
+                    const isBest      = i === 0;
+                    const isAccepted  = bid.status === "accepted";
+                    return (
+                      <tr key={bid.id} className={`border-b border-ink/[0.04] last:border-0 transition-colors ${isBest ? "bg-ficium/[0.02]" : "hover:bg-ink/[0.02]"}`}>
+                        <td className="px-4 py-3.5">
+                          <div className="flex items-center gap-2">
+                            {isBest && <span className="w-1.5 h-1.5 rounded-full bg-ficium flex-shrink-0" />}
+                            <span className="font-semibold text-ink">{bid.institutionName}</span>
+                            {isBest && <span className="text-[9px] font-bold px-1.5 py-0.5 bg-ficium text-white rounded-full">BEST</span>}
+                            {isAccepted && <span className="text-[9px] font-bold px-1.5 py-0.5 bg-emerald-500 text-white rounded-full">ACCEPTED</span>}
+                          </div>
+                          <div className="text-[10px] text-muted mt-0.5 capitalize">{bid.rateType}</div>
+                        </td>
+                        <td className={`px-4 py-3.5 text-right font-bold ${isBest ? "text-ficium" : "text-ink"}`}>
+                          {rateDisplay}%
+                        </td>
+                        <td className="px-4 py-3.5 text-right font-semibold text-ink">
+                          {bid.amountOffered > 0 ? `MUR ${Number(bid.amountOffered).toLocaleString()}` : "—"}
+                        </td>
+                        <td className="px-4 py-3.5 text-right text-muted">{bid.termMonths > 0 ? `${bid.termMonths}m` : "—"}</td>
+                        <td className="px-4 py-3.5 text-right font-semibold text-ink">
+                          {monthly ? `MUR ${Math.round(monthly).toLocaleString()}` : "—"}
+                        </td>
+                        <td className="px-4 py-3.5 text-right font-semibold text-ink">
+                          {totalCost ? `MUR ${Math.round(totalCost).toLocaleString()}` : "—"}
+                        </td>
+                        <td className="px-4 py-3.5 text-right">
+                          {!isClosed && !isAccepted && (
+                            <Button size="sm" onClick={() => onAccept(bid)} loading={accepting && acceptingBid?.id === bid.id}>
+                              Accept
+                            </Button>
+                          )}
+                          {isAccepted && <span className="text-[11px] font-bold text-emerald-600">✓</span>}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            /* Card view */
+            <div className="flex flex-col gap-3">
+              {sorted.map((bid, i) => (
+                <BidCard key={bid.id} bid={bid} rank={i + 1}
+                  isBest={i === 0 && !isClosed} canAccept={!isClosed}
+                  isAccepting={accepting && acceptingBid?.id === bid.id}
+                  onAccept={() => onAccept(bid)}
+                />
+              ))}
+            </div>
+          )}
+        </>
       )}
+
       {isClosed && !acceptedBid && (
         <NoBidsState requestId={request.id} status={request.status} bidCount={bids.length} />
       )}
@@ -526,6 +727,7 @@ export default function RequestDetail() {
   const { data: bids = [], isLoading: bidsLoading } = useRequestBids(id!);
   const { data: profile }                            = useProfile();
   const { mutate: accept, isPending: accepting, variables: acceptingBid } = useAcceptBid(id!);
+  useVault(); // preload vault docs so DocumentsTab renders instantly
 
   const isAccepted = request?.status === "accepted";
 
@@ -619,7 +821,7 @@ export default function RequestDetail() {
       <div className="max-w-[680px] mx-auto px-4 sm:px-6 pt-5">
         {tab === "plan"      && <PlanTab request={request} bidCount={bids.length} />}
         {tab === "documents" && <DocumentsTab />}
-        {tab === "insights"  && <InsightsTab />}
+        {tab === "insights"  && <InsightsTab bids={bids} request={request} profile={profile} />}
         {tab === "details"   && <DetailsTab request={request} profile={profile} />}
         {tab === "bids"      && (
           <BidsTab

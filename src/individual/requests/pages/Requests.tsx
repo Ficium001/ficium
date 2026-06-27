@@ -1,14 +1,17 @@
 // =============================================================
 // Ficium — Requests page (/requests)
 // 2026 revamp: storytelling Hero + shared dashboard kit.
-// NOTE: the Activity feed still renders MOCK_ACTIVITY — pre-existing
-// placeholder, not yet wired to a real source.
+// Activity feed wired to real notifications DB.
+// Best rate computed from live bids.
 // =============================================================
 import { useNavigate, Link } from "react-router-dom";
 import {
   Plus, FileText, ArrowRight, ChevronRight, Zap, Bell,
 } from "lucide-react";
 import { useMyRequests, useBankReadiness } from "../../dashboard/hooks/useDashboard";
+import { useNotifications } from "@/individual/alerts/hooks/useAlerts";
+import { timeAgo } from "@/individual/alerts/api/notifications";
+import type { NotificationKind } from "@/individual/alerts/api/notifications";
 import { ActiveRequestCard } from "@/individual/requests/components/ActiveRequestCard";
 import { BottomNav, CardScroller } from "@/shared/ui";
 import {
@@ -16,26 +19,41 @@ import {
   Reveal, SectionHead, Panel, PanelHead, Feed, FeedItem, DarkCallout,
 } from "@/shared/ui/dashboard";
 
-// Pre-existing placeholder — not yet wired to a real activity source.
-const MOCK_ACTIVITY = [
-  { id: 1, text: "MCB submitted a new offer on your Personal Loan", time: "2 mins ago", tone: "violet" as const },
-  { id: 2, text: "SBM reviewed your application",                   time: "1 hour ago", tone: "warn"   as const },
-  { id: 3, text: "Your request entered bidding stage",              time: "Today, 09:14", tone: "good"  as const },
-  { id: 4, text: "ABSA placed a competitive offer",                 time: "Yesterday",  tone: "blue"   as const },
-];
+// Map notification kind → Feed tone
+const KIND_TONE: Record<NotificationKind, "good" | "warn" | "bad" | "blue" | "violet"> = {
+  kyc_verified:     "good",
+  kyc_rejected:     "bad",
+  request_created:  "blue",
+  request_expiring: "warn",
+  bid_received:     "violet",
+  bid_accepted:     "good",
+  bid_expired:      "warn",
+  system:           "blue",
+};
 
 export default function Requests() {
   const navigate = useNavigate();
   const { data: requests = [], isLoading } = useMyRequests();
   const { score: readiness } = useBankReadiness();
+  const { data: notifications = [] } = useNotifications();
 
   const openRequests  = requests.filter(r => r.status === "open");
   const totalOffers   = requests.reduce((s, r) => s + r.bidCount, 0);
 
+  // Compute best rate from real bids across all requests
+  const bestRate = requests.reduce<number | null>((best, r) => {
+    if (r.bestRate === null) return best;
+    const rate = r.bestRate > 1 ? r.bestRate : r.bestRate * 100; // normalise decimal vs percent
+    if (best === null || rate < best) return rate;
+    return best;
+  }, null);
+
   const heroStats: HeroStat[] = [
     { label: "Active requests",    value: openRequests.length },
     { label: "Providers offering", value: totalOffers, trend: totalOffers > 0 ? "live" : undefined, trendTone: "good" },
-    { label: "Best rate",          value: 8.2, decimals: 1, suffix: "%" },
+    ...(bestRate !== null
+      ? [{ label: "Best rate", value: bestRate, decimals: 2, suffix: "%" } as HeroStat]
+      : [{ label: "Best rate", display: "—" } as HeroStat]),
     { label: "Readiness",          value: readiness ?? 72, suffix: "%" },
   ];
 
@@ -132,17 +150,21 @@ export default function Requests() {
                   subtitle="Latest across your requests"
                   action={<span className="w-2 h-2 rounded-full bg-good animate-pulse-ring-green" aria-hidden />}
                 />
-                <Feed>
-                  {MOCK_ACTIVITY.map((a, i) => (
-                    <FeedItem
-                      key={a.id}
-                      tone={a.tone}
-                      title={a.text}
-                      time={a.time}
-                      last={i === MOCK_ACTIVITY.length - 1}
-                    />
-                  ))}
-                </Feed>
+                {notifications.length === 0 ? (
+                  <p className="text-[13px] text-muted text-center py-6">No activity yet.</p>
+                ) : (
+                  <Feed>
+                    {notifications.slice(0, 6).map((n, i) => (
+                      <FeedItem
+                        key={n.id}
+                        tone={KIND_TONE[n.kind] ?? "blue"}
+                        title={n.title}
+                        time={timeAgo(n.createdAt)}
+                        last={i === Math.min(notifications.length, 6) - 1}
+                      />
+                    ))}
+                  </Feed>
+                )}
               </Panel>
             </Reveal>
 
