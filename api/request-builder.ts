@@ -49,7 +49,7 @@ Rules:
 - Never ask for personal identity. Never guarantee approval.`;
 
 // ── Handler ──────────────────────────────────────────────────
-export default async function handler(req: any, res: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+export default async function handler(req: any, res: any) {
   if (req.method !== "POST") return Response.methodNotAllowed(res, ["POST"]);
 
   try { await requireUser(req); }
