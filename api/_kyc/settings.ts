@@ -3,8 +3,6 @@
  * GET  /api/kyc-settings        — read current settings
  * POST /api/kyc-settings        — update a single toggle { key, value }
  */
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const getEnv = (k: string) => (globalThis as any).process?.env?.[k] ?? "";
 
 async function supabase(method: "GET" | "PATCH", body?: object) {
@@ -26,8 +24,6 @@ async function supabase(method: "GET" | "PATCH", body?: object) {
   const text = await res.text();
   return { ok: res.ok, status: res.status, data: text ? JSON.parse(text) : null };
 }
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function settingsHandler(req: any, res: any) {
   if (req.method === "GET") {
     const r = await supabase("GET");
