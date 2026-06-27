@@ -14,6 +14,7 @@ import { TrackerTab } from "../tracker/tabs/TrackerTab";
 import { formatProductType } from "../api/requests";
 import type { Bid, RequestDetail as RequestDetailType, Phase2Reveal } from "../api/requests";
 import { Button, Card, BottomNav } from "../../../shared/ui";
+import { monthlyRepayment } from "@/shared/lib/finance";
 import RequestChat from "../../../shared/components/RequestChat";
 import { supabase } from "../../../shared/lib/supabase";
 import { useProfile } from "../../dashboard/hooks/useDashboard";
@@ -40,13 +41,6 @@ const JOURNEY_STEPS = ["Submitted", "Under Review", "Providers Bidding", "Offer 
 /* ── Helpers ── */
 const fmt     = (v: number) => v >= 1_000_000 ? `MUR ${(v/1_000_000).toFixed(1)}M` : `MUR ${Number(v).toLocaleString()}`;
 const fmtDate = (s: string) => new Date(s).toLocaleDateString("en-MU", { day: "numeric", month: "short", year: "numeric" });
-
-function monthlyRepayment(principal: number, annualRate: number, months: number): number | null {
-  if (!principal || !annualRate || !months) return null;
-  const r = annualRate / 12;
-  if (r === 0) return principal / months;
-  return (principal * r * Math.pow(1 + r, months)) / (Math.pow(1 + r, months) - 1);
-}
 
 /* ── Plan tab ── */
 function PlanTab({ request, bidCount }: { request: RequestDetailType; bidCount: number }) {
