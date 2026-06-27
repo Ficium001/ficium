@@ -28,8 +28,6 @@ import {
 } from "./_lib/auth.js";
 
 export const config = { runtime: "nodejs" };
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Handler = (req: any, res: any) => unknown | Promise<unknown>;
 
 /** Auth level required per action. */
@@ -47,8 +45,6 @@ const ROUTES: Record<string, { handler: Handler; gate: Gate }> = {
   "liveness":    { handler: livenessHandler,   gate: "service" },
   "setup":       { handler: setupHandler,      gate: "service" },
 };
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default async function handler(req: any, res: any) {
   const action = String(req.query?.action ?? req.body?.action ?? "");
   const route  = ROUTES[action];
