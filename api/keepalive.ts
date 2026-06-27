@@ -8,7 +8,6 @@ export const config = { runtime: "nodejs" };
  * Prevents Supabase free-plan auto-pause which causes 2-3 min cold starts on login.
  * Uses raw fetch against Supabase REST — no SDK import needed.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default async function handler(_req: any, res: any): Promise<void> {
   const url = Env.supabaseUrl();
   const key = Env.supabaseServiceKey();
