@@ -102,7 +102,8 @@ Keep responses under 200 words unless asked for detail. Tone: warm, direct, prac
   });
 
   const reply = completion.content.map((c) => c.type === "text" ? c.text : "").join("").trim();
-  return Response.ok(res, { reply, usage: { input_tokens: completion.usage.input_tokens, output_tokens: completion.usage.output_tokens } });
+  // Flat shape — client reads data.reply / data.usage directly (not nested under data.data)
+  res.status(200).json({ reply, usage: { input_tokens: completion.usage.input_tokens, output_tokens: completion.usage.output_tokens } });
 }
 
 // ── Route 2: Journey affordability calculator ─────────────────
