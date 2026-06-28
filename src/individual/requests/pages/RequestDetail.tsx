@@ -24,14 +24,14 @@ import type { VaultDocType } from "../../vault/api/vault";
 
 /* ── Tab definition ── */
 type TabId = "plan" | "documents" | "insights" | "details" | "bids" | "tracker" | "chat";
-const TABS: { id: TabId; label: string; icon: React.ElementType; acceptedOnly?: boolean }[] = [
-  { id: "plan",      label: "Plan",      icon: LayoutGrid   },
-  { id: "documents", label: "Documents", icon: FileText     },
-  { id: "insights",  label: "Insights",  icon: Sparkles     },
-  { id: "details",   label: "Details",   icon: FileText     },
-  { id: "bids",      label: "Bids",      icon: TrendingDown },
-  { id: "tracker",   label: "Progress",  icon: MapPin, acceptedOnly: true },
-  { id: "chat",      label: "Chat",      icon: MessageSquare},
+const TABS: { id: TabId; label: string; icon: React.ElementType; acceptedOnly?: boolean; hot?: boolean }[] = [
+  { id: "plan",      label: "Plan",      icon: LayoutGrid    },
+  { id: "bids",      label: "Bids",      icon: TrendingDown, hot: true },
+  { id: "tracker",   label: "Progress",  icon: MapPin,       acceptedOnly: true },
+  { id: "chat",      label: "Chat",      icon: MessageSquare },
+  { id: "details",   label: "Details",   icon: FileText      },
+  { id: "documents", label: "Documents", icon: FileText      },
+  { id: "insights",  label: "Insights",  icon: Sparkles      },
 ];
 
 
@@ -789,24 +789,41 @@ export default function RequestDetail() {
           <p className="text-[12px] text-white/50 mb-5">Submitted {fmtDate(request.createdAt)}</p>
 
           {/* Tabs */}
-          <div className="flex border-t border-white/10 overflow-x-auto">
-            {TABS.filter(t => !t.acceptedOnly || isAccepted).map(t => {
-              const TabIcon = t.icon;
-              const active  = tab === t.id;
-              const badgeCount = t.id === "bids" ? bids.length : 0;
-              return (
-                <button key={t.id} onClick={() => setTab(t.id)}
-                  className={["relative flex-shrink-0 flex flex-col items-center gap-1 py-3 px-3 text-[10px] font-bold uppercase tracking-widest transition-all",
-                    active ? "text-white" : "text-white/40 hover:text-white/70"].join(" ")}>
-                  <TabIcon size={14} />
-                  {t.label}{badgeCount > 0 ? ` (${badgeCount})` : ""}
-                  {active && (
-                    <span className="absolute bottom-0 left-2 right-2 h-[2px] rounded-pill"
-                      style={{ background: "linear-gradient(90deg,#356EF4,#8231EC)" }} />
-                  )}
-                </button>
-              );
-            })}
+          <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 sm:-mx-6 sm:px-6 pb-1">
+            <div className="flex gap-1 border-t border-white/10 pt-2 w-max">
+              {TABS.filter(t => !t.acceptedOnly || isAccepted).map(t => {
+                const TabIcon = t.icon;
+                const active  = tab === t.id;
+                const badgeCount = t.id === "bids" ? bids.length : 0;
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => setTab(t.id)}
+                    className="relative flex-shrink-0 flex flex-col items-center gap-1.5 pt-2 pb-3 px-4 rounded-t-[10px] transition-all duration-200"
+                    style={
+                      active
+                        ? { background: "rgba(255,255,255,0.10)", color: "#fff" }
+                        : { background: "transparent", color: "rgba(255,255,255,0.38)" }
+                    }
+                  >
+                    <div className="relative">
+                      <TabIcon size={15} />
+                      {badgeCount > 0 && (
+                        <span className="absolute -top-1.5 -right-2.5 text-[9px] font-black px-1 py-0 rounded-full leading-tight"
+                          style={{ background: "linear-gradient(135deg,#356EF4,#8231EC)", color: "#fff", minWidth: 14, textAlign: "center" }}>
+                          {badgeCount}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider whitespace-nowrap">{t.label}</span>
+                    {active && (
+                      <span className="absolute bottom-0 left-3 right-3 h-[2.5px] rounded-pill"
+                        style={{ background: "linear-gradient(90deg,#356EF4,#8231EC)" }} />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
