@@ -27,7 +27,7 @@ type TabId = "plan" | "documents" | "insights" | "details" | "bids" | "tracker" 
 const TABS: { id: TabId; label: string; icon: React.ElementType; acceptedOnly?: boolean; hot?: boolean }[] = [
   { id: "plan",      label: "Plan",      icon: LayoutGrid    },
   { id: "bids",      label: "Bids",      icon: TrendingDown, hot: true },
-  { id: "tracker",   label: "Progress",  icon: MapPin,       acceptedOnly: true },
+  { id: "tracker",   label: "Progress",  icon: MapPin       },
   { id: "chat",      label: "Chat",      icon: MessageSquare },
   { id: "details",   label: "Details",   icon: FileText      },
   { id: "documents", label: "Documents", icon: FileText      },
