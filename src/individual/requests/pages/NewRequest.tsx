@@ -38,7 +38,7 @@ const PRODUCTS: Product[] = [
 
 const URL_TYPE_MAP: Record<string, ProductType> = {
   mortgage: "mortgage", personal: "personal_loan", credit: "credit_card",
-  vehicle: "leasing", business: "business_loan", education: "personal_loan",
+  vehicle: "leasing", business: "business_loan", education: "personal_loan", renovation: "personal_loan",
   deposit: "fixed_deposit", savings: "investment_account",
 };
 

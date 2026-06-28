@@ -6,20 +6,18 @@ const IconHouse     = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="32" he
 const IconPerson    = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="32" height="32" fill={color}><path d="M12 12c2.7 0 4-1.8 4-4s-1.3-4-4-4-4 1.8-4 4 1.3 4 4 4zm0 2c-2.7 0-8 1.3-8 4v2h16v-2c0-2.7-5.3-4-8-4z"/></svg>);
 const IconCard      = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="32" height="32" fill={color}><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>);
 const IconCar       = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="32" height="32" fill={color}><path d="M18.9 6C18.7 5.4 18.1 5 17.5 5h-11c-.7 0-1.2.4-1.4 1L3 12v8c0 .6.4 1 1 1h1c.6 0 1-.4 1-1v-1h12v1c0 .6.4 1 1 1h1c.6 0 1-.4 1-1v-8L18.9 6zM6.5 16c-.8 0-1.5-.7-1.5-1.5S5.7 13 6.5 13s1.5.7 1.5 1.5S7.3 16 6.5 16zm11 0c-.8 0-1.5-.7-1.5-1.5s.7-1.5 1.5-1.5 1.5.7 1.5 1.5-.7 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></svg>);
-const IconSuv       = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="32" height="32" fill={color}><path d="M20 8h-3L14.5 4h-5L7 8H4C2.9 8 2 8.9 2 10v6h2v2h2v-2h12v2h2v-2h2v-6c0-1.1-.9-2-2-2zm-9.5-2.5h3l1.5 2.5h-6l1.5-2.5zM6.5 15c-.8 0-1.5-.7-1.5-1.5S5.7 12 6.5 12s1.5.7 1.5 1.5S7.3 15 6.5 15zm11 0c-.8 0-1.5-.7-1.5-1.5s.7-1.5 1.5-1.5 1.5.7 1.5 1.5-.7 1.5-1.5 1.5zM4 13v-3h16v3H4z"/></svg>);
-const IconBriefcase = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="32" height="32" fill={color}><path d="M20 7h-4V5c0-1.1-.9-2-2-2h-4C8.9 3 8 3.9 8 5v2H4C2.9 7 2 7.9 2 9v11c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zm-8-2h4v2h-4V5zm9 15H3V9h18v11zm-10-8h2v5h-2zm-4 0h2v5H7zm8 0h2v5h-2z"/></svg>);
+const IconRenovation = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="32" height="32" fill={color}><path d="M13.7 2.3a1 1 0 0 0-1.4 0L8 6.6 3.7 2.3A1 1 0 0 0 2.3 3.7L6.6 8l-4.3 4.3a1 1 0 0 0 1.4 1.4L8 9.4l4.3 4.3a1 1 0 0 0 1.4-1.4L9.4 8l4.3-4.3a1 1 0 0 0 0-1.4zM19 11h-1V3a1 1 0 0 0-2 0v8h-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1zm-1 8h-2v-6h2v6z"/></svg>);
 const IconGradCap   = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="32" height="32" fill={color}><path d="M12 3 1 9l4 2.2V16l7 4 7-4v-4.8L23 9 12 3zm6.8 6L12 12.7 5.2 9 12 5.3 18.8 9zM17 14.4l-5 2.9-5-2.9v-2.7l5 2.8 5-2.8v2.7z"/></svg>);
 const IconBank      = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="32" height="32" fill={color}><path d="M4 10v7h3v-7H4zm6 0v7h3v-7h-3zm-5 9h14v2H5v-2zm11-9v7h3v-7h-3zM12 1L2 6v2h20V6L12 1z"/></svg>);
 const IconChart     = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="32" height="32" fill={color}><path d="M5 9.5v9H3v2h18v-2h-2v-9h-3v9h-2v-9h-3v9H9v-9H5zm7-7.5L6.5 7H9v2h6V7h2.5L12 2z"/></svg>);
 
 const BORROW = [
-  { id: "mortgage",  Icon: IconHouse,     label: "Home loan",      route: "/requests/new?type=mortgage",  bg: "#dbeafe", color: "#1d4ed8" },
-  { id: "personal",  Icon: IconPerson,    label: "Personal loan",  route: "/requests/new?type=personal",  bg: "#dbeafe", color: "#2563eb" },
-  { id: "credit",    Icon: IconCard,      label: "Credit card",    route: "/requests/new?type=credit",    bg: "#fce7f3", color: "#be185d" },
-  { id: "vehicle",   Icon: IconCar,       label: "Vehicle loan",   route: "/requests/new?type=vehicle",   bg: "#fef9c3", color: "#ca8a04" },
-  { id: "auto",      Icon: IconSuv,       label: "Vehicle loan",   route: "/requests/new?type=auto",      bg: "#fef9c3", color: "#a16207" },
-  { id: "business",  Icon: IconBriefcase, label: "Business loan",  route: "/requests/new?type=business",  bg: "#fee2e2", color: "#dc2626" },
-  { id: "education", Icon: IconGradCap,   label: "Education loan", route: "/requests/new?type=education", bg: "#d1fae5", color: "#059669" },
+  { id: "mortgage",    Icon: IconHouse,       label: "Home loan",       route: "/requests/new?type=mortgage",    bg: "#dbeafe", color: "#1d4ed8" },
+  { id: "personal",    Icon: IconPerson,      label: "Personal loan",   route: "/requests/new?type=personal",    bg: "#dbeafe", color: "#2563eb" },
+  { id: "credit",      Icon: IconCard,        label: "Credit card",     route: "/requests/new?type=credit",      bg: "#fce7f3", color: "#be185d" },
+  { id: "vehicle",     Icon: IconCar,         label: "Vehicle loan",    route: "/requests/new?type=vehicle",     bg: "#fef9c3", color: "#ca8a04" },
+  { id: "renovation",  Icon: IconRenovation,  label: "Renovation loan", route: "/requests/new?type=renovation",  bg: "#ede9fe", color: "#7c3aed" },
+  { id: "education",   Icon: IconGradCap,     label: "Education loan",  route: "/requests/new?type=education",   bg: "#d1fae5", color: "#059669" },
 ] as const;
 
 const SAVE = [
