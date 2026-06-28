@@ -4,6 +4,7 @@
 // Activity feed wired to real notifications DB.
 // Best rate computed from live bids.
 // =============================================================
+import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
   Plus, FileText, ArrowRight, ChevronRight, Zap, Bell,
@@ -37,7 +38,10 @@ export default function Requests() {
   const { score: readiness } = useBankReadiness();
   const { data: notifications = [] } = useNotifications();
 
+  const [statusFilter, setStatusFilter] = useState<"open" | "accepted" | "closed">("open");
+
   const openRequests  = requests.filter(r => r.status === "open");
+  const filteredRequests = requests.filter(r => r.status === statusFilter);
   const totalOffers   = requests.reduce((s, r) => s + r.bidCount, 0);
 
   // Compute best rate from real bids across all requests
@@ -114,29 +118,81 @@ export default function Requests() {
                 <HeroButton onClick={() => navigate("/requests/new")}>Post a need</HeroButton>
               </Panel>
             ) : (
-              <CardScroller className="gap-4 pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
-
-                {/* DB request cards */}
-                {requests.map(r => (
-                  <div key={r.id} className="flex-shrink-0 w-[260px]">
-                    <ActiveRequestCard request={r} />
-                  </div>
-                ))}
-
-                {/* Post new card */}
-                <div className="flex-shrink-0 w-[200px]">
-                  <button
-                    onClick={() => navigate("/requests/new")}
-                    className="bg-white rounded-card border-2 border-dashed border-line w-full h-full min-h-[400px] flex flex-col items-center justify-center gap-3 hover:border-ficium/40 hover:bg-ficium/[0.02] transition-all group"
-                  >
-                    <div className="w-12 h-12 rounded-full grid place-items-center shadow-ficium group-hover:scale-110 transition-transform"
-                         style={{ background: "linear-gradient(135deg,#356EF4,#8231EC)" }}>
-                      <Plus size={22} className="text-white" />
+              <>
+                {/* Status filter — segmented pill strip */}
+                {(() => {
+                  const FILTERS = [
+                    { key: "open"     as const, label: "Open",     dot: "#356EF4", activeBg: "linear-gradient(135deg,#356EF4,#8231EC)", activeText: "#fff" },
+                    { key: "accepted" as const, label: "Accepted", dot: "#10b981", activeBg: "linear-gradient(135deg,#059669,#10b981)",   activeText: "#fff" },
+                    { key: "closed"   as const, label: "Closed",   dot: "#9ca3af", activeBg: "linear-gradient(135deg,#4b5563,#9ca3af)",   activeText: "#fff" },
+                  ];
+                  return (
+                    <div className="flex items-center gap-2 mb-5 p-1 bg-ink/[0.04] rounded-[16px] w-fit">
+                      {FILTERS.map(f => {
+                        const count = requests.filter(r => r.status === f.key).length;
+                        const active = statusFilter === f.key;
+                        return (
+                          <button
+                            key={f.key}
+                            onClick={() => setStatusFilter(f.key)}
+                            className="relative flex items-center gap-2 px-4 py-2 rounded-[12px] transition-all duration-200 font-semibold text-[13px]"
+                            style={
+                              active
+                                ? { background: f.activeBg, color: f.activeText, boxShadow: "0 2px 8px rgba(53,110,244,0.25)" }
+                                : { background: "transparent", color: "#6b7280" }
+                            }
+                          >
+                            {!active && (
+                              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: f.dot, opacity: 0.5 }} />
+                            )}
+                            {f.label}
+                            {count > 0 && (
+                              <span
+                                className="text-[11px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center"
+                                style={
+                                  active
+                                    ? { background: "rgba(255,255,255,0.25)", color: "#fff" }
+                                    : { background: "rgba(0,0,0,0.08)", color: "#374151" }
+                                }
+                              >
+                                {count}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
-                    <span className="text-[12px] font-bold text-ink text-center px-4">Post New Request</span>
-                  </button>
-                </div>
-              </CardScroller>
+                  );
+                })()}
+
+                <CardScroller className="gap-4 pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
+                  {filteredRequests.length === 0 ? (
+                    <div className="flex-shrink-0 w-full py-10 text-center text-[14px] text-muted">
+                      No {statusFilter} requests.
+                    </div>
+                  ) : (
+                    filteredRequests.map(r => (
+                      <div key={r.id} className="flex-shrink-0 w-[260px]">
+                        <ActiveRequestCard request={r} />
+                      </div>
+                    ))
+                  )}
+
+                  {/* Post new card — always visible */}
+                  <div className="flex-shrink-0 w-[200px]">
+                    <button
+                      onClick={() => navigate("/requests/new")}
+                      className="bg-white rounded-card border-2 border-dashed border-line w-full h-full min-h-[400px] flex flex-col items-center justify-center gap-3 hover:border-ficium/40 hover:bg-ficium/[0.02] transition-all group"
+                    >
+                      <div className="w-12 h-12 rounded-full grid place-items-center shadow-ficium group-hover:scale-110 transition-transform"
+                           style={{ background: "linear-gradient(135deg,#356EF4,#8231EC)" }}>
+                        <Plus size={22} className="text-white" />
+                      </div>
+                      <span className="text-[12px] font-bold text-ink text-center px-4">Post New Request</span>
+                    </button>
+                  </div>
+                </CardScroller>
+              </>
             )}
           </Reveal>
 
