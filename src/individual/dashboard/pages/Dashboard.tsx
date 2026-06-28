@@ -28,6 +28,7 @@ export default function Dashboard() {
   const navigate     = useNavigate();
   const [hidden,  setHidden]  = useState(false);
   const [flipped, setFlipped] = useState<Record<string, boolean>>({});
+  const [requestFilter, setRequestFilter] = useState<"open" | "accepted" | "closed">("open");
 
   const { data: profile,  isLoading: profileLoading  } = useProfile();
   const { data: requests = [], isLoading: requestsLoading } = useMyRequests();
@@ -151,27 +152,64 @@ export default function Dashboard() {
         </ErrorBoundary>
 
         {/* 2 — Active requests */}
-        {requests.length > 0 && (
-          <div>
-            <div className="flex items-end justify-between mb-4">
-              <div>
-                <h2 className="font-display text-[20px] sm:text-[24px] font-bold text-ink leading-tight">
-                  Your Active <span className="text-ficium">Requests</span>
-                </h2>
-              </div>
-              <Link to="/requests" className="text-[12px] sm:text-[13px] text-muted font-semibold no-underline hover:text-ink pb-1 flex-shrink-0 ml-4">
-                View all →
-              </Link>
-            </div>
-            <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-10 lg:px-10">
-              {requests.map(r => (
-                <div key={r.id} className="flex-shrink-0 w-[260px]">
-                  <ActiveRequestCard request={r} />
+        {requests.length > 0 && (() => {
+          const FILTERS = [
+            { key: "open",     label: "Open"     },
+            { key: "accepted", label: "Accepted" },
+            { key: "closed",   label: "Closed"   },
+          ] as const;
+          const filtered = requests.filter(r => r.status === requestFilter);
+          return (
+            <div>
+              <div className="flex items-end justify-between mb-3">
+                <div>
+                  <h2 className="font-display text-[20px] sm:text-[24px] font-bold text-ink leading-tight">
+                    Your Active <span className="text-ficium">Requests</span>
+                  </h2>
                 </div>
-              ))}
+                <Link to="/requests" className="text-[12px] sm:text-[13px] text-muted font-semibold no-underline hover:text-ink pb-1 flex-shrink-0 ml-4">
+                  View all →
+                </Link>
+              </div>
+              {/* Filter pills */}
+              <div className="flex gap-2 mb-4">
+                {FILTERS.map(f => (
+                  <button
+                    key={f.key}
+                    onClick={() => setRequestFilter(f.key)}
+                    className={[
+                      "text-[12px] font-semibold px-3.5 py-1.5 rounded-pill border transition-colors",
+                      requestFilter === f.key
+                        ? "bg-ficium text-white border-ficium"
+                        : "bg-transparent text-muted border-ink/20 hover:border-ficium/50 hover:text-ficium",
+                    ].join(" ")}
+                  >
+                    {f.label}
+                    {requests.filter(r => r.status === f.key).length > 0 && (
+                      <span className={[
+                        "ml-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full",
+                        requestFilter === f.key ? "bg-white/20 text-white" : "bg-ink/[0.07] text-muted",
+                      ].join(" ")}>
+                        {requests.filter(r => r.status === f.key).length}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+              {filtered.length > 0 ? (
+                <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-10 lg:px-10">
+                  {filtered.map(r => (
+                    <div key={r.id} className="flex-shrink-0 w-[260px]">
+                      <ActiveRequestCard request={r} />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[13px] text-muted py-3">No {requestFilter} requests.</p>
+              )}
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* 3 — Net Worth + Financial Health */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
