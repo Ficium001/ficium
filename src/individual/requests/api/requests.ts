@@ -46,6 +46,13 @@ export type RequestDetail = {
   createdAt: string;
 };
 
+export type BidBenefit = {
+  title:        string;
+  value_display: string | null;
+  is_guaranteed: boolean;
+  cat_code:     string | null;
+};
+
 export type Bid = {
   id: string;
   requestId: string;
@@ -55,12 +62,13 @@ export type Bid = {
   rateType: "fixed" | "variable";
   amountOffered: number;
   termMonths: number;
-  terms: string | null;           // legacy field
+  terms: string | null;
   conditions: Record<string, unknown> | null;
   status: "submitted" | "accepted" | "rejected" | "expired" | "withdrawn";
   submittedAt: string;
-  createdAt: string;             // alias of submittedAt for legacy compatibility
-  source: "legacy" | "institution"; // which schema the bid came from
+  createdAt: string;
+  source: "legacy" | "institution";
+  benefits: BidBenefit[];
 };
 
 export type Phase2Reveal = {
@@ -243,6 +251,7 @@ export async function getRequestBids(requestId: string): Promise<Bid[]> {
     submittedAt:     b.submitted_at as string,
     createdAt:       b.submitted_at as string,
     source:          "institution" as const,
+    benefits:        (b.benefits as BidBenefit[]) ?? [],
   }));
 }
 

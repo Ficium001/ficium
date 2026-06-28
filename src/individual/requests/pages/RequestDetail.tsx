@@ -913,6 +913,28 @@ function BidCard({ bid, rank, isBest, canAccept, isAccepting, onAccept }: {
             {typeof bid.conditions?.notes === "string" && bid.conditions.notes && (
               <p className="text-xs text-muted mt-1 leading-relaxed bg-paper rounded-lg px-3 py-2">{bid.conditions.notes}</p>
             )}
+            {/* Benefits */}
+            {bid.benefits && bid.benefits.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {bid.benefits.map((benefit, idx) => (
+                  <span
+                    key={idx}
+                    className={[
+                      "inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-pill",
+                      benefit.is_guaranteed
+                        ? "bg-amber-50 text-amber-700 border border-amber-200"
+                        : "bg-surface text-muted border border-line",
+                    ].join(" ")}
+                  >
+                    {benefit.is_guaranteed && <span className="text-amber-500">★</span>}
+                    {benefit.title}
+                    {benefit.value_display && (
+                      <span className="font-normal opacity-70">· {benefit.value_display}</span>
+                    )}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
         {canAccept && !isAccepted && (
