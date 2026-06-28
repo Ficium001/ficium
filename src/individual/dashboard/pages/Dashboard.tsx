@@ -171,30 +171,41 @@ export default function Dashboard() {
                   View all →
                 </Link>
               </div>
-              {/* Filter pills */}
-              <div className="flex gap-2 mb-4">
-                {FILTERS.map(f => (
-                  <button
-                    key={f.key}
-                    onClick={() => setRequestFilter(f.key)}
-                    className={[
-                      "text-[12px] font-semibold px-3.5 py-1.5 rounded-pill border transition-colors",
-                      requestFilter === f.key
-                        ? "bg-ficium text-white border-ficium"
-                        : "bg-transparent text-muted border-ink/20 hover:border-ficium/50 hover:text-ficium",
-                    ].join(" ")}
-                  >
-                    {f.label}
-                    {requests.filter(r => r.status === f.key).length > 0 && (
-                      <span className={[
-                        "ml-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full",
-                        requestFilter === f.key ? "bg-white/20 text-white" : "bg-ink/[0.07] text-muted",
-                      ].join(" ")}>
-                        {requests.filter(r => r.status === f.key).length}
-                      </span>
-                    )}
-                  </button>
-                ))}
+              {/* Filter pills — segmented control */}
+              <div className="flex items-center gap-2 mb-4 p-1 bg-ink/[0.04] rounded-[16px] w-fit">
+                {FILTERS.map(f => {
+                  const count = requests.filter(r => r.status === f.key).length;
+                  const active = requestFilter === f.key;
+                  const META = {
+                    open:     { dot: "#356EF4", activeBg: "linear-gradient(135deg,#356EF4,#8231EC)" },
+                    accepted: { dot: "#10b981", activeBg: "linear-gradient(135deg,#059669,#10b981)" },
+                    closed:   { dot: "#9ca3af", activeBg: "linear-gradient(135deg,#4b5563,#9ca3af)" },
+                  } as const;
+                  const m = META[f.key];
+                  return (
+                    <button
+                      key={f.key}
+                      onClick={() => setRequestFilter(f.key)}
+                      className="flex items-center gap-2 px-4 py-2 rounded-[12px] transition-all duration-200 font-semibold text-[13px]"
+                      style={
+                        active
+                          ? { background: m.activeBg, color: "#fff", boxShadow: "0 2px 8px rgba(53,110,244,0.25)" }
+                          : { background: "transparent", color: "#6b7280" }
+                      }
+                    >
+                      {!active && <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: m.dot, opacity: 0.5 }} />}
+                      {f.label}
+                      {count > 0 && (
+                        <span
+                          className="text-[11px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center"
+                          style={active ? { background: "rgba(255,255,255,0.25)", color: "#fff" } : { background: "rgba(0,0,0,0.08)", color: "#374151" }}
+                        >
+                          {count}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
               {filtered.length > 0 ? (
                 <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-10 lg:px-10">
