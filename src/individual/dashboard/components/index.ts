@@ -5,3 +5,6 @@ export { FlipCards }          from "./FlipCards";
 export { SmartInsightsFeed }  from "./SmartInsightsFeed";
 export { MarketTile }         from "./MarketTile";
 export { NextActions }        from "./NextActions";
+export { LiveOffersSection }  from "./LiveOffersSection";
+export { GoalsWidget }        from "./GoalsWidget";
+export { MarketRatesWidget }  from "./MarketRatesWidget";

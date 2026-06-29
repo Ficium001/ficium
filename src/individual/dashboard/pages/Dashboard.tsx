@@ -15,6 +15,7 @@ import {
   OnboardingBanners,
   NetWorthHero, FlipCards,
   SmartInsightsFeed, MarketTile, NextActions,
+  LiveOffersSection, GoalsWidget, MarketRatesWidget,
 } from "@/individual/dashboard/components";
 import { WhatAreYouPlanningSection } from "@/individual/dashboard/components/WhatAreYouPlanningSection";
 import { ActiveRequestCard } from "@/individual/requests/components/ActiveRequestCard";
@@ -64,13 +65,19 @@ export default function Dashboard() {
   // financial data (a real snapshot row, or a profile net-worth value).
   // Otherwise show a prompt — never a misleading "Rs 0".
   const hasNetWorth = (snapshot?.exists ?? false) || profile?.totalNetWorth != null;
+  // Health score: only show in hero when strong (≥70). Below that it's discouraging
+  // as first-impression. Users can always access it via the Financial Health card.
+  const heroHealthStat: HeroStat | null = (profile?.healthScore ?? 0) >= 70
+    ? { label: "Health score", value: profile!.healthScore!, suffix: "/100" }
+    : null;
+
   const heroStats: HeroStat[] = [
     hasNetWorth
       ? { label: "Net worth", value: netWorth ?? 0, prefix: "Rs ", format: "comma" }
       : { label: "Net worth", display: "—", hint: "Add finances" },
     { label: "Active requests", value: activeRequests },
     { label: "New bids", value: totalNewBids, trend: totalNewBids > 0 ? "live" : undefined, trendTone: "good" },
-    { label: "Health score", value: profile?.healthScore ?? 0, suffix: "/100" },
+    ...(heroHealthStat ? [heroHealthStat] : []),
   ];
 
   return (
@@ -146,7 +153,14 @@ export default function Dashboard() {
           <OnboardingBanners kycVerified={kycVerified} hasDossier={hasDossier} />
         )}
 
-        {/* 1 — Post a need */}
+        {/* 1 — Live offers (highest priority when bids exist) */}
+        {requests.length > 0 && (
+          <ErrorBoundary name="Live Offers">
+            <LiveOffersSection />
+          </ErrorBoundary>
+        )}
+
+        {/* 2 — Post a need */}
         <ErrorBoundary name="Planning">
           <WhatAreYouPlanningSection />
         </ErrorBoundary>
@@ -313,7 +327,17 @@ export default function Dashboard() {
           <SmartInsightsFeed insights={insights} activeIdx={activeIdx} onNext={next} />
         </ErrorBoundary>
 
-        {/* 5 — Banks Compete */}
+        {/* 5 — Goals + Market Rates (side by side on desktop) */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <ErrorBoundary name="Goals">
+            <GoalsWidget />
+          </ErrorBoundary>
+          <ErrorBoundary name="Market Rates">
+            <MarketRatesWidget />
+          </ErrorBoundary>
+        </div>
+
+        {/* 6 — Banks Compete */}
         <div>
           <SectionHeader
             eyebrow="Marketplace"
