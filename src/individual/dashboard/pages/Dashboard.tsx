@@ -2,7 +2,7 @@ import { useState }         from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Plus, HandCoins, CreditCard, PiggyBank, LineChart,
-  Calculator, Wallet, ShieldCheck, Upload, MessageCircle,
+  Calculator, Wallet, ShieldCheck,
   Bell, LogOut,
 } from "lucide-react";
 import { useAuth }           from "@/features/auth/context/AuthContext";
@@ -15,7 +15,7 @@ import {
   OnboardingBanners,
   NetWorthHero, FlipCards,
   SmartInsightsFeed, MarketTile, NextActions,
-  LiveOffersSection, GoalsWidget, MarketRatesWidget,
+  LiveOffersSection,
 } from "@/individual/dashboard/components";
 import { WhatAreYouPlanningSection } from "@/individual/dashboard/components/WhatAreYouPlanningSection";
 import { ActiveRequestCard } from "@/individual/requests/components/ActiveRequestCard";
@@ -327,17 +327,7 @@ export default function Dashboard() {
           <SmartInsightsFeed insights={insights} activeIdx={activeIdx} onNext={next} />
         </ErrorBoundary>
 
-        {/* 5 — Goals + Market Rates (side by side on desktop) */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          <ErrorBoundary name="Goals">
-            <GoalsWidget />
-          </ErrorBoundary>
-          <ErrorBoundary name="Market Rates">
-            <MarketRatesWidget />
-          </ErrorBoundary>
-        </div>
-
-        {/* 6 — Banks Compete */}
+        {/* 5 — Banks Compete */}
         <div>
           <SectionHeader
             eyebrow="Marketplace"
@@ -350,23 +340,6 @@ export default function Dashboard() {
             <MarketTile icon={<CreditCard size={18} />} label="Credit Card"   title="Card offers tailored to you"  metric="Top cashback" metricValue="3.5% from 4 providers"      bg="bg-violet-600"  href="/requests/new" />
             <MarketTile icon={<PiggyBank size={18} />}  label="Deposit"       title="Deposits with real yield"     metric="Top yield"    metricValue="5.4% from 3 providers"      bg="bg-amber-400"   dark href="/requests/new" />
             <MarketTile icon={<LineChart size={18} />}  label="Wealth"        title="Investments that find you"    metric="Fee saving"   metricValue="0.4% potential saving"      bg="bg-emerald-400" dark href="/requests/new" />
-          </div>
-        </div>
-
-        {/* 6 — Quick Actions */}
-        <div>
-          <SectionHeader title="Quick" highlight="Actions" />
-          <div className="grid grid-cols-4 sm:grid-cols-4 lg:grid-cols-7 gap-2 sm:gap-3">
-            {QUICK_ACTIONS.map(({ icon, label, bg, to }) => (
-              <Link key={label} to={to} className="no-underline">
-                <div className="bg-white rounded-2xl border border-ink/[0.06] shadow-sm p-3 sm:p-4 flex flex-col items-center gap-2 sm:gap-3 hover:shadow-card transition-all hover:-translate-y-0.5 text-center">
-                  <div className={["w-10 h-10 sm:w-12 sm:h-12 rounded-xl grid place-items-center flex-shrink-0", bg].join(" ")}>
-                    {icon}
-                  </div>
-                  <span className="text-[10px] sm:text-[11px] font-semibold text-ink leading-tight">{label}</span>
-                </div>
-              </Link>
-            ))}
           </div>
         </div>
 
@@ -441,16 +414,6 @@ function SectionHeader({
     </div>
   );
 }
-
-const QUICK_ACTIONS = [
-  { icon: <HandCoins     size={20} className="text-ficium"      />, label: "Apply for Loan",  bg: "bg-ficium/10",  to: "/requests/new?type=mortgage"          },
-  { icon: <CreditCard    size={20} className="text-violet-600"  />, label: "Credit Card",     bg: "bg-violet-50",  to: "/requests/new"                        },
-  { icon: <LineChart     size={20} className="text-emerald-600" />, label: "Invest Now",      bg: "bg-emerald-50", to: "/requests/new?type=savings"        },
-  { icon: <ShieldCheck   size={20} className="text-ficium"      />, label: "Eligibility",     bg: "bg-ficium/10",  to: "/health"                              },
-  { icon: <Upload        size={20} className="text-muted"       />, label: "Upload Doc",      bg: "bg-ink/[0.05]", to: "/onboarding/kyc"                      },
-  { icon: <MessageCircle size={20} className="text-ficium"      />, label: "AI Coach",        bg: "bg-ficium/10",  to: "/advisor"                             },
-  { icon: <Calculator    size={20} className="text-amber-600"   />, label: "Calculator",      bg: "bg-amber-50",   to: "/tools"                               },
-];
 
 const TOOLS = [
   { icon: <Calculator  size={20} className="text-ficium"      />, bg: "bg-ficium/10",  title: "Loan Calculator",      desc: "Estimate your monthly repayments", to: "/tools#credit"     },
