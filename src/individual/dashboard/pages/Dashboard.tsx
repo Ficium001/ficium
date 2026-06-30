@@ -6,14 +6,12 @@ import {
   Bell, LogOut,
 } from "lucide-react";
 import { useAuth }           from "@/features/auth/context/AuthContext";
-import { useProfile, useMyRequests, useNextActions, useBankReadiness } from "@/individual/dashboard/hooks/useDashboard";
+import { useProfile, useMyRequests, useNextActions } from "@/individual/dashboard/hooks/useDashboard";
 import { useDashboardInsights }  from "@/individual/dashboard/hooks/useDashboardInsights";
 import { useSnapshot }           from "@/individual/networth/hooks/useSnapshot";
-import { useUnreadCount }        from "@/individual/alerts/hooks/useAlerts";
-import { getGreeting, formatAmount, healthLabel, SPARK_NETWORTH, SPARK_REQUESTS } from "@/individual/dashboard/config/dashboard";
+import { getGreeting, SPARK_NETWORTH, SPARK_REQUESTS } from "@/individual/dashboard/config/dashboard";
 import {
   OnboardingBanners,
-  NetWorthHero, FlipCards,
   SmartInsightsFeed, MarketTile, NextActions,
   LiveOffersSection,
 } from "@/individual/dashboard/components";
@@ -36,20 +34,14 @@ function fmtCompact(n: number): string {
 export default function Dashboard() {
   const { signOut }  = useAuth();
   const navigate     = useNavigate();
-  const [hidden,  setHidden]  = useState(false);
-  const [flipped, setFlipped] = useState<Record<string, boolean>>({});
   const [requestFilter, setRequestFilter] = useState<"open" | "accepted" | "closed">("open");
 
   const { data: profile,  isLoading: profileLoading  } = useProfile();
-  const { data: requests = [], isLoading: requestsLoading } = useMyRequests();
+  const { data: requests = [] } = useMyRequests();
   const { data: snapshot } = useSnapshot();
   const { actions }      = useNextActions();
-  const { score: bankReadiness } = useBankReadiness();
   const { insights, activeIdx, next } = useDashboardInsights();
-  const { user }         = useAuth();
-  const { data: unreadCount = 0 } = useUnreadCount(user?.id ?? null);
 
-  const loading        = profileLoading || requestsLoading;
   const kycVerified    = profile?.kycStatus === "verified";
   const hasDossier     = !!profile?.hasDossier;
   const readyToRequest = kycVerified && hasDossier;
@@ -62,10 +54,6 @@ export default function Dashboard() {
   const totalAssets    = snapshot?.totalAssets    ?? 0;
   const totalLiabs     = snapshot?.totalLiabilities ?? 0;
 
-  // Health label from real score
-  const hl = healthLabel(profile?.healthScore ?? null);
-
-  const flip          = (id: string) => setFlipped((p) => ({ ...p, [id]: !p[id] }));
   const handleSignOut = async () => { await signOut(); navigate("/"); };
 
   // Net worth: show the figure only when the user has actually entered
@@ -251,91 +239,6 @@ export default function Dashboard() {
             </div>
           );
         })()}
-
-        {/* 3 — Net Worth + Financial Health */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-
-          {/* Net Worth — all real data */}
-          <div className="bg-white rounded-[22px] border border-ink/[0.06] shadow-card overflow-hidden">
-            <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-ink/[0.05]">
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-bold text-muted uppercase tracking-widest">Net Worth</span>
-                <span className="text-[10px] font-bold bg-ink/[0.06] text-muted px-2 py-0.5 rounded-pill">MUR</span>
-              </div>
-              <button
-                onClick={() => navigate("/networth")}
-                className="text-[11px] font-semibold text-ficium hover:underline"
-              >
-                View breakdown →
-              </button>
-            </div>
-            <NetWorthHero
-              netWorth={netWorth ?? 0}
-              hidden={hidden}
-              onToggle={() => setHidden((h) => !h)}
-            />
-            <div className="grid grid-cols-2 divide-x divide-ink/[0.05] border-t border-ink/[0.05]">
-              {[
-                { label: "Assets",      value: totalAssets > 0 ? `Rs ${formatAmount(totalAssets)}` : "—" },
-                { label: "Liabilities", value: totalLiabs  > 0 ? `Rs ${formatAmount(totalLiabs)}`  : "—" },
-              ].map(({ label, value }) => (
-                <div key={label} className="px-4 py-3">
-                  <div className="text-[10px] text-muted font-semibold mb-0.5">{label}</div>
-                  <div className="text-[12px] sm:text-[13px] font-bold text-ink">{value}</div>
-                </div>
-              ))}
-            </div>
-            {totalAssets === 0 && (
-              <div className="px-5 py-3 border-t border-ink/[0.05]">
-                <button onClick={() => navigate("/networth")}
-                  className="text-[12px] text-ficium font-semibold hover:underline">
-                  + Add your assets &amp; liabilities to see real numbers
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Financial Health — real score */}
-          <div className="bg-white rounded-[22px] border border-ink/[0.06] shadow-card overflow-hidden">
-            <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-ink/[0.05]">
-              <span className="font-display text-[15px] font-bold text-ink">Financial Health</span>
-              <div className="flex items-center gap-2">
-                <span className="text-[12px] font-bold" style={{ color: hl.color }}>{hl.label}</span>
-                <button onClick={() => navigate("/health")}
-                  className="text-[11px] font-semibold text-ficium hover:underline">
-                  Full report →
-                </button>
-              </div>
-            </div>
-            <div className="p-4">
-              <FlipCards
-                loading={loading}
-                healthScore={profile?.healthScore ?? null}
-                bankReadiness={bankReadiness ?? null}
-                activeRequests={activeRequests}
-                totalNewBids={unreadCount}
-                flipped={flipped}
-                onFlip={flip}
-              />
-              {/* Dynamic encouragement based on real score */}
-              <div className="mt-3 rounded-xl px-4 py-3 flex items-center gap-2.5"
-                   style={{ background: "rgba(42,31,230,0.04)", border: "1px solid rgba(42,31,230,0.10)" }}>
-                <span className="text-[18px]">
-                  {(profile?.healthScore ?? 0) >= 70 ? "✨" : (profile?.healthScore ?? 0) >= 50 ? "📈" : "💡"}
-                </span>
-                <span className="text-[12px] sm:text-[13px] text-ink/80 font-medium leading-snug">
-                  {(profile?.healthScore ?? 0) >= 70
-                    ? "Great financial health — you qualify for competitive provider offers."
-                    : (profile?.healthScore ?? 0) >= 50
-                    ? "Good progress — completing your profile will unlock better rates."
-                    : profile?.healthScore == null
-                    ? "Complete your financial profile to get your health score."
-                    : "Focus on reducing liabilities to improve your eligibility."}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* 4 — Smart Insights */}
         <ErrorBoundary name="Smart Insights">
