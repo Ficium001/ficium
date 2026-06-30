@@ -56,6 +56,10 @@ export type HeroStat = {
   hint?:     string
   /** optional sparkline trend points, rendered at the bottom of the tile */
   sparkline?: number[]
+  /** sparkline stroke/fill color override — defaults to green (good) /
+   *  red (bad) based on trendTone if not set. Lets each tile have its
+   *  own distinct color rather than all sparklines looking identical. */
+  sparklineColor?: string
   /** when set, renders a small donut ring (0-100) instead of a sparkline —
    *  used for score-type stats like health score */
   ring?:      number
@@ -246,7 +250,7 @@ export default function Hero({
                   <div className='h-6 mt-1.5 -mx-1'>
                     <MiniSparkline
                       points={s.sparkline}
-                      color={s.trendTone === 'bad' ? '#F87171' : '#9CE5C0'}
+                      color={s.sparklineColor ?? (s.trendTone === 'bad' ? '#F87171' : '#9CE5C0')}
                     />
                   </div>
                 )
