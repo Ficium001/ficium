@@ -154,7 +154,7 @@ export default function Dashboard() {
         )}
 
         {/* 1 — Live offers (highest priority when bids exist) */}
-        {requests.length > 0 && (
+        {requests.some(r => r.status === "open") && (
           <ErrorBoundary name="Live Offers">
             <LiveOffersSection />
           </ErrorBoundary>
