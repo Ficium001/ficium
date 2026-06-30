@@ -419,11 +419,6 @@ export function LiveOffersSection() {
         <div className="flex items-center justify-between mb-3">
           <p className="text-[12px] text-muted font-medium">
             {productLabel(activeRequest.productType)} · {fmtAmt(activeRequest.amount)}
-            {activeRequest.preferredTermMonths && (
-              <> · {activeRequest.preferredTermMonths / 12 >= 1
-                ? `${activeRequest.preferredTermMonths / 12}yr`
-                : `${activeRequest.preferredTermMonths}mo`}</>
-            )}
           </p>
           {activeRequest.bestRate !== null && (
             <p className="text-[11px] font-bold text-emerald-600">

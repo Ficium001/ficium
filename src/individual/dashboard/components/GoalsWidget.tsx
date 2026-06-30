@@ -14,7 +14,6 @@
 
 import { useNavigate }       from "react-router-dom";
 import { Target, Plus }      from "lucide-react";
-import { useProfile }        from "@/individual/dashboard/hooks/useDashboard";
 import { useMyRequests }     from "@/individual/requests/hooks/useRequests";
 import { useSnapshot }       from "@/individual/networth/hooks/useSnapshot";
 
@@ -75,7 +74,6 @@ function GoalRow({ goal }: { goal: Goal }) {
 
 export function GoalsWidget() {
   const navigate                      = useNavigate();
-  const { data: profile }             = useProfile();
   const { data: requests = [] }       = useMyRequests();
   const { data: snapshot }            = useSnapshot();
 
