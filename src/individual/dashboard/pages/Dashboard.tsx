@@ -24,6 +24,15 @@ import { Hero, HeroButton, GradText, type HeroStat } from "@/shared/ui/dashboard
 import { FiciumLogo } from "@/shared/ui/FiciumLogo";
 import { ErrorBoundary } from "@/core/error-boundary";
 
+/** Compact formatter for tight spaces (hero tile breakdown on mobile) —
+ *  e.g. "Rs 1.2M" instead of "Rs 12,00,000", which overflows a narrow
+ *  half-width grid cell. The full Net Worth card below keeps full numbers. */
+function fmtCompact(n: number): string {
+  if (n >= 1_000_000) return `Rs ${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000)     return `Rs ${(n / 1_000).toFixed(0)}k`;
+  return `Rs ${n}`;
+}
+
 export default function Dashboard() {
   const { signOut }  = useAuth();
   const navigate     = useNavigate();
@@ -73,8 +82,8 @@ export default function Dashboard() {
       ? {
           label: "Net worth", value: netWorth ?? 0, prefix: "Rs ", format: "comma", accounting: true, sparkline: SPARK_NETWORTH,
           breakdown: [
-            { label: "Assets",      value: totalAssets > 0 ? `Rs ${formatAmount(totalAssets)}` : "—" },
-            { label: "Liabilities", value: totalLiabs  > 0 ? `Rs ${formatAmount(totalLiabs)}`  : "—" },
+            { label: "Assets",      value: totalAssets > 0 ? fmtCompact(totalAssets) : "—" },
+            { label: "Liabilities", value: totalLiabs  > 0 ? fmtCompact(totalLiabs)  : "—" },
           ],
         }
       : { label: "Net worth", display: "—", hint: "Add finances" },

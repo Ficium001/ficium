@@ -137,7 +137,7 @@ export default function Hero({
   return (
     <section
       className='relative overflow-hidden rounded-hero text-white bg-hero
-                 px-7 py-9 sm:px-10 sm:py-12 lg:px-14 lg:py-14'
+                 px-6 py-7 sm:px-8 sm:py-9 lg:px-10 lg:py-10'
     >
       <Blade className='w-[380px] -top-16 right-[6%] [animation-delay:-2s]' />
       <Blade className='w-[300px] -bottom-20 right-[24%] [animation-duration:18s]' both={false} />
@@ -163,15 +163,15 @@ export default function Hero({
       )}
 
       {actions && (
-        <div className='relative z-[2] flex flex-wrap gap-3 mt-7'>{actions}</div>
+        <div className='relative z-[2] flex flex-wrap gap-3 mt-6'>{actions}</div>
       )}
 
       {stats.length > 0 && (
-        <div className='relative z-[1] grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5'>
+        <div className='relative z-[1] grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4'>
           {stats.map(s => (
             <div
               key={s.label}
-              className='relative overflow-hidden rounded-[16px] border border-white/[0.08] bg-white/[0.04] px-4 pt-4 pb-3 min-h-[104px] flex flex-col'
+              className='relative overflow-hidden rounded-[16px] border border-white/[0.08] bg-white/[0.04] px-3.5 pt-3.5 pb-2.5 min-h-[88px] flex flex-col'
             >
               {s.badge && (
                 <span className='absolute top-3 right-3 inline-flex items-center gap-1 text-[10px] font-bold text-emerald-300 bg-emerald-400/15 px-2 py-0.5 rounded-pill'>
@@ -182,7 +182,7 @@ export default function Hero({
 
               <div className='flex items-start justify-between gap-2'>
                 <div className='flex-1 min-w-0'>
-                  <div className='font-display font-bold tracking-display text-[22px] sm:text-[26px] leading-none'>
+                  <div className='font-display font-bold tracking-display text-[20px] sm:text-[24px] leading-none'>
                     {s.display !== undefined ? (
                       <span className='text-[#8E8EB4]'>{s.display}</span>
                     ) : (
@@ -205,9 +205,9 @@ export default function Hero({
                       </span>
                     )}
                   </div>
-                  <div className='text-[11.5px] text-[#8E8EB4] font-medium mt-1'>{s.label}</div>
+                  <div className='text-[11px] text-[#8E8EB4] font-medium mt-0.5'>{s.label}</div>
                   {s.hint && (
-                    <div className='text-[10.5px] text-[#6E6E96] font-medium mt-0.5'>{s.hint}</div>
+                    <div className='text-[10px] text-[#6E6E96] font-medium mt-0.5'>{s.hint}</div>
                   )}
                 </div>
                 {s.ring !== undefined && (
@@ -223,13 +223,13 @@ export default function Hero({
               {s.link ? (
                 <button
                   onClick={s.link.onClick}
-                  className='mt-2 text-[11px] font-semibold text-[#A6A6C8] hover:text-white transition-colors text-left w-fit'
+                  className='mt-1.5 text-[11px] font-semibold text-[#A6A6C8] hover:text-white transition-colors text-left w-fit'
                 >
                   {s.link.label}
                 </button>
               ) : (
                 s.sparkline && s.sparkline.length > 1 && s.display === undefined && s.ring === undefined && (
-                  <div className='h-7 mt-2 -mx-1'>
+                  <div className='h-6 mt-1.5 -mx-1'>
                     <MiniSparkline
                       points={s.sparkline}
                       color={s.trendTone === 'bad' ? '#F87171' : '#9CE5C0'}
@@ -241,11 +241,11 @@ export default function Hero({
               {/* Compact breakdown — e.g. Assets / Liabilities under Net worth.
                   Sits below the sparkline/link, separated by a hairline. */}
               {s.breakdown && s.breakdown.length > 0 && (
-                <div className='mt-2 pt-2 border-t border-white/[0.07] grid grid-cols-2 gap-2'>
+                <div className='mt-1.5 pt-1.5 border-t border-white/[0.07] grid grid-cols-2 gap-x-2 gap-y-1'>
                   {s.breakdown.map(b => (
                     <div key={b.label} className='min-w-0'>
-                      <div className='text-[9.5px] text-[#6E6E96] font-semibold uppercase tracking-wide truncate'>{b.label}</div>
-                      <div className='text-[11px] text-[#D4D4E8] font-bold mt-0.5 truncate'>{b.value}</div>
+                      <div className='text-[9px] text-[#6E6E96] font-semibold uppercase tracking-wide truncate'>{b.label}</div>
+                      <div className='text-[10.5px] text-[#D4D4E8] font-bold mt-0.5 whitespace-nowrap'>{b.value}</div>
                     </div>
                   ))}
                 </div>
