@@ -189,7 +189,7 @@ export default function Hero({
           {stats.map(s => (
             <div
               key={s.label}
-              className='relative overflow-hidden rounded-[16px] border border-white/[0.08] bg-white/[0.04] px-3.5 pt-3.5 pb-2.5 min-h-[88px] flex flex-col'
+              className='relative overflow-hidden rounded-[16px] border border-white/[0.08] bg-white/[0.04] px-4 pt-4 pb-3 min-h-[128px] sm:min-h-[150px] flex flex-col'
             >
               {s.badge && (
                 <span className='absolute top-3 right-3 inline-flex items-center gap-1 text-[10px] font-bold text-emerald-300 bg-emerald-400/15 px-2 py-0.5 rounded-pill'>
