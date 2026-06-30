@@ -181,11 +181,11 @@ export default function Hero({
       )}
 
       {actions && (
-        <div className='relative z-[2] flex flex-wrap gap-3 mt-5'>{actions}</div>
+        <div className='relative z-[2] flex flex-wrap gap-3 mt-4'>{actions}</div>
       )}
 
       {stats.length > 0 && (
-        <div className='relative z-[1] grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3'>
+        <div className='relative z-[1] grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2'>
           {stats.map(s => (
             <div
               key={s.label}
