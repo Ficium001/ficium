@@ -61,6 +61,9 @@ export type HeroStat = {
   /** optional link rendered at the bottom of the tile, e.g. "Full report →".
    *  Takes priority over sparkline in the footer slot. */
   link?: { label: string; onClick: () => void }
+  /** compact 2-item breakdown rendered under the sparkline, e.g. Assets/Liabilities.
+   *  Renders below the sparkline (if present) rather than replacing it. */
+  breakdown?: { label: string; value: string }[]
   /** small pill badge in the tile's top-right corner, e.g. "Live" */
   badge?:    string
 }
@@ -166,7 +169,7 @@ export default function Hero({
           {stats.map(s => (
             <div
               key={s.label}
-              className='relative overflow-hidden rounded-[16px] border border-white/[0.08] bg-white/[0.04] px-4 pt-4 pb-3 min-h-[104px] flex flex-col justify-between'
+              className='relative overflow-hidden rounded-[16px] border border-white/[0.08] bg-white/[0.04] px-4 pt-4 pb-3 min-h-[104px] flex flex-col'
             >
               {s.badge && (
                 <span className='absolute top-3 right-3 inline-flex items-center gap-1 text-[10px] font-bold text-emerald-300 bg-emerald-400/15 px-2 py-0.5 rounded-pill'>
@@ -230,6 +233,19 @@ export default function Hero({
                     />
                   </div>
                 )
+              )}
+
+              {/* Compact breakdown — e.g. Assets / Liabilities under Net worth.
+                  Sits below the sparkline/link, separated by a hairline. */}
+              {s.breakdown && s.breakdown.length > 0 && (
+                <div className='mt-2 pt-2 border-t border-white/[0.07] grid grid-cols-2 gap-2'>
+                  {s.breakdown.map(b => (
+                    <div key={b.label} className='min-w-0'>
+                      <div className='text-[9.5px] text-[#6E6E96] font-semibold uppercase tracking-wide truncate'>{b.label}</div>
+                      <div className='text-[11px] text-[#D4D4E8] font-bold mt-0.5 truncate'>{b.value}</div>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           ))}
