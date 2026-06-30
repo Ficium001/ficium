@@ -25,19 +25,27 @@ export function MiniSparkline({ points, color }: { points: number[]; color: stri
   const fill = `${line} L ${coords[coords.length - 1][0]} ${h} L ${coords[0][0]} ${h} Z`;
   const dot  = coords[coords.length - 1];
   const gid  = `ms-${color.replace("#", "")}`;
+  const glowId = `ms-glow-${color.replace("#", "")}`;
 
   return (
     <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-full" preserveAspectRatio="none">
       <defs>
         <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%"   stopColor={color} stopOpacity="0.35" />
-          <stop offset="100%" stopColor={color} stopOpacity="0"    />
+          <stop offset="0%"   stopColor={color} stopOpacity="0.4" />
+          <stop offset="100%" stopColor={color} stopOpacity="0"   />
         </linearGradient>
+        <filter id={glowId} x="-30%" y="-60%" width="160%" height="220%">
+          <feGaussianBlur stdDeviation="2.2" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
       </defs>
       <path d={fill} fill={`url(#${gid})`} />
-      <path d={line} fill="none" stroke={color} strokeWidth="2"
-            strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx={dot[0]} cy={dot[1]} r="3.5" fill={color} />
+      <path d={line} fill="none" stroke={color} strokeWidth="2.25"
+            strokeLinecap="round" strokeLinejoin="round" filter={`url(#${glowId})`} />
+      <circle cx={dot[0]} cy={dot[1]} r="3" fill={color} filter={`url(#${glowId})`} />
     </svg>
   );
 }

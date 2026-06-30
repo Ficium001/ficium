@@ -101,18 +101,32 @@ function Blade({ className, both = true }: { className: string; both?: boolean }
 // ─── Small donut ring for score-type stats (e.g. health score) ─
 function HealthRing({ value, max = 100 }: { value: number; max?: number }) {
   const pct = Math.max(0, Math.min(1, value / max))
-  const r = 16
+  const r = 15
   const c = 2 * Math.PI * r
-  const color = pct >= 0.7 ? '#4ADE80' : pct >= 0.5 ? '#FBBF24' : '#F87171'
+  const uid = useId().replace(/[:]/g, '')
+  const gid = `hr-${uid}`
+
+  // Always a full gradient sweep (green -> amber -> red) rather than a thin
+  // partial progress arc — the gradient position communicates the score,
+  // not the arc length, matching the fuller ring used elsewhere in the app.
+  const angle = pct * 360
 
   return (
-    <svg viewBox='0 0 40 40' className='w-9 h-9 -rotate-90' aria-hidden>
-      <circle cx='20' cy='20' r={r} fill='none' stroke='rgba(255,255,255,0.1)' strokeWidth='4' />
+    <svg viewBox='0 0 40 40' className='w-10 h-10' aria-hidden>
+      <defs>
+        <linearGradient id={gid} gradientUnits='userSpaceOnUse' x1='6' y1='20' x2='34' y2='20'
+          gradientTransform={`rotate(${angle - 90} 20 20)`}>
+          <stop offset='0%'   stopColor='#4ADE80' />
+          <stop offset='55%'  stopColor='#FBBF24' />
+          <stop offset='100%' stopColor='#F87171' />
+        </linearGradient>
+      </defs>
+      <circle cx='20' cy='20' r={r} fill='none' stroke='rgba(255,255,255,0.08)' strokeWidth='5' />
       <circle
         cx='20' cy='20' r={r} fill='none'
-        stroke={color} strokeWidth='4' strokeLinecap='round'
-        strokeDasharray={c}
-        strokeDashoffset={c * (1 - pct)}
+        stroke={`url(#${gid})`} strokeWidth='5' strokeLinecap='round'
+        strokeDasharray={c} strokeDashoffset={c * (1 - pct)}
+        transform='rotate(-90 20 20)'
       />
     </svg>
   )
@@ -163,11 +177,11 @@ export default function Hero({
       )}
 
       {actions && (
-        <div className='relative z-[2] flex flex-wrap gap-3 mt-6'>{actions}</div>
+        <div className='relative z-[2] flex flex-wrap gap-3 mt-5'>{actions}</div>
       )}
 
       {stats.length > 0 && (
-        <div className='relative z-[1] grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4'>
+        <div className='relative z-[1] grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3'>
           {stats.map(s => (
             <div
               key={s.label}
