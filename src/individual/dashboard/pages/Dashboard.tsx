@@ -82,6 +82,7 @@ export default function Dashboard() {
       ? {
           label: "Net worth", value: netWorth ?? 0, prefix: "Rs ", format: "comma", accounting: true,
           sparkline: SPARK_NETWORTH, sparklineColor: "#A78BFA",
+          link: { label: "View breakdown →", onClick: () => navigate("/networth") },
           breakdown: [
             { label: "Assets",      value: totalAssets > 0 ? fmtCompact(totalAssets) : "—" },
             { label: "Liabilities", value: totalLiabs  > 0 ? fmtCompact(totalLiabs)  : "—" },
