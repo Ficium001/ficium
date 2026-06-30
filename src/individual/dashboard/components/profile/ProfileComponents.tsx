@@ -16,25 +16,25 @@ export function ProfileSection({
 }) {
   return (
     <div className={[
-      "mb-4 bg-white rounded-[22px] border overflow-hidden transition-all",
-      isEditing ? "border-ficium/25 shadow-md" : "border-ink/[0.06] shadow-sm",
+      "mb-4 bg-white rounded-3xl border overflow-hidden transition-all shadow-card",
+      isEditing ? "border-ficium/25" : "border-line",
     ].join(" ")}>
-      <div className="flex items-center justify-between px-5 py-4 border-b border-ink/[0.06]">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-ficium/10 text-ficium grid place-items-center">{icon}</div>
-          <span className="font-display text-[16px] font-bold">{title}</span>
+      <div className="flex items-center justify-between px-6 py-4 border-b border-line">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-xl bg-ficium/[0.08] text-ficium grid place-items-center">{icon}</div>
+          <span className="font-display text-[16px] font-bold text-ink">{title}</span>
         </div>
         {isEditing ? (
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-ink/[0.06] grid place-items-center hover:bg-ink/10 transition-colors">
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-line/60 grid place-items-center hover:bg-line transition-colors">
             <X size={14} className="text-muted" />
           </button>
         ) : (
-          <button onClick={onEdit} className="flex items-center gap-1.5 text-[12px] font-bold text-ficium hover:underline">
+          <button onClick={onEdit} className="text-[12px] font-bold text-ficium hover:underline flex items-center gap-1.5">
             <Edit3 size={12} /> Edit
           </button>
         )}
       </div>
-      <div className="px-5 py-4">{children}</div>
+      <div className="px-6 py-5">{children}</div>
     </div>
   );
 }
@@ -44,16 +44,16 @@ export function InfoRow({ icon, label, value, sensitive, hidden, onToggle }: {
   sensitive?: boolean; hidden?: boolean; onToggle?: () => void;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4 py-3 border-b border-ink/[0.04] last:border-0">
-      <div className="flex items-center gap-2.5 flex-shrink-0">
-        <span className="text-muted">{icon}</span>
+    <div className="flex items-center justify-between gap-4 py-3.5 border-b border-line/50 last:border-0">
+      <div className="flex items-center gap-3 flex-shrink-0">
+        <span className="text-muted/70">{icon}</span>
         <span className="text-[13px] text-muted font-medium">{label}</span>
       </div>
       <div className="flex items-center gap-2 text-right">
-        <span className="text-[13px] font-semibold text-ink">{sensitive && hidden ? "••••••" : value}</span>
+        <span className="text-[14px] font-semibold text-ink">{sensitive && hidden ? "••••••" : value}</span>
         {sensitive && onToggle && (
-          <button onClick={onToggle} className="text-muted hover:text-ink transition-colors">
-            {hidden ? <Eye size={13} /> : <EyeOff size={13} />}
+          <button onClick={onToggle} className="text-muted hover:text-ink transition-colors p-0.5">
+            {hidden ? <Eye size={14} /> : <EyeOff size={14} />}
           </button>
         )}
       </div>
