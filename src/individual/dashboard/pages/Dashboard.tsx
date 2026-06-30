@@ -71,7 +71,7 @@ export default function Dashboard() {
   const heroStats: HeroStat[] = [
     hasNetWorth
       ? {
-          label: "Net worth", value: netWorth ?? 0, prefix: "Rs ", format: "comma", sparkline: SPARK_NETWORTH,
+          label: "Net worth", value: netWorth ?? 0, prefix: "Rs ", format: "comma", accounting: true, sparkline: SPARK_NETWORTH,
           breakdown: [
             { label: "Assets",      value: totalAssets > 0 ? `Rs ${formatAmount(totalAssets)}` : "—" },
             { label: "Liabilities", value: totalLiabs  > 0 ? `Rs ${formatAmount(totalLiabs)}`  : "—" },

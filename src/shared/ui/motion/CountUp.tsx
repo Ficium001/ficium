@@ -24,6 +24,7 @@ export default function CountUp({
   prefix = '',
   suffix = '',
   className = '',
+  accounting = false,
 }: {
   value: number
   decimals?: number
@@ -31,6 +32,10 @@ export default function CountUp({
   prefix?: string
   suffix?: string
   className?: string
+  /** when true, negative values render as "(Rs 2,300,000)" instead of
+   *  "Rs -2,300,000" — standard accounting notation, prefix moves inside
+   *  the brackets alongside the absolute value. */
+  accounting?: boolean
 }) {
   const reduced = usePrefersReducedMotion()
   const { ref, inView } = useInView<HTMLSpanElement>(0.4)
@@ -61,6 +66,15 @@ export default function CountUp({
 
   let text = display.toFixed(decimals)
   if (format === 'comma') text = Number(text).toLocaleString('en-MU')
+
+  if (accounting && display < 0) {
+    const abs = text.startsWith('-') ? text.slice(1) : text
+    return (
+      <span ref={ref} className={className}>
+        ({prefix}{abs}{suffix})
+      </span>
+    )
+  }
 
   return (
     <span ref={ref} className={className}>

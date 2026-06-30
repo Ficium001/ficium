@@ -44,6 +44,8 @@ export type HeroStat = {
   format?:   'comma'
   prefix?:   string
   suffix?:   string
+  /** render negative values in accounting brackets, e.g. "(Rs 2,300,000)" */
+  accounting?: boolean
   /** small green/red annotation e.g. "↑ 8%" */
   trend?:    string
   trendTone?: 'good' | 'bad'
@@ -165,7 +167,7 @@ export default function Hero({
       )}
 
       {stats.length > 0 && (
-        <div className='relative z-[1] grid grid-cols-2 sm:grid-cols-4 gap-3 mt-10'>
+        <div className='relative z-[1] grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6'>
           {stats.map(s => (
             <div
               key={s.label}
@@ -190,6 +192,7 @@ export default function Hero({
                         format={s.format}
                         prefix={s.prefix}
                         suffix={s.suffix}
+                        accounting={s.accounting}
                       />
                     )}
                     {s.trend && (
