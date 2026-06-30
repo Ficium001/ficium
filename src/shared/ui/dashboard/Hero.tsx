@@ -22,6 +22,7 @@
 
 import { useId, type ReactNode } from 'react'
 import CountUp from '../motion/CountUp'
+import { MiniSparkline } from '@/individual/dashboard/components/MiniSparkline'
 
 // ─── Gradient text helper ─────────────────────────────────────
 export function GradText({ children }: { children: ReactNode }) {
@@ -51,6 +52,14 @@ export type HeroStat = {
   display?:  string
   /** small muted prompt under the value, e.g. "Add finances". */
   hint?:     string
+  /** optional sparkline trend points, rendered at the bottom of the tile */
+  sparkline?: number[]
+  /** when set, renders a small donut ring (0-100) instead of a sparkline —
+   *  used for score-type stats like health score */
+  ring?:      number
+  ringMax?:   number
+  /** small pill badge in the tile's top-right corner, e.g. "Live" */
+  badge?:    string
 }
 
 // ─── Background blade ─────────────────────────────────────────
@@ -77,6 +86,26 @@ function Blade({ className, both = true }: { className: string; both?: boolean }
         <path d='M 121.78,31.83 Q 131,20 146,20 L 251,20 Q 266,20 257.28,32.21 L 244.72,49.79 Q 236,62 221.09,63.68 L 99.91,77.32 Q 85,79 94.22,67.17 Z' fill={`url(#hb-${uid})`} />
       )}
       <path d='M 108.10,103.75 Q 116,91 131,91 L 223,91 Q 238,91 230.12,103.77 L 216.88,125.23 Q 209,138 194,138.36 L 100,140.64 Q 85,141 92.90,128.25 Z' fill={`url(#hp-${uid})`} />
+    </svg>
+  )
+}
+
+// ─── Small donut ring for score-type stats (e.g. health score) ─
+function HealthRing({ value, max = 100 }: { value: number; max?: number }) {
+  const pct = Math.max(0, Math.min(1, value / max))
+  const r = 16
+  const c = 2 * Math.PI * r
+  const color = pct >= 0.7 ? '#4ADE80' : pct >= 0.5 ? '#FBBF24' : '#F87171'
+
+  return (
+    <svg viewBox='0 0 40 40' className='w-9 h-9 -rotate-90' aria-hidden>
+      <circle cx='20' cy='20' r={r} fill='none' stroke='rgba(255,255,255,0.1)' strokeWidth='4' />
+      <circle
+        cx='20' cy='20' r={r} fill='none'
+        stroke={color} strokeWidth='4' strokeLinecap='round'
+        strokeDasharray={c}
+        strokeDashoffset={c * (1 - pct)}
+      />
     </svg>
   )
 }
@@ -130,34 +159,63 @@ export default function Hero({
       )}
 
       {stats.length > 0 && (
-        <div className='relative z-[1] flex flex-wrap gap-x-10 gap-y-6 lg:gap-x-16 mt-10'>
+        <div className='relative z-[1] grid grid-cols-2 sm:grid-cols-4 gap-3 mt-10'>
           {stats.map(s => (
-            <div key={s.label}>
-              <div className='font-display font-bold tracking-display text-[26px] lg:text-[34px]'>
-                {s.display !== undefined ? (
-                  <span className='text-[#8E8EB4]'>{s.display}</span>
-                ) : (
-                  <CountUp
-                    value={s.value ?? 0}
-                    decimals={s.decimals}
-                    format={s.format}
-                    prefix={s.prefix}
-                    suffix={s.suffix}
-                  />
-                )}
-                {s.trend && (
-                  <span
-                    className={`text-[12px] font-semibold ml-1.5 font-body tracking-normal ${
-                      s.trendTone === 'bad' ? 'text-red-400' : 'text-emerald-400'
-                    }`}
-                  >
-                    {s.trend}
-                  </span>
+            <div
+              key={s.label}
+              className='relative overflow-hidden rounded-[16px] border border-white/[0.08] bg-white/[0.04] px-4 pt-4 pb-3 min-h-[104px] flex flex-col justify-between'
+            >
+              {s.badge && (
+                <span className='absolute top-3 right-3 inline-flex items-center gap-1 text-[10px] font-bold text-emerald-300 bg-emerald-400/15 px-2 py-0.5 rounded-pill'>
+                  <span className='w-[5px] h-[5px] rounded-full bg-emerald-400 animate-pulse-ring-green' aria-hidden />
+                  {s.badge}
+                </span>
+              )}
+
+              <div className='flex items-start justify-between gap-2'>
+                <div className='flex-1 min-w-0'>
+                  <div className='font-display font-bold tracking-display text-[22px] sm:text-[26px] leading-none'>
+                    {s.display !== undefined ? (
+                      <span className='text-[#8E8EB4]'>{s.display}</span>
+                    ) : (
+                      <CountUp
+                        value={s.value ?? 0}
+                        decimals={s.decimals}
+                        format={s.format}
+                        prefix={s.prefix}
+                        suffix={s.suffix}
+                      />
+                    )}
+                    {s.trend && (
+                      <span
+                        className={`text-[11px] font-semibold ml-1 font-body tracking-normal ${
+                          s.trendTone === 'bad' ? 'text-red-400' : 'text-emerald-400'
+                        }`}
+                      >
+                        {s.trend}
+                      </span>
+                    )}
+                  </div>
+                  <div className='text-[11.5px] text-[#8E8EB4] font-medium mt-1'>{s.label}</div>
+                  {s.hint && (
+                    <div className='text-[10.5px] text-[#6E6E96] font-medium mt-0.5'>{s.hint}</div>
+                  )}
+                </div>
+                {s.ring !== undefined && (
+                  <div className='flex-shrink-0 mt-0.5'>
+                    <HealthRing value={s.ring} max={s.ringMax} />
+                  </div>
                 )}
               </div>
-              <div className='text-[12.5px] text-[#8E8EB4] font-medium mt-0.5'>{s.label}</div>
-              {s.hint && (
-                <div className='text-[11px] text-[#6E6E96] font-medium mt-0.5'>{s.hint}</div>
+
+              {/* Sparkline footer — only if data is provided and not in display/hidden/ring state */}
+              {s.sparkline && s.sparkline.length > 1 && s.display === undefined && s.ring === undefined && (
+                <div className='h-7 mt-2 -mx-1'>
+                  <MiniSparkline
+                    points={s.sparkline}
+                    color={s.trendTone === 'bad' ? '#F87171' : '#9CE5C0'}
+                  />
+                </div>
               )}
             </div>
           ))}

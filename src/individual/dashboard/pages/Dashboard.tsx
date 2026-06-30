@@ -10,7 +10,7 @@ import { useProfile, useMyRequests, useNextActions, useBankReadiness } from "@/i
 import { useDashboardInsights }  from "@/individual/dashboard/hooks/useDashboardInsights";
 import { useSnapshot }           from "@/individual/networth/hooks/useSnapshot";
 import { useUnreadCount }        from "@/individual/alerts/hooks/useAlerts";
-import { getGreeting, formatAmount, healthLabel } from "@/individual/dashboard/config/dashboard";
+import { getGreeting, formatAmount, healthLabel, SPARK_NETWORTH, SPARK_REQUESTS } from "@/individual/dashboard/config/dashboard";
 import {
   OnboardingBanners,
   NetWorthHero, FlipCards,
@@ -52,8 +52,6 @@ export default function Dashboard() {
   const netWorth       = snapshot?.netWorth      ?? profile?.totalNetWorth ?? null;
   const totalAssets    = snapshot?.totalAssets    ?? 0;
   const totalLiabs     = snapshot?.totalLiabilities ?? 0;
-  // Monthly change = savings amount (best proxy without historical data)
-  const monthlyChange  = snapshot?.monthlySavings ?? 0;
 
   // Health label from real score
   const hl = healthLabel(profile?.healthScore ?? null);
@@ -68,15 +66,15 @@ export default function Dashboard() {
   // Health score: only show in hero when strong (≥70). Below that it's discouraging
   // as first-impression. Users can always access it via the Financial Health card.
   const heroHealthStat: HeroStat | null = (profile?.healthScore ?? 0) >= 70
-    ? { label: "Health score", value: profile!.healthScore!, suffix: "/100" }
+    ? { label: "Health score", value: profile!.healthScore!, suffix: "/100", ring: profile!.healthScore!, ringMax: 100 }
     : null;
 
   const heroStats: HeroStat[] = [
     hasNetWorth
-      ? { label: "Net worth", value: netWorth ?? 0, prefix: "Rs ", format: "comma" }
+      ? { label: "Net worth", value: netWorth ?? 0, prefix: "Rs ", format: "comma", sparkline: SPARK_NETWORTH }
       : { label: "Net worth", display: "—", hint: "Add finances" },
-    { label: "Active requests", value: activeRequests },
-    { label: "New bids", value: totalNewBids, trend: totalNewBids > 0 ? "live" : undefined, trendTone: "good" },
+    { label: "Active requests", value: activeRequests, sparkline: SPARK_REQUESTS },
+    { label: "New bids", value: totalNewBids, badge: totalNewBids > 0 ? "Live" : undefined, sparkline: SPARK_REQUESTS, trendTone: "good" },
     ...(heroHealthStat ? [heroHealthStat] : []),
   ];
 
@@ -258,11 +256,10 @@ export default function Dashboard() {
               hidden={hidden}
               onToggle={() => setHidden((h) => !h)}
             />
-            <div className="grid grid-cols-3 divide-x divide-ink/[0.05] border-t border-ink/[0.05]">
+            <div className="grid grid-cols-2 divide-x divide-ink/[0.05] border-t border-ink/[0.05]">
               {[
-                { label: "Assets",         value: totalAssets   > 0 ? `Rs ${formatAmount(totalAssets)}`   : "—" },
-                { label: "Liabilities",    value: totalLiabs    > 0 ? `Rs ${formatAmount(totalLiabs)}`    : "—" },
-                { label: "Monthly Savings",value: monthlyChange > 0 ? `Rs ${formatAmount(monthlyChange)}` : "—" },
+                { label: "Assets",      value: totalAssets > 0 ? `Rs ${formatAmount(totalAssets)}` : "—" },
+                { label: "Liabilities", value: totalLiabs  > 0 ? `Rs ${formatAmount(totalLiabs)}`  : "—" },
               ].map(({ label, value }) => (
                 <div key={label} className="px-4 py-3">
                   <div className="text-[10px] text-muted font-semibold mb-0.5">{label}</div>
