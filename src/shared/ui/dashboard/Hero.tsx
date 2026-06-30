@@ -58,6 +58,9 @@ export type HeroStat = {
    *  used for score-type stats like health score */
   ring?:      number
   ringMax?:   number
+  /** optional link rendered at the bottom of the tile, e.g. "Full report →".
+   *  Takes priority over sparkline in the footer slot. */
+  link?: { label: string; onClick: () => void }
   /** small pill badge in the tile's top-right corner, e.g. "Live" */
   badge?:    string
 }
@@ -208,14 +211,25 @@ export default function Hero({
                 )}
               </div>
 
-              {/* Sparkline footer — only if data is provided and not in display/hidden/ring state */}
-              {s.sparkline && s.sparkline.length > 1 && s.display === undefined && s.ring === undefined && (
-                <div className='h-7 mt-2 -mx-1'>
-                  <MiniSparkline
-                    points={s.sparkline}
-                    color={s.trendTone === 'bad' ? '#F87171' : '#9CE5C0'}
-                  />
-                </div>
+              {/* Footer slot: link takes priority, then sparkline. Both sit
+                  directly under the tile's own content — never floated to
+                  the side or pushed outside the tile. */}
+              {s.link ? (
+                <button
+                  onClick={s.link.onClick}
+                  className='mt-2 text-[11px] font-semibold text-[#A6A6C8] hover:text-white transition-colors text-left w-fit'
+                >
+                  {s.link.label}
+                </button>
+              ) : (
+                s.sparkline && s.sparkline.length > 1 && s.display === undefined && s.ring === undefined && (
+                  <div className='h-7 mt-2 -mx-1'>
+                    <MiniSparkline
+                      points={s.sparkline}
+                      color={s.trendTone === 'bad' ? '#F87171' : '#9CE5C0'}
+                    />
+                  </div>
+                )
               )}
             </div>
           ))}

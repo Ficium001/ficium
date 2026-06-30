@@ -75,7 +75,7 @@ export default function Dashboard() {
     { label: "Active requests", value: activeRequests, sparkline: SPARK_REQUESTS },
     { label: "New bids", value: totalNewBids, badge: totalNewBids > 0 ? "Live" : undefined, sparkline: SPARK_REQUESTS, trendTone: "good" },
     healthScore != null
-      ? { label: "Health score", value: healthScore, suffix: "/100", ring: healthScore, ringMax: 100 }
+      ? { label: "Health score", value: healthScore, suffix: "/100", ring: healthScore, ringMax: 100, link: { label: "Full report →", onClick: () => navigate("/health") } }
       : { label: "Health score", display: "—", hint: "Complete profile" },
   ];
 
