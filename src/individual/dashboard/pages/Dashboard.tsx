@@ -2,7 +2,7 @@ import { useState }         from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Plus, HandCoins, CreditCard, PiggyBank, LineChart,
-  Calculator, Wallet, ShieldCheck,
+  Calculator, Wallet, ShieldCheck, TrendingUp,
   Bell, LogOut,
 } from "lucide-react";
 import { useAuth }           from "@/features/auth/context/AuthContext";
@@ -268,7 +268,7 @@ export default function Dashboard() {
             highlight="Calculators"
             action={{ label: "View all tools →", to: "/tools" }}
           />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
             {TOOLS.map(({ icon, bg, title, desc, to }) => (
               <Link key={title} to={to} className="no-underline">
                 <div className="bg-white rounded-2xl border border-ink/[0.06] shadow-sm p-4 sm:p-5 flex items-start gap-4 hover:shadow-card transition-all hover:-translate-y-0.5">
@@ -338,4 +338,5 @@ const TOOLS = [
   { icon: <LineChart   size={20} className="text-emerald-600" />, bg: "bg-emerald-50", title: "Investment Calculator", desc: "Project your future wealth",       to: "/tools#investment" },
   { icon: <Wallet      size={20} className="text-amber-600"   />, bg: "bg-amber-50",   title: "Affordability Check",  desc: "Find what you can afford",         to: "/networth"         },
   { icon: <ShieldCheck size={20} className="text-violet-600"  />, bg: "bg-violet-50",  title: "Debt Analyser",        desc: "Understand your debt better",      to: "/health"           },
+  { icon: <TrendingUp  size={20} className="text-good"        />, bg: "bg-good/10",    title: "ROI Calculator",       desc: "Calculate your return on any asset", to: "/tools/roi"      },
 ];

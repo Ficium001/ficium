@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { TrendingUp, HandCoins } from "lucide-react";
 import { PageShell } from "../../../shared/ui";
-import { ROICalculator } from "../components/ROICalculator";
 
 /* ─────────────────────────────────────────────
    Types
 ───────────────────────────────────────────── */
-type Mode = "credit" | "investment" | "roi";
+type Mode = "credit" | "investment";
 
 /* ─────────────────────────────────────────────
    Helpers
@@ -179,13 +178,13 @@ export default function FinancialTools() {
               Financial Tools Module
             </div>
             <h1 className="font-display text-[32px] sm:text-[38px] font-extrabold text-ink leading-none">
-              {mode === "credit" ? "Credit Analysis" : mode === "investment" ? "Investment Analysis" : "Return on Investment"}
+              {isCredit ? "Credit Analysis" : "Investment Analysis"}
             </h1>
           </div>
 
           {/* Mode tabs */}
           <div className="flex bg-ink/[0.06] rounded-pill p-1 gap-1 self-start mt-1">
-            {(["credit", "investment", "roi"] as Mode[]).map((m) => (
+            {(["credit", "investment"] as Mode[]).map((m) => (
               <button
                 key={m}
                 onClick={() => setMode(m)}
@@ -196,16 +195,13 @@ export default function FinancialTools() {
                     : "text-muted hover:text-ink",
                 ].join(" ")}
               >
-                {m === "credit" ? "Credit" : m === "investment" ? "Investment" : "ROI"}
+                {m === "credit" ? "Credit" : "Investment"}
               </button>
             ))}
           </div>
         </div>
 
-        {mode === "roi" && <ROICalculator />}
-
         {/* ── Main grid ── */}
-        {mode !== "roi" && (
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-6 items-start">
 
           {/* ── Left: Inputs ── */}
@@ -344,7 +340,6 @@ export default function FinancialTools() {
 
           </div>
         </div>
-        )}
       </div>
     </PageShell>
   );

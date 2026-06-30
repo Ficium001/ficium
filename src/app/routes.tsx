@@ -29,6 +29,7 @@ const Alerts              = lazy(() => import("../individual/alerts/pages/Alerts
 const Markets             = lazy(() => import("../individual/markets/pages/Markets"));
 const Advisor             = lazy(() => import("../individual/advisor/pages/Advisor"));
 const FinancialTools      = lazy(() => import("../individual/tools/pages/FinancialTools"));
+const ROIPage             = lazy(() => import("../individual/tools/pages/ROIPage"));
 const ClientAudit         = lazy(() => import("../individual/audit/pages/ClientAudit"));
 const NetWorthPage        = lazy(() => import("../individual/networth/pages/NetWorth"));
 const FinancialHealthPage = lazy(() => import("../individual/health/pages/FinancialHealth"));
@@ -113,6 +114,7 @@ export const router = createBrowserRouter([
   { path: "/markets",                element: <ClientOnlyRoute><S><Markets /></S></ClientOnlyRoute> },
   { path: "/advisor",                element: <ClientOnlyRoute><S><Advisor /></S></ClientOnlyRoute> },
   { path: "/tools",                  element: <ClientOnlyRoute><S><FinancialTools /></S></ClientOnlyRoute> },
+  { path: "/tools/roi",             element: <ClientOnlyRoute><S><ROIPage /></S></ClientOnlyRoute> },
   { path: "/activity",               element: <ClientOnlyRoute><S><ClientAudit /></S></ClientOnlyRoute> },
   { path: "/networth",               element: <ClientOnlyRoute><S><NetWorthPage /></S></ClientOnlyRoute> },
   { path: "/vault",                  element: <ClientOnlyRoute><S><Vault /></S></ClientOnlyRoute> },
