@@ -63,11 +63,10 @@ export default function Dashboard() {
   // financial data (a real snapshot row, or a profile net-worth value).
   // Otherwise show a prompt — never a misleading "Rs 0".
   const hasNetWorth = (snapshot?.exists ?? false) || profile?.totalNetWorth != null;
-  // Health score: only show in hero when strong (≥70). Below that it's discouraging
-  // as first-impression. Users can always access it via the Financial Health card.
-  const heroHealthStat: HeroStat | null = (profile?.healthScore ?? 0) >= 70
-    ? { label: "Health score", value: profile!.healthScore!, suffix: "/100", ring: profile!.healthScore!, ringMax: 100 }
-    : null;
+  // Health score is always shown as a ring tile — the ring's color-coding
+  // (green ≥70, amber ≥50, red below) already softens a low score visually,
+  // so there's no need to hide the tile entirely like a flat-text number would.
+  const healthScore = profile?.healthScore ?? null;
 
   const heroStats: HeroStat[] = [
     hasNetWorth
@@ -75,7 +74,9 @@ export default function Dashboard() {
       : { label: "Net worth", display: "—", hint: "Add finances" },
     { label: "Active requests", value: activeRequests, sparkline: SPARK_REQUESTS },
     { label: "New bids", value: totalNewBids, badge: totalNewBids > 0 ? "Live" : undefined, sparkline: SPARK_REQUESTS, trendTone: "good" },
-    ...(heroHealthStat ? [heroHealthStat] : []),
+    healthScore != null
+      ? { label: "Health score", value: healthScore, suffix: "/100", ring: healthScore, ringMax: 100 }
+      : { label: "Health score", display: "—", hint: "Complete profile" },
   ];
 
   return (
