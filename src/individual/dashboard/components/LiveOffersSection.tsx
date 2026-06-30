@@ -16,8 +16,7 @@
 import { useState }                  from "react";
 import { useNavigate }               from "react-router-dom";
 import { TrendingDown, Zap, Clock }  from "lucide-react";
-import { useMyRequests }             from "@/individual/requests/hooks/useRequests";
-import { useRequestBids }            from "@/individual/requests/hooks/useRequests";
+import { useMyRequests, useMyOpenRequestBids } from "@/individual/requests/hooks/useRequests";
 import type { RequestSummary }       from "@/individual/requests/api/requests";
 import type { Bid }                  from "@/individual/requests/api/requests";
 
@@ -204,16 +203,19 @@ function BidRow({
   );
 }
 
-/** Bids panel for one request — fetches lazily */
+/** Bids panel for one request — receives bids from the shared bulk fetch */
 function RequestBidPanel({
   request,
+  bids,
+  isLoading,
   maxRows,
 }: {
-  request: RequestSummary;
-  maxRows: number;
+  request:   RequestSummary;
+  bids:      Bid[];
+  isLoading: boolean;
+  maxRows:   number;
 }) {
   const navigate = useNavigate();
-  const { data: bids = [], isLoading } = useRequestBids(request.id);
 
   // Sort ascending by rate (lower = better for borrower products)
   const sorted = [...bids].sort((a, b) => Number(a.rate) - Number(b.rate));
@@ -272,12 +274,14 @@ function RequestBidPanel({
 /** Request selector tab (when user has multiple open requests) */
 function RequestTab({
   request,
+  bidCount,
   active,
   onClick,
 }: {
-  request: RequestSummary;
-  active:  boolean;
-  onClick: () => void;
+  request:  RequestSummary;
+  bidCount: number;
+  active:   boolean;
+  onClick:  () => void;
 }) {
   return (
     <button
@@ -298,7 +302,7 @@ function RequestTab({
             : "bg-ink/[0.08] text-ink/60",
         ].join(" ")}
       >
-        {request.bidCount}
+        {bidCount}
       </span>
     </button>
   );
@@ -310,19 +314,27 @@ const MAX_VISIBLE_ROWS = 5;
 
 export function LiveOffersSection() {
   const navigate = useNavigate();
-  const { data: requests = [], isLoading } = useMyRequests();
+  const { data: requests = [], isLoading: requestsLoading } = useMyRequests();
 
-  // Only show open requests that have at least 1 bid
+  const openRequestIds = requests.filter(r => r.status === "open").map(r => r.id);
+  const { data: bidsByRequest = {}, isLoading: bidsLoading } = useMyOpenRequestBids(openRequestIds);
+
+  const isLoading = requestsLoading || (openRequestIds.length > 0 && bidsLoading);
+
+  // Only show open requests that have at least 1 bid (use live bulk-fetched
+  // count, not the possibly-stale bidCount from the requests list query)
   const liveRequests = requests.filter(
-    r => r.status === "open" && r.bidCount > 0,
+    r => r.status === "open" && (bidsByRequest[r.id]?.length ?? 0) > 0,
   );
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   // Default to first live request, or the one with the most bids
-  const bestDefault = liveRequests.reduce<RequestSummary | null>((best, r) =>
-    !best || r.bidCount > best.bidCount ? r : best,
-  null);
+  const bestDefault = liveRequests.reduce<RequestSummary | null>((best, r) => {
+    const count = bidsByRequest[r.id]?.length ?? 0;
+    const bestCount = best ? (bidsByRequest[best.id]?.length ?? 0) : -1;
+    return !best || count > bestCount ? r : best;
+  }, null);
 
   const activeId     = selectedId ?? bestDefault?.id ?? null;
   const activeRequest = liveRequests.find(r => r.id === activeId) ?? liveRequests[0];
@@ -372,7 +384,11 @@ export function LiveOffersSection() {
     );
   }
 
-  const totalBids = liveRequests.reduce((s, r) => s + r.bidCount, 0);
+  const totalBids = liveRequests.reduce((s, r) => s + (bidsByRequest[r.id]?.length ?? 0), 0);
+  const activeBids = activeRequest ? (bidsByRequest[activeRequest.id] ?? []) : [];
+  const activeBestRate = activeBids.length
+    ? Math.min(...activeBids.map(b => Number(b.rate)))
+    : null;
 
   return (
     <div className="bg-white rounded-[22px] border border-ink/[0.06] shadow-card p-5">
@@ -407,6 +423,7 @@ export function LiveOffersSection() {
             <RequestTab
               key={r.id}
               request={r}
+              bidCount={bidsByRequest[r.id]?.length ?? 0}
               active={r.id === activeId}
               onClick={() => setSelectedId(r.id)}
             />
@@ -420,9 +437,9 @@ export function LiveOffersSection() {
           <p className="text-[12px] text-muted font-medium">
             {productLabel(activeRequest.productType)} · {fmtAmt(activeRequest.amount)}
           </p>
-          {activeRequest.bestRate !== null && (
+          {activeBestRate !== null && (
             <p className="text-[11px] font-bold text-emerald-600">
-              Best {Number(activeRequest.bestRate).toFixed(2)}% p.a.
+              Best {activeBestRate.toFixed(2)}% p.a.
             </p>
           )}
         </div>
@@ -432,6 +449,8 @@ export function LiveOffersSection() {
       {activeRequest && (
         <RequestBidPanel
           request={activeRequest}
+          bids={activeBids}
+          isLoading={false}
           maxRows={MAX_VISIBLE_ROWS}
         />
       )}

@@ -217,6 +217,57 @@ export async function getRequest(id: string): Promise<RequestDetail | null> {
   };
 }
 
+/* ---------- Get bids for many requests at once (bulk) ---------- */
+// Used to avoid an N-request waterfall on the dashboard — one call fetches
+// full Bid[] for every open request, instead of useRequestBids firing
+// per-request after useMyRequests resolves.
+
+export async function getBidsForRequests(
+  requestIds: string[],
+): Promise<Record<string, Bid[]>> {
+  if (requestIds.length === 0) return {};
+
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token ?? "";
+
+  try {
+    const r = await fetch("/api/request-bids-bulk", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ requestIds }),
+    });
+    if (!r.ok) return {};
+
+    const json = await r.json() as { ok: boolean; data?: Record<string, Array<Record<string, unknown>>> };
+    const bulkData = json?.ok ? json.data : null;
+    if (!bulkData) return {};
+
+    const out: Record<string, Bid[]> = {};
+    for (const [rid, bids] of Object.entries(bulkData)) {
+      out[rid] = bids.map((b) => ({
+        id:              b.id as string,
+        requestId:       b.request_id as string,
+        bankId:          b.institution_id as string,
+        institutionName: (b.institution_name as string) ?? "Institution",
+        rate:            Number(b.rate) || 0,
+        rateType:        (b.rate_type as "fixed" | "variable") ?? "fixed",
+        amountOffered:   b.amount_offered as number,
+        termMonths:      b.term_months as number,
+        conditions:      b.conditions as Record<string, unknown> | null,
+        terms:           null,
+        status:          "submitted" as const,
+        submittedAt:     b.submitted_at as string,
+        createdAt:       b.submitted_at as string,
+        source:          "institution" as const,
+        benefits:        (b.benefits as BidBenefit[]) ?? [],
+      }));
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
 /* ---------- Get bids for a request ---------- */
 
 export async function getRequestBids(requestId: string): Promise<Bid[]> {
