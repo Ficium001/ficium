@@ -241,7 +241,7 @@ export async function getRequestBids(requestId: string): Promise<Bid[]> {
     requestId:       b.request_id as string,
     bankId:          b.institution_id as string,
     institutionName: (b.institution_name as string) ?? "Institution",
-    rate:            b.rate as number,
+    rate:            Number(b.rate) || 0,
     rateType:        (b.rate_type as "fixed" | "variable") ?? "fixed",
     amountOffered:   b.amount_offered as number,
     termMonths:      b.term_months as number,

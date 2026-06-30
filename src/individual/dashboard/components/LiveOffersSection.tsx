@@ -182,7 +182,7 @@ function BidRow({
             isBest ? "text-emerald-700" : "text-ink",
           ].join(" ")}
         >
-          {bid.rate.toFixed(2)}%
+          {Number(bid.rate).toFixed(2)}%
         </div>
         <div className="text-[10px] text-muted font-medium">p.a.</div>
       </div>
@@ -216,7 +216,7 @@ function RequestBidPanel({
   const { data: bids = [], isLoading } = useRequestBids(request.id);
 
   // Sort ascending by rate (lower = better for borrower products)
-  const sorted = [...bids].sort((a, b) => a.rate - b.rate);
+  const sorted = [...bids].sort((a, b) => Number(a.rate) - Number(b.rate));
   const visible = sorted.slice(0, maxRows);
   const hidden  = sorted.length - visible.length;
 
@@ -422,7 +422,7 @@ export function LiveOffersSection() {
           </p>
           {activeRequest.bestRate !== null && (
             <p className="text-[11px] font-bold text-emerald-600">
-              Best {activeRequest.bestRate.toFixed(2)}% p.a.
+              Best {Number(activeRequest.bestRate).toFixed(2)}% p.a.
             </p>
           )}
         </div>
