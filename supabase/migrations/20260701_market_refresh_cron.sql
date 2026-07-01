@@ -1,5 +1,5 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- Schedule market-refresh edge function every 30 minutes via pg_cron.
+-- Schedule market-refresh edge function every 4 hours via pg_cron.
 --
 -- The function is called via net.http_post (pg_net extension).
 -- The Authorization header uses the service_role_key stored in a Supabase
@@ -11,15 +11,15 @@
 -- ─────────────────────────────────────────────────────────────────────────────
 
 -- Remove existing schedule if present (idempotent)
-SELECT cron.unschedule('market-refresh-30min')
+SELECT cron.unschedule('market-refresh-4h')
 WHERE EXISTS (
-  SELECT 1 FROM cron.job WHERE jobname = 'market-refresh-30min'
+  SELECT 1 FROM cron.job WHERE jobname = 'market-refresh-4h'
 );
 
 -- Schedule every 30 minutes
 SELECT cron.schedule(
-  'market-refresh-30min',
-  '*/30 * * * *',
+  'market-refresh-4h',
+  '0 */4 * * *',
   $$
   SELECT net.http_post(
     url     := 'https://wixfhjlsjkiwfvqewvmt.supabase.co/functions/v1/market-refresh',
