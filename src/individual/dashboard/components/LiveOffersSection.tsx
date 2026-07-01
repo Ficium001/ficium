@@ -44,6 +44,22 @@ function fmtAmt(n: number) {
   return `Rs ${n}`;
 }
 
+/** Full comma-grouped amount, e.g. "Rs 32,450" — used in the hero row
+ *  where precision reads as trustworthy rather than cluttered. */
+function fmtComma(n: number) {
+  return `Rs ${Math.round(n).toLocaleString("en-US")}`;
+}
+
+/** Standard amortizing monthly payment. Falls back gracefully if the
+ *  bid is missing amount/term data. */
+function monthlyPayment(amount: number, ratePct: number, termMonths: number): number | null {
+  if (!amount || !termMonths) return null;
+  const r = ratePct / 100 / 12;
+  if (r === 0) return amount / termMonths;
+  const factor = Math.pow(1 + r, termMonths);
+  return (amount * r * factor) / (factor - 1);
+}
+
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60_000);
@@ -118,6 +134,87 @@ function InstitutionAvatar({ name, logoUrl }: { name: string; logoUrl?: string |
       }}
     >
       {institutionInitials(name)}
+    </div>
+  );
+}
+
+/** Hero row for the #1 ranked bid — mirrors the reference layout:
+ *  logo/name/badge on the left, then Interest rate | Monthly payment |
+ *  Term stat columns, then a prominent View offer CTA. Collapses to a
+ *  stacked 2-col stat grid on mobile. */
+function HeroBidRow({
+  bid,
+  requestId,
+}: {
+  bid:       Bid;
+  requestId: string;
+}) {
+  const navigate = useNavigate();
+  const payment  = monthlyPayment(bid.amountOffered, Number(bid.rate), bid.termMonths);
+
+  return (
+    <div
+      className="rounded-[16px] bg-emerald-50 border border-emerald-100 p-4 cursor-pointer hover:bg-emerald-100/50 transition-colors"
+      onClick={() => navigate(`/requests/${requestId}`)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={e => e.key === "Enter" && navigate(`/requests/${requestId}`)}
+      aria-label={`View ${bid.institutionName} offer at ${bid.rate}%`}
+    >
+      <div className="flex items-center gap-3 mb-3 sm:mb-0">
+        <InstitutionAvatar name={bid.institutionName} />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[13px] font-bold text-ink truncate">{bid.institutionName}</span>
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 flex-shrink-0">
+              <Zap size={9} />
+              Best Offer
+            </span>
+          </div>
+          <div className="flex items-center gap-1 text-[11px] text-muted mt-0.5">
+            <Clock size={10} />
+            {timeAgo(bid.submittedAt)}
+            {bid.rateType === "variable" && (
+              <span className="ml-1 text-amber-600 font-medium">· variable</span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-4 sm:gap-6 flex-wrap sm:flex-nowrap">
+        <div className="flex-1 min-w-[70px]">
+          <div className="text-[10px] text-muted font-medium mb-0.5">Interest rate</div>
+          <div className="text-[16px] sm:text-[18px] font-extrabold font-display text-emerald-700 leading-none">
+            {Number(bid.rate).toFixed(2)}% <span className="text-[10px] font-medium text-muted">p.a.</span>
+          </div>
+        </div>
+
+        {payment != null && (
+          <div className="flex-1 min-w-[90px]">
+            <div className="text-[10px] text-muted font-medium mb-0.5">Monthly payment</div>
+            <div className="text-[16px] sm:text-[18px] font-extrabold font-display text-ink leading-none">
+              {fmtComma(payment)}
+            </div>
+          </div>
+        )}
+
+        {bid.termMonths > 0 && (
+          <div className="flex-1 min-w-[70px]">
+            <div className="text-[10px] text-muted font-medium mb-0.5">Term</div>
+            <div className="text-[16px] sm:text-[18px] font-extrabold font-display text-ink leading-none">
+              {bid.termMonths >= 12 ? `${Math.round(bid.termMonths / 12)} yrs` : `${bid.termMonths} mo`}
+            </div>
+          </div>
+        )}
+
+        <button
+          onClick={e => { e.stopPropagation(); navigate(`/requests/${requestId}`); }}
+          className="flex-shrink-0 text-[12px] sm:text-[13px] font-bold px-4 py-2.5 rounded-[10px] bg-emerald-600 text-white hover:bg-emerald-700 transition-colors w-full sm:w-auto"
+          aria-label={`View offer from ${bid.institutionName}`}
+        >
+          View offer
+        </button>
+      </div>
     </div>
   );
 }
@@ -251,14 +348,13 @@ function RequestBidPanel({
 
   return (
     <div className="space-y-2">
-      {visible.map((bid, i) => (
-        <BidRow
-          key={bid.id}
-          bid={bid}
-          isBest={i === 0}
-          requestId={request.id}
-        />
-      ))}
+      {visible.map((bid, i) =>
+        i === 0 ? (
+          <HeroBidRow key={bid.id} bid={bid} requestId={request.id} />
+        ) : (
+          <BidRow key={bid.id} bid={bid} isBest={false} requestId={request.id} />
+        ),
+      )}
       {hidden > 0 && (
         <button
           onClick={() => navigate(`/requests/${request.id}`)}
@@ -408,12 +504,19 @@ export function LiveOffersSection() {
             {totalBids} bid{totalBids !== 1 ? "s" : ""} across {liveRequests.length} request{liveRequests.length !== 1 ? "s" : ""}
           </p>
         </div>
-        <button
-          onClick={() => navigate("/requests")}
-          className="text-[12px] font-semibold text-muted hover:text-ink flex-shrink-0 ml-4 pt-1"
-        >
-          View all →
-        </button>
+        <div className="text-right flex-shrink-0 ml-4">
+          {activeBestRate !== null && (
+            <p className="text-[13px] font-extrabold font-display text-emerald-600 leading-none mb-1.5">
+              Best {activeBestRate.toFixed(2)}% p.a.
+            </p>
+          )}
+          <button
+            onClick={() => navigate("/requests")}
+            className="text-[12px] font-semibold text-muted hover:text-ink"
+          >
+            View all →
+          </button>
+        </div>
       </div>
 
       {/* Request selector — only if multiple live requests */}
@@ -433,16 +536,9 @@ export function LiveOffersSection() {
 
       {/* Context line for the selected request */}
       {activeRequest && (
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-[12px] text-muted font-medium">
-            {productLabel(activeRequest.productType)} · {fmtAmt(activeRequest.amount)}
-          </p>
-          {activeBestRate !== null && (
-            <p className="text-[11px] font-bold text-emerald-600">
-              Best {activeBestRate.toFixed(2)}% p.a.
-            </p>
-          )}
-        </div>
+        <p className="text-[12px] text-muted font-medium mb-3">
+          {productLabel(activeRequest.productType)} · {fmtAmt(activeRequest.amount)}
+        </p>
       )}
 
       {/* Bid rows */}
