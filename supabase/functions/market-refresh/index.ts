@@ -65,7 +65,10 @@ async function fetchBom(): Promise<{ repo: number; deposit: number; lending: num
     if (!res.ok) throw new Error(`bom ${res.status}`);
     const html = await res.text();
     // BOM page renders rates in a consistent table — extract with regex
-    const repoM    = html.match(/Repo\s*Rate[\s\S]{0,200}?(\d+\.\d+)/i);
+    // BOM homepage shows "Key Rate" (which is the repo/key policy rate).
+    // Try "Key Rate" first, fall back to "Repo Rate" label.
+    const repoM    = html.match(/Key\s*Rate[\s\S]{0,300}?(\d+\.\d+)/i)
+                  ?? html.match(/Repo\s*Rate[\s\S]{0,300}?(\d+\.\d+)/i);
     const depositM = html.match(/Average[\s\S]{0,50}?[Dd]eposit[\s\S]{0,200}?(\d+\.\d+)/i);
     const lendingM = html.match(/Average[\s\S]{0,50}?[Ll]ending[\s\S]{0,200}?(\d+\.\d+)/i);
     if (!repoM) throw new Error("BOM regex parse failed");
