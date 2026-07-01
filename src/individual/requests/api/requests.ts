@@ -16,7 +16,12 @@ export type ProductType =
   | "investment_account"
   | "leasing"
   | "overdraft"
-  | "business_loan";
+  | "business_loan"
+  | "equities"
+  | "unit_trust"
+  | "savings_plan"
+  | "government_bonds"
+  | "offshore_investment";
 
 export type RequestStatus = "open" | "closed" | "cancelled" | "accepted" | "expired";
 

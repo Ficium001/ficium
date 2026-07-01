@@ -9,6 +9,7 @@ import {
   Loader2, AlertCircle, HandCoins, Building2,
   PiggyBank, LineChart, CreditCard, Briefcase,
   Banknote, Home, Car, BarChart2,
+  TrendingUp, Layers, CalendarDays, Landmark, Globe,
 } from "lucide-react";
 import { useProfile } from "../../dashboard/hooks/useDashboard";
 import { createRequest, type ProductType } from "../api/requests";
@@ -34,12 +35,22 @@ const PRODUCTS: Product[] = [
   { type: "credit_card",        label: "Credit Card",     icon: CreditCard, color: "text-pink-600",    iconBg: "bg-pink-50",      hint: "Compare card offers — cashback, rewards, travel benefits",         minAmount: 10_000,     maxAmount: 500_000,    minTerm: 12, maxTerm: 36,  defaultTerm: 12,  defaultAmount: 50_000    },
   { type: "leasing",            label: "Vehicle Loan",    icon: Car,        color: "text-orange-600",  iconBg: "bg-orange-50",    hint: "Car or commercial vehicle — providers compete on rates",           minAmount: 100_000,    maxAmount: 5_000_000,  minTerm: 12, maxTerm: 60,  defaultTerm: 36,  defaultAmount: 500_000   },
   { type: "overdraft",          label: "Overdraft",       icon: Banknote,   color: "text-red-600",     iconBg: "bg-red-50",       hint: "Flexible revolving credit for short-term needs",                  minAmount: 20_000,     maxAmount: 2_000_000,  minTerm: 6,  maxTerm: 24,  defaultTerm: 12,  defaultAmount: 100_000   },
+  { type: "equities",           label: "Listed Shares",   icon: TrendingUp, color: "text-teal-600",    iconBg: "bg-teal-50",      hint: "Invest in SEM-listed companies — institutions compete on fees and access", minAmount: 25_000,  maxAmount: 10_000_000, minTerm: 6,  maxTerm: 120, defaultTerm: 12,  defaultAmount: 100_000   },
+  { type: "unit_trust",         label: "Unit Trusts",     icon: Layers,     color: "text-cyan-600",    iconBg: "bg-cyan-50",      hint: "FSC-regulated collective investment schemes — diversified portfolios",      minAmount: 10_000,  maxAmount: 10_000_000, minTerm: 12, maxTerm: 120, defaultTerm: 36,  defaultAmount: 100_000   },
+  { type: "savings_plan",       label: "Monthly Plan",    icon: CalendarDays, color: "text-emerald-700", iconBg: "bg-emerald-50", hint: "Systematic monthly investment — set a target and let providers compete",   minAmount: 2_000,   maxAmount: 200_000,    minTerm: 12, maxTerm: 120, defaultTerm: 36,  defaultAmount: 5_000     },
+  { type: "government_bonds",   label: "Gov Bonds",       icon: Landmark,   color: "text-lime-700",    iconBg: "bg-lime-50",      hint: "Treasury bills and government securities — capital-protected returns",      minAmount: 50_000,  maxAmount: 20_000_000, minTerm: 3,  maxTerm: 120, defaultTerm: 24,  defaultAmount: 250_000   },
+  { type: "offshore_investment",label: "Offshore",        icon: Globe,      color: "text-sky-600",     iconBg: "bg-sky-50",       hint: "International exposure through Mauritius's global financial centre",        minAmount: 50_000,  maxAmount: 50_000_000, minTerm: 12, maxTerm: 120, defaultTerm: 36,  defaultAmount: 500_000   },
 ];
 
 const URL_TYPE_MAP: Record<string, ProductType> = {
   mortgage: "mortgage", personal: "personal_loan", credit: "credit_card",
   vehicle: "leasing", business: "business_loan", education: "personal_loan", renovation: "personal_loan",
   deposit: "fixed_deposit", savings: "investment_account",
+  equities: "equities", shares: "equities",
+  unit_trust: "unit_trust", funds: "unit_trust",
+  savings_plan: "savings_plan", monthly: "savings_plan",
+  government_bonds: "government_bonds", bonds: "government_bonds",
+  offshore: "offshore_investment", offshore_investment: "offshore_investment",
 };
 
 /* ─── Question definition ───────────────────────────────── */
@@ -116,6 +127,44 @@ const QUESTION_SETS: Partial<Record<ProductType, Question[]>> = {
     { key: "investment_horizon", question: "How long is your investment horizon?", type: "select", options: ["Less than 1 year", "1–3 years", "3–5 years", "5–10 years", "10+ years"], required: true },
     { key: "risk_appetite",   question: "What is your risk appetite?",            type: "select",  options: ["Low — preserve capital", "Medium — balanced growth", "High — maximise returns"], required: true },
     { key: "liquidity",       question: "Can you lock the funds away?",           type: "select",  options: ["Yes — fully locked", "Partial access needed", "Need full flexibility"], required: true },
+  ],
+  equities: [
+    { key: "__amount",        question: "How much do you want to invest in shares?", subtext: "Initial amount in MUR",                                          type: "amount"  },
+    { key: "market_focus",    question: "Which markets interest you?",            type: "select",  options: ["SEM (Mauritius)", "Pan-Africa", "Global", "Mixed"], required: true },
+    { key: "investment_style",question: "What's your investment style?",          type: "select",  options: ["Buy and hold long-term", "Active trading", "Dividend income", "Growth"], required: true },
+    { key: "risk_appetite",   question: "What is your risk appetite?",            type: "select",  options: ["Low — blue-chip only", "Medium — balanced portfolio", "High — growth stocks"], required: true },
+    { key: "investment_horizon", question: "What is your investment horizon?",    type: "select",  options: ["Under 1 year", "1–3 years", "3–5 years", "5–10 years", "10+ years"], required: true },
+    { key: "sector_preference", question: "Any sector preference?",              subtext: "Optional",                                                           type: "text",    placeholder: "e.g. Banking, tourism, technology", required: false },
+  ],
+  unit_trust: [
+    { key: "__amount",        question: "How much do you want to invest?",        subtext: "Initial lump sum in MUR",                                           type: "amount"  },
+    { key: "monthly_contribution", question: "Monthly top-up? (MUR)",            subtext: "Optional — enter 0 for lump sum only",                              type: "number",  placeholder: "0", required: false },
+    { key: "fund_type",       question: "What type of fund?",                    type: "select",  options: ["Equity fund", "Bond fund", "Balanced fund", "Money market", "No preference"], required: true },
+    { key: "risk_appetite",   question: "What is your risk appetite?",            type: "select",  options: ["Low — capital preservation", "Medium — balanced growth", "High — maximum returns"], required: true },
+    { key: "investment_horizon", question: "How long can you stay invested?",     type: "select",  options: ["1–2 years", "3–5 years", "5–10 years", "10+ years"], required: true },
+    { key: "distribution",    question: "How do you want returns paid?",          type: "select",  options: ["Reinvested (accumulation)", "Paid out regularly (income)"], required: true },
+  ],
+  savings_plan: [
+    { key: "__amount",        question: "How much can you save each month?",      subtext: "Monthly contribution in MUR",                                       type: "amount"  },
+    { key: "target_amount",   question: "What is your savings target? (MUR)",    subtext: "Your goal amount",                                                   type: "number",  placeholder: "e.g. 1000000", required: true },
+    { key: "target_years",    question: "When do you want to reach your target?", type: "select",  options: ["1–2 years", "3–5 years", "5–10 years", "10–15 years", "15+ years"], required: true },
+    { key: "objective",       question: "What are you saving for?",              type: "select",  options: ["Retirement", "Children's education", "Buy property", "Emergency fund", "Wealth building", "Other"], required: true },
+    { key: "flexibility",     question: "Do you need to be able to pause or withdraw?", type: "select", options: ["Yes — need flexibility", "No — I can commit monthly", "Partial flexibility"], required: true },
+  ],
+  government_bonds: [
+    { key: "__amount",        question: "How much do you want to invest in bonds?", subtext: "Amount in MUR",                                                   type: "amount"  },
+    { key: "maturity",        question: "What maturity do you prefer?",           type: "select",  options: ["Short-term (under 2 years)", "Medium-term (2–7 years)", "Long-term (7+ years)", "No preference"], required: true },
+    { key: "income_preference", question: "How do you want income paid?",        type: "select",  options: ["Regular coupon payments", "Zero-coupon (lump sum at maturity)", "No preference"], required: true },
+    { key: "currency",        question: "In which currency?",                    type: "select",  options: ["MUR", "USD", "EUR", "GBP", "Mixed"],               required: true  },
+    { key: "rollover",        question: "At maturity, would you reinvest?",      type: "select",  options: ["Yes — auto-reinvest", "No — return funds", "Undecided"], required: false },
+  ],
+  offshore_investment: [
+    { key: "__amount",        question: "How much do you want to invest offshore?", subtext: "Amount in MUR equivalent",                                        type: "amount"  },
+    { key: "currency",        question: "Preferred currency?",                   type: "select",  options: ["USD", "EUR", "GBP", "Mixed / No preference"],       required: true  },
+    { key: "geography",       question: "Which regions interest you?",           type: "select",  options: ["Africa", "Europe", "USA / North America", "Asia-Pacific", "Emerging markets", "Global diversified"], required: true },
+    { key: "asset_class",     question: "What asset class?",                     type: "select",  options: ["Equities", "Bonds", "Multi-asset fund", "Real estate", "Private equity", "No preference"], required: true },
+    { key: "risk_appetite",   question: "What is your risk appetite?",           type: "select",  options: ["Low — capital preservation", "Medium — balanced", "High — growth"], required: true },
+    { key: "investment_horizon", question: "What is your investment horizon?",   type: "select",  options: ["1–3 years", "3–5 years", "5–10 years", "10+ years"], required: true },
   ],
 };
 
