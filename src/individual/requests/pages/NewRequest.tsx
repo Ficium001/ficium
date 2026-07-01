@@ -182,13 +182,14 @@ function buildPurpose(answers: Record<string, string>): string {
 
 /* ─── Single question screen ─────────────────────────────── */
 function QuestionScreen({
-  question, product, answers, onAnswer, onBack, onSkip,
+  question, product, answers, onAnswer, onAdvance, onBack, onSkip,
   questionNum, totalQuestions,
 }: {
   question:        Question;
   product:         Product;
   answers:         Record<string, string>;
   onAnswer:        (key: string, value: string) => void;
+  onAdvance:       () => void;
   onBack:          () => void;
   onSkip?:         () => void;
   questionNum:     number;
@@ -214,9 +215,10 @@ function QuestionScreen({
     : !!localVal.trim();
 
   const handleContinue = () => {
-    if (question.type === "amount") { onAnswer("__amount", String(amountVal)); return; }
-    if (question.type === "term")   { onAnswer("__term",   String(termVal));   return; }
+    if (question.type === "amount") { onAnswer("__amount", String(amountVal)); onAdvance(); return; }
+    if (question.type === "term")   { onAnswer("__term",   String(termVal));   onAdvance(); return; }
     onAnswer(question.key, localVal);
+    onAdvance();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -505,15 +507,14 @@ export default function NewRequest() {
             product={product}
             answers={answers}
             onAnswer={(key, value) => {
-              const updated = { ...answers, [key]: value };
-              setAnswers(updated);
+              setAnswers(prev => ({ ...prev, [key]: value }));
+              // select auto-advances on tap; all other types wait for Continue button
               if (currentQ.type === "select") {
                 if (qIndex < questions.length - 1) setTimeout(() => setQIndex(i => i + 1), 200);
                 else setTimeout(() => setStage("review"), 200);
-              } else if (currentQ.type === "amount" || currentQ.type === "term" || currentQ.type === "text" || currentQ.type === "number") {
-                advanceFromQ();
               }
             }}
+            onAdvance={advanceFromQ}
             onBack={handleBack}
             onSkip={!currentQ.required ? handleSkip : undefined}
             questionNum={qIndex + 1}
