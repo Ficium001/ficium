@@ -153,14 +153,15 @@ export function WhatAreYouPlanningSection() {
         </div>
       </div>
 
-      {/* ── Save & Earn / Invest — two column on desktop, stacked on mobile ── */}
+      {/* ── Save & Earn / Invest — both rendered as single rows so card
+           heights line up; outer split just controls column width. ── */}
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-4">
 
         <div>
           <p className="text-[11px] font-bold text-muted uppercase tracking-widest mb-3">
             Save &amp; Earn
           </p>
-          <div className="grid grid-cols-2 lg:grid-cols-1 gap-3 h-full">
+          <div className="grid grid-cols-2 gap-3">
             {SAVE_AND_EARN.map(({ id, Icon, label, desc, rate, rateSub, route, bg, iconBg, color }) => (
               <ProductCard key={id} Icon={Icon} label={label} desc={desc} rate={rate} rateSub={rateSub} route={route} bg={bg} iconBg={iconBg} color={color} onClick={navigate} />
             ))}
@@ -180,5 +181,6 @@ export function WhatAreYouPlanningSection() {
 
       </div>
     </div>
+
   );
 }
