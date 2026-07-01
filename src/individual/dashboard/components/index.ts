@@ -8,3 +8,4 @@ export { NextActions }        from "./NextActions";
 export { LiveOffersSection }  from "./LiveOffersSection";
 export { GoalsWidget }        from "./GoalsWidget";
 export { MarketRatesWidget }  from "./MarketRatesWidget";
+export { RecommendedForYou }  from "./RecommendedForYou";
