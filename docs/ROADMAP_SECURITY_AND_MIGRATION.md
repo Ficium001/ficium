@@ -19,6 +19,28 @@ Throughout, items are marked by priority: 🔴 **Critical** · 🟠 **High** · 
 
 ---
 
+## ✅ Completed Security Hardening (Log)
+
+> This log records hardening that has **shipped**, so this planning doc also serves as an audit trail. Most recent first.
+
+### July 2026 — Pentest-driven hardening pass
+
+| Fix | Severity | Repo | Detail |
+|---|---|---|---|
+| **Cross-tenant RLS leak on 4 pipeline tables** | 🔴 Critical | portal-api / DB | `institution.pipeline_template`, `institution.pipeline_stage_def`, `marketplace.loan_pipeline`, `marketplace.pipeline_stage_instance` shipped with RLS **disabled**. As the API runs under the `authenticated` role, any authenticated user from any institution could read/write another institution's loan-pipeline data. Enabled + FORCED RLS with per-tenant policies (`current_member_ctx_v2()`). Migration `006_pipeline_rls.sql`. Verified live. |
+| **Webhook SSRF** | 🟠 High | portal-api | Institution-registered webhook URLs had no validation beyond well-formedness — could target `169.254.169.254` (cloud metadata), `localhost`, or private ranges. Added `core/ssrf.py` guard enforced at registration and re-checked at dispatch (DNS-rebind defence). 19 tests. |
+| **IP-spoofing rate-limit/lockout bypass** | 🟠 High | auth | `get_client_ip()` trusted the client-supplied first `X-Forwarded-For` entry and `X-Real-IP`, letting an attacker rotate a fake IP per request to defeat login throttling and lockout. Now trusts only the trusted-proxy-appended rightmost hop. 8 regression tests. |
+| **Consumer app missing security headers** | 🟠 High | ficium | `ficium.vercel.app` served only Cache-Control. Added CSP (`script-src 'self'`), HSTS (preload), X-Frame-Options DENY, nosniff, Referrer-Policy, Permissions-Policy — matching the portal. |
+| **No API rate limiting** | 🟡 Medium | portal-api | Added per-tenant (institution_id / API key) rate limiting via slowapi; 600/min global, 60/min on bid writes. |
+| **Admin authz was imperative-only** | 🟡 Medium | portal-api | All 15 admin routes were guarded only by inline checks. Added a router-level `require_admin_dep` dependency as defence-in-depth so a future route can't be silently exposed. |
+| **FORCE RLS on sensitive consumer tables** | 🟡 Medium | ficium / DB | Forced RLS on `client_documents`, `client_vault_*`, `compliance_details`, `asset_details`, `kyc_settings`, `audit_logs`, `notifications`, `request_messages` — isolation holds even under owner-role queries. |
+| **DB connection stability** | 🟢 Perf | portal-api | Added `pool_recycle=300` + TCP keepalives for pgbouncer transaction-pooler stability (prevents intermittent stale-connection 500s). |
+| **ficium-auth test coverage** | 🟡 Medium | auth | Was **zero tests** on the most security-critical service. Added 35 covering Argon2id hashing, RS256 JWT issue/verify/tamper/expiry, token utils, and the IP-spoofing fix. |
+
+**Verified sound during this pass (no change needed):** double-blind marketplace guarantee (no PII on `marketplace.request` — only opaque `consumer_id`/`consumer_ref`; PII revealed only on bid acceptance); API-key verification (SHA-256 hash lookup, active/approved/revoked/expired checks); portal-api JWT verification (RS256 pinned, aud + iss + kid validated); SQL-injection surface (all dynamic clauses use fixed column allowlists + parametrized values); consumer app RLS (all tables have policies); frontend build (25 lazy routes, proper chunk splitting).
+
+---
+
 ---
 
 # PART 1 — WHAT SHOULD BE ENHANCED
