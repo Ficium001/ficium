@@ -1,6 +1,6 @@
 /**
  * supabase/functions/market-refresh/index.ts
- * Live market data + AI-generated news refresh for Ficium.
+ * v4 — Live market data + Claude-generated news. 2026-07-01
  * Scheduled every 4 hours via pg_cron.
  *
  * Sources:
