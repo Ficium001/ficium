@@ -31,10 +31,10 @@ const SAVE_AND_EARN = [
 ] as const;
 
 const INVEST = [
-  { id: "equities", Icon: IconShares, label: "Stocks",              desc: "Invest in top companies",          route: "/requests/new?type=equities", bg: "#e0e7ff", color: "#3730a3" },
-  { id: "funds",    Icon: IconFunds,  label: "ETFs",                 desc: "Diversify with low-cost ETFs",     route: "/requests/new?type=funds",    bg: "#dbeafe", color: "#1e40af" },
-  { id: "bonds",    Icon: IconBonds,  label: "Bonds",                 desc: "Stable income with bonds",         route: "/requests/new?type=bonds",    bg: "#fef3c7", color: "#92400e" },
-  { id: "offshore", Icon: IconStack,  label: "Structured Products",   desc: "Enhanced returns with protection", route: "/requests/new?type=offshore", bg: "#fce7f3", color: "#9d174d" },
+  { id: "equities", Icon: IconShares, label: "Stocks",              desc: "Invest in top companies",          route: "/requests/new?type=equities", bg: "#e0e7ff", iconBg: "#c7d2fe", color: "#3730a3" },
+  { id: "funds",    Icon: IconFunds,  label: "ETFs",                 desc: "Diversify with low-cost ETFs",     route: "/requests/new?type=funds",    bg: "#dbeafe", iconBg: "#bfdbfe", color: "#1e40af" },
+  { id: "bonds",    Icon: IconBonds,  label: "Bonds",                 desc: "Stable income with bonds",         route: "/requests/new?type=bonds",    bg: "#fef3c7", iconBg: "#fde68a", color: "#92400e" },
+  { id: "offshore", Icon: IconStack,  label: "Structured Products",   desc: "Enhanced returns with protection", route: "/requests/new?type=offshore", bg: "#fce7f3", iconBg: "#fbcfe8", color: "#9d174d" },
 ] as const;
 
 /* ── Financing tile: icon block + title + description + Compare → ── */
@@ -176,8 +176,8 @@ export function WhatAreYouPlanningSection() {
               Invest
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {INVEST.map(({ id, Icon, label, desc, route, bg, color }) => (
-                <ProductCard key={id} Icon={Icon} label={label} desc={desc} route={route} bg={bg} color={color} onClick={navigate} />
+              {INVEST.map(({ id, Icon, label, desc, route, bg, iconBg, color }) => (
+                <ProductCard key={id} Icon={Icon} label={label} desc={desc} route={route} bg={bg} iconBg={iconBg} color={color} onClick={navigate} />
               ))}
             </div>
           </div>
