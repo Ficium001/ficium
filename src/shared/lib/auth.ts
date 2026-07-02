@@ -43,23 +43,25 @@ export async function signUpIndividual(input: SignUpIndividualInput): Promise<Si
   const { email, password, firstName, middleName, lastName, phone, title, country } = input;
   const fullName = [firstName, middleName, lastName].filter(Boolean).join(" ").trim();
 
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        full_name: fullName,
-        first_name: firstName,
-        middle_name: middleName || "",
-        last_name: lastName,
-        phone: phone || "",
-        title: title || "",
-        role: "client",
-        user_type: "individual",
-        country,
+  const { data, error } = await withNetworkRetry(() =>
+    supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+          first_name: firstName,
+          middle_name: middleName || "",
+          last_name: lastName,
+          phone: phone || "",
+          title: title || "",
+          role: "client",
+          user_type: "individual",
+          country,
+        },
       },
-    },
-  });
+    })
+  );
 
   if (error) return { ok: false, error: mapAuthError(error) };
   if (!data.user) return { ok: false, error: { code: "unknown", message: "Sign up did not return a user." } };
@@ -87,23 +89,25 @@ export async function signUpBusiness(input: SignUpBusinessInput): Promise<SignUp
   const { email, password, firstName, lastName, companyName, companyRegistration, phone, country } = input;
   const fullName = [firstName, lastName].filter(Boolean).join(" ").trim();
 
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        full_name: fullName,
-        first_name: firstName,
-        last_name: lastName,
-        phone: phone || "",
-        role: "client",
-        user_type: "business",
-        company_name: companyName,
-        company_registration: companyRegistration || "",
-        country,
+  const { data, error } = await withNetworkRetry(() =>
+    supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+          first_name: firstName,
+          last_name: lastName,
+          phone: phone || "",
+          role: "client",
+          user_type: "business",
+          company_name: companyName,
+          company_registration: companyRegistration || "",
+          country,
+        },
       },
-    },
-  });
+    })
+  );
 
   if (error) return { ok: false, error: mapAuthError(error) };
   if (!data.user) return { ok: false, error: { code: "unknown", message: "Sign up did not return a user." } };
@@ -117,6 +121,28 @@ export async function signUpBusiness(input: SignUpBusinessInput): Promise<SignUp
    SIGN IN
    ============================================================ */
 
+/** Retries a Supabase auth call up to `attempts` times with short backoff,
+ *  but only for transient network/edge failures (fetch errors, 5xx/522
+ *  gateway timeouts) — never retries genuine auth failures like wrong
+ *  password, since retrying those wastes time and risks rate-limit lockout. */
+async function withNetworkRetry<T extends { error: { message?: string; status?: number } | null }>(
+  fn: () => Promise<T>,
+  attempts = 3
+): Promise<T> {
+  let last: T;
+  for (let i = 0; i < attempts; i++) {
+    last = await fn();
+    const err = last.error;
+    const isTransient =
+      !!err &&
+      (/network|fetch|522|failed to fetch/i.test(err.message || "") ||
+        (err.status !== undefined && err.status >= 500));
+    if (!err || !isTransient) return last;
+    if (i < attempts - 1) await new Promise((r) => setTimeout(r, 500 * Math.pow(2, i))); // 500ms, 1s
+  }
+  return last!;
+}
+
 export async function signIn(
   email: string,
   password: string,
@@ -129,7 +155,9 @@ export async function signIn(
     localStorage.removeItem("ficium_remembered_email");
   }
 
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await withNetworkRetry(() =>
+    supabase.auth.signInWithPassword({ email, password })
+  );
 
   if (error) {
     await audit.loginFailed(error.message);
