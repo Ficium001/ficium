@@ -153,32 +153,36 @@ export function WhatAreYouPlanningSection() {
         </div>
       </div>
 
-      {/* ── Save & Earn / Invest — both rendered as single rows so card
-           heights line up; outer split just controls column width. ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-4">
+      {/* ── Save & Earn / Invest — same outlined card treatment as the
+           "Providers compete for you" box above, for visual consistency.
+           Rows still render as single grids so card heights line up;
+           inner split just controls column width. ── */}
+      <div className="bg-white rounded-[22px] border border-ink/[0.06] shadow-card p-5">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-4">
 
-        <div>
-          <p className="text-[11px] font-bold text-muted uppercase tracking-widest mb-3">
-            Save &amp; Earn
-          </p>
-          <div className="grid grid-cols-2 gap-3">
-            {SAVE_AND_EARN.map(({ id, Icon, label, desc, rate, rateSub, route, bg, iconBg, color }) => (
-              <ProductCard key={id} Icon={Icon} label={label} desc={desc} rate={rate} rateSub={rateSub} route={route} bg={bg} iconBg={iconBg} color={color} onClick={navigate} />
-            ))}
+          <div>
+            <p className="text-[11px] font-bold text-muted uppercase tracking-widest mb-3">
+              Save &amp; Earn
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              {SAVE_AND_EARN.map(({ id, Icon, label, desc, rate, rateSub, route, bg, iconBg, color }) => (
+                <ProductCard key={id} Icon={Icon} label={label} desc={desc} rate={rate} rateSub={rateSub} route={route} bg={bg} iconBg={iconBg} color={color} onClick={navigate} />
+              ))}
+            </div>
           </div>
-        </div>
 
-        <div>
-          <p className="text-[11px] font-bold text-muted uppercase tracking-widest mb-3">
-            Invest
-          </p>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {INVEST.map(({ id, Icon, label, desc, route, bg, color }) => (
-              <ProductCard key={id} Icon={Icon} label={label} desc={desc} route={route} bg={bg} color={color} onClick={navigate} />
-            ))}
+          <div>
+            <p className="text-[11px] font-bold text-muted uppercase tracking-widest mb-3">
+              Invest
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {INVEST.map(({ id, Icon, label, desc, route, bg, color }) => (
+                <ProductCard key={id} Icon={Icon} label={label} desc={desc} route={route} bg={bg} color={color} onClick={navigate} />
+              ))}
+            </div>
           </div>
-        </div>
 
+        </div>
       </div>
     </div>
 
