@@ -1,7 +1,7 @@
 import { useState }         from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
-  Plus,
+  Plus, HandCoins, CreditCard, PiggyBank,
   Calculator, Wallet, ShieldCheck, TrendingUp, LineChart,
   Bell, LogOut,
 } from "lucide-react";
@@ -12,7 +12,7 @@ import { useSnapshot }           from "@/individual/networth/hooks/useSnapshot";
 import { getGreeting, SPARK_NETWORTH, SPARK_REQUESTS } from "@/individual/dashboard/config/dashboard";
 import {
   OnboardingBanners,
-  SmartInsightsFeed, NextActions,
+  SmartInsightsFeed, MarketTile, NextActions,
   LiveOffersSection, RecommendedForYou,
 } from "@/individual/dashboard/components";
 import { WhatAreYouPlanningSection } from "@/individual/dashboard/components/WhatAreYouPlanningSection";
@@ -256,7 +256,23 @@ export default function Dashboard() {
           <SmartInsightsFeed insights={insights} activeIdx={activeIdx} onNext={next} />
         </ErrorBoundary>
 
-        {/* 5 — Tools */}
+        {/* 5 — Banks Compete */}
+        <div>
+          <SectionHeader
+            eyebrow="Marketplace"
+            title="Providers compete"
+            highlight="for you"
+            action={{ label: "View all offers →", to: "/requests" }}
+          />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <MarketTile icon={<HandCoins size={18} />} label="Personal Loan"  title="Loans that compete for you"   metric="Best rate"    metricValue="8.2% from 6 providers"      bg="bg-ficium"      href="/requests/new" />
+            <MarketTile icon={<CreditCard size={18} />} label="Credit Card"   title="Card offers tailored to you"  metric="Top cashback" metricValue="3.5% from 4 providers"      bg="bg-violet-600"  href="/requests/new" />
+            <MarketTile icon={<PiggyBank size={18} />}  label="Deposit"       title="Deposits with real yield"     metric="Top yield"    metricValue="5.4% from 3 providers"      bg="bg-amber-400"   dark href="/requests/new" />
+            <MarketTile icon={<LineChart size={18} />}  label="Wealth"        title="Investments that find you"    metric="Fee saving"   metricValue="0.4% potential saving"      bg="bg-emerald-400" dark href="/requests/new" />
+          </div>
+        </div>
+
+        {/* 6 — Tools */}
         <div>
           <SectionHeader
             title="Tools &"
