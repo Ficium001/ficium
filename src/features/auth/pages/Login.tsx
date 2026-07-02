@@ -77,7 +77,10 @@ export default function Login() {
     const email = data.email.trim().toLowerCase();
     const result = await signIn(email, data.password, data.rememberMe ?? false);
     if (!result.ok) {
-      setSubmitError("Incorrect email or password. Please try again.");
+      // Surface the real failure reason (network/CORS vs actually wrong
+      // credentials) instead of always claiming "incorrect email or
+      // password" — that was misleading users during connectivity issues.
+      setSubmitError(result.error.message);
       return;
     }
     navigate(from, { replace: true });

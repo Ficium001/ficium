@@ -10,6 +10,7 @@ export type AuthError = {
     | "email_already_registered"
     | "weak_password"
     | "invalid_email"
+    | "invalid_credentials"
     | "network"
     | "unknown";
   message: string;
@@ -175,6 +176,9 @@ function mapAuthError(err: { message?: string; code?: string; status?: number })
   }
   if (msg.includes("email") && msg.includes("invalid")) {
     return { code: "invalid_email", message: "That doesn't look like a valid email address." };
+  }
+  if (msg.includes("invalid login credentials") || msg.includes("invalid_credentials")) {
+    return { code: "invalid_credentials", message: "Incorrect email or password. Please try again." };
   }
   if (msg.includes("network") || msg.includes("fetch")) {
     return { code: "network", message: "Network error. Check your connection and try again." };
