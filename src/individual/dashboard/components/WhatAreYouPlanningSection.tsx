@@ -91,7 +91,7 @@ function ProductCard({
   return (
     <button
       onClick={() => onClick(route)}
-      className="flex flex-col items-start text-left rounded-[18px] p-4 h-full hover:-translate-y-0.5 transition-transform"
+      className="flex flex-col items-start text-left rounded-[18px] p-4 h-full min-h-[172px] hover:-translate-y-0.5 transition-transform"
       style={{ background: bg }}
     >
       {iconBg && (
@@ -102,7 +102,7 @@ function ProductCard({
           <Icon color={color} />
         </div>
       )}
-      <div className="text-[13px] font-bold mb-1" style={{ color }}>
+      <div className="text-[13px] font-bold mb-1 leading-snug min-h-[32px]" style={{ color }}>
         {label}
       </div>
       <div className="text-[11px] leading-snug mb-2 flex-1" style={{ color, opacity: 0.75 }}>
