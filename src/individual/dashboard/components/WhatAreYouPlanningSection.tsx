@@ -52,7 +52,7 @@ function FinancingTile({
   return (
     <button
       onClick={() => onClick(route)}
-      className="rounded-[18px] p-[1.5px] bg-brand hover:shadow-ficium hover:-translate-y-0.5 transition-all"
+      className="rounded-[18px] p-[1.5px] bg-line hover:shadow-card hover:-translate-y-0.5 transition-all"
     >
       <div className="flex flex-col items-start text-left rounded-[16.5px] p-4 bg-white h-full">
         <div
