@@ -52,23 +52,25 @@ function FinancingTile({
   return (
     <button
       onClick={() => onClick(route)}
-      className="flex flex-col items-start text-left rounded-[18px] p-4 bg-white border border-ink/[0.06] hover:shadow-card hover:-translate-y-0.5 transition-all"
+      className="rounded-[18px] p-[1.5px] bg-brand hover:shadow-ficium hover:-translate-y-0.5 transition-all"
     >
-      <div
-        className="w-14 h-14 rounded-[14px] flex items-center justify-center mb-3"
-        style={{ background: bg }}
-      >
-        <Icon color={color} />
+      <div className="flex flex-col items-start text-left rounded-[16.5px] p-4 bg-white h-full">
+        <div
+          className="w-14 h-14 rounded-[14px] flex items-center justify-center mb-3"
+          style={{ background: bg }}
+        >
+          <Icon color={color} />
+        </div>
+        <div className="text-[13px] font-bold mb-1 bg-brand bg-clip-text text-transparent">
+          {label}
+        </div>
+        <div className="text-[11px] text-muted leading-snug mb-2 min-h-[28px]">
+          {desc}
+        </div>
+        <span className="text-[11px] font-bold bg-brand bg-clip-text text-transparent">
+          Compare →
+        </span>
       </div>
-      <div className="text-[13px] font-bold mb-1" style={{ color }}>
-        {label}
-      </div>
-      <div className="text-[11px] text-muted leading-snug mb-2 min-h-[28px]">
-        {desc}
-      </div>
-      <span className="text-[11px] font-bold" style={{ color }}>
-        Compare →
-      </span>
     </button>
   );
 }
@@ -143,7 +145,7 @@ export function WhatAreYouPlanningSection() {
           Providers review it and send you their best offer.
         </p>
 
-        <p className="text-[11px] font-bold text-muted uppercase tracking-widest mb-3">
+        <p className="text-[11px] font-bold uppercase tracking-widest mb-3 bg-brand bg-clip-text text-transparent">
           Financing
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
