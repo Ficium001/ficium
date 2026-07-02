@@ -16,26 +16,29 @@ export type InsightItem = {
 };
 
 // ── Static fallbacks shown while intelligence loads ───────────────────────────
+// ── Static fallbacks — shown only on a true cold start (zero live
+//    marketplace data anywhere), so copy stays generic/educational
+//    rather than implying financial analysis Ficium isn't doing. ───────────────
 export const FALLBACK_INSIGHTS: InsightItem[] = [
   {
     icon:  TrendingUp,
     color: "#16a34a",
     bg:    "rgba(22,163,74,0.12)",
-    text:  "Your debt ratio improved 8% this month",
+    text:  "Providers compete when you post a request — you don't have to shop around",
     type:  "positive",
   },
   {
     icon:  CheckCircle2,
     color: "#4f46e5",
     bg:    "rgba(79,70,229,0.12)",
-    text:  "Your liquidity is above average for your income bracket",
+    text:  "A verified profile gets you offers faster — complete your KYC to start",
     type:  "info",
   },
   {
     icon:  AlertTriangle,
     color: "#d97706",
     bg:    "rgba(217,119,6,0.12)",
-    text:  "You may be overpaying on your current loan — compare rates now",
+    text:  "Already have a loan elsewhere? Compare it against live market rates",
     type:  "warning",
   },
 ];

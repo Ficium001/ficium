@@ -13,27 +13,31 @@ export function useDashboardInsights() {
   const { intel }     = useIntelligence();
   const [idx, setIdx] = useState(0);
 
-  const live: InsightItem[] = intel?.marketRates?.length
+  const hasLiveData = Boolean(
+    intel?.marketRates?.length || intel?.acceptanceIntel?.length || intel?.requestPatterns?.length
+  );
+
+  const live: InsightItem[] = hasLiveData
     ? [
-        ...intel.marketRates.slice(0, 2).map((r) => ({
+        ...(intel?.marketRates?.slice(0, 2).map((r) => ({
           icon:  BarChart2,
           color: "#4f46e5",
           bg:    "rgba(79,70,229,0.12)",
           text:  `${r.product_type.replace(/_/g, " ")} on Ficium: avg ${r.avg_rate_pct}% APR — ${r.bid_count} competing bids across ${r.request_count} requests`,
           type:  "info" as const,
-        })),
-        ...(intel.acceptanceIntel?.slice(0, 1).map((a) => ({
+        })) ?? []),
+        ...(intel?.acceptanceIntel?.slice(0, 1).map((a) => ({
           icon:  TrendingUp,
           color: "#16a34a",
           bg:    "rgba(22,163,74,0.12)",
           text:  `Winning bids for ${a.product_type.replace(/_/g, " ")} average ${a.avg_winning_rate_pct}% — ${a.total_acceptances} deals closed in the last 90 days`,
           type:  "positive" as const,
         })) ?? []),
-        ...(intel.requestPatterns?.slice(0, 1).map((p) => ({
+        ...(intel?.requestPatterns?.slice(0, 2).map((p) => ({
           icon:  AlertTriangle,
           color: "#d97706",
           bg:    "rgba(217,119,6,0.12)",
-          text:  `${p.open_requests} ${p.product_type.replace(/_/g, " ")} requests open now — avg amount MUR ${Number(p.avg_amount).toLocaleString()}`,
+          text:  `${p.open_requests} ${p.product_type.replace(/_/g, " ")} request${p.open_requests === 1 ? "" : "s"} open now — avg amount MUR ${Number(p.avg_amount).toLocaleString()}`,
           type:  "warning" as const,
         })) ?? []),
       ]
