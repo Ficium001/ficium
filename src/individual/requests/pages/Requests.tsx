@@ -26,6 +26,7 @@ const KIND_TONE: Record<NotificationKind, "good" | "warn" | "bad" | "blue" | "vi
   kyc_rejected:     "bad",
   request_created:  "blue",
   request_expiring: "warn",
+  request_rejected: "bad",
   bid_received:     "violet",
   bid_accepted:     "good",
   bid_expired:      "warn",
@@ -38,7 +39,7 @@ export default function Requests() {
   const { score: readiness } = useBankReadiness();
   const { data: notifications = [] } = useNotifications();
 
-  const [statusFilter, setStatusFilter] = useState<"open" | "accepted" | "closed">("open");
+  const [statusFilter, setStatusFilter] = useState<"open" | "accepted" | "rejected" | "closed">("open");
 
   const openRequests  = requests.filter(r => r.status === "open");
   const filteredRequests = requests.filter(r => r.status === statusFilter);
@@ -124,6 +125,7 @@ export default function Requests() {
                   const FILTERS = [
                     { key: "open"     as const, label: "Open",     dot: "#356EF4", activeBg: "linear-gradient(135deg,#356EF4,#8231EC)", activeText: "#fff" },
                     { key: "accepted" as const, label: "Accepted", dot: "#10b981", activeBg: "linear-gradient(135deg,#059669,#10b981)",   activeText: "#fff" },
+                    { key: "rejected" as const, label: "Rejected", dot: "#ef4444", activeBg: "linear-gradient(135deg,#dc2626,#ef4444)",   activeText: "#fff" },
                     { key: "closed"   as const, label: "Closed",   dot: "#9ca3af", activeBg: "linear-gradient(135deg,#4b5563,#9ca3af)",   activeText: "#fff" },
                   ];
                   return (

@@ -7,7 +7,7 @@ import { useNavigate } from "react-router-dom";
 import {
   Home, Car, CreditCard, Briefcase, PiggyBank,
   TrendingUp, Banknote, Building2, Clock,
-  CheckCircle2, ArrowRight, Users,
+  CheckCircle2, ArrowRight, Users, XCircle,
 } from "lucide-react";
 import type { RequestSummary } from "@/individual/requests/api/requests";
 
@@ -79,7 +79,12 @@ export function ActiveRequestCard({ request }: { request: RequestSummary }) {
         style={{ background: `linear-gradient(135deg, ${cfg.from}, ${cfg.to})` }}
       >
         {/* Status pill top-right */}
-        <span className="absolute top-4 right-4 text-[10px] font-bold px-3 py-1.5 rounded-full uppercase tracking-wide bg-white/25 text-white">
+        <span
+          className={[
+            "absolute top-4 right-4 text-[10px] font-bold px-3 py-1.5 rounded-full uppercase tracking-wide text-white",
+            request.status === "rejected" ? "bg-red-500/60" : "bg-white/25",
+          ].join(" ")}
+        >
           {request.status}
         </span>
 
@@ -155,6 +160,12 @@ export function ActiveRequestCard({ request }: { request: RequestSummary }) {
         </div>
 
         {/* Status banner */}
+        {request.status === "rejected" && (
+          <div className="flex items-center gap-2 bg-red-50 border border-red-100 rounded-xl px-3 py-2.5">
+            <XCircle size={13} className="text-red-500 flex-shrink-0" />
+            <span className="text-[11px] text-red-700 font-medium">Declined by the provider · post a new request to try again</span>
+          </div>
+        )}
         {!isClosed && request.bidCount === 0 && (
           <div className="flex items-center gap-2 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2.5">
             <Clock size={13} className="text-amber-500 flex-shrink-0" />

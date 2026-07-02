@@ -23,7 +23,7 @@ export type ProductType =
   | "government_bonds"
   | "offshore_investment";
 
-export type RequestStatus = "open" | "closed" | "cancelled" | "accepted" | "expired";
+export type RequestStatus = "open" | "closed" | "cancelled" | "accepted" | "expired" | "rejected";
 
 export type CreateRequestInput = {
   productType: ProductType;

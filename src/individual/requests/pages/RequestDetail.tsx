@@ -391,11 +391,30 @@ function NoBidsState({
     </div>
   );
 
-  const isExpired = status === "expired";
+  const isExpired  = status === "expired";
+  const isRejected = status === "rejected";
 
   return (
     <div className="mt-5 space-y-3">
-      {isExpired ? (
+      {isRejected ? (
+        <div className="px-4 py-4 bg-red-50 border border-red-200 rounded-2xl">
+          <div className="font-semibold text-red-900 text-[14px] mb-1">Declined by the provider</div>
+          <p className="text-[12px] text-red-800 leading-relaxed mb-3">
+            The institution reviewing this request wasn't able to proceed with it.
+            This isn't necessarily a reflection of your profile — you can post a
+            similar request to reach other providers.
+          </p>
+          <button
+            onClick={handleRelist}
+            disabled={relisting}
+            className="w-full py-3 rounded-xl text-[13px] font-bold text-white
+                       transition-opacity hover:opacity-90 disabled:opacity-60"
+            style={{ background: "linear-gradient(135deg,#3536DC,#8231EC)" }}
+          >
+            {relisting ? "Relisting…" : "Try again with a new request"}
+          </button>
+        </div>
+      ) : isExpired ? (
         <div className="px-4 py-4 bg-amber-50 border border-amber-200 rounded-2xl">
           <div className="font-semibold text-amber-900 text-[14px] mb-1">No bids received</div>
           <p className="text-[12px] text-amber-800 leading-relaxed mb-3">

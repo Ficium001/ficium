@@ -7,6 +7,7 @@ export type NotificationKind =
   | "kyc_rejected"
   | "request_created"
   | "request_expiring"
+  | "request_rejected"
   | "bid_received"
   | "bid_accepted"
   | "bid_expired"

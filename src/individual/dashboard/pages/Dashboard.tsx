@@ -34,7 +34,7 @@ function fmtCompact(n: number): string {
 export default function Dashboard() {
   const { signOut }  = useAuth();
   const navigate     = useNavigate();
-  const [requestFilter, setRequestFilter] = useState<"open" | "accepted" | "closed">("open");
+  const [requestFilter, setRequestFilter] = useState<"open" | "accepted" | "rejected" | "closed">("open");
 
   const { data: profile,  isLoading: profileLoading  } = useProfile();
   const { data: requests = [] } = useMyRequests();
@@ -183,6 +183,7 @@ export default function Dashboard() {
           const FILTERS = [
             { key: "open",     label: "Open"     },
             { key: "accepted", label: "Accepted" },
+            { key: "rejected", label: "Rejected" },
             { key: "closed",   label: "Closed"   },
           ] as const;
           const filtered = requests.filter(r => r.status === requestFilter);
@@ -206,6 +207,7 @@ export default function Dashboard() {
                   const META = {
                     open:     { dot: "#356EF4", activeBg: "linear-gradient(135deg,#356EF4,#8231EC)" },
                     accepted: { dot: "#10b981", activeBg: "linear-gradient(135deg,#059669,#10b981)" },
+                    rejected: { dot: "#ef4444", activeBg: "linear-gradient(135deg,#dc2626,#ef4444)" },
                     closed:   { dot: "#9ca3af", activeBg: "linear-gradient(135deg,#4b5563,#9ca3af)" },
                   } as const;
                   const m = META[f.key];
