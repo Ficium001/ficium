@@ -56,7 +56,7 @@ function FinancingTile({
     >
       <div className="flex flex-col items-start text-left rounded-[16.5px] p-4 bg-white h-full">
         <div
-          className="w-14 h-14 rounded-[14px] flex items-center justify-center mb-3"
+          className="w-14 h-14 rounded-full flex items-center justify-center mb-3"
           style={{ background: bg }}
         >
           <Icon color={color} />
