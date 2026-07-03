@@ -14,6 +14,7 @@
  * │    2. Claude Vision → structured JSON (doc-type-aware prompt)   │
  * │    3. Score confidence                                          │
  * │    4. Attest → update snapshot / property / loan tables         │
+ * │       (marriage_certificate → couple_relationship_document RPC) │
  * │    5. Write extraction result back to client_vault_document     │
  * │    6. Append audit log entry                                    │
  * └─────────────────────────────────────────────────────────────────┘
@@ -37,7 +38,8 @@ type VaultDocType =
   | "title_deed" | "valuation_report" | "land_registry_extract"
   | "payslip" | "employment_letter" | "tax_return"
   | "bank_statement" | "loan_statement" | "credit_card_statement"
-  | "brn_certificate" | "audited_accounts" | "insurance_policy" | "other";
+  | "brn_certificate" | "audited_accounts" | "insurance_policy"
+  | "marriage_certificate" | "other";
 
 type ExtractStatus =
   | "pending" | "processing" | "extracted" | "attested" | "failed" | "manual_review";
@@ -163,6 +165,17 @@ Omit keys you cannot read.`,
   "property_address": string (if property policy)
 }
 Omit keys you cannot read.`,
+
+  marriage_certificate: `Extract from this marriage certificate. Return ONLY valid JSON, no markdown.
+{
+  "party_1_full_name": string (as printed on the certificate),
+  "party_2_full_name": string (as printed on the certificate),
+  "marriage_date":     string (ISO date),
+  "registration_number": string,
+  "registrar_office":  string,
+  "issuing_country":   string
+}
+Omit keys you cannot read. If this document is not a marriage certificate, return {"error":"not_a_marriage_certificate"}.`,
 };
 
 const DEFAULT_PROMPT =
@@ -175,6 +188,7 @@ const EXPECTED_FIELDS: Partial<Record<VaultDocType, number>> = {
   payslip: 7, employment_letter: 7, bank_statement: 9,
   loan_statement: 8, credit_card_statement: 6,
   title_deed: 8, valuation_report: 6, tax_return: 5, insurance_policy: 8,
+  marriage_certificate: 4,
 };
 
 // ── Claude Vision call ──────────────────────────────────────────────────────
@@ -270,7 +284,7 @@ async function attestIncome(
       income_verified:        true,
       income_verified_at:     now,
       income_verified_source: docType,
-      updated_at:             now,
+      updated_at:              now,
     })
     .eq("client_id", clientId);
 }
@@ -374,12 +388,58 @@ async function attestProperty(
       property_value:       totalPropertyValue,
       property_verified:    true,
       property_verified_at: now,
-      updated_at:           now,
+      updated_at:            now,
     })
     .eq("client_id", clientId);
 }
 
-// ── Routing: which attestation path for each doc type ──────────────────────
+/**
+ * Marriage certificate → couple verification.
+ *
+ * Couple-only scope for now: at extraction time, the uploader has at most
+ * one pending couple_link (created automatically on invitation acceptance —
+ * see accept_request_invitation). We locate that link and hand the
+ * structured extracted names to submit_couple_relationship_document, which
+ * does the actual name cross-match against both clients' verified
+ * full_name and flips couple_link.status -> 'verified' on a match.
+ */
+async function attestCoupleRelationship(
+  db: ServiceDb,
+  clientId: string,
+  documentId: string,
+  data: Record<string, unknown>,
+): Promise<void> {
+  const { data: pendingCouple } = await (db as any)
+    .from("couple_link")
+    .select("id")
+    .or(`client_a_id.eq.${clientId},client_b_id.eq.${clientId}`)
+    .eq("status", "pending_verification")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!pendingCouple?.id) {
+    console.warn(`[vault-extract] marriage_certificate uploaded by ${clientId} but no pending couple_link found`);
+    return;
+  }
+
+  // Structured names, not a raw OCR blob — submit_couple_relationship_document
+  // does a containment + trigram match against this text.
+  const nameText = [data.party_1_full_name, data.party_2_full_name]
+    .filter(Boolean)
+    .join(" \n ");
+
+  const { error } = await (db as any).rpc("submit_couple_relationship_document", {
+    p_couple_link_id: pendingCouple.id,
+    p_vault_document_id: documentId,
+    p_uploader_client_id: clientId,
+    p_extracted_text: nameText || "",
+  });
+
+  if (error) console.error("[vault-extract] submit_couple_relationship_document error:", error);
+}
+
+// ── Routing: which attestation path for each doc type ────────────────────
 
 async function attest(
   db: ServiceDb,
@@ -407,6 +467,10 @@ async function attest(
       await attestProperty(db, clientId, docType as "valuation_report" | "title_deed", data, documentId, now);
       break;
 
+    case "marriage_certificate":
+      await attestCoupleRelationship(db, clientId, documentId, data);
+      break;
+
     // Identity docs and others: extracted for record, no snapshot attestation needed
     default:
       break;
@@ -422,8 +486,8 @@ function pluckMeta(data: Record<string, unknown>): {
 } {
   return {
     doc_date:   (data.pay_date ?? data.deed_date ?? data.valuation_date
-                  ?? data.statement_date ?? data.letter_date ?? null) as string | null,
-    doc_ref:    (data.deed_ref ?? data.policy_number ?? null) as string | null,
+                  ?? data.statement_date ?? data.letter_date ?? data.marriage_date ?? null) as string | null,
+    doc_ref:    (data.deed_ref ?? data.policy_number ?? data.registration_number ?? null) as string | null,
     expires_at: (data.policy_expiry ?? data.expiry_date ?? null) as string | null,
   };
 }
