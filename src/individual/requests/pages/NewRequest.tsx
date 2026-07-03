@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import { useProfile } from "../../dashboard/hooks/useDashboard";
 import { createRequest, type ProductType } from "../api/requests";
+import { createInvitation } from "@/individual/couple/api/couple";
+import { Users } from "lucide-react";
 import { useIntelligence } from "@/shared/lib/intelligence";
 import { BottomNav } from "../../../shared/ui";
 
@@ -367,6 +369,9 @@ export default function NewRequest() {
   const [error,      setError]      = useState<string | null>(null);
   const [submitted,  setSubmitted]  = useState(false);
   const [stage,      setStage]      = useState<"product" | "questions" | "review">("product");
+  const [isJoint,      setIsJoint]      = useState(false);
+  const [partnerEmail, setPartnerEmail] = useState("");
+  const [inviteNote,   setInviteNote]   = useState<string | null>(null);
 
   const questions = product ? (QUESTION_SETS[product.type] ?? []) : [];
   const currentQ  = questions[qIndex];
@@ -419,8 +424,21 @@ export default function NewRequest() {
       preferredTermMonths: termMonths,
     });
     if (!result.ok) { setError(result.error); setSubmitting(false); return; }
+
+    if (isJoint && partnerEmail.trim()) {
+      const inviteResult = await createInvitation({
+        requestId: result.requestId,
+        invitedEmail: partnerEmail.trim(),
+      });
+      setInviteNote(
+        inviteResult.ok
+          ? `Invitation sent to ${partnerEmail.trim()}.`
+          : `Request posted, but the invite couldn't be sent: ${inviteResult.error}. You can invite your partner from the request page.`,
+      );
+    }
+
     setSubmitted(true);
-    setTimeout(() => navigate("/requests"), 2000);
+    setTimeout(() => navigate("/requests"), 2500);
   };
 
   if (profileLoading) return (
@@ -437,6 +455,7 @@ export default function NewRequest() {
         </div>
         <h2 className="font-display text-3xl font-bold text-ink mb-2">Request posted!</h2>
         <p className="text-muted text-[15px]">Providers are reviewing your request. You'll be notified when offers arrive.</p>
+        {inviteNote && <p className="text-ficium text-[13px] mt-3 font-medium max-w-xs mx-auto">{inviteNote}</p>}
         <p className="text-muted text-[13px] mt-2">Redirecting to dashboard…</p>
       </div>
     </div>
@@ -540,6 +559,39 @@ export default function NewRequest() {
                   .filter(([k, v]) => v && !k.startsWith("__"))
                   .map(([k, v]) => <ReviewRow key={k} label={k.replace(/_/g, " ")} value={v} />)
                 }
+              </div>
+
+              <div className="mx-6 mb-5 rounded-xl border border-line overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setIsJoint(j => !j)}
+                  className="w-full flex items-center gap-3 px-4 py-3.5 bg-white hover:bg-line/20 transition-colors"
+                >
+                  <div className={["w-9 h-9 rounded-lg grid place-items-center flex-shrink-0", isJoint ? "bg-ficium/[0.10]" : "bg-ink/[0.04]"].join(" ")}>
+                    <Users size={16} className={isJoint ? "text-ficium" : "text-muted"} />
+                  </div>
+                  <div className="flex-1 text-left">
+                    <p className="text-[13px] font-semibold text-ink">Make this a joint request</p>
+                    <p className="text-[11px] text-muted mt-0.5">Invite a spouse to apply together</p>
+                  </div>
+                  <div className={["w-10 h-6 rounded-pill flex items-center px-0.5 transition-colors flex-shrink-0", isJoint ? "bg-ficium justify-end" : "bg-ink/15 justify-start"].join(" ")}>
+                    <div className="w-5 h-5 rounded-full bg-white shadow" />
+                  </div>
+                </button>
+                {isJoint && (
+                  <div className="px-4 pb-4 pt-1 bg-white">
+                    <input
+                      type="email"
+                      value={partnerEmail}
+                      onChange={e => setPartnerEmail(e.target.value)}
+                      placeholder="partner@email.com"
+                      className="w-full bg-surface border border-ink/10 rounded-xl px-4 py-3 text-[14px] text-ink placeholder:text-muted/50 outline-none focus:border-ficium transition-colors"
+                    />
+                    <p className="text-[11px] text-muted mt-2">
+                      They'll need to verify their identity and confirm a marriage certificate before the request goes to market.
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="mx-6 mb-5 flex items-start gap-2.5 bg-ficium/[0.04] border border-ficium/[0.12] rounded-xl px-4 py-3">
