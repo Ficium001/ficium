@@ -34,6 +34,8 @@ const ClientAudit         = lazy(() => import("../individual/audit/pages/ClientA
 const NetWorthPage        = lazy(() => import("../individual/networth/pages/NetWorth"));
 const FinancialHealthPage = lazy(() => import("../individual/health/pages/FinancialHealth"));
 const Vault               = lazy(() => import("../individual/vault/pages/Vault"));
+const Couple              = lazy(() => import("../individual/couple/pages/Couple"));
+const InvitePage          = lazy(() => import("../features/invite/pages/InvitePage"));
 
 // ── Institution app ───────────────────────────────────────────
 // Institution & admin experiences now live in the Ficium Portal (canonical).
@@ -91,6 +93,7 @@ export const router = createBrowserRouter([
   { path: "/",                       element: <Splash /> },
   { path: "/how-it-works",           element: <S><HowItWorks /></S> },
   { path: "/onboarding/check-email", element: <CheckEmail /> },
+  { path: "/invite/:token",          element: <S><InvitePage /></S> },
 
   { path: "/login",                  element: <PublicOnlyRoute><Login /></PublicOnlyRoute> },
   { path: "/forgot-password",        element: <S><ForgotPassword /></S> },
@@ -118,6 +121,7 @@ export const router = createBrowserRouter([
   { path: "/activity",               element: <ClientOnlyRoute><S><ClientAudit /></S></ClientOnlyRoute> },
   { path: "/networth",               element: <ClientOnlyRoute><S><NetWorthPage /></S></ClientOnlyRoute> },
   { path: "/vault",                  element: <ClientOnlyRoute><S><Vault /></S></ClientOnlyRoute> },
+  { path: "/couple",                 element: <ClientOnlyRoute><S><Couple /></S></ClientOnlyRoute> },
   { path: "/health",                 element: <ClientOnlyRoute><S><FinancialHealthPage /></S></ClientOnlyRoute> },
 
   { path: "/kyc-admin",           element: <S><KycAdmin /></S> },
