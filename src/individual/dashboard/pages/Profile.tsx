@@ -4,7 +4,7 @@ import {
   LogOut, ShieldCheck, ShieldAlert, MapPin, Briefcase,
   CheckCircle2, Clock, Wallet,
   User, Mail, Globe, Building2, DollarSign,
-  AlertCircle, ChevronRight, Lock,
+  AlertCircle, ChevronRight, Lock, Heart,
 } from "lucide-react";
 import { useAuth }                       from "@/features/auth/context/AuthContext";
 import { useProfile, useBankReadiness }  from "@/individual/dashboard/hooks/useDashboard";
@@ -192,6 +192,17 @@ export default function Profile() {
 
           {/* Quick links */}
           <div className="rounded-3xl bg-white border border-line shadow-card overflow-hidden">
+            <Link to="/couple"
+              className="flex items-center gap-4 px-5 py-4 hover:bg-line/30 transition-colors no-underline group border-b border-line">
+              <div className="w-9 h-9 rounded-xl bg-ficium/[0.08] flex items-center justify-center flex-shrink-0">
+                <Heart size={16} className="text-ficium" />
+              </div>
+              <div className="flex-1">
+                <p className="text-[14px] font-semibold text-ink">Couple</p>
+                <p className="text-[12px] text-muted mt-0.5">Linked partner and joint requests</p>
+              </div>
+              <ChevronRight size={15} className="text-muted/40 group-hover:text-ficium transition-colors" />
+            </Link>
             <Link to="/vault"
               className="flex items-center gap-4 px-5 py-4 hover:bg-line/30 transition-colors no-underline group border-b border-line">
               <div className="w-9 h-9 rounded-xl bg-ficium/[0.08] flex items-center justify-center flex-shrink-0">
