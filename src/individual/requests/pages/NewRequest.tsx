@@ -265,7 +265,7 @@ function QuestionScreen({
             </div>
             <input type="number" value={amountVal}
               onChange={e => onAnswer("__amount", String(Math.min(product.maxAmount, Math.max(product.minAmount, Number(e.target.value)))))}
-              className="w-full bg-surface border border-ink/10 rounded-xl px-4 py-3 text-[16px] font-bold text-ink outline-none focus:border-ficium transition-colors" />
+              className="w-full bg-surface border border-ink/10 rounded-xl px-4 py-3 text-[16px] font-bold text-ink outline-hidden focus:border-ficium transition-colors" />
           </div>
         )}
 
@@ -293,8 +293,8 @@ function QuestionScreen({
                 className={[
                   "w-full text-left px-5 py-4 rounded-2xl border text-[14px] font-medium transition-all",
                   localVal === opt
-                    ? "border-ficium bg-ficium/[0.05] text-ficium font-semibold"
-                    : "border-ink/[0.10] bg-white text-ink hover:border-ink/30",
+                    ? "border-ficium bg-ficium/5 text-ficium font-semibold"
+                    : "border-ink/10 bg-white text-ink hover:border-ink/30",
                 ].join(" ")}>
                 {opt}
               </button>
@@ -311,7 +311,7 @@ function QuestionScreen({
             onKeyDown={handleKeyDown}
             placeholder={question.placeholder}
             rows={3}
-            className="w-full bg-surface border border-ink/10 rounded-xl px-4 py-3 text-[15px] text-ink placeholder:text-muted/50 outline-none focus:border-ficium focus:ring-2 focus:ring-ficium/10 resize-none transition-all"
+            className="w-full bg-surface border border-ink/10 rounded-xl px-4 py-3 text-[15px] text-ink placeholder:text-muted/50 outline-hidden focus:border-ficium focus:ring-2 focus:ring-ficium/10 resize-none transition-all"
           />
         )}
 
@@ -324,18 +324,18 @@ function QuestionScreen({
             onChange={e => setLocalVal(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={question.placeholder}
-            className="w-full bg-surface border border-ink/10 rounded-xl px-5 py-4 text-[20px] font-bold text-ink placeholder:text-muted/40 placeholder:font-normal outline-none focus:border-ficium focus:ring-2 focus:ring-ficium/10 transition-all"
+            className="w-full bg-surface border border-ink/10 rounded-xl px-5 py-4 text-[20px] font-bold text-ink placeholder:text-muted/40 placeholder:font-normal outline-hidden focus:border-ficium focus:ring-2 focus:ring-ficium/10 transition-all"
           />
         )}
       </div>
 
       {/* Nav */}
       <div className="flex gap-3 mt-8">
-        <button onClick={onBack} className="px-5 py-3.5 rounded-2xl border border-ink/10 text-[13px] font-semibold text-muted hover:bg-ink/[0.03] transition-colors">
+        <button onClick={onBack} className="px-5 py-3.5 rounded-2xl border border-ink/10 text-[13px] font-semibold text-muted hover:bg-ink/3 transition-colors">
           Back
         </button>
         {!question.required && onSkip && question.type !== "amount" && question.type !== "term" && (
-          <button onClick={onSkip} className="px-5 py-3.5 rounded-2xl border border-ink/10 text-[13px] font-semibold text-muted hover:bg-ink/[0.03] transition-colors">
+          <button onClick={onSkip} className="px-5 py-3.5 rounded-2xl border border-ink/10 text-[13px] font-semibold text-muted hover:bg-ink/3 transition-colors">
             Skip
           </button>
         )}
@@ -465,7 +465,7 @@ export default function NewRequest() {
     <div className="min-h-screen bg-paper flex flex-col">
       <div className="absolute top-0 left-0 right-0 h-[160px] overflow-hidden pointer-events-none">
         <div className="absolute inset-0 bg-hero" />
-        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-paper to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-16 bg-linear-to-t from-paper to-transparent" />
       </div>
 
       <div className="relative z-10 max-w-[680px] mx-auto w-full px-5 pt-6">
@@ -473,7 +473,7 @@ export default function NewRequest() {
           <Link to="/dashboard" className="inline-flex items-center gap-1.5 text-[13px] text-white/60 hover:text-white transition-colors no-underline">
             <ArrowLeft size={15} /> Back
           </Link>
-          <div className="flex items-center gap-1.5 bg-white/[0.08] border border-white/10 rounded-pill px-3 py-1.5">
+          <div className="flex items-center gap-1.5 bg-white/8 border border-white/10 rounded-pill px-3 py-1.5">
             <Lock size={11} className="text-white/50" />
             <span className="text-[11px] text-white/50 font-medium">Anonymous to providers</span>
           </div>
@@ -495,13 +495,13 @@ export default function NewRequest() {
                 const Icon  = p.icon;
                 return (
                   <button key={p.type} onClick={() => selectProduct(p)}
-                    className="bg-white border border-ink/[0.06] rounded-2xl p-5 text-left hover:border-ficium/30 hover:shadow-md transition-all group">
+                    className="bg-white border border-ink/6 rounded-2xl p-5 text-left hover:border-ficium/30 hover:shadow-md transition-all group">
                     <div className="flex items-start justify-between mb-3">
                       <div className={`w-10 h-10 rounded-xl grid place-items-center ${p.iconBg}`}>
                         <Icon size={18} className={p.color} />
                       </div>
                       {rates && (
-                        <div className="flex items-center gap-1 bg-ficium/[0.06] px-2 py-1 rounded-pill">
+                        <div className="flex items-center gap-1 bg-ficium/6 px-2 py-1 rounded-pill">
                           <BarChart2 size={10} className="text-ficium" />
                           <span className="text-[10px] font-bold text-ficium">{rates.avg_rate_pct}% avg</span>
                         </div>
@@ -544,8 +544,8 @@ export default function NewRequest() {
         {/* ── Review ── */}
         {stage === "review" && product && (
           <div className="space-y-4">
-            <div className="bg-white rounded-2xl border border-ink/[0.06] shadow-sm overflow-hidden">
-              <div className="bg-gradient-to-r from-ficium to-ficium-deep px-6 py-5">
+            <div className="bg-white rounded-2xl border border-ink/6 shadow-xs overflow-hidden">
+              <div className="bg-linear-to-r from-ficium to-ficium-deep px-6 py-5">
                 <div className="text-[11px] font-bold text-white/50 uppercase tracking-widest mb-1">Ready to post</div>
                 <div className="font-display text-[22px] font-bold text-white">{product.label}</div>
               </div>
@@ -567,15 +567,15 @@ export default function NewRequest() {
                   onClick={() => setIsJoint(j => !j)}
                   className="w-full flex items-center gap-3 px-4 py-3.5 bg-white hover:bg-line/20 transition-colors"
                 >
-                  <div className={["w-9 h-9 rounded-lg grid place-items-center flex-shrink-0", isJoint ? "bg-ficium/[0.10]" : "bg-ink/[0.04]"].join(" ")}>
+                  <div className={["w-9 h-9 rounded-lg grid place-items-center shrink-0", isJoint ? "bg-ficium/10" : "bg-ink/4"].join(" ")}>
                     <Users size={16} className={isJoint ? "text-ficium" : "text-muted"} />
                   </div>
                   <div className="flex-1 text-left">
                     <p className="text-[13px] font-semibold text-ink">Make this a joint request</p>
                     <p className="text-[11px] text-muted mt-0.5">Invite a spouse to apply together</p>
                   </div>
-                  <div className={["w-10 h-6 rounded-pill flex items-center px-0.5 transition-colors flex-shrink-0", isJoint ? "bg-ficium justify-end" : "bg-ink/15 justify-start"].join(" ")}>
-                    <div className="w-5 h-5 rounded-full bg-white shadow" />
+                  <div className={["w-10 h-6 rounded-pill flex items-center px-0.5 transition-colors shrink-0", isJoint ? "bg-ficium justify-end" : "bg-ink/15 justify-start"].join(" ")}>
+                    <div className="w-5 h-5 rounded-full bg-white shadow-xs" />
                   </div>
                 </button>
                 {isJoint && (
@@ -585,7 +585,7 @@ export default function NewRequest() {
                       value={partnerEmail}
                       onChange={e => setPartnerEmail(e.target.value)}
                       placeholder="partner@email.com"
-                      className="w-full bg-surface border border-ink/10 rounded-xl px-4 py-3 text-[14px] text-ink placeholder:text-muted/50 outline-none focus:border-ficium transition-colors"
+                      className="w-full bg-surface border border-ink/10 rounded-xl px-4 py-3 text-[14px] text-ink placeholder:text-muted/50 outline-hidden focus:border-ficium transition-colors"
                     />
                     <p className="text-[11px] text-muted mt-2">
                       They'll need to verify their identity and confirm a marriage certificate before the request goes to market.
@@ -594,8 +594,8 @@ export default function NewRequest() {
                 )}
               </div>
 
-              <div className="mx-6 mb-5 flex items-start gap-2.5 bg-ficium/[0.04] border border-ficium/[0.12] rounded-xl px-4 py-3">
-                <Lock size={13} className="text-ficium flex-shrink-0 mt-0.5" />
+              <div className="mx-6 mb-5 flex items-start gap-2.5 bg-ficium/4 border border-ficium/12 rounded-xl px-4 py-3">
+                <Lock size={13} className="text-ficium shrink-0 mt-0.5" />
                 <p className="text-[12px] text-ink/70 leading-relaxed">
                   Your identity stays private. Providers see only your request details and respond anonymously.
                 </p>
@@ -603,7 +603,7 @@ export default function NewRequest() {
 
               {error && (
                 <div className="mx-6 mb-5 flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
-                  <AlertCircle size={14} className="text-red-500 flex-shrink-0" />
+                  <AlertCircle size={14} className="text-red-500 shrink-0" />
                   <p className="text-[13px] text-red-600">{error}</p>
                 </div>
               )}
@@ -614,7 +614,7 @@ export default function NewRequest() {
                   {submitting ? <><Loader2 size={16} className="animate-spin" /> Posting…</> : <><CheckCircle2 size={16} /> Post request</>}
                 </button>
                 <button onClick={() => { setStage("questions"); setQIndex(questions.length - 1); }} disabled={submitting}
-                  className="px-5 py-3.5 rounded-2xl border border-ink/10 text-[13px] font-semibold text-muted hover:bg-ink/[0.03] transition-colors">
+                  className="px-5 py-3.5 rounded-2xl border border-ink/10 text-[13px] font-semibold text-muted hover:bg-ink/3 transition-colors">
                   Edit
                 </button>
               </div>
@@ -629,8 +629,8 @@ export default function NewRequest() {
 
 function ReviewRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-start justify-between gap-4 py-2 border-b border-ink/[0.05] last:border-0">
-      <span className="text-[12px] text-muted font-medium w-32 flex-shrink-0 capitalize">{label}</span>
+    <div className="flex items-start justify-between gap-4 py-2 border-b border-ink/5 last:border-0">
+      <span className="text-[12px] text-muted font-medium w-32 shrink-0 capitalize">{label}</span>
       <span className="text-[13px] font-semibold text-ink text-right">{value}</span>
     </div>
   );

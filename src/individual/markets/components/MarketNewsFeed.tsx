@@ -25,7 +25,7 @@ export function MarketNewsFeed({ news }: Props) {
   return (
     <section aria-label="Market news">
       <div className="flex items-center gap-3 mb-1">
-        <Newspaper size={14} className="text-muted flex-shrink-0" />
+        <Newspaper size={14} className="text-muted shrink-0" />
         <span className="text-[11px] font-bold text-muted uppercase tracking-widest">
           Market News
         </span>
@@ -35,15 +35,15 @@ export function MarketNewsFeed({ news }: Props) {
         Today's headlines from Mauritius and global markets
       </p>
 
-      <div className="bg-white rounded-2xl border border-ink/[0.06] divide-y divide-ink/[0.04] lg:grid lg:grid-cols-2 lg:divide-y-0 lg:divide-x">
+      <div className="bg-white rounded-2xl border border-ink/6 divide-y divide-ink/4 lg:grid lg:grid-cols-2 lg:divide-y-0 lg:divide-x">
         {news.map((item) => {
           const tagColor = NEWS_CATEGORY_COLORS[item.category] ?? "#64748b";
           const tagBg    = NEWS_CATEGORY_BG[item.category]    ?? "#f1f5f9";
           return (
-            <div key={item.id} className="flex items-start gap-3 px-4 py-3.5 border-b border-ink/[0.04] last:border-0 lg:border-b lg:[&:nth-child(odd)]:border-b lg:[&:nth-child(even)]:border-b">
+            <div key={item.id} className="flex items-start gap-3 px-4 py-3.5 border-b border-ink/4 last:border-0 lg:border-b lg:odd:border-b lg:even:border-b">
               {/* Emoji icon */}
               <span
-                className="w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0"
+                className="w-9 h-9 rounded-xl flex items-center justify-center text-lg shrink-0"
                 style={{ background: tagBg }}
                 aria-hidden="true"
               >

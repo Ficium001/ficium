@@ -23,7 +23,7 @@ export function TickerCard({ ticker, isActive, onClick }: TickerCardProps) {
       onClick={onClick}
       aria-pressed={isActive}
       aria-label={`${label}: ${reading?.displayValue ?? "loading"}`}
-      className="flex-shrink-0 bg-white rounded-2xl border border-ink/[0.06] shadow-sm p-4 w-[148px] lg:w-full text-left transition-all hover:shadow-md focus:outline-none"
+      className="shrink-0 bg-white rounded-2xl border border-ink/6 shadow-xs p-4 w-[148px] lg:w-full text-left transition-all hover:shadow-md focus:outline-hidden"
       style={
         isActive
           ? { borderColor: color, boxShadow: `0 0 0 2px ${color}22` }
@@ -42,13 +42,13 @@ export function TickerCard({ ticker, isActive, onClick }: TickerCardProps) {
           <ChangeBadge change={reading.change} direction={reading.direction} />
         )}
         {isLoading && (
-          <div className="w-12 h-3 bg-ink/[0.07] rounded animate-pulse" />
+          <div className="w-12 h-3 bg-ink/[0.07] rounded-sm animate-pulse" />
         )}
       </div>
 
       {/* Value */}
       {isLoading ? (
-        <div className="w-16 h-5 bg-ink/[0.07] rounded animate-pulse mb-1" />
+        <div className="w-16 h-5 bg-ink/[0.07] rounded-sm animate-pulse mb-1" />
       ) : (
         <div className="text-[20px] font-bold text-ink leading-none mb-0.5 tabular-nums">
           {reading?.displayValue}
@@ -62,7 +62,7 @@ export function TickerCard({ ticker, isActive, onClick }: TickerCardProps) {
 
       {/* Sparkline */}
       {isLoading ? (
-        <div className="w-16 h-7 bg-ink/[0.04] rounded animate-pulse" />
+        <div className="w-16 h-7 bg-ink/4 rounded-sm animate-pulse" />
       ) : (
         reading?.history && (
           <Sparkline

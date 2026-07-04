@@ -24,7 +24,7 @@ export function SmartInsightsFeed({ insights, activeIdx, onNext }: SmartInsights
         <button
           onClick={onNext}
           aria-label="Next insight"
-          className="w-9 h-9 rounded-full bg-ink/[0.06] grid place-items-center hover:bg-ink/10 transition-colors flex-shrink-0"
+          className="w-9 h-9 rounded-full bg-ink/6 grid place-items-center hover:bg-ink/10 transition-colors shrink-0"
         >
           <RefreshCw size={14} className="text-muted" />
         </button>
@@ -38,13 +38,13 @@ export function SmartInsightsFeed({ insights, activeIdx, onNext }: SmartInsights
             <div
               key={i}
               className={[
-                "flex-shrink-0 w-[75vw] sm:w-[300px] lg:w-auto rounded-2xl border p-5 transition-all duration-500 bg-white",
-                isActive ? "border-ficium/20 shadow-md scale-[1.01]" : "border-ink/[0.06] opacity-60",
+                "shrink-0 w-[75vw] sm:w-[300px] lg:w-auto rounded-2xl border p-5 transition-all duration-500 bg-white",
+                isActive ? "border-ficium/20 shadow-md scale-[1.01]" : "border-ink/6 opacity-60",
               ].join(" ")}
             >
               <div className="flex items-start gap-3 mb-3">
                 <div
-                  className="w-9 h-9 rounded-xl flex-shrink-0 grid place-items-center mt-0.5"
+                  className="w-9 h-9 rounded-xl shrink-0 grid place-items-center mt-0.5"
                   style={{ background: insight.bg }}
                 >
                   <Icon size={16} style={{ color: insight.color }} />

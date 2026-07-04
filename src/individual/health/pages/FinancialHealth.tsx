@@ -38,7 +38,7 @@ export default function FinancialHealth() {
 
           <div className="flex items-center gap-6">
             {/* Score ring */}
-            <div className="relative w-20 h-20 flex-shrink-0">
+            <div className="relative w-20 h-20 shrink-0">
               <svg viewBox="0 0 80 80" className="w-20 h-20 -rotate-90">
                 <circle cx="40" cy="40" r="34" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="8" />
                 <circle cx="40" cy="40" r="34" fill="none"
@@ -73,7 +73,7 @@ export default function FinancialHealth() {
 
         {!hasData && (
           <div className="bg-amber-50 border border-amber-200 rounded-[18px] px-5 py-4 flex items-start gap-3">
-            <AlertTriangle size={16} className="text-amber-600 flex-shrink-0 mt-0.5" />
+            <AlertTriangle size={16} className="text-amber-600 shrink-0 mt-0.5" />
             <div>
               <div className="font-semibold text-[13px] text-amber-900">Your financial data is incomplete</div>
               <p className="text-[12px] text-amber-700 mt-0.5">Add your assets and liabilities to get a real health score.</p>
@@ -86,12 +86,12 @@ export default function FinancialHealth() {
 
         {/* Strengths */}
         {good.length > 0 && (
-          <div className="bg-white rounded-[22px] border border-ink/[0.06] overflow-hidden">
-            <div className="flex items-center gap-2 px-5 py-4 border-b border-ink/[0.05] bg-emerald-50/50">
+          <div className="bg-white rounded-[22px] border border-ink/6 overflow-hidden">
+            <div className="flex items-center gap-2 px-5 py-4 border-b border-ink/5 bg-emerald-50/50">
               <CheckCircle2 size={16} className="text-emerald-600" />
               <span className="font-bold text-[14px] text-emerald-800">Strengths</span>
             </div>
-            <div className="divide-y divide-ink/[0.04]">
+            <div className="divide-y divide-ink/4">
               {good.map(m => <MetricRow key={m.label} metric={m} />)}
             </div>
           </div>
@@ -99,12 +99,12 @@ export default function FinancialHealth() {
 
         {/* Fair */}
         {fair.length > 0 && (
-          <div className="bg-white rounded-[22px] border border-ink/[0.06] overflow-hidden">
-            <div className="flex items-center gap-2 px-5 py-4 border-b border-ink/[0.05] bg-amber-50/50">
+          <div className="bg-white rounded-[22px] border border-ink/6 overflow-hidden">
+            <div className="flex items-center gap-2 px-5 py-4 border-b border-ink/5 bg-amber-50/50">
               <AlertTriangle size={16} className="text-amber-600" />
               <span className="font-bold text-[14px] text-amber-800">Could be better</span>
             </div>
-            <div className="divide-y divide-ink/[0.04]">
+            <div className="divide-y divide-ink/4">
               {fair.map(m => <MetricRow key={m.label} metric={m} />)}
             </div>
           </div>
@@ -112,12 +112,12 @@ export default function FinancialHealth() {
 
         {/* Poor */}
         {poor.length > 0 && (
-          <div className="bg-white rounded-[22px] border border-ink/[0.06] overflow-hidden">
-            <div className="flex items-center gap-2 px-5 py-4 border-b border-ink/[0.05] bg-red-50/50">
+          <div className="bg-white rounded-[22px] border border-ink/6 overflow-hidden">
+            <div className="flex items-center gap-2 px-5 py-4 border-b border-ink/5 bg-red-50/50">
               <XCircle size={16} className="text-red-500" />
               <span className="font-bold text-[14px] text-red-800">Needs attention</span>
             </div>
-            <div className="divide-y divide-ink/[0.04]">
+            <div className="divide-y divide-ink/4">
               {poor.map(m => <MetricRow key={m.label} metric={m} />)}
             </div>
           </div>
@@ -125,12 +125,12 @@ export default function FinancialHealth() {
 
         {/* Action items */}
         {metrics.some(m => m.action) && (
-          <div className="bg-ficium/[0.04] border border-ficium/[0.12] rounded-[22px] p-5">
+          <div className="bg-ficium/4 border border-ficium/12 rounded-[22px] p-5">
             <div className="font-bold text-[14px] text-ficium mb-3">Your action plan</div>
             <div className="space-y-2.5">
               {metrics.filter(m => m.action).map((m, i) => (
                 <div key={m.label} className="flex items-start gap-3">
-                  <span className="w-6 h-6 rounded-full bg-ficium text-white text-[11px] font-bold grid place-items-center flex-shrink-0 mt-0.5">{i+1}</span>
+                  <span className="w-6 h-6 rounded-full bg-ficium text-white text-[11px] font-bold grid place-items-center shrink-0 mt-0.5">{i+1}</span>
                   <div>
                     <div className="text-[12px] font-bold text-ink">{m.label}</div>
                     <div className="text-[12px] text-muted">{m.action}</div>

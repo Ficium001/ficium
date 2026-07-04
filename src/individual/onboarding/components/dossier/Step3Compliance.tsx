@@ -120,11 +120,11 @@ export function Step3Compliance({
                   "flex items-center gap-3 px-4 py-3.5 rounded-2xl border-[1.5px] text-left transition-all",
                   field.value
                     ? "bg-red-50 border-red-300 text-red-700"
-                    : "bg-white border-ink/[0.08] text-ink hover:border-ink/20",
+                    : "bg-white border-ink/8 text-ink hover:border-ink/20",
                 ].join(" ")}>
                 <span className="text-xl w-7 text-center">{item.icon}</span>
                 <span className="text-sm font-medium flex-1">{item.label}</span>
-                <div className={["w-5 h-5 rounded-full border-[1.5px] flex items-center justify-center flex-shrink-0",
+                <div className={["w-5 h-5 rounded-full border-[1.5px] flex items-center justify-center shrink-0",
                   field.value ? "bg-red-500 border-red-500" : "border-ink/20"].join(" ")}>
                   {field.value && <Check size={11} className="text-white" strokeWidth={3} />}
                 </div>
@@ -135,8 +135,8 @@ export function Step3Compliance({
       </div>
 
       {/* Privacy note */}
-      <div className="flex gap-3 px-4 py-3 bg-ficium/[0.04] border border-ficium/15 rounded-2xl">
-        <span className="text-lg flex-shrink-0">🔒</span>
+      <div className="flex gap-3 px-4 py-3 bg-ficium/4 border border-ficium/15 rounded-2xl">
+        <span className="text-lg shrink-0">🔒</span>
         <p className="text-[12px] text-ink/70 leading-relaxed">
           Banks see your profile anonymized — never your name or contact details — until you accept a bid.
         </p>
@@ -144,8 +144,8 @@ export function Step3Compliance({
 
       {/* Score encouragement */}
       {h.score >= 50 && (
-        <div className="flex items-center gap-3 px-4 py-3.5 bg-gradient-to-r from-ficium/10 to-mint/10 border border-ficium/20 rounded-2xl">
-          <Sparkles size={20} className="text-ficium flex-shrink-0" />
+        <div className="flex items-center gap-3 px-4 py-3.5 bg-linear-to-r from-ficium/10 to-mint/10 border border-ficium/20 rounded-2xl">
+          <Sparkles size={20} className="text-ficium shrink-0" />
           <div>
             <p className="text-[13px] font-semibold text-ink">Score: {h.score}/100 — {h.label}</p>
             <p className="text-[12px] text-muted">{h.insight}</p>

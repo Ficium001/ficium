@@ -103,7 +103,7 @@ function FlipCard({ id, flipped, onFlip, children }: {
   return (
     <div className="cursor-pointer" onClick={() => onFlip(id)} style={{ perspective: "800px" }}>
       <div
-        className={["relative transition-transform duration-500", flipped ? "[transform:rotateY(180deg)]" : ""].join(" ")}
+        className={["relative transition-transform duration-500", flipped ? "transform-[rotateY(180deg)]" : ""].join(" ")}
         style={{ transformStyle: "preserve-3d", minHeight: "165px" }}
       >
         {children}
@@ -115,9 +115,9 @@ function FlipCard({ id, flipped, onFlip, children }: {
 function FlipFront({ children, dark }: { children: React.ReactNode; dark: boolean }) {
   return (
     <div className={[
-      "absolute inset-0 rounded-2xl p-3.5 flex flex-col [backface-visibility:hidden]",
+      "absolute inset-0 rounded-2xl p-3.5 flex flex-col backface-hidden",
       dark
-        ? "bg-white/[0.08] backdrop-blur-xl border border-white/[0.12]"
+        ? "bg-white/8 backdrop-blur-xl border border-white/12"
         : "bg-[#F7F6F3] border border-ink/[0.07]",
     ].join(" ")}>
       {children}
@@ -128,10 +128,10 @@ function FlipFront({ children, dark }: { children: React.ReactNode; dark: boolea
 function FlipBack({ children, dark }: { children: React.ReactNode; dark: boolean }) {
   return (
     <div className={[
-      "absolute inset-0 rounded-2xl p-3.5 flex flex-col justify-center gap-3 [backface-visibility:hidden] [transform:rotateY(180deg)]",
+      "absolute inset-0 rounded-2xl p-3.5 flex flex-col justify-center gap-3 backface-hidden transform-[rotateY(180deg)]",
       dark
-        ? "bg-white/[0.12] backdrop-blur-xl border border-white/[0.12]"
-        : "bg-ficium/[0.06] border border-ficium/[0.15]",
+        ? "bg-white/12 backdrop-blur-xl border border-white/12"
+        : "bg-ficium/6 border border-ficium/15",
     ].join(" ")}>
       {children}
     </div>
@@ -197,5 +197,5 @@ function Stat({ value, color, label }: {
 }
 
 function Divider({ dark }: { dark: boolean }) {
-  return <div className={["h-px", dark ? "bg-white/10" : "bg-ink/[0.06]"].join(" ")} />;
+  return <div className={["h-px", dark ? "bg-white/10" : "bg-ink/6"].join(" ")} />;
 }

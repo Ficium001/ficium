@@ -20,7 +20,7 @@ export function ChatBubble({ message, onChip }: { message: ChatMessage; onChip: 
                         text-[14.5px] leading-relaxed font-medium shadow-ficium">
           {message.text}
         </div>
-        <div className="w-8 h-8 rounded-full bg-ink/10 grid place-items-center flex-shrink-0 self-end">
+        <div className="w-8 h-8 rounded-full bg-ink/10 grid place-items-center shrink-0 self-end">
           <User size={14} className="text-muted" />
         </div>
       </div>
@@ -29,7 +29,7 @@ export function ChatBubble({ message, onChip }: { message: ChatMessage; onChip: 
 
   return (
     <div className="flex gap-3 items-start">
-      <FicoMark size={38} className="mt-0.5 !rounded-[11px]" />
+      <FicoMark size={38} className="mt-0.5 rounded-[11px]!" />
       <div className="flex-1 min-w-0">
         <div className="bg-white border border-line rounded-[6px_18px_18px_18px] px-[22px] py-[19px] shadow-card">
           {message.text && (
@@ -40,7 +40,7 @@ export function ChatBubble({ message, onChip }: { message: ChatMessage; onChip: 
             <>
               <div className="flex items-center gap-2 mt-5 mb-3">
                 <Boxes size={15} className="text-ficium" />
-                <span className="text-[12px] font-semibold text-ficium uppercase tracking-[.1em]">
+                <span className="text-[12px] font-semibold text-ficium uppercase tracking-widest">
                   Moves worth making now
                 </span>
               </div>
@@ -54,7 +54,7 @@ export function ChatBubble({ message, onChip }: { message: ChatMessage; onChip: 
             <>
               <div className="flex items-center gap-2 mt-5 mb-3">
                 <MessageCircle size={15} className="text-muted" />
-                <span className="text-[12px] font-semibold text-muted uppercase tracking-[.1em]">Or just ask</span>
+                <span className="text-[12px] font-semibold text-muted uppercase tracking-widest">Or just ask</span>
               </div>
               <div className="flex flex-wrap gap-2.5">
                 {message.chips.map((chip) => (
@@ -84,7 +84,7 @@ export function ChatBubble({ message, onChip }: { message: ChatMessage; onChip: 
 export function ThinkingBubble() {
   return (
     <div className="flex gap-3 items-start">
-      <FicoMark size={38} className="mt-0.5 !rounded-[11px]" />
+      <FicoMark size={38} className="mt-0.5 rounded-[11px]!" />
       <div className="bg-white border border-line rounded-[6px_18px_18px_18px] px-[22px] py-[19px] shadow-card">
         <div className="flex items-center gap-3">
           <div className="flex gap-1">

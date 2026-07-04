@@ -68,7 +68,7 @@ export default function Markets() {
             onClick={refresh}
             disabled={isRefreshing}
             aria-label="Refresh market data"
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-line text-ink/70 text-[12px] font-semibold hover:bg-ink/[0.03] disabled:opacity-50 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-line text-ink/70 text-[12px] font-semibold hover:bg-ink/3 disabled:opacity-50 transition-colors"
           >
             <RefreshCw size={13} className={isRefreshing ? "animate-spin" : ""} />
             Updated {timeLabel}

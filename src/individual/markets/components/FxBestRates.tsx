@@ -26,7 +26,7 @@ export function FxBestRates({ rates }: Props) {
         {rates.map((r) => (
           <div
             key={r.currencyCode}
-            className="bg-white rounded-2xl border border-ink/[0.06] p-3.5"
+            className="bg-white rounded-2xl border border-ink/6 p-3.5"
           >
             <p className="text-[10px] font-bold text-muted uppercase tracking-wide mb-1">
               {r.currency}

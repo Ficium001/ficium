@@ -70,7 +70,7 @@ export default function RegisterTypeSelect() {
             >
               <div className="flex items-start gap-4">
                 {/* Icon */}
-                <div className={["w-12 h-12 rounded-xl grid place-items-center flex-shrink-0", t.iconBg].join(" ")}>
+                <div className={["w-12 h-12 rounded-xl grid place-items-center shrink-0", t.iconBg].join(" ")}>
                   <Icon size={22} />
                 </div>
 
@@ -91,7 +91,7 @@ export default function RegisterTypeSelect() {
                   <div className="grid grid-cols-2 gap-1">
                     {t.features.map((f) => (
                       <div key={f} className="flex items-center gap-1.5 text-[12px] text-muted">
-                        <Check size={11} className="text-ficium flex-shrink-0" />
+                        <Check size={11} className="text-ficium shrink-0" />
                         {f}
                       </div>
                     ))}
@@ -101,7 +101,7 @@ export default function RegisterTypeSelect() {
                 {/* Arrow */}
                 <ArrowRight
                   size={18}
-                  className="text-muted group-hover:text-ink group-hover:translate-x-0.5 transition-all flex-shrink-0 mt-1"
+                  className="text-muted group-hover:text-ink group-hover:translate-x-0.5 transition-all shrink-0 mt-1"
                 />
               </div>
             </button>

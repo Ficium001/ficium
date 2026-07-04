@@ -40,11 +40,11 @@ type FormData = z.infer<typeof schema>;
 /* Shared input class — bypasses the Input wrapper to guarantee all attrs reach the DOM */
 const inputCls = (invalid: boolean) =>
   [
-    "w-full rounded-xl border px-4 py-3.5 text-[16px] outline-none transition-all",
+    "w-full rounded-xl border px-4 py-3.5 text-[16px] outline-hidden transition-all",
     "bg-white text-ink placeholder:text-ink/30",
     invalid
       ? "border-red-400 focus:ring-2 focus:ring-red-200"
-      : "border-ink/[0.12] focus:border-ficium focus:ring-2 focus:ring-ficium/20",
+      : "border-ink/12 focus:border-ficium focus:ring-2 focus:ring-ficium/20",
   ].join(" ");
 
 export default function Login() {
@@ -115,7 +115,7 @@ export default function Login() {
                 { icon: Globe, text: "All major Mauritian banks" },
               ].map((item) => (
                 <div key={item.text} className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg grid place-items-center flex-shrink-0"
+                  <div className="w-9 h-9 rounded-lg grid place-items-center shrink-0"
                        style={{ background: "linear-gradient(135deg,rgba(30,108,245,.16),rgba(124,58,237,.16))" }}>
                     <item.icon size={17} className="text-white/80" />
                   </div>
@@ -146,7 +146,7 @@ export default function Login() {
           </div>
 
           {/* Desktop top bar */}
-          <div className="hidden lg:flex items-center justify-end px-8 xl:px-12 py-6 border-b border-ink/[0.06]">
+          <div className="hidden lg:flex items-center justify-end px-8 xl:px-12 py-6 border-b border-ink/6">
             <div className="text-[15px] text-muted">
               New to Ficium?{" "}
               <Link to="/register" className="text-ficium font-semibold no-underline hover:underline">
@@ -214,7 +214,7 @@ function LoginForm({ register, handleSubmit, onSubmit, errors, isSubmitting, sub
   return (
     <div className="lg:hidden-wrapper">
       {/* Glass card on mobile, plain on desktop */}
-      <div className="bg-white/[0.97] backdrop-blur-2xl rounded-3xl shadow-2xl p-6 mb-5 lg:bg-transparent lg:backdrop-blur-none lg:rounded-none lg:shadow-none lg:p-0 lg:mb-0">
+      <div className="bg-white/97 backdrop-blur-2xl rounded-3xl shadow-2xl p-6 mb-5 lg:bg-transparent lg:backdrop-blur-none lg:rounded-none lg:shadow-none lg:p-0 lg:mb-0">
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
 
       {/* ── EMAIL ── */}
@@ -274,7 +274,7 @@ function LoginForm({ register, handleSubmit, onSubmit, errors, isSubmitting, sub
 
       {/* ── REMEMBER ME ── */}
       <label className="flex items-center gap-2.5 cursor-pointer select-none">
-        <input type="checkbox" {...register("rememberMe")} className="w-4 h-4 accent-ficium rounded" />
+        <input type="checkbox" {...register("rememberMe")} className="w-4 h-4 accent-ficium rounded-sm" />
         <span className="text-[14px] text-ink/70">Remember me</span>
       </label>
 

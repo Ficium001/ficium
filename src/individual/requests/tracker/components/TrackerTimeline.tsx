@@ -61,8 +61,8 @@ function StageRow({
       {/* Track column */}
       <div className="flex flex-col items-center">
         <div
-          className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-            isDone || isActive ? "bg-ficium shadow-sm" : "bg-ink/[0.07]"
+          className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+            isDone || isActive ? "bg-ficium shadow-xs" : "bg-ink/[0.07]"
           }`}
         >
           {vis.icon}
@@ -88,7 +88,7 @@ function StageRow({
         )}
         {isActive && (
           <div className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-semibold
-                          bg-ficium/[0.08] text-ficium border border-ficium/20
+                          bg-ficium/8 text-ficium border border-ficium/20
                           px-2.5 py-1 rounded-full">
             <span className="w-1.5 h-1.5 rounded-full bg-ficium animate-pulse" />
             Current stage

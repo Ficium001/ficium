@@ -143,9 +143,9 @@ export default function KycSettings() {
             return (
               <div
                 key={check.key}
-                className={["bg-white rounded-2xl border transition-all p-5 flex items-center gap-4", enabled ? "border-ink/[0.07]" : "border-ink/[0.04] opacity-60"].join(" ")}
+                className={["bg-white rounded-2xl border transition-all p-5 flex items-center gap-4", enabled ? "border-ink/[0.07]" : "border-ink/4 opacity-60"].join(" ")}
               >
-                <div className={["w-11 h-11 rounded-xl grid place-items-center text-xl flex-shrink-0", enabled ? "bg-ficium/10" : "bg-ink/[0.04]"].join(" ")}>
+                <div className={["w-11 h-11 rounded-xl grid place-items-center text-xl shrink-0", enabled ? "bg-ficium/10" : "bg-ink/4"].join(" ")}>
                   {check.icon}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -161,10 +161,10 @@ export default function KycSettings() {
                 <button
                   onClick={() => handleToggle(check.key, enabled)}
                   disabled={update.isPending}
-                  className={["relative w-12 h-6 rounded-full transition-all duration-200 flex-shrink-0 focus:outline-none", enabled ? "bg-ficium" : "bg-ink/20", update.isPending ? "opacity-50 cursor-not-allowed" : "cursor-pointer"].join(" ")}
+                  className={["relative w-12 h-6 rounded-full transition-all duration-200 shrink-0 focus:outline-hidden", enabled ? "bg-ficium" : "bg-ink/20", update.isPending ? "opacity-50 cursor-not-allowed" : "cursor-pointer"].join(" ")}
                   aria-label={`${enabled ? "Disable" : "Enable"} ${check.label}`}
                 >
-                  <span className={["absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all duration-200", enabled ? "left-6" : "left-0.5"].join(" ")} />
+                  <span className={["absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-xs transition-all duration-200", enabled ? "left-6" : "left-0.5"].join(" ")} />
                 </button>
               </div>
             );

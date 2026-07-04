@@ -65,12 +65,12 @@ export function CardScroller({ children, className = "" }: CardScrollerProps) {
       {/* Left edge fade + arrow */}
       {canScrollLeft && (
         <>
-          <div className="pointer-events-none absolute left-0 top-0 bottom-2 w-12 bg-gradient-to-r from-paper to-transparent z-10 hidden sm:block" />
+          <div className="pointer-events-none absolute left-0 top-0 bottom-2 w-12 bg-linear-to-r from-paper to-transparent z-10 hidden sm:block" />
           <button
             type="button"
             aria-label="Scroll left"
             onClick={() => scrollByCard("left")}
-            className="hidden sm:grid absolute left-1 top-1/2 -translate-y-1/2 z-20 w-9 h-9 place-items-center rounded-full bg-white border border-line shadow-md hover:bg-ink/[0.03] transition-colors"
+            className="hidden sm:grid absolute left-1 top-1/2 -translate-y-1/2 z-20 w-9 h-9 place-items-center rounded-full bg-white border border-line shadow-md hover:bg-ink/3 transition-colors"
           >
             <ChevronLeft size={18} className="text-ink" />
           </button>
@@ -87,12 +87,12 @@ export function CardScroller({ children, className = "" }: CardScrollerProps) {
       {/* Right edge fade + arrow */}
       {canScrollRight && (
         <>
-          <div className="pointer-events-none absolute right-0 top-0 bottom-2 w-12 bg-gradient-to-l from-paper to-transparent z-10 hidden sm:block" />
+          <div className="pointer-events-none absolute right-0 top-0 bottom-2 w-12 bg-linear-to-l from-paper to-transparent z-10 hidden sm:block" />
           <button
             type="button"
             aria-label="Scroll right"
             onClick={() => scrollByCard("right")}
-            className="hidden sm:grid absolute right-1 top-1/2 -translate-y-1/2 z-20 w-9 h-9 place-items-center rounded-full bg-white border border-line shadow-md hover:bg-ink/[0.03] transition-colors"
+            className="hidden sm:grid absolute right-1 top-1/2 -translate-y-1/2 z-20 w-9 h-9 place-items-center rounded-full bg-white border border-line shadow-md hover:bg-ink/3 transition-colors"
           >
             <ChevronRight size={18} className="text-ink" />
           </button>

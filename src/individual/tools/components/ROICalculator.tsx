@@ -70,7 +70,7 @@ function ResultStat({
   const bg =
     variant === "highlight"
       ? "bg-ficium/[0.07] border border-ficium/15"
-      : "bg-white/[0.07] border border-white/[0.08]";
+      : "bg-white/[0.07] border border-white/8";
 
   const labelColor = variant === "highlight" ? "text-ficium" : "text-white/35";
 
@@ -82,7 +82,7 @@ function ResultStat({
 
   return (
     <div className={`rounded-2xl p-4 ${bg}`}>
-      <div className={`text-[10px] font-bold uppercase tracking-[0.10em] mb-1.5 ${labelColor}`}>
+      <div className={`text-[10px] font-bold uppercase tracking-widest mb-1.5 ${labelColor}`}>
         {label}
       </div>
       <div className={`font-display text-[20px] font-extrabold leading-none ${valueColor}`}>
@@ -105,7 +105,7 @@ function PillToggle<T extends string>({
   onChange: (v: T) => void;
 }) {
   return (
-    <div className="flex bg-ink/[0.06] rounded-pill p-1 gap-1 w-fit">
+    <div className="flex bg-ink/6 rounded-pill p-1 gap-1 w-fit">
       {options.map((o) => (
         <button
           key={o.value}
@@ -136,7 +136,7 @@ function LineItemRow({
   onRemove: () => void;
 }) {
   return (
-    <div className="grid grid-cols-[1fr_1fr_1fr_auto] sm:grid-cols-[120px_1fr_120px_140px_auto] gap-2 items-end bg-paper rounded-xl p-3 border border-ink/[0.06]">
+    <div className="grid grid-cols-[1fr_1fr_1fr_auto] sm:grid-cols-[120px_1fr_120px_140px_auto] gap-2 items-end bg-paper rounded-xl p-3 border border-ink/6">
       <Field label="Date" className="col-span-1">
         <Input
           type="date"
@@ -174,7 +174,7 @@ function LineItemRow({
         type="button"
         onClick={onRemove}
         aria-label="Remove cash flow"
-        className="h-[46px] sm:h-[50px] w-[46px] flex items-center justify-center rounded-xl text-muted hover:text-bad hover:bg-bad/[0.06] transition-colors"
+        className="h-[46px] sm:h-[50px] w-[46px] flex items-center justify-center rounded-xl text-muted hover:text-bad hover:bg-bad/6 transition-colors"
       >
         <Trash2 size={16} />
       </button>
@@ -276,7 +276,7 @@ export function ROICalculator() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-6 items-start">
       {/* ── Left: Inputs ── */}
-      <div className="bg-white rounded-[24px] border border-ink/[0.06] shadow-card p-8">
+      <div className="bg-white rounded-[24px] border border-ink/6 shadow-card p-8">
         <div className="flex items-center justify-between mb-7 flex-wrap gap-3">
           <div className="text-[11px] font-bold tracking-[0.12em] uppercase text-muted">
             Investment Details
@@ -336,7 +336,7 @@ export function ROICalculator() {
               type="checkbox"
               checked={stillHolding}
               onChange={(e) => setStillHolding(e.target.checked)}
-              className="w-4 h-4 rounded accent-ficium"
+              className="w-4 h-4 rounded-sm accent-ficium"
             />
             <span className="text-[13px] font-medium text-ink">
               I'm still holding this investment
@@ -345,7 +345,7 @@ export function ROICalculator() {
 
           {isDetailed && (
             <>
-              <div className="h-px bg-ink/[0.06] my-2" />
+              <div className="h-px bg-ink/6 my-2" />
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field
@@ -374,7 +374,7 @@ export function ROICalculator() {
                 </Field>
               </div>
 
-              <div className="h-px bg-ink/[0.06] my-2" />
+              <div className="h-px bg-ink/6 my-2" />
 
               <div>
                 <div className="flex items-center justify-between mb-3">
@@ -418,7 +418,7 @@ export function ROICalculator() {
                 )}
               </div>
 
-              <div className="h-px bg-ink/[0.06] my-2" />
+              <div className="h-px bg-ink/6 my-2" />
 
               <div className="flex items-center justify-between flex-wrap gap-3">
                 <label className="flex items-center gap-2.5 cursor-pointer select-none">
@@ -426,7 +426,7 @@ export function ROICalculator() {
                     type="checkbox"
                     checked={adjustInflation}
                     onChange={(e) => setAdjustInflation(e.target.checked)}
-                    className="w-4 h-4 rounded accent-ficium"
+                    className="w-4 h-4 rounded-sm accent-ficium"
                   />
                   <span className="text-[13px] font-medium text-ink">Adjust for inflation</span>
                 </label>
@@ -440,7 +440,7 @@ export function ROICalculator() {
                       max={30}
                       value={inflationRate}
                       onChange={(e) => setInflationRate(Number(e.target.value) || 0)}
-                      className="!w-20 !py-2 text-right"
+                      className="w-20! py-2! text-right"
                     />
                     <span className="text-[13px] text-muted">% p.a.</span>
                   </div>
@@ -451,8 +451,8 @@ export function ROICalculator() {
         </div>
 
         {result.sameDayOrInvalid && (
-          <div className="mt-6 flex items-start gap-2.5 bg-warn/[0.08] border border-warn/20 rounded-2xl px-4 py-3">
-            <Info size={15} className="text-warn flex-shrink-0 mt-0.5" />
+          <div className="mt-6 flex items-start gap-2.5 bg-warn/8 border border-warn/20 rounded-2xl px-4 py-3">
+            <Info size={15} className="text-warn shrink-0 mt-0.5" />
             <p className="text-[13px] text-ink/80 leading-relaxed">
               Exit date must be after the investment date to calculate an annualized return.
               Total ROI is still shown below.
@@ -462,7 +462,7 @@ export function ROICalculator() {
       </div>
 
       {/* ── Right: Results ── */}
-      <div className="rounded-[24px] overflow-hidden border border-ink/[0.06] shadow-card">
+      <div className="rounded-[24px] overflow-hidden border border-ink/6 shadow-card">
         <div className="px-7 py-8 relative overflow-hidden bg-hero">
           <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-ficium/25 blur-[60px] pointer-events-none" />
           <div className="absolute -bottom-10 -left-10 w-48 h-48 rounded-full bg-ficium/15 blur-[60px] pointer-events-none" />
@@ -532,7 +532,7 @@ export function ROICalculator() {
 
         <div className="bg-white px-6 py-5">
           <div className="flex items-start gap-3">
-            <div className="w-9 h-9 flex-shrink-0 rounded-xl bg-ficium/[0.07] border border-ficium/[0.12] grid place-items-center text-base">
+            <div className="w-9 h-9 shrink-0 rounded-xl bg-ficium/[0.07] border border-ficium/12 grid place-items-center text-base">
               <TrendingUp size={16} className="text-ficium" />
             </div>
             <p className="text-[13.5px] text-muted leading-relaxed">

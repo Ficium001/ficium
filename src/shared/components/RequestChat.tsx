@@ -97,7 +97,7 @@ export default function RequestChat({
   return (
     <div className={`flex flex-col ${height} min-h-0`}>
       {/* Header */}
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-ink/[0.07] flex-shrink-0 bg-white">
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-ink/[0.07] shrink-0 bg-white">
         <MessageSquare className="w-3.5 h-3.5 text-ficium" />
         <span className="text-[11px] font-bold text-ficium uppercase tracking-wider">
           {senderType === "client" ? "Chat with your bank" : "Chat with client"}
@@ -132,7 +132,7 @@ export default function RequestChat({
                   <div className={`px-3.5 py-2.5 rounded-2xl text-[13px] leading-relaxed ${
                     isMe
                       ? "bg-ficium text-white rounded-br-sm"
-                      : "bg-white border border-ink/[0.08] text-ink rounded-bl-sm"
+                      : "bg-white border border-ink/8 text-ink rounded-bl-sm"
                   }`}>
                     {msg.body}
                   </div>
@@ -146,19 +146,19 @@ export default function RequestChat({
       </div>
 
       {/* Input */}
-      <div className="flex items-center gap-2 px-3 py-3 border-t border-ink/[0.07] bg-white flex-shrink-0">
+      <div className="flex items-center gap-2 px-3 py-3 border-t border-ink/[0.07] bg-white shrink-0">
         <input
           ref={inputRef}
           value={body}
           onChange={e => setBody(e.target.value)}
           onKeyDown={handleKey}
           placeholder="Type a message…"
-          className="flex-1 bg-surface rounded-xl px-3.5 py-2.5 text-[13px] outline-none border border-transparent focus:border-ficium/30 transition-colors placeholder:text-muted"
+          className="flex-1 bg-surface rounded-xl px-3.5 py-2.5 text-[13px] outline-hidden border border-transparent focus:border-ficium/30 transition-colors placeholder:text-muted"
         />
         <button
           onClick={send}
           disabled={!body.trim() || sending}
-          className="w-9 h-9 bg-ficium hover:bg-ficium-deep disabled:opacity-40 text-white rounded-xl flex items-center justify-center transition-colors flex-shrink-0"
+          className="w-9 h-9 bg-ficium hover:bg-ficium-deep disabled:opacity-40 text-white rounded-xl flex items-center justify-center transition-colors shrink-0"
         >
           {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
         </button>

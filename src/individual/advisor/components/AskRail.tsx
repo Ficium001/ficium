@@ -30,7 +30,7 @@ export function AskRail({ onAsk }: { onAsk: (q: string) => void }) {
             >
               {label}
               <ChevronRight size={14} className="text-muted opacity-0 -translate-x-1 group-hover:opacity-100
-                                                  group-hover:translate-x-0 group-hover:text-ficium transition-all flex-shrink-0" />
+                                                  group-hover:translate-x-0 group-hover:text-ficium transition-all shrink-0" />
             </button>
           ))}
         </div>
@@ -45,7 +45,7 @@ export function AskRail({ onAsk }: { onAsk: (q: string) => void }) {
         <div className="p-2 pt-1.5">
           {REMIT.map(({ label, icon: Icon, tone }) => (
             <div key={label} className="flex items-center gap-3 rounded-xl px-3 py-2 hover:bg-[#F7F7FB] transition-colors">
-              <span className="w-[30px] h-[30px] rounded-[9px] grid place-items-center flex-shrink-0"
+              <span className="w-[30px] h-[30px] rounded-[9px] grid place-items-center shrink-0"
                     style={{ background: TONE_SOFT[tone], color: TONE_TEXT[tone] }}>
                 <Icon size={15} aria-hidden />
               </span>

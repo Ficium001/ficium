@@ -95,7 +95,7 @@ export default function Dashboard() {
           <div className="flex items-center gap-2">
             <Link
               to="/alerts"
-              className="relative w-10 h-10 rounded-full bg-white border border-line grid place-items-center text-ink/70 hover:bg-ink/[0.03] transition-colors no-underline"
+              className="relative w-10 h-10 rounded-full bg-white border border-line grid place-items-center text-ink/70 hover:bg-ink/3 transition-colors no-underline"
               aria-label="Alerts"
             >
               <Bell size={16} />
@@ -111,7 +111,7 @@ export default function Dashboard() {
             <button
               onClick={handleSignOut}
               aria-label="Sign out"
-              className="w-10 h-10 rounded-full bg-white border border-line grid place-items-center text-ink/70 hover:text-bad hover:bg-ink/[0.03] transition-colors"
+              className="w-10 h-10 rounded-full bg-white border border-line grid place-items-center text-ink/70 hover:text-bad hover:bg-ink/3 transition-colors"
             >
               <LogOut size={16} />
             </button>
@@ -195,12 +195,12 @@ export default function Dashboard() {
                     Your Active <span className="text-ficium">Requests</span>
                   </h2>
                 </div>
-                <Link to="/requests" className="text-[12px] sm:text-[13px] text-muted font-semibold no-underline hover:text-ink pb-1 flex-shrink-0 ml-4">
+                <Link to="/requests" className="text-[12px] sm:text-[13px] text-muted font-semibold no-underline hover:text-ink pb-1 shrink-0 ml-4">
                   View all →
                 </Link>
               </div>
               {/* Filter pills — segmented control */}
-              <div className="flex items-center gap-2 mb-4 p-1 bg-ink/[0.04] rounded-[16px] w-fit">
+              <div className="flex items-center gap-2 mb-4 p-1 bg-ink/4 rounded-[16px] w-fit">
                 {FILTERS.map(f => {
                   const count = requests.filter(r => r.status === f.key).length;
                   const active = requestFilter === f.key;
@@ -222,7 +222,7 @@ export default function Dashboard() {
                           : { background: "transparent", color: "#6b7280" }
                       }
                     >
-                      {!active && <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: m.dot, opacity: 0.5 }} />}
+                      {!active && <span className="w-2 h-2 rounded-full shrink-0" style={{ background: m.dot, opacity: 0.5 }} />}
                       {f.label}
                       {count > 0 && (
                         <span
@@ -239,7 +239,7 @@ export default function Dashboard() {
               {filtered.length > 0 ? (
                 <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-10 lg:px-10">
                   {filtered.map(r => (
-                    <div key={r.id} className="flex-shrink-0 w-[260px]">
+                    <div key={r.id} className="shrink-0 w-[260px]">
                       <ActiveRequestCard request={r} />
                     </div>
                   ))}
@@ -282,8 +282,8 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
             {TOOLS.map(({ icon, bg, title, desc, to }) => (
               <Link key={title} to={to} className="no-underline">
-                <div className="bg-white rounded-2xl border border-ink/[0.06] shadow-sm p-4 sm:p-5 flex items-start gap-4 hover:shadow-card transition-all hover:-translate-y-0.5">
-                  <div className={["w-10 h-10 rounded-xl grid place-items-center flex-shrink-0", bg].join(" ")}>{icon}</div>
+                <div className="bg-white rounded-2xl border border-ink/6 shadow-xs p-4 sm:p-5 flex items-start gap-4 hover:shadow-card transition-all hover:-translate-y-0.5">
+                  <div className={["w-10 h-10 rounded-xl grid place-items-center shrink-0", bg].join(" ")}>{icon}</div>
                   <div>
                     <div className="text-[13px] font-bold text-ink">{title}</div>
                     <div className="text-[11px] text-muted mt-0.5 leading-snug">{desc}</div>
@@ -336,7 +336,7 @@ function SectionHeader({
         </h2>
       </div>
       {action && (
-        <Link to={action.to} className="text-[12px] sm:text-[13px] text-muted font-semibold no-underline hover:text-ink pb-1 flex-shrink-0 ml-4">
+        <Link to={action.to} className="text-[12px] sm:text-[13px] text-muted font-semibold no-underline hover:text-ink pb-1 shrink-0 ml-4">
           {action.label}
         </Link>
       )}

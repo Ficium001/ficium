@@ -42,7 +42,7 @@ export function Step2AssetsLoans({
           return (
             <div key={row.name} className={[
               "rounded-2xl border overflow-hidden transition-all",
-              isOpen ? "border-ficium/40 bg-white shadow-sm" : "border-ink/[0.07] bg-white",
+              isOpen ? "border-ficium/40 bg-white shadow-xs" : "border-ink/[0.07] bg-white",
             ].join(" ")}>
               <button type="button" onClick={() => setExpandedAsset(isOpen ? null : row.name)}
                 className="w-full flex items-center gap-3 px-4 py-3.5 text-left">

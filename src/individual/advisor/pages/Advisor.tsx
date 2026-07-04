@@ -41,7 +41,7 @@ export default function Advisor() {
       <div className="flex items-center justify-between mb-[18px]">
         <FiciumLogo heightPx={24} withWordmark />
         <button className="inline-flex items-center gap-2 bg-white border border-line rounded-xl px-3 py-2
-                           text-[12px] font-semibold text-ink/60 hover:bg-ink/[0.03] transition-colors"
+                           text-[12px] font-semibold text-ink/60 hover:bg-ink/3 transition-colors"
                 onClick={reset} title="Refresh briefing">
           <RefreshCw size={13} /> Updated just now
         </button>

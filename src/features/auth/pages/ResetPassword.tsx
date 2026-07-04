@@ -144,8 +144,8 @@ export default function ResetPassword() {
               />
             </Field>
 
-            <div className="flex gap-3 px-3.5 py-3 bg-ficium/[0.04] border border-ficium/15 rounded-xl">
-              <ShieldCheck size={20} className="text-ficium flex-shrink-0 mt-0.5" />
+            <div className="flex gap-3 px-3.5 py-3 bg-ficium/4 border border-ficium/15 rounded-xl">
+              <ShieldCheck size={20} className="text-ficium shrink-0 mt-0.5" />
               <p className="text-[13px] text-ink/80 leading-relaxed">
                 You'll be signed in automatically once your password is updated.
               </p>

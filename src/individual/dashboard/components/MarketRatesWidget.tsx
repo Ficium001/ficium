@@ -47,7 +47,7 @@ function RateRow({ rate }: { rate: MarketRate }) {
     "";
 
   return (
-    <div className="flex items-center justify-between py-2.5 border-b border-ink/[0.05] last:border-0">
+    <div className="flex items-center justify-between py-2.5 border-b border-ink/5 last:border-0">
       <span className="text-[13px] font-medium text-ink">{rate.label}</span>
       <div className="flex items-center gap-1.5">
         {changeIcon && (
@@ -69,7 +69,7 @@ export function MarketRatesWidget() {
   const navigate = useNavigate();
 
   return (
-    <div className="bg-white rounded-[22px] border border-ink/[0.06] shadow-card p-5">
+    <div className="bg-white rounded-[22px] border border-ink/6 shadow-card p-5">
 
       {/* Header */}
       <div className="flex items-center justify-between mb-3">

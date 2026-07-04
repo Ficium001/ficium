@@ -114,7 +114,7 @@ export default function Kyc() {
   return (
     <>
     {verifyStep && (
-      <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex flex-col items-center justify-center gap-6 px-8">
+      <div className="fixed inset-0 bg-ink/60 backdrop-blur-xs z-50 flex flex-col items-center justify-center gap-6 px-8">
         <div className="w-14 h-14 rounded-full border-4 border-white/20 border-t-white animate-spin" />
         <div className="text-center">
           <p className="text-white font-semibold text-lg">{verifyStep}</p>
@@ -194,7 +194,7 @@ export default function Kyc() {
             {/* Same nationality / residence toggle */}
             <label className="flex items-center gap-3 cursor-pointer select-none">
               <input type="checkbox" {...register("sameNationalityResidence")}
-                className="w-4 h-4 rounded border-ink/20 text-ficium focus:ring-ficium/30 cursor-pointer" />
+                className="w-4 h-4 rounded-sm border-ink/20 text-ficium focus:ring-ficium/30 cursor-pointer" />
               <span className="text-sm text-ink">My nationality and country of residence are the same</span>
             </label>
 
@@ -277,8 +277,8 @@ export default function Kyc() {
             />
 
             {/* Privacy reassurance */}
-            <div className="flex gap-3 px-3.5 py-3 bg-ficium/[0.04] border border-ficium/15 rounded-xl">
-              <ShieldCheck size={20} className="text-ficium flex-shrink-0 mt-0.5" />
+            <div className="flex gap-3 px-3.5 py-3 bg-ficium/4 border border-ficium/15 rounded-xl">
+              <ShieldCheck size={20} className="text-ficium shrink-0 mt-0.5" />
               <p className="text-[13px] text-ink/80 leading-relaxed">
                 Your documents are encrypted and only used for verification. Banks never see them.
               </p>
@@ -319,10 +319,10 @@ function UploadZone({
   return (
     <label htmlFor={inputId} className={[
       "block cursor-pointer rounded-xl border-[1.5px] border-dashed transition-colors px-4 py-5",
-      file ? "bg-mint/[0.15] border-mint" : "bg-surface border-ink/15 hover:border-ficium/50 hover:bg-ficium/[0.03]",
+      file ? "bg-mint/15 border-mint" : "bg-surface border-ink/15 hover:border-ficium/50 hover:bg-ficium/3",
     ].join(" ")}>
       <div className="flex items-start gap-3">
-        <div className={["w-10 h-10 rounded-xl grid place-items-center flex-shrink-0", file ? "bg-mint text-ink" : "bg-ficium/10 text-ficium"].join(" ")}>
+        <div className={["w-10 h-10 rounded-xl grid place-items-center shrink-0", file ? "bg-mint text-ink" : "bg-ficium/10 text-ficium"].join(" ")}>
           {icon}
         </div>
         <div className="min-w-0 flex-1">

@@ -84,13 +84,13 @@ export function UploadSheet({ onUpload, onClose }: Props) {
   return (
     // Backdrop
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-      <div className="absolute inset-0 bg-ink/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-ink/40 backdrop-blur-xs" onClick={onClose} />
 
       {/* Sheet */}
       <div className="relative z-10 w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl shadow-lift max-h-[85vh] flex flex-col">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-line flex-shrink-0">
+        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-line shrink-0">
           <div className="flex items-center gap-3">
             {step !== "category" && (
               <button onClick={back} className="text-muted hover:text-ink transition-colors">
@@ -122,7 +122,7 @@ export function UploadSheet({ onUpload, onClose }: Props) {
                 <button
                   key={cat.label}
                   onClick={() => { setCategory(cat); setStep("type"); }}
-                  className="w-full flex items-center gap-4 p-4 rounded-2xl border border-line hover:border-ficium/30 hover:bg-ficium/[0.02] transition-all text-left group"
+                  className="w-full flex items-center gap-4 p-4 rounded-2xl border border-line hover:border-ficium/30 hover:bg-ficium/2 transition-all text-left group"
                 >
                   <span className="text-[22px] w-9 text-center">{cat.icon}</span>
                   <div className="flex-1">
@@ -144,9 +144,9 @@ export function UploadSheet({ onUpload, onClose }: Props) {
                 <button
                   key={type}
                   onClick={() => { setSelectedType(type); setStep("file"); }}
-                  className="w-full flex items-center gap-3 p-4 rounded-2xl border border-line hover:border-ficium/30 hover:bg-ficium/[0.02] transition-all text-left group"
+                  className="w-full flex items-center gap-3 p-4 rounded-2xl border border-line hover:border-ficium/30 hover:bg-ficium/2 transition-all text-left group"
                 >
-                  <FileText size={16} className="text-muted flex-shrink-0" />
+                  <FileText size={16} className="text-muted shrink-0" />
                   <span className="flex-1 text-[14px] font-medium text-ink">
                     {DOC_TYPE_LABELS[type]}
                   </span>
@@ -172,8 +172,8 @@ export function UploadSheet({ onUpload, onClose }: Props) {
                 className={[
                   "relative border-2 border-dashed rounded-2xl p-10 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all",
                   dragOver
-                    ? "border-ficium bg-ficium/[0.05]"
-                    : "border-line hover:border-ficium/40 hover:bg-ficium/[0.02]",
+                    ? "border-ficium bg-ficium/5"
+                    : "border-line hover:border-ficium/40 hover:bg-ficium/2",
                 ].join(" ")}
               >
                 <div className={[
@@ -200,7 +200,7 @@ export function UploadSheet({ onUpload, onClose }: Props) {
               </div>
 
               {/* Security note */}
-              <div className="flex items-start gap-2.5 bg-ficium/[0.04] border border-ficium/[0.10] rounded-xl px-4 py-3">
+              <div className="flex items-start gap-2.5 bg-ficium/4 border border-ficium/10 rounded-xl px-4 py-3">
                 <span className="text-[14px] mt-0.5">🔒</span>
                 <p className="text-[12px] text-ink/60 leading-relaxed">
                   Stored encrypted. Never shared with lenders — only verified data points flow to applications.
@@ -212,7 +212,7 @@ export function UploadSheet({ onUpload, onClose }: Props) {
 
         {/* Footer CTA for file step */}
         {step === "file" && (
-          <div className="px-6 pb-6 flex-shrink-0">
+          <div className="px-6 pb-6 shrink-0">
             <Button
               variant="secondary"
               fullWidth

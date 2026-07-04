@@ -173,8 +173,8 @@ export default function NetWorthPage() {
 
         {/* Health score from profile */}
         {profile?.healthScore != null && (
-          <div className="bg-white rounded-[22px] border border-ink/[0.06] p-5 flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full border-4 border-ficium grid place-items-center flex-shrink-0">
+          <div className="bg-white rounded-[22px] border border-ink/6 p-5 flex items-center gap-4">
+            <div className="w-16 h-16 rounded-full border-4 border-ficium grid place-items-center shrink-0">
               <span className="font-display text-[20px] font-extrabold text-ficium">{profile.healthScore}</span>
             </div>
             <div>
@@ -207,8 +207,8 @@ function Section({ title, icon, total, totalColor, totalLabel = "total", childre
   totalColor: string; totalLabel?: string; children: React.ReactNode;
 }) {
   return (
-    <div className="bg-white rounded-[22px] border border-ink/[0.06] shadow-sm overflow-hidden">
-      <div className="flex items-center justify-between px-5 py-4 border-b border-ink/[0.05]">
+    <div className="bg-white rounded-[22px] border border-ink/6 shadow-xs overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-ink/5">
         <div className="flex items-center gap-2">
           {icon}
           <span className="font-bold text-[15px] text-ink">{title}</span>
@@ -217,7 +217,7 @@ function Section({ title, icon, total, totalColor, totalLabel = "total", childre
           {total} <span className="text-[11px] font-normal text-muted">{totalLabel}</span>
         </div>
       </div>
-      <div className="divide-y divide-ink/[0.04]">{children}</div>
+      <div className="divide-y divide-ink/4">{children}</div>
     </div>
   );
 }
@@ -228,16 +228,16 @@ function Row({ label, icon, value, editing, onChange }: {
 }) {
   return (
     <div className="flex items-center gap-3 px-5 py-3.5">
-      <div className="w-6 grid place-items-center flex-shrink-0">{icon}</div>
+      <div className="w-6 grid place-items-center shrink-0">{icon}</div>
       <div className="flex-1 text-[13px] font-medium text-ink">{label}</div>
       {editing ? (
-        <div className="flex items-center gap-1 border border-ink/[0.12] rounded-lg px-2.5 py-1.5 bg-paper">
+        <div className="flex items-center gap-1 border border-ink/12 rounded-lg px-2.5 py-1.5 bg-paper">
           <span className="text-[12px] text-muted">Rs</span>
           <input
             type="number"
             defaultValue={value}
             onChange={(e) => onChange(e.target.value)}
-            className="w-28 text-right text-[13px] font-semibold text-ink bg-transparent outline-none"
+            className="w-28 text-right text-[13px] font-semibold text-ink bg-transparent outline-hidden"
           />
         </div>
       ) : (

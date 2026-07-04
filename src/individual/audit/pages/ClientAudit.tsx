@@ -144,7 +144,7 @@ export default function ClientAudit() {
         ) : (
           <table className="w-full">
             <thead>
-              <tr className="border-b border-ink/[0.06]">
+              <tr className="border-b border-ink/6">
                 {["When", "Category", "Event", "Resource", "Outcome"].map(h => (
                   <th key={h} className="px-5 pb-4 pt-5 text-left text-[12px] font-semibold text-muted">{h}</th>
                 ))}
@@ -152,7 +152,7 @@ export default function ClientAudit() {
             </thead>
             <tbody>
               {events.map(e => (
-                <tr key={e.id} className="border-b border-ink/[0.04] hover:bg-surface/60 transition-colors">
+                <tr key={e.id} className="border-b border-ink/4 hover:bg-surface/60 transition-colors">
                   <td className="px-5 py-4 whitespace-nowrap">
                     <div className="text-[13px] font-semibold text-ink">{fmt.date(e.created_at)}</div>
                     <div className="text-[11px] text-muted font-mono">{fmt.time(e.created_at)}</div>

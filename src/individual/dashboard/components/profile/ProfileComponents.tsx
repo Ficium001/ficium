@@ -21,7 +21,7 @@ export function ProfileSection({
     ].join(" ")}>
       <div className="flex items-center justify-between px-6 py-4 border-b border-line">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-ficium/[0.08] text-ficium grid place-items-center">{icon}</div>
+          <div className="w-8 h-8 rounded-xl bg-ficium/8 text-ficium grid place-items-center">{icon}</div>
           <span className="font-display text-[16px] font-bold text-ink">{title}</span>
         </div>
         {isEditing ? (
@@ -45,7 +45,7 @@ export function InfoRow({ icon, label, value, sensitive, hidden, onToggle }: {
 }) {
   return (
     <div className="flex items-center justify-between gap-4 py-3.5 border-b border-line/50 last:border-0">
-      <div className="flex items-center gap-3 flex-shrink-0">
+      <div className="flex items-center gap-3 shrink-0">
         <span className="text-muted/70">{icon}</span>
         <span className="text-[13px] text-muted font-medium">{label}</span>
       </div>
@@ -65,9 +65,9 @@ export function EmptySection({ message, cta, onCta }: { message: string; cta: st
   return (
     <div className="flex items-center justify-between gap-3 py-2">
       <div className="flex items-center gap-2 text-[13px] text-muted">
-        <AlertCircle size={14} className="flex-shrink-0" /> {message}
+        <AlertCircle size={14} className="shrink-0" /> {message}
       </div>
-      <button onClick={onCta} className="text-[12px] font-bold text-ficium hover:underline flex-shrink-0">{cta} →</button>
+      <button onClick={onCta} className="text-[12px] font-bold text-ficium hover:underline shrink-0">{cta} →</button>
     </div>
   );
 }
@@ -84,8 +84,8 @@ export function ScoreCard({ label, value, suffix, icon: Icon, tone }: {
   return (
     <div
       className={[
-        "rounded-[20px] p-4 flex flex-col gap-1.5",
-        dark ? "shadow-sm" : "bg-white border border-line shadow-sm",
+        "rounded-card p-4 flex flex-col gap-1.5",
+        dark ? "shadow-xs" : "bg-white border border-line shadow-xs",
       ].join(" ")}
       style={bg ? { background: bg } : undefined}
     >
@@ -122,10 +122,10 @@ export function EditField({ label, value, onChange, type = "text", readOnly }: {
       <input
         type={type} value={value} onChange={onChange} readOnly={readOnly}
         className={[
-          "w-full rounded-xl border px-3.5 py-3 text-[14px] text-ink outline-none transition-all",
+          "w-full rounded-xl border px-3.5 py-3 text-[14px] text-ink outline-hidden transition-all",
           readOnly
-            ? "bg-ink/[0.03] border-ink/[0.06] cursor-not-allowed text-muted"
-            : "bg-white border-ink/[0.12] focus:border-ficium focus:ring-2 focus:ring-ficium/15",
+            ? "bg-ink/3 border-ink/6 cursor-not-allowed text-muted"
+            : "bg-white border-ink/12 focus:border-ficium focus:ring-2 focus:ring-ficium/15",
         ].join(" ")}
       />
     </div>
@@ -138,7 +138,7 @@ export function SaveBar({ onSave, onCancel, saving }: {
   return (
     <div className="flex gap-2.5 pt-1">
       <button type="button" onClick={onCancel} disabled={saving}
-        className="flex-1 py-3 rounded-xl border border-ink/[0.10] text-[13px] font-bold text-muted hover:border-ink/25 transition-colors disabled:opacity-40">
+        className="flex-1 py-3 rounded-xl border border-ink/10 text-[13px] font-bold text-muted hover:border-ink/25 transition-colors disabled:opacity-40">
         Cancel
       </button>
       <button type="button" onClick={onSave} disabled={saving}
@@ -199,7 +199,7 @@ export function IdentityEditForm({ profile, onClose }: { profile: ProfileSummary
       <div>
         <label className="text-[12px] font-semibold text-muted mb-1.5 block">Country</label>
         <select value={form.country} onChange={set("country")}
-          className="w-full rounded-xl border border-ink/[0.12] px-3.5 py-3 text-[14px] text-ink outline-none focus:border-ficium focus:ring-2 focus:ring-ficium/15 transition-all">
+          className="w-full rounded-xl border border-ink/12 px-3.5 py-3 text-[14px] text-ink outline-hidden focus:border-ficium focus:ring-2 focus:ring-ficium/15 transition-all">
           {COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
       </div>
@@ -239,7 +239,7 @@ export function AddressEditForm({ profile, onClose }: { profile: ProfileSummary 
       <div>
         <label className="text-[12px] font-semibold text-muted mb-1.5 block">Country</label>
         <select value={form.country} onChange={set("country")}
-          className="w-full rounded-xl border border-ink/[0.12] px-3.5 py-3 text-[14px] text-ink outline-none focus:border-ficium focus:ring-2 focus:ring-ficium/15 transition-all">
+          className="w-full rounded-xl border border-ink/12 px-3.5 py-3 text-[14px] text-ink outline-hidden focus:border-ficium focus:ring-2 focus:ring-ficium/15 transition-all">
           {COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
       </div>
@@ -291,7 +291,7 @@ export function FinancialEditForm({ profile, onClose, hidden, setHidden }: {
       <div>
         <label className="text-[12px] font-semibold text-muted mb-1.5 block">Employment status</label>
         <select value={form.employmentStatus} onChange={set("employmentStatus")}
-          className="w-full rounded-xl border border-ink/[0.12] px-3.5 py-3 text-[14px] text-ink outline-none focus:border-ficium focus:ring-2 focus:ring-ficium/15 transition-all">
+          className="w-full rounded-xl border border-ink/12 px-3.5 py-3 text-[14px] text-ink outline-hidden focus:border-ficium focus:ring-2 focus:ring-ficium/15 transition-all">
           {EMPLOYMENT.map((o) => <option key={o.v} value={o.v}>{o.l}</option>)}
         </select>
       </div>
@@ -314,7 +314,7 @@ export function FinancialEditForm({ profile, onClose, hidden, setHidden }: {
                 "flex-1 py-3 rounded-xl text-[13px] font-bold border transition-all",
                 form.hasExistingLoans === v
                   ? "bg-ficium text-white border-ficium"
-                  : "bg-white text-muted border-ink/[0.12] hover:border-ficium/30",
+                  : "bg-white text-muted border-ink/12 hover:border-ficium/30",
               ].join(" ")}>
               {v === "yes" ? "Yes" : "No"}
             </button>

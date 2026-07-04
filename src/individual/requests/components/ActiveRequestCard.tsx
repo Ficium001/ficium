@@ -71,7 +71,7 @@ export function ActiveRequestCard({ request }: { request: RequestSummary }) {
   return (
     <div
       onClick={() => navigate(`/requests/${request.id}`)}
-      className="bg-white rounded-[24px] border border-ink/[0.06] shadow-md overflow-hidden cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all"
+      className="bg-white rounded-[24px] border border-ink/6 shadow-md overflow-hidden cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all"
     >
       {/* Full-width gradient header */}
       <div
@@ -128,14 +128,14 @@ export function ActiveRequestCard({ request }: { request: RequestSummary }) {
 
           {/* Bar */}
           <div className="relative mb-4">
-            <div className="h-1.5 bg-ink/[0.08] rounded-full">
+            <div className="h-1.5 bg-ink/8 rounded-full">
               <div
                 className="h-full rounded-full transition-all duration-700"
                 style={{ width: `${pct}%`, background: cfg.accent }}
               />
             </div>
             {/* Dots */}
-            <div className="absolute -top-[3px] left-0 right-0 flex justify-between">
+            <div className="absolute top-[-3px] left-0 right-0 flex justify-between">
               {JOURNEY_STEPS.map((_, i) => (
                 <div
                   key={i}
@@ -162,19 +162,19 @@ export function ActiveRequestCard({ request }: { request: RequestSummary }) {
         {/* Status banner */}
         {request.status === "rejected" && (
           <div className="flex items-center gap-2 bg-red-50 border border-red-100 rounded-xl px-3 py-2.5">
-            <XCircle size={13} className="text-red-500 flex-shrink-0" />
+            <XCircle size={13} className="text-red-500 shrink-0" />
             <span className="text-[11px] text-red-700 font-medium">Declined by the provider · post a new request to try again</span>
           </div>
         )}
         {!isClosed && request.bidCount === 0 && (
           <div className="flex items-center gap-2 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2.5">
-            <Clock size={13} className="text-amber-500 flex-shrink-0" />
+            <Clock size={13} className="text-amber-500 shrink-0" />
             <span className="text-[11px] text-amber-700 font-medium">Waiting for offers · usually within 24h</span>
           </div>
         )}
         {request.bidCount > 0 && (
           <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2.5">
-            <CheckCircle2 size={13} className="text-emerald-500 flex-shrink-0" />
+            <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />
             <span className="text-[11px] text-emerald-700 font-medium">
               {request.bidCount} provider{request.bidCount !== 1 ? "s" : ""} competing for you
             </span>

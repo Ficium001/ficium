@@ -16,7 +16,7 @@ export function DashboardTopBar({
   return (
     <div className="flex items-center justify-between pt-6 pb-5">
       <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-full bg-white/15 text-white grid place-items-center font-bold text-xl backdrop-blur-sm border border-white/10">
+        <div className="w-12 h-12 rounded-full bg-white/15 text-white grid place-items-center font-bold text-xl backdrop-blur-xs border border-white/10">
           {initial}
         </div>
         <div className="min-w-0">
@@ -32,7 +32,7 @@ export function DashboardTopBar({
       <div className="flex items-center gap-2">
         <Link
           to="/alerts"
-          className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm border border-white/10 grid place-items-center text-white/80 hover:bg-white/15 transition-colors relative no-underline"
+          className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-xs border border-white/10 grid place-items-center text-white/80 hover:bg-white/15 transition-colors relative no-underline"
           aria-label="Alerts"
         >
           <Bell size={16} />
@@ -45,7 +45,7 @@ export function DashboardTopBar({
         <button
           onClick={onSignOut}
           aria-label="Sign out"
-          className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm border border-white/10 grid place-items-center text-white/80 hover:bg-white/15 transition-colors"
+          className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-xs border border-white/10 grid place-items-center text-white/80 hover:bg-white/15 transition-colors"
         >
           <LogOut size={16} />
         </button>

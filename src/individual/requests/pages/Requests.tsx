@@ -105,7 +105,7 @@ export default function Requests() {
 
             {isLoading ? (
               <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
-                {[1,2,3].map(i => <div key={i} className="flex-shrink-0 w-[260px] bg-white rounded-card h-[440px] animate-pulse border border-line" />)}
+                {[1,2,3].map(i => <div key={i} className="shrink-0 w-[260px] bg-white rounded-card h-[440px] animate-pulse border border-line" />)}
               </div>
             ) : empty ? (
               <Panel className="text-center py-12">
@@ -129,7 +129,7 @@ export default function Requests() {
                     { key: "closed"   as const, label: "Closed",   dot: "#9ca3af", activeBg: "linear-gradient(135deg,#4b5563,#9ca3af)",   activeText: "#fff" },
                   ];
                   return (
-                    <div className="flex items-center gap-2 mb-5 p-1 bg-ink/[0.04] rounded-[16px] w-fit">
+                    <div className="flex items-center gap-2 mb-5 p-1 bg-ink/4 rounded-[16px] w-fit">
                       {FILTERS.map(f => {
                         const count = requests.filter(r => r.status === f.key).length;
                         const active = statusFilter === f.key;
@@ -145,7 +145,7 @@ export default function Requests() {
                             }
                           >
                             {!active && (
-                              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: f.dot, opacity: 0.5 }} />
+                              <span className="w-2 h-2 rounded-full shrink-0" style={{ background: f.dot, opacity: 0.5 }} />
                             )}
                             {f.label}
                             {count > 0 && (
@@ -169,22 +169,22 @@ export default function Requests() {
 
                 <CardScroller className="gap-4 pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
                   {filteredRequests.length === 0 ? (
-                    <div className="flex-shrink-0 w-full py-10 text-center text-[14px] text-muted">
+                    <div className="shrink-0 w-full py-10 text-center text-[14px] text-muted">
                       No {statusFilter} requests.
                     </div>
                   ) : (
                     filteredRequests.map(r => (
-                      <div key={r.id} className="flex-shrink-0 w-[260px]">
+                      <div key={r.id} className="shrink-0 w-[260px]">
                         <ActiveRequestCard request={r} />
                       </div>
                     ))
                   )}
 
                   {/* Post new card — always visible */}
-                  <div className="flex-shrink-0 w-[200px]">
+                  <div className="shrink-0 w-[200px]">
                     <button
                       onClick={() => navigate("/requests/new")}
-                      className="bg-white rounded-card border-2 border-dashed border-line w-full h-full min-h-[400px] flex flex-col items-center justify-center gap-3 hover:border-ficium/40 hover:bg-ficium/[0.02] transition-all group"
+                      className="bg-white rounded-card border-2 border-dashed border-line w-full h-full min-h-[400px] flex flex-col items-center justify-center gap-3 hover:border-ficium/40 hover:bg-ficium/2 transition-all group"
                     >
                       <div className="w-12 h-12 rounded-full grid place-items-center shadow-ficium group-hover:scale-110 transition-transform"
                            style={{ background: "linear-gradient(135deg,#356EF4,#8231EC)" }}>
@@ -202,7 +202,7 @@ export default function Requests() {
           <div className="flex flex-col gap-5">
 
             <Reveal delay={80}>
-              <Panel className="!p-6">
+              <Panel className="p-6!">
                 <PanelHead
                   title="Activity"
                   subtitle="Latest across your requests"
@@ -250,7 +250,7 @@ export default function Requests() {
             </Reveal>
 
             <Reveal delay={240}>
-              <Panel className="!p-5">
+              <Panel className="p-5!">
                 <div className="font-display text-[16px] font-bold mb-3 text-ink">Quick actions</div>
                 <div className="flex flex-col gap-2">
                   {[
@@ -258,8 +258,8 @@ export default function Requests() {
                     { label: "Check notifications",      to: "/alerts",             icon: Bell    },
                     { label: "View market rates",        to: "/markets",            icon: Zap     },
                   ].map(q => (
-                    <Link key={q.label} to={q.to} className="no-underline flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-ink/[0.04] transition-colors group">
-                      <div className="w-8 h-8 rounded-lg bg-ficium/10 grid place-items-center flex-shrink-0">
+                    <Link key={q.label} to={q.to} className="no-underline flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-ink/4 transition-colors group">
+                      <div className="w-8 h-8 rounded-lg bg-ficium/10 grid place-items-center shrink-0">
                         <q.icon size={14} className="text-ficium" />
                       </div>
                       <span className="text-[13px] font-semibold text-ink/80">{q.label}</span>

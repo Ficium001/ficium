@@ -96,7 +96,7 @@ export default function InvitePage() {
       <div className="max-w-[420px] w-full mx-auto px-6 pt-12 pb-10 flex-1 flex flex-col">
         <FiciumLogo className="h-6 mb-10" />
 
-        <div className="w-14 h-14 rounded-2xl bg-ficium/[0.08] grid place-items-center mb-5">
+        <div className="w-14 h-14 rounded-2xl bg-ficium/8 grid place-items-center mb-5">
           <HandCoins size={22} className="text-ficium" />
         </div>
 
@@ -109,8 +109,8 @@ export default function InvitePage() {
 
         {!user ? (
           <>
-            <div className="flex items-start gap-2.5 bg-ficium/[0.05] border border-ficium/[0.15] rounded-xl px-4 py-3 mb-6">
-              <Lock size={13} className="text-ficium flex-shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2.5 bg-ficium/5 border border-ficium/15 rounded-xl px-4 py-3 mb-6">
+              <Lock size={13} className="text-ficium shrink-0 mt-0.5" />
               <p className="text-[12px] text-ink/70 leading-relaxed">
                 Log in or create an account to review and respond to this invitation.
               </p>

@@ -54,7 +54,7 @@ function NoCoupleState({ pending }: { pending: { pendingInvitationsSent?: unknow
 
   return (
     <div className="rounded-3xl bg-white border border-line shadow-card p-8 text-center">
-      <div className="w-14 h-14 rounded-2xl bg-ficium/[0.08] grid place-items-center mx-auto mb-4">
+      <div className="w-14 h-14 rounded-2xl bg-ficium/8 grid place-items-center mx-auto mb-4">
         <Heart size={22} className="text-ficium" />
       </div>
       <h2 className="font-display text-[18px] font-bold text-ink mb-2">No linked partner yet</h2>
@@ -97,10 +97,10 @@ function CoupleCard({
       <div className="rounded-3xl bg-white border border-line shadow-card p-6">
         <div className="flex items-center gap-3 mb-5">
           <div className="flex -space-x-2.5">
-            <div className="w-10 h-10 rounded-full bg-ficium/[0.12] text-ficium flex items-center justify-center text-[13px] font-bold border-2 border-white">
+            <div className="w-10 h-10 rounded-full bg-ficium/12 text-ficium flex items-center justify-center text-[13px] font-bold border-2 border-white">
               You
             </div>
-            <div className="w-10 h-10 rounded-full bg-ficium/[0.12] text-ficium flex items-center justify-center text-[13px] font-bold border-2 border-white">
+            <div className="w-10 h-10 rounded-full bg-ficium/12 text-ficium flex items-center justify-center text-[13px] font-bold border-2 border-white">
               {initials(partnerName)}
             </div>
           </div>
@@ -134,8 +134,8 @@ function CoupleCard({
         </div>
 
         {relDoc?.verification_status === "rejected" && relDoc.reject_reason && (
-          <div className="mt-3 flex items-start gap-2 bg-bad/[0.06] border border-bad/20 rounded-xl px-3.5 py-2.5">
-            <AlertCircle size={13} className="text-bad flex-shrink-0 mt-0.5" />
+          <div className="mt-3 flex items-start gap-2 bg-bad/6 border border-bad/20 rounded-xl px-3.5 py-2.5">
+            <AlertCircle size={13} className="text-bad shrink-0 mt-0.5" />
             <p className="text-[12px] text-bad leading-relaxed">{relDoc.reject_reason} — upload a clearer copy from Document Vault.</p>
           </div>
         )}
@@ -179,14 +179,14 @@ function CoupleCard({
                   i < jointRequests.length - 1 ? "border-b border-line" : "",
                 ].join(" ")}
               >
-                <Icon size={17} className="text-muted flex-shrink-0" />
+                <Icon size={17} className="text-muted shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] font-semibold text-ink truncate capitalize">
                     {r.product_type.replace(/_/g, " ")} · {fmtMUR(Number(r.amount))}
                   </p>
                   <p className="text-[11px] text-muted mt-0.5 capitalize">{r.status.replace(/_/g, " ")}</p>
                 </div>
-                <ChevronRight size={15} className="text-muted/40 flex-shrink-0" />
+                <ChevronRight size={15} className="text-muted/40 shrink-0" />
               </Link>
             );
           })}

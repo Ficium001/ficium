@@ -161,7 +161,7 @@ export default function Hero({
       <Blade className='w-[300px] -bottom-20 right-[24%] [animation-duration:18s]' both={false} />
 
       {eyebrow && (
-        <div className='relative z-[1] inline-flex items-center gap-2 text-[12.5px] font-semibold tracking-[.06em] text-[#B9B9D9] mb-3.5'>
+        <div className='relative z-1 inline-flex items-center gap-2 text-[12.5px] font-semibold tracking-[.06em] text-[#B9B9D9] mb-3.5'>
           {live && (
             <span className='w-[7px] h-[7px] rounded-full bg-emerald-400 animate-pulse-ring-green' aria-hidden />
           )}
@@ -169,27 +169,27 @@ export default function Hero({
         </div>
       )}
 
-      <h1 className='relative z-[1] font-display font-bold tracking-display leading-[1.06]
+      <h1 className='relative z-1 font-display font-bold tracking-display leading-[1.06]
                      text-[30px] sm:text-[40px] lg:text-[48px] max-w-[18ch]'>
         {headline}
       </h1>
 
       {subline && (
-        <p className='relative z-[1] text-[#A6A6C8] mt-3.5 text-[15px] sm:text-[15.5px] max-w-[48ch]'>
+        <p className='relative z-1 text-[#A6A6C8] mt-3.5 text-[15px] sm:text-[15.5px] max-w-[48ch]'>
           {subline}
         </p>
       )}
 
       {actions && (
-        <div className='relative z-[2] flex flex-wrap gap-3 mt-4'>{actions}</div>
+        <div className='relative z-2 flex flex-wrap gap-3 mt-4'>{actions}</div>
       )}
 
       {stats.length > 0 && (
-        <div className='relative z-[1] grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2'>
+        <div className='relative z-1 grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2'>
           {stats.map(s => (
             <div
               key={s.label}
-              className='relative overflow-hidden rounded-[16px] border border-white/[0.08] bg-white/[0.04] px-4 pt-4 pb-3 min-h-[128px] sm:min-h-[150px] flex flex-col'
+              className='relative overflow-hidden rounded-[16px] border border-white/8 bg-white/4 px-4 pt-4 pb-3 min-h-[128px] sm:min-h-[150px] flex flex-col'
             >
               {s.badge && (
                 <span className='absolute top-3 right-3 inline-flex items-center gap-1 text-[10px] font-bold text-emerald-300 bg-emerald-400/15 px-2 py-0.5 rounded-pill'>
@@ -229,7 +229,7 @@ export default function Hero({
                   )}
                 </div>
                 {s.ring !== undefined && (
-                  <div className='flex-shrink-0 mt-0.5'>
+                  <div className='shrink-0 mt-0.5'>
                     <HealthRing value={s.ring} max={s.ringMax} />
                   </div>
                 )}
@@ -289,7 +289,7 @@ export function HeroButton({
   const styles =
     variant === 'grad'
       ? 'bg-brand-cta text-white shadow-ficium hover:-translate-y-0.5 hover:shadow-[0_14px_32px_rgba(124,58,237,.45)]'
-      : 'bg-white/[0.08] text-white border border-white/[0.16] hover:bg-white/[0.14]'
+      : 'bg-white/8 text-white border border-white/16 hover:bg-white/[0.14]'
   return (
     <button
       type='button'

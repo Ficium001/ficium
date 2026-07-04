@@ -132,12 +132,12 @@ export function WhatAreYouPlanningSection() {
     <div className="space-y-4">
 
       {/* ── Providers compete for you ── */}
-      <div className="bg-white rounded-[22px] border border-ink/[0.06] shadow-card p-5">
+      <div className="bg-white rounded-[22px] border border-ink/6 shadow-card p-5">
         <div className="flex items-start justify-between mb-1">
           <h2 className="font-display text-[18px] sm:text-[20px] font-bold text-ink leading-tight">
             Providers compete <span className="text-ficium">for you</span>
           </h2>
-          <Link to="/requests" className="text-[12px] sm:text-[13px] text-muted font-semibold no-underline hover:text-ink flex-shrink-0 ml-4">
+          <Link to="/requests" className="text-[12px] sm:text-[13px] text-muted font-semibold no-underline hover:text-ink shrink-0 ml-4">
             View all →
           </Link>
         </div>
@@ -159,7 +159,7 @@ export function WhatAreYouPlanningSection() {
            "Providers compete for you" box above, for visual consistency.
            Rows still render as single grids so card heights line up;
            inner split just controls column width. ── */}
-      <div className="bg-white rounded-[22px] border border-ink/[0.06] shadow-card p-5">
+      <div className="bg-white rounded-[22px] border border-ink/6 shadow-card p-5">
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-4">
 
           <div>

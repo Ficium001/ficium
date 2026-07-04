@@ -57,7 +57,7 @@ function SimSlider({
               const v = Number(e.target.value);
               if (!isNaN(v) && v >= min && v <= max) onChange(v);
             }}
-            className="w-36 text-right text-[14px] font-bold text-ink bg-paper border border-ink/[0.10] rounded-xl px-3 py-1.5 outline-none focus:border-ficium focus:ring-2 focus:ring-ficium/15 transition-colors"
+            className="w-36 text-right text-[14px] font-bold text-ink bg-paper border border-ink/10 rounded-xl px-3 py-1.5 outline-hidden focus:border-ficium focus:ring-2 focus:ring-ficium/15 transition-colors"
           />
         ) : (
           <span className="text-[14px] font-bold text-ink">{display}</span>
@@ -66,9 +66,9 @@ function SimSlider({
 
       {/* Custom track */}
       <div className="relative h-6 flex items-center">
-        <div className="absolute w-full h-1.5 bg-ink/[0.08] rounded-full overflow-hidden">
+        <div className="absolute w-full h-1.5 bg-ink/8 rounded-full overflow-hidden">
           <div
-            className="h-full bg-ficium rounded-full transition-[width] duration-[40ms]"
+            className="h-full bg-ficium rounded-full transition-[width] duration-40"
             style={{ width: `${pct}%` }}
           />
         </div>
@@ -85,7 +85,7 @@ function SimSlider({
         />
         {/* Thumb */}
         <div
-          className="absolute w-[18px] h-[18px] bg-white border-2 border-ficium rounded-full shadow-[0_2px_8px_rgba(42,31,230,0.30)] pointer-events-none -translate-x-1/2 transition-[left] duration-[40ms]"
+          className="absolute w-[18px] h-[18px] bg-white border-2 border-ficium rounded-full shadow-[0_2px_8px_rgba(42,31,230,0.30)] pointer-events-none -translate-x-1/2 transition-[left] duration-40"
           style={{ left: `${pct}%` }}
         />
       </div>
@@ -108,7 +108,7 @@ function ResultStat({
   const bg =
     variant === "highlight"
       ? "bg-ficium/[0.07] border border-ficium/15"
-      : "bg-white/[0.07] border border-white/[0.08]";
+      : "bg-white/[0.07] border border-white/8";
 
   const labelColor =
     variant === "highlight"
@@ -123,7 +123,7 @@ function ResultStat({
 
   return (
     <div className={`rounded-2xl p-4 ${bg}`}>
-      <div className={`text-[10px] font-bold uppercase tracking-[0.10em] mb-1.5 ${labelColor}`}>
+      <div className={`text-[10px] font-bold uppercase tracking-widest mb-1.5 ${labelColor}`}>
         {label}
       </div>
       <div
@@ -183,7 +183,7 @@ export default function FinancialTools() {
           </div>
 
           {/* Mode tabs */}
-          <div className="flex bg-ink/[0.06] rounded-pill p-1 gap-1 self-start mt-1">
+          <div className="flex bg-ink/6 rounded-pill p-1 gap-1 self-start mt-1">
             {(["credit", "investment"] as Mode[]).map((m) => (
               <button
                 key={m}
@@ -205,7 +205,7 @@ export default function FinancialTools() {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-6 items-start">
 
           {/* ── Left: Inputs ── */}
-          <div className="bg-white rounded-[24px] border border-ink/[0.06] shadow-card p-8">
+          <div className="bg-white rounded-[24px] border border-ink/6 shadow-card p-8">
 
             <div className="text-[11px] font-bold tracking-[0.12em] uppercase text-muted mb-7">
               Parameters
@@ -245,7 +245,7 @@ export default function FinancialTools() {
             </div>
 
             {/* Market insight */}
-            <div className="mt-8 bg-ficium/[0.04] border border-ficium/[0.14] rounded-2xl px-5 py-4">
+            <div className="mt-8 bg-ficium/4 border border-ficium/[0.14] rounded-2xl px-5 py-4">
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-1.5 h-1.5 rounded-full bg-ficium animate-pulse" />
                 <span className="text-[10px] font-bold tracking-[0.12em] uppercase text-ficium">
@@ -265,7 +265,7 @@ export default function FinancialTools() {
           </div>
 
           {/* ── Right: Results ── */}
-          <div className="rounded-[24px] overflow-hidden border border-ink/[0.06] shadow-card">
+          <div className="rounded-[24px] overflow-hidden border border-ink/6 shadow-card">
 
             {/* Dark hero */}
             <div className="px-7 py-8 relative overflow-hidden bg-hero">
@@ -313,7 +313,7 @@ export default function FinancialTools() {
             {/* White info strip */}
             <div className="bg-white px-6 py-5">
               <div className="flex items-start gap-3">
-                <div className="w-9 h-9 flex-shrink-0 rounded-xl bg-ficium/[0.07] border border-ficium/[0.12] grid place-items-center text-base">
+                <div className="w-9 h-9 shrink-0 rounded-xl bg-ficium/[0.07] border border-ficium/12 grid place-items-center text-base">
                   {isCredit ? (
                     <HandCoins size={16} className="text-ficium" />
                   ) : (

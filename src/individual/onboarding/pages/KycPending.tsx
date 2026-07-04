@@ -32,8 +32,8 @@ export default function KycPending() {
             { icon: <Mail          size={18} />, title: "Decision by email", done: false, desc: "You'll be notified as soon as verification is complete." },
           ].map((step) => (
             <div key={step.title} className="flex gap-3.5 items-start">
-              <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                step.done ? "bg-good/15 text-good" : "bg-ink/[0.06] text-muted"
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                step.done ? "bg-good/15 text-good" : "bg-ink/6 text-muted"
               }`}>
                 {step.icon}
               </div>

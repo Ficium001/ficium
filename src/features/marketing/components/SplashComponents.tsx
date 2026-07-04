@@ -90,7 +90,7 @@ export function Nav({ scrollY, progress }: { scrollY: number; progress: number }
 
 export function Phone({ scene, sceneIndex, activeOffer }: { scene: Scene; sceneIndex: number; activeOffer: number }) {
   return (
-    <div className="w-[280px] sm:w-[320px] lg:w-[340px] aspect-[340/680] bg-ink rounded-[40px] sm:rounded-[48px] p-3 relative shadow-phone">
+    <div className="w-[280px] sm:w-[320px] lg:w-[340px] aspect-340/680 bg-ink rounded-[40px] sm:rounded-[48px] p-3 relative shadow-phone">
       <div className="w-full h-full rounded-[32px] sm:rounded-[38px] p-[44px_22px_22px] overflow-hidden relative" style={{ background: GRADIENT }}>
         <div className="absolute top-3.5 left-1/2 -translate-x-1/2 w-[100px] h-[26px] bg-ink rounded-pill" />
         <div className="flex justify-between items-center mt-2 mb-5">
@@ -118,7 +118,7 @@ export function Phone({ scene, sceneIndex, activeOffer }: { scene: Scene; sceneI
           {scene.offers.map((o, i) => {
             const isActive = i === activeOffer;
             return (
-              <div key={`${sceneIndex}-${i}`} className={["rounded-2xl px-4 py-3.5 transition-all duration-500", isActive ? "bg-white scale-[1.02] shadow-lg" : "bg-white/[0.08] border border-white/10 scale-100"].join(" ")}>
+              <div key={`${sceneIndex}-${i}`} className={["rounded-2xl px-4 py-3.5 transition-all duration-500", isActive ? "bg-white scale-[1.02] shadow-lg" : "bg-white/8 border border-white/10 scale-100"].join(" ")}>
                 <div className="flex justify-between items-start">
                   <div className="min-w-0">
                     <div className={["text-sm font-semibold mb-0.5", isActive ? "text-ink" : "text-white"].join(" ")}>{o.bank}</div>
@@ -158,7 +158,7 @@ export function Hero({ scene, sceneIndex, activeOffer, scrollY, reducedMotion }:
         style={{ background: GRADIENT, transform: `translateY(${p * 0.18}px)` }} />
       <div className="absolute top-[520px] -left-12 sm:-left-20 w-40 sm:w-56 lg:w-72 h-40 sm:h-56 lg:h-72 rounded-full bg-ficium opacity-[0.10] blur-[50px] pointer-events-none"
         style={{ transform: `translateY(${-p * 0.12}px)` }} />
-      <div className="relative z-[2] max-w-[1280px] mx-auto px-5 sm:px-8 grid grid-cols-1 lg:grid-cols-[1.1fr_1fr] gap-10 lg:gap-14 items-center">
+      <div className="relative z-2 max-w-[1280px] mx-auto px-5 sm:px-8 grid grid-cols-1 lg:grid-cols-[1.1fr_1fr] gap-10 lg:gap-14 items-center">
         <div>
           <div className="inline-flex items-center gap-2 bg-ficium/10 text-ficium px-3.5 py-2 rounded-pill text-xs sm:text-[13px] font-semibold mb-6 sm:mb-7">
             <Sparkles size={14} /> The reverse-banking marketplace
@@ -198,7 +198,7 @@ export function Hero({ scene, sceneIndex, activeOffer, scrollY, reducedMotion }:
             <div className="ml-3 text-xs sm:text-[13px] text-muted">{scene.label}</div>
           </div>
         </div>
-        <div className="relative flex justify-center mt-6 lg:mt-0 motion-reduce:!translate-y-0"
+        <div className="relative flex justify-center mt-6 lg:mt-0 motion-reduce:translate-y-0!"
           style={{ transform: `translateY(${-p * 0.06}px)` }}>
           <div className="animate-[float_6s_ease-in-out_infinite] motion-reduce:animate-none">
             <Phone scene={scene} sceneIndex={sceneIndex} activeOffer={activeOffer} />
@@ -293,7 +293,7 @@ function PinnedStory() {
                       opacity: active ? 1 : done ? 0.55 : 0.3,
                       transform: active ? "translateX(8px)" : "translateX(0)",
                     }}>
-                    <div className="w-11 h-11 rounded-xl grid place-items-center flex-shrink-0 transition-colors duration-500"
+                    <div className="w-11 h-11 rounded-xl grid place-items-center shrink-0 transition-colors duration-500"
                       style={{ background: active ? GRADIENT : "rgba(255,255,255,0.08)" }}>
                       {done ? <Check size={20} /> : <s.icon size={20} />}
                     </div>
@@ -323,7 +323,7 @@ function StoryCard({ beat, local }: { beat: number; local: number }) {
   const scene = SCENES[2]; // Fixed Deposit — clean numbers
   const bidsShown = beat === 0 ? 0 : beat === 1 ? Math.min(3, Math.ceil(local * 3 + 0.34)) : 3;
   return (
-    <div className="w-[360px] rounded-[28px] p-7 text-white shadow-phone relative overflow-hidden" style={{ background: GRADIENT }}>
+    <div className="w-[360px] rounded-hero p-7 text-white shadow-phone relative overflow-hidden" style={{ background: GRADIENT }}>
       <div className="flex justify-between items-center mb-5">
         <div className="text-[13px] opacity-70">Your request</div>
         <div className="bg-white/15 px-2.5 py-1 rounded-pill text-[11px] font-semibold flex items-center gap-1.5">
@@ -422,8 +422,8 @@ function ProductCard({ icon, tone, tag, title, desc, metric, metricValue }: {
   title: string; desc: string; metric: string; metricValue: string;
 }) {
   const styles = {
-    gradient: { className: "text-white", style: { background: GRADIENT }, chip: "bg-white/20", border: "border-white/20", iconBg: "bg-white/[0.18]" },
-    ink:      { className: "bg-ink text-paper", style: {}, chip: "bg-white/15", border: "border-white/15", iconBg: "bg-white/[0.10]" },
+    gradient: { className: "text-white", style: { background: GRADIENT }, chip: "bg-white/20", border: "border-white/20", iconBg: "bg-white/18" },
+    ink:      { className: "bg-ink text-paper", style: {}, chip: "bg-white/15", border: "border-white/15", iconBg: "bg-white/10" },
     light:    { className: "bg-white text-ink border border-line", style: {}, chip: "bg-ficium/10 text-ficium", border: "border-line", iconBg: "bg-ficium/10 text-ficium" },
     tint:     { className: "text-ink", style: { background: "#F1F0FF" }, chip: "bg-ficium/10 text-ficium", border: "border-ink/10", iconBg: "bg-ficium/10 text-ficium" },
   }[tone];
@@ -450,7 +450,7 @@ function ProductCard({ icon, tone, tag, title, desc, metric, metricValue }: {
 function SecondaryProductCard({ icon, label, desc, productType }: { icon: React.ReactNode; label: string; desc: string; productType: string }) {
   return (
     <Link to={`/register?product=${productType}`} className="group flex items-start gap-3 bg-white border border-line hover:border-ficium/30 hover:shadow-card rounded-2xl px-4 py-3.5 transition-all">
-      <div className="w-8 h-8 rounded-xl bg-ficium/[0.08] text-ficium flex items-center justify-center flex-shrink-0 group-hover:bg-ficium group-hover:text-white transition-colors">{icon}</div>
+      <div className="w-8 h-8 rounded-xl bg-ficium/8 text-ficium flex items-center justify-center shrink-0 group-hover:bg-ficium group-hover:text-white transition-colors">{icon}</div>
       <div className="min-w-0">
         <div className="text-[13px] font-bold text-ink leading-tight">{label}</div>
         <div className="text-[11px] text-muted mt-0.5 leading-tight">{desc}</div>
@@ -487,7 +487,7 @@ export function Trust() {
             ].map((f, i) => (
               <Reveal key={i} delay={i * 90}>
                 <div className="flex gap-4 py-5 border-b border-line">
-                  <div className="w-11 h-11 rounded-xl bg-ficium/10 grid place-items-center flex-shrink-0 text-ficium"><f.i size={20} /></div>
+                  <div className="w-11 h-11 rounded-xl bg-ficium/10 grid place-items-center shrink-0 text-ficium"><f.i size={20} /></div>
                   <div>
                     <div className="text-[17px] font-semibold mb-1">{f.t}</div>
                     <div className="text-[15px] text-muted leading-snug">{f.d}</div>

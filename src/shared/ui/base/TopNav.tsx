@@ -29,7 +29,7 @@ export function TopNav({ role }: { role: string | null | undefined }) {
   return (
     <header className="hidden md:flex fixed top-0 left-0 right-0 z-40 h-14 bg-paper/85 backdrop-blur-xl border-b border-line items-center px-6">
       {/* Logo */}
-      <Link to="/dashboard" className="mr-8 no-underline flex-shrink-0">
+      <Link to="/dashboard" className="mr-8 no-underline shrink-0">
         <FiciumLogo />
       </Link>
 

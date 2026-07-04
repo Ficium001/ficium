@@ -32,7 +32,7 @@ export function PropertyCard({ property }: { property: Property }) {
       {/* Header row */}
       <div className="flex items-start justify-between gap-3 mb-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center flex-shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
             <Home size={18} className="text-amber-600" />
           </div>
           <div>
@@ -48,10 +48,10 @@ export function PropertyCard({ property }: { property: Property }) {
 
         {/* Verified badge */}
         {property.verified
-          ? <span className="inline-flex items-center gap-1 px-2 py-1 rounded-pill bg-good/10 text-good text-[10px] font-bold flex-shrink-0">
+          ? <span className="inline-flex items-center gap-1 px-2 py-1 rounded-pill bg-good/10 text-good text-[10px] font-bold shrink-0">
               <CheckCircle2 size={10} /> Verified
             </span>
-          : <span className="inline-flex items-center gap-1 px-2 py-1 rounded-pill bg-warn/10 text-warn text-[10px] font-bold flex-shrink-0">
+          : <span className="inline-flex items-center gap-1 px-2 py-1 rounded-pill bg-warn/10 text-warn text-[10px] font-bold shrink-0">
               <AlertCircle size={10} /> Pending valuation
             </span>
         }

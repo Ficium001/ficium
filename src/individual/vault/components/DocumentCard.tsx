@@ -8,7 +8,7 @@ import { DOC_TYPE_LABELS, EXTRACT_STATUS_LABELS, type VaultDocument, type Extrac
 
 // ── Status badge ──────────────────────────────────────────────────────────────
 const STATUS_STYLES: Record<ExtractStatus, { bg: string; text: string; icon: React.ReactNode }> = {
-  pending:       { bg: "bg-ink/[0.06]",       text: "text-muted",  icon: <Clock      size={11} /> },
+  pending:       { bg: "bg-ink/6",       text: "text-muted",  icon: <Clock      size={11} /> },
   processing:    { bg: "bg-warn/10",          text: "text-warn",   icon: <Loader2    size={11} className="animate-spin" /> },
   extracted:     { bg: "bg-ficium/10",        text: "text-ficium", icon: <Clock      size={11} /> },
   attested:      { bg: "bg-good/10",          text: "text-good",   icon: <CheckCircle2 size={11} /> },
@@ -61,7 +61,7 @@ export function DocumentCard({ doc, onView, onDelete }: Props) {
   return (
     <div className="flex items-center gap-4 p-4 bg-white rounded-2xl border border-line hover:border-line/60 transition-all">
       {/* Icon */}
-      <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center flex-shrink-0">
+      <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center shrink-0">
         <FileText size={18} className="text-muted" />
       </div>
 
@@ -95,11 +95,11 @@ export function DocumentCard({ doc, onView, onDelete }: Props) {
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-1 flex-shrink-0">
+      <div className="flex items-center gap-1 shrink-0">
         <button
           onClick={handleView}
           disabled={viewing}
-          className="w-8 h-8 rounded-xl flex items-center justify-center text-muted hover:text-ficium hover:bg-ficium/[0.06] transition-all disabled:opacity-40"
+          className="w-8 h-8 rounded-xl flex items-center justify-center text-muted hover:text-ficium hover:bg-ficium/6 transition-all disabled:opacity-40"
           title="View"
         >
           {viewing ? <Loader2 size={14} className="animate-spin" /> : <Eye size={14} />}
@@ -107,7 +107,7 @@ export function DocumentCard({ doc, onView, onDelete }: Props) {
         <button
           onClick={handleDelete}
           disabled={deleting}
-          className="w-8 h-8 rounded-xl flex items-center justify-center text-muted hover:text-bad hover:bg-bad/[0.06] transition-all disabled:opacity-40"
+          className="w-8 h-8 rounded-xl flex items-center justify-center text-muted hover:text-bad hover:bg-bad/6 transition-all disabled:opacity-40"
           title="Delete"
         >
           {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}

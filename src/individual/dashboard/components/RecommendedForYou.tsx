@@ -39,22 +39,22 @@ function Row({ r }: { r: Recommendation }) {
   return (
     <button
       onClick={() => navigate(r.href)}
-      className="w-full flex items-center gap-3 p-3 rounded-[16px] bg-ink/[0.02] hover:bg-ink/[0.045] transition-colors text-left"
+      className="w-full flex items-center gap-3 p-3 rounded-[16px] bg-ink/2 hover:bg-ink/4.5 transition-colors text-left"
     >
-      <div className={["w-10 h-10 rounded-xl grid place-items-center flex-shrink-0", r.iconBg].join(" ")}>
+      <div className={["w-10 h-10 rounded-xl grid place-items-center shrink-0", r.iconBg].join(" ")}>
         {r.icon}
       </div>
       <div className="flex-1 min-w-0">
         <div className="text-[13px] font-bold text-ink truncate">{r.title}</div>
         <div className="text-[11px] text-muted truncate">{r.subtitle}</div>
       </div>
-      <div className="text-right flex-shrink-0">
+      <div className="text-right shrink-0">
         <div className={["text-[15px] font-extrabold font-display leading-none", r.statColor].join(" ")}>
           {r.stat}
         </div>
         <div className="text-[10px] text-muted font-medium mt-0.5">{r.statSub}</div>
       </div>
-      <ChevronRight size={16} className="text-ink/25 flex-shrink-0" />
+      <ChevronRight size={16} className="text-ink/25 shrink-0" />
     </button>
   );
 }
@@ -105,14 +105,14 @@ export function RecommendedForYou() {
   ];
 
   return (
-    <div className="bg-white rounded-[22px] border border-ink/[0.06] shadow-card p-5 h-full">
+    <div className="bg-white rounded-[22px] border border-ink/6 shadow-card p-5 h-full">
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-display text-[16px] sm:text-[18px] font-bold text-ink leading-tight">
           Recommended <span className="text-ficium">for you</span>
         </h2>
         <button
           onClick={() => navigate("/tools")}
-          className="text-[12px] font-semibold text-muted hover:text-ink flex-shrink-0 ml-3"
+          className="text-[12px] font-semibold text-muted hover:text-ink shrink-0 ml-3"
         >
           View all →
         </button>

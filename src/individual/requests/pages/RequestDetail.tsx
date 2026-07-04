@@ -60,7 +60,7 @@ function PlanTab({ request, bidCount }: { request: RequestDetailType; bidCount: 
   return (
     <div className="space-y-4">
       {/* Request summary */}
-      <div className="bg-white rounded-[22px] border border-ink/[0.06] shadow-sm p-5">
+      <div className="bg-white rounded-[22px] border border-ink/6 shadow-xs p-5">
         <div className="flex items-end justify-between mb-3">
           <div>
             <div className="text-[12px] text-muted font-semibold mb-0.5">Amount requested</div>
@@ -79,10 +79,10 @@ function PlanTab({ request, bidCount }: { request: RequestDetailType; bidCount: 
       </div>
 
       {/* Journey progress */}
-      <div className="bg-white rounded-[22px] border border-ink/[0.06] shadow-sm p-5">
+      <div className="bg-white rounded-[22px] border border-ink/6 shadow-xs p-5">
         <div className="text-[12px] font-bold text-muted uppercase tracking-widest mb-4">Application journey</div>
         <div className="relative flex items-start justify-between">
-          <div className="absolute top-5 left-5 right-5 h-1 bg-ink/[0.08] rounded-pill" />
+          <div className="absolute top-5 left-5 right-5 h-1 bg-ink/8 rounded-pill" />
           <div className="absolute top-5 left-5 h-1 bg-ficium rounded-pill transition-all duration-700"
                style={{ width: `${(journeyProgress / (JOURNEY_STEPS.length - 1)) * 85}%` }} />
           {JOURNEY_STEPS.map((label, i) => {
@@ -103,12 +103,12 @@ function PlanTab({ request, bidCount }: { request: RequestDetailType; bidCount: 
 
       {/* Request answers */}
       {purposeFields.length > 0 && (
-        <div className="bg-white rounded-[22px] border border-ink/[0.06] shadow-sm p-5">
+        <div className="bg-white rounded-[22px] border border-ink/6 shadow-xs p-5">
           <div className="text-[12px] font-bold text-muted uppercase tracking-widest mb-3">Your answers</div>
           <div className="space-y-2">
             {purposeFields.map(({ key, value }) => (
-              <div key={key} className="flex items-start justify-between gap-4 py-2 border-b border-ink/[0.05] last:border-0">
-                <span className="text-[12px] text-muted font-medium capitalize w-36 flex-shrink-0">{key}</span>
+              <div key={key} className="flex items-start justify-between gap-4 py-2 border-b border-ink/5 last:border-0">
+                <span className="text-[12px] text-muted font-medium capitalize w-36 shrink-0">{key}</span>
                 <span className="text-[13px] font-semibold text-ink text-right">{value}</span>
               </div>
             ))}
@@ -119,7 +119,7 @@ function PlanTab({ request, bidCount }: { request: RequestDetailType; bidCount: 
       {/* Waiting / offers */}
       {bidCount === 0 ? (
         <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4">
-          <Clock size={16} className="text-amber-600 flex-shrink-0" />
+          <Clock size={16} className="text-amber-600 shrink-0" />
           <div>
             <div className="text-[14px] font-bold text-amber-800">Waiting for offers</div>
             <div className="text-[12px] text-amber-600 mt-0.5">Providers typically respond within 24 hours.</div>
@@ -127,7 +127,7 @@ function PlanTab({ request, bidCount }: { request: RequestDetailType; bidCount: 
         </div>
       ) : (
         <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-2xl px-5 py-4">
-          <Building2 size={16} className="text-emerald-600 flex-shrink-0" />
+          <Building2 size={16} className="text-emerald-600 shrink-0" />
           <div>
             <div className="text-[14px] font-bold text-emerald-800">{bidCount} offer{bidCount !== 1 ? "s" : ""} received</div>
             <div className="text-[12px] text-emerald-600 mt-0.5">Go to the Bids tab to compare and accept.</div>
@@ -158,11 +158,11 @@ function DocumentsTab() {
 
   return (
     <div className="space-y-4">
-      <div className="bg-white rounded-[22px] border border-ink/[0.06] shadow-sm p-5">
+      <div className="bg-white rounded-[22px] border border-ink/6 shadow-xs p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="text-[12px] font-bold text-muted uppercase tracking-widest">Document vault</div>
           {loading ? (
-            <div className="h-3 w-16 bg-ink/10 rounded animate-pulse" />
+            <div className="h-3 w-16 bg-ink/10 rounded-sm animate-pulse" />
           ) : (
             <div className={`text-[11px] font-semibold ${missingCount > 0 ? "text-amber-600" : "text-emerald-600"}`}>
               {missingCount > 0 ? `${missingCount} missing` : "All verified"}
@@ -194,7 +194,7 @@ function DocumentsTab() {
         )}
       </div>
       <button onClick={() => navigate("/vault")}
-        className="w-full py-3.5 rounded-2xl text-[14px] font-semibold text-ficium border-2 border-ficium/20 hover:bg-ficium/[0.04] transition-colors">
+        className="w-full py-3.5 rounded-2xl text-[14px] font-semibold text-ficium border-2 border-ficium/20 hover:bg-ficium/4 transition-colors">
         Manage full vault →
       </button>
     </div>
@@ -230,8 +230,8 @@ function InsightsTab({ bids, request, profile }: {
 
   return (
     <div className="space-y-4">
-      <div className="bg-ficium/[0.04] border border-ficium/[0.12] rounded-[18px] px-5 py-4 flex items-start gap-3">
-        <Sparkles size={18} className="text-ficium mt-0.5 flex-shrink-0" />
+      <div className="bg-ficium/4 border border-ficium/12 rounded-[18px] px-5 py-4 flex items-start gap-3">
+        <Sparkles size={18} className="text-ficium mt-0.5 shrink-0" />
         <div>
           <div className="text-[12px] font-bold text-ficium uppercase tracking-widest mb-1">AI Coach</div>
           <p className="text-[13px] text-ink/80 leading-relaxed">{coachInsight}</p>
@@ -240,11 +240,11 @@ function InsightsTab({ bids, request, profile }: {
 
       {/* Live bid signals */}
       {bidCount > 0 && (
-        <div className="bg-white rounded-[22px] border border-ink/[0.06] shadow-sm p-5 space-y-3">
+        <div className="bg-white rounded-[22px] border border-ink/6 shadow-xs p-5 space-y-3">
           <div className="text-[12px] font-bold text-muted uppercase tracking-widest">Live bid signals</div>
           {bestRate !== null && (
             <div className="flex items-center gap-3 p-3 rounded-xl bg-emerald-50 border border-emerald-100">
-              <BarChart3 size={16} className="text-emerald-600 flex-shrink-0" />
+              <BarChart3 size={16} className="text-emerald-600 shrink-0" />
               <span className="text-[13px] font-medium text-ink">
                 Best rate so far: <strong>{bestRate.toFixed(2)}%</strong> APR
               </span>
@@ -252,15 +252,15 @@ function InsightsTab({ bids, request, profile }: {
           )}
           {avgRate !== null && bestRate !== null && (
             <div className="flex items-center gap-3 p-3 rounded-xl bg-blue-50 border border-blue-100">
-              <BarChart3 size={16} className="text-blue-600 flex-shrink-0" />
+              <BarChart3 size={16} className="text-blue-600 shrink-0" />
               <span className="text-[13px] font-medium text-ink">
                 Market avg: <strong>{avgRate.toFixed(2)}%</strong> — you are{" "}
                 <strong className="text-emerald-600">{(avgRate - bestRate).toFixed(2)}%</strong> below average
               </span>
             </div>
           )}
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-ficium/[0.04] border border-ficium/10">
-            <Building2 size={16} className="text-ficium flex-shrink-0" />
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-ficium/4 border border-ficium/10">
+            <Building2 size={16} className="text-ficium shrink-0" />
             <span className="text-[13px] font-medium text-ink">
               {bidCount} provider{bidCount !== 1 ? "s" : ""} competing for this request
             </span>
@@ -270,7 +270,7 @@ function InsightsTab({ bids, request, profile }: {
 
       {/* Profile signals */}
       {(healthScore !== null || dsr !== null) && (
-        <div className="bg-white rounded-[22px] border border-ink/[0.06] shadow-sm p-5 space-y-3">
+        <div className="bg-white rounded-[22px] border border-ink/6 shadow-xs p-5 space-y-3">
           <div className="text-[12px] font-bold text-muted uppercase tracking-widest">Your profile signals</div>
           {healthScore !== null && (
             <div className={["flex items-center gap-3 p-3 rounded-xl border",
@@ -320,7 +320,7 @@ function DetailsTab({ request, profile }: { request: RequestDetailType; profile:
           <DetailRow label="Status"    value={request.status} />
         </div>
         {request.purpose && (
-          <div className="mt-4 pt-4 border-t border-ink/[0.06]">
+          <div className="mt-4 pt-4 border-t border-ink/6">
             <div className="text-[11px] text-muted mb-1.5">Purpose</div>
             <p className="text-[14px] text-ink/80 leading-relaxed bg-paper rounded-xl px-4 py-3">{request.purpose}</p>
           </div>
@@ -437,7 +437,7 @@ function NoBidsState({
           </button>
         </div>
       ) : (
-        <div className="px-4 py-3 bg-ink/[0.04] border border-ink/10 rounded-2xl">
+        <div className="px-4 py-3 bg-ink/4 border border-ink/10 rounded-2xl">
           <div className="font-semibold text-ink text-[13px] mb-0.5">Bid window closed</div>
           <p className="text-[12px] text-muted">
             {bidCount > 0
@@ -507,7 +507,7 @@ function BidsTab({ bids, request, isClosed, accepting, acceptingBid, onAccept }:
             ? "bg-red-50 border-red-200 text-red-700"
             : "bg-amber-50 border-amber-100 text-amber-700"
         }`}>
-          <Clock size={14} className="flex-shrink-0" />
+          <Clock size={14} className="shrink-0" />
           <span>Bidding closes in{" "}
             <strong className="tabular-nums">
               {countdown.h > 0 ? `${countdown.h}h ` : ""}{String(countdown.m).padStart(2,"0")}m {String(countdown.s).padStart(2,"0")}s
@@ -516,15 +516,15 @@ function BidsTab({ bids, request, isClosed, accepting, acceptingBid, onAccept }:
         </div>
       )}
       {isClosed && !acceptedBid && (
-        <div className="flex items-center gap-3 px-4 py-3 mb-4 rounded-2xl border bg-ink/[0.04] border-ink/10 text-[12px] text-muted">
-          <Clock size={14} className="flex-shrink-0" />
+        <div className="flex items-center gap-3 px-4 py-3 mb-4 rounded-2xl border bg-ink/4 border-ink/10 text-[12px] text-muted">
+          <Clock size={14} className="shrink-0" />
           <span>Bid window closed</span>
         </div>
       )}
 
       {acceptedBid && (
-        <div className="flex items-start gap-3 px-4 py-4 mb-5 bg-ficium/[0.06] border border-ficium/20 rounded-2xl">
-          <CheckCircle size={20} className="text-ficium flex-shrink-0 mt-0.5" />
+        <div className="flex items-start gap-3 px-4 py-4 mb-5 bg-ficium/6 border border-ficium/20 rounded-2xl">
+          <CheckCircle size={20} className="text-ficium shrink-0 mt-0.5" />
           <div>
             <div className="text-sm font-semibold">Offer accepted</div>
             <div className="text-[13px] text-muted mt-0.5">
@@ -549,11 +549,11 @@ function BidsTab({ bids, request, isClosed, accepting, acceptingBid, onAccept }:
           {bids.length >= 2 && (
             <div className="flex items-center gap-2 mb-4">
               <button onClick={() => setView("table")}
-                className={`px-3 py-1.5 rounded-xl text-[12px] font-semibold transition-all ${view === "table" ? "bg-ficium text-white" : "bg-ink/[0.06] text-muted"}`}>
+                className={`px-3 py-1.5 rounded-xl text-[12px] font-semibold transition-all ${view === "table" ? "bg-ficium text-white" : "bg-ink/6 text-muted"}`}>
                 Compare
               </button>
               <button onClick={() => setView("cards")}
-                className={`px-3 py-1.5 rounded-xl text-[12px] font-semibold transition-all ${view === "cards" ? "bg-ficium text-white" : "bg-ink/[0.06] text-muted"}`}>
+                className={`px-3 py-1.5 rounded-xl text-[12px] font-semibold transition-all ${view === "cards" ? "bg-ficium text-white" : "bg-ink/6 text-muted"}`}>
                 Cards
               </button>
             </div>
@@ -561,10 +561,10 @@ function BidsTab({ bids, request, isClosed, accepting, acceptingBid, onAccept }:
 
           {/* Comparison table */}
           {view === "table" && bids.length >= 2 ? (
-            <div className="overflow-x-auto rounded-[18px] border border-ink/[0.08] bg-white">
+            <div className="overflow-x-auto rounded-[18px] border border-ink/8 bg-white">
               <table className="w-full text-[12px]">
                 <thead>
-                  <tr className="border-b border-ink/[0.06]">
+                  <tr className="border-b border-ink/6">
                     <th className="text-left px-4 py-3 text-[10px] font-bold text-muted uppercase tracking-wider">Provider</th>
                     <th className="text-right px-4 py-3 text-[10px] font-bold text-muted uppercase tracking-wider">Rate</th>
                     <th className="text-right px-4 py-3 text-[10px] font-bold text-muted uppercase tracking-wider">Amount</th>
@@ -583,10 +583,10 @@ function BidsTab({ bids, request, isClosed, accepting, acceptingBid, onAccept }:
                     const isBest      = i === 0;
                     const isAccepted  = bid.status === "accepted";
                     return (
-                      <tr key={bid.id} className={`border-b border-ink/[0.04] last:border-0 transition-colors ${isBest ? "bg-ficium/[0.02]" : "hover:bg-ink/[0.02]"}`}>
+                      <tr key={bid.id} className={`border-b border-ink/4 last:border-0 transition-colors ${isBest ? "bg-ficium/2" : "hover:bg-ink/2"}`}>
                         <td className="px-4 py-3.5">
                           <div className="flex items-center gap-2">
-                            {isBest && <span className="w-1.5 h-1.5 rounded-full bg-ficium flex-shrink-0" />}
+                            {isBest && <span className="w-1.5 h-1.5 rounded-full bg-ficium shrink-0" />}
                             <span className="font-semibold text-ink">{bid.institutionName}</span>
                             {isBest && <span className="text-[9px] font-bold px-1.5 py-0.5 bg-ficium text-white rounded-full">BEST</span>}
                             {isAccepted && <span className="text-[9px] font-bold px-1.5 py-0.5 bg-emerald-500 text-white rounded-full">ACCEPTED</span>}
@@ -645,8 +645,8 @@ function BidsTab({ bids, request, isClosed, accepting, acceptingBid, onAccept }:
 /* ── Phase 2 Reveal Modal ── */
 function Phase2RevealModal({ reveal, onClose }: { reveal: Phase2Reveal; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/50 backdrop-blur-sm p-4">
-      <div className="w-full max-w-md bg-white rounded-[28px] shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/50 backdrop-blur-xs p-4">
+      <div className="w-full max-w-md bg-white rounded-hero shadow-2xl overflow-hidden">
 
         {/* Header */}
         <div className="relative px-6 pt-8 pb-6 text-center"
@@ -686,21 +686,21 @@ function Phase2RevealModal({ reveal, onClose }: { reveal: Phase2Reveal; onClose:
               </div>
               {reveal.contact_person && (
                 <div className="flex items-center gap-3">
-                  <User size={14} className="text-ficium flex-shrink-0" />
+                  <User size={14} className="text-ficium shrink-0" />
                   <span className="text-[14px] font-semibold text-ink">{reveal.contact_person}</span>
                 </div>
               )}
               {reveal.contact_email && (
                 <a href={`mailto:${reveal.contact_email}`}
                   className="flex items-center gap-3 group">
-                  <MessageSquare size={14} className="text-ficium flex-shrink-0" />
+                  <MessageSquare size={14} className="text-ficium shrink-0" />
                   <span className="text-[13px] text-ficium group-hover:underline">{reveal.contact_email}</span>
                 </a>
               )}
               {reveal.contact_phone && (
                 <a href={`tel:${reveal.contact_phone}`}
                   className="flex items-center gap-3 group">
-                  <AlertCircle size={14} className="text-ficium flex-shrink-0" />
+                  <AlertCircle size={14} className="text-ficium shrink-0" />
                   <span className="text-[13px] text-ficium group-hover:underline">{reveal.contact_phone}</span>
                 </a>
               )}
@@ -708,7 +708,7 @@ function Phase2RevealModal({ reveal, onClose }: { reveal: Phase2Reveal; onClose:
           )}
 
           {/* What happens next */}
-          <div className="bg-ficium/[0.04] border border-ficium/10 rounded-2xl px-4 py-3">
+          <div className="bg-ficium/4 border border-ficium/10 rounded-2xl px-4 py-3">
             <div className="text-[12px] text-ink/70 leading-relaxed">
               <strong className="text-ink">{reveal.institution_name}</strong> will contact
               you within <strong className="text-ink">2 business days</strong> to begin
@@ -818,7 +818,7 @@ export default function RequestDetail() {
                   <button
                     key={t.id}
                     onClick={() => setTab(t.id)}
-                    className="relative flex-shrink-0 flex flex-col items-center gap-1.5 pt-2 pb-3 px-4 rounded-t-[10px] transition-all duration-200"
+                    className="relative shrink-0 flex flex-col items-center gap-1.5 pt-2 pb-3 px-4 rounded-t-[10px] transition-all duration-200"
                     style={
                       active
                         ? { background: "rgba(255,255,255,0.10)", color: "#fff" }
@@ -865,7 +865,7 @@ export default function RequestDetail() {
         )}
         {tab === "tracker"   && <TrackerTab requestId={id!} />}
         {tab === "chat"      && (
-          <div className="rounded-2xl overflow-hidden border border-ink/[0.08] bg-white" style={{ height: "520px", display: "flex", flexDirection: "column" }}>
+          <div className="rounded-2xl overflow-hidden border border-ink/8 bg-white" style={{ height: "520px", display: "flex", flexDirection: "column" }}>
             <RequestChat requestId={id!} senderType="client" client={supabase} height="flex-1" />
           </div>
         )}
@@ -892,16 +892,16 @@ function BidCard({ bid, rank, isBest, canAccept, isAccepting, onAccept }: {
   const monthly     = monthlyRepayment(bid.amountOffered, annualRate, bid.termMonths);
 
   return (
-    <Card padded={false} className={["p-4", isBest ? "border-ficium/30 bg-ficium/[0.02]" : "", isAccepted ? "border-green-300 bg-green-50/50" : ""].join(" ")}>
+    <Card padded={false} className={["p-4", isBest ? "border-ficium/30 bg-ficium/2" : "", isAccepted ? "border-green-300 bg-green-50/50" : ""].join(" ")}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3">
-          <div className={["w-8 h-8 rounded-full grid place-items-center text-xs font-bold flex-shrink-0",
+          <div className={["w-8 h-8 rounded-full grid place-items-center text-xs font-bold shrink-0",
             isBest ? "bg-ficium text-white" : isAccepted ? "bg-green-500 text-white" : "bg-ink/10 text-muted"].join(" ")}>
             {isAccepted ? "✓" : `#${rank}`}
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <Building2 size={13} className="text-muted flex-shrink-0" />
+              <Building2 size={13} className="text-muted shrink-0" />
               <span className="text-[13px] font-semibold truncate">{bid.institutionName}</span>
               {isBest && <span className="text-[10px] font-bold px-2 py-0.5 bg-ficium text-white rounded-pill">Best rate</span>}
             </div>
@@ -922,7 +922,7 @@ function BidCard({ bid, rank, isBest, canAccept, isAccepting, onAccept }: {
                   </div>
                 )}
                 {monthly !== null && (
-                  <div className="bg-ficium/[0.06] border border-ficium/15 rounded-lg px-3 py-1.5">
+                  <div className="bg-ficium/6 border border-ficium/15 rounded-lg px-3 py-1.5">
                     <div className="text-[9px] text-ficium uppercase tracking-wide font-bold">Monthly</div>
                     <div className="text-[12px] font-bold text-ficium">MUR {Math.round(monthly).toLocaleString()}</div>
                   </div>
@@ -957,10 +957,10 @@ function BidCard({ bid, rank, isBest, canAccept, isAccepting, onAccept }: {
           </div>
         </div>
         {canAccept && !isAccepted && (
-          <Button size="sm" onClick={onAccept} loading={isAccepting} className="flex-shrink-0">Accept</Button>
+          <Button size="sm" onClick={onAccept} loading={isAccepting} className="shrink-0">Accept</Button>
         )}
         {isAccepted && (
-          <span className="text-xs font-bold text-green-700 bg-green-100 px-2.5 py-1 rounded-pill flex-shrink-0">Accepted</span>
+          <span className="text-xs font-bold text-green-700 bg-green-100 px-2.5 py-1 rounded-pill shrink-0">Accepted</span>
         )}
       </div>
     </Card>
@@ -990,8 +990,8 @@ function LoadingSkeleton() {
   return (
     <div className="min-h-screen bg-paper pb-24">
       <div className="mx-auto w-full max-w-[680px] px-5 py-6">
-        <div className="h-4 w-16 bg-ink/10 rounded mb-6 animate-pulse" />
-        <div className="h-8 w-40 bg-ink/10 rounded mb-2 animate-pulse" />
+        <div className="h-4 w-16 bg-ink/10 rounded-sm mb-6 animate-pulse" />
+        <div className="h-8 w-40 bg-ink/10 rounded-sm mb-2 animate-pulse" />
         {[0,1,2].map(i => <div key={i} className="h-24 bg-ink/10 rounded-xl mb-3 animate-pulse" />)}
       </div>
     </div>

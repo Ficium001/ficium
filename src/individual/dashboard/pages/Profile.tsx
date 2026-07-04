@@ -61,7 +61,7 @@ function MilestoneStep({ label, done, last }: { label: string; done: boolean; la
         ].join(" ")} />
       )}
       <div className={[
-        "w-7 h-7 rounded-full flex items-center justify-center z-10 border-2 transition-all flex-shrink-0",
+        "w-7 h-7 rounded-full flex items-center justify-center z-10 border-2 transition-all shrink-0",
         done ? "bg-ficium border-ficium" : "bg-white border-line",
       ].join(" ")}>
         {done
@@ -130,7 +130,7 @@ export default function Profile() {
           {/* Identity card */}
           <div className="rounded-3xl bg-white border border-line shadow-card p-6">
             <div className="flex items-center gap-4 mb-6">
-              <div className="w-[64px] h-[64px] rounded-[20px] flex items-center justify-center flex-shrink-0 text-white font-display font-extrabold text-2xl"
+              <div className="w-[64px] h-[64px] rounded-card flex items-center justify-center shrink-0 text-white font-display font-extrabold text-2xl"
                 style={{ background: "linear-gradient(135deg, #3536DC 0%, #356EF4 50%, #8231EC 100%)" }}>
                 {initials}
               </div>
@@ -194,7 +194,7 @@ export default function Profile() {
           <div className="rounded-3xl bg-white border border-line shadow-card overflow-hidden">
             <Link to="/couple"
               className="flex items-center gap-4 px-5 py-4 hover:bg-line/30 transition-colors no-underline group border-b border-line">
-              <div className="w-9 h-9 rounded-xl bg-ficium/[0.08] flex items-center justify-center flex-shrink-0">
+              <div className="w-9 h-9 rounded-xl bg-ficium/8 flex items-center justify-center shrink-0">
                 <Heart size={16} className="text-ficium" />
               </div>
               <div className="flex-1">
@@ -205,7 +205,7 @@ export default function Profile() {
             </Link>
             <Link to="/vault"
               className="flex items-center gap-4 px-5 py-4 hover:bg-line/30 transition-colors no-underline group border-b border-line">
-              <div className="w-9 h-9 rounded-xl bg-ficium/[0.08] flex items-center justify-center flex-shrink-0">
+              <div className="w-9 h-9 rounded-xl bg-ficium/8 flex items-center justify-center shrink-0">
                 <ShieldCheck size={16} className="text-ficium" />
               </div>
               <div className="flex-1">
@@ -216,7 +216,7 @@ export default function Profile() {
             </Link>
             <Link to="/security"
               className="flex items-center gap-4 px-5 py-4 hover:bg-line/30 transition-colors no-underline group">
-              <div className="w-9 h-9 rounded-xl bg-ink/[0.05] flex items-center justify-center flex-shrink-0">
+              <div className="w-9 h-9 rounded-xl bg-ink/5 flex items-center justify-center shrink-0">
                 <Lock size={16} className="text-muted" />
               </div>
               <div className="flex-1">

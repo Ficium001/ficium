@@ -90,9 +90,9 @@ export function AiMarketChat({ marketData }: Props) {
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="w-full flex items-center gap-3 bg-gradient-to-r from-ficium/[0.06] to-[#0891b2]/[0.04] border border-ficium/20 rounded-2xl px-4 py-3.5 text-left hover:border-ficium/40 transition-all group"
+          className="w-full flex items-center gap-3 bg-linear-to-r from-ficium/6 to-[#0891b2]/4 border border-ficium/20 rounded-2xl px-4 py-3.5 text-left hover:border-ficium/40 transition-all group"
         >
-          <div className="w-8 h-8 rounded-xl bg-ficium/10 flex items-center justify-center flex-shrink-0 group-hover:bg-ficium/20 transition-colors">
+          <div className="w-8 h-8 rounded-xl bg-ficium/10 flex items-center justify-center shrink-0 group-hover:bg-ficium/20 transition-colors">
             <Sparkles size={15} className="text-ficium" />
           </div>
           <div className="flex-1 min-w-0">
@@ -114,7 +114,7 @@ export function AiMarketChat({ marketData }: Props) {
         <div className="bg-white rounded-2xl border border-ficium/20 overflow-hidden shadow-[0_0_0_3px_rgba(42,31,230,0.05)]">
 
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-ink/[0.05] bg-ficium/[0.03]">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-ink/5 bg-ficium/3">
             <div className="flex items-center gap-2">
               <Sparkles size={14} className="text-ficium" />
               <span className="text-[12px] font-bold text-ficium uppercase tracking-widest">
@@ -153,7 +153,7 @@ export function AiMarketChat({ marketData }: Props) {
                     <button
                       key={q}
                       onClick={() => submit(q)}
-                      className="text-[11px] font-medium text-ficium bg-ficium/[0.07] border border-ficium/20 rounded-xl px-3 py-1.5 hover:bg-ficium/[0.12] transition-colors text-left"
+                      className="text-[11px] font-medium text-ficium bg-ficium/[0.07] border border-ficium/20 rounded-xl px-3 py-1.5 hover:bg-ficium/12 transition-colors text-left"
                     >
                       {q}
                     </button>
@@ -172,7 +172,7 @@ export function AiMarketChat({ marketData }: Props) {
                     "max-w-[85%] rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed",
                     m.role === "user"
                       ? "bg-ficium text-white rounded-tr-sm"
-                      : "bg-ink/[0.04] text-ink rounded-tl-sm",
+                      : "bg-ink/4 text-ink rounded-tl-sm",
                   ].join(" ")}
                 >
                   {m.content || (
@@ -189,8 +189,8 @@ export function AiMarketChat({ marketData }: Props) {
           </div>
 
           {/* Input */}
-          <div className="px-4 py-3 border-t border-ink/[0.05]">
-            <div className="flex items-center gap-2 bg-ink/[0.03] rounded-xl border border-ink/[0.07] px-3 py-2 focus-within:border-ficium/40 transition-colors">
+          <div className="px-4 py-3 border-t border-ink/5">
+            <div className="flex items-center gap-2 bg-ink/3 rounded-xl border border-ink/[0.07] px-3 py-2 focus-within:border-ficium/40 transition-colors">
               <input
                 ref={inputRef}
                 type="text"
@@ -199,12 +199,12 @@ export function AiMarketChat({ marketData }: Props) {
                 onKeyDown={(e) => e.key === "Enter" && submit()}
                 placeholder="Ask about today's market…"
                 disabled={isStreaming}
-                className="flex-1 bg-transparent text-[13px] text-ink placeholder-muted outline-none disabled:opacity-50"
+                className="flex-1 bg-transparent text-[13px] text-ink placeholder-muted outline-hidden disabled:opacity-50"
               />
               <button
                 onClick={() => submit()}
                 disabled={!input.trim() || isStreaming}
-                className="w-7 h-7 rounded-lg bg-ficium flex items-center justify-center disabled:opacity-30 hover:bg-ficium-deep transition-colors flex-shrink-0"
+                className="w-7 h-7 rounded-lg bg-ficium flex items-center justify-center disabled:opacity-30 hover:bg-ficium-deep transition-colors shrink-0"
               >
                 <Send size={12} className="text-white" />
               </button>

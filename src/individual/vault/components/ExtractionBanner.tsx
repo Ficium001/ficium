@@ -60,7 +60,7 @@ export function ExtractionBanner({ state, onDismiss }: Props) {
 
   return (
     <div className={`${cfg.bg} rounded-2xl px-4 py-3.5 flex items-start gap-3 transition-all`}>
-      <div className="flex-shrink-0 mt-0.5">{cfg.icon}</div>
+      <div className="shrink-0 mt-0.5">{cfg.icon}</div>
       <div className="flex-1 min-w-0">
         <p className="text-[13px] font-semibold text-white leading-snug">{cfg.title}</p>
         {cfg.sub && <p className="text-[11px] text-white/60 mt-0.5">{cfg.sub}</p>}
@@ -75,7 +75,7 @@ export function ExtractionBanner({ state, onDismiss }: Props) {
         )}
       </div>
       {cfg.showDismiss && (
-        <button onClick={onDismiss} className="flex-shrink-0 text-white/60 hover:text-white transition-colors">
+        <button onClick={onDismiss} className="shrink-0 text-white/60 hover:text-white transition-colors">
           <X size={15} />
         </button>
       )}

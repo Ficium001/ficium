@@ -17,14 +17,14 @@ export function MoveCard({ move }: { move: Move }) {
   const color = TONE_TEXT[move.tone]
 
   return (
-    <HoverCard className="!p-5 flex flex-col">
+    <HoverCard className="p-5! flex flex-col">
       <span
         className="w-[42px] h-[42px] rounded-[13px] grid place-items-center mb-3.5 bg-brand-soft"
       >
         <Icon size={22} style={{ color }} aria-hidden />
       </span>
 
-      <div className="text-[11px] font-semibold uppercase tracking-[.05em] mb-0.5" style={{ color }}>
+      <div className="text-[11px] font-semibold uppercase tracking-wider mb-0.5" style={{ color }}>
         {move.domain}
       </div>
       <h3 className="text-[15px] font-semibold text-ink mb-3">{move.title}</h3>

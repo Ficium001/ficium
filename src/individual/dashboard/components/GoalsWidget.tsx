@@ -55,7 +55,7 @@ function GoalRow({ goal }: { goal: Goal }) {
       </div>
 
       {/* Progress bar */}
-      <div className="h-2 bg-ink/[0.06] rounded-full overflow-hidden">
+      <div className="h-2 bg-ink/6 rounded-full overflow-hidden">
         <div
           className={`h-full rounded-full transition-all duration-700 ${goal.color}`}
           style={{ width: `${p}%` }}
@@ -143,7 +143,7 @@ export function GoalsWidget() {
   }
 
   return (
-    <div className="bg-white rounded-[22px] border border-ink/[0.06] shadow-card p-5">
+    <div className="bg-white rounded-[22px] border border-ink/6 shadow-card p-5">
 
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
@@ -164,7 +164,7 @@ export function GoalsWidget() {
       {goals.length === 0 ? (
         /* Empty state */
         <div className="flex flex-col items-center gap-3 py-6 text-center">
-          <div className="w-12 h-12 rounded-2xl bg-ink/[0.04] grid place-items-center">
+          <div className="w-12 h-12 rounded-2xl bg-ink/4 grid place-items-center">
             <Target size={20} className="text-ink/30" />
           </div>
           <div>

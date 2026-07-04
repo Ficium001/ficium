@@ -14,7 +14,7 @@ export function NetWorthHero({ netWorth, hidden, onToggle, dark = false }: NetWo
   if (dark) {
     // Original dark/glass variant — kept intact for any dark-bg usage
     return (
-      <div className="rounded-[22px] p-5 mb-4 relative overflow-hidden bg-white/[0.08] backdrop-blur-xl border border-white/[0.12]">
+      <div className="rounded-[22px] p-5 mb-4 relative overflow-hidden bg-white/8 backdrop-blur-xl border border-white/12">
         <div className="absolute -right-10 -top-14 w-48 h-48 rounded-full bg-ficium/30 blur-[50px] pointer-events-none" />
         <div className="relative z-10">
           <div className="flex items-center justify-between mb-4">
@@ -63,7 +63,7 @@ export function NetWorthHero({ netWorth, hidden, onToggle, dark = false }: NetWo
           <button
             onClick={onToggle}
             aria-label={hidden ? "Show net worth" : "Hide net worth"}
-            className="w-8 h-8 rounded-full bg-ink/[0.05] grid place-items-center text-muted hover:bg-ink/10 transition-colors"
+            className="w-8 h-8 rounded-full bg-ink/5 grid place-items-center text-muted hover:bg-ink/10 transition-colors"
           >
             {hidden ? <EyeOff size={14} /> : <Eye size={14} />}
           </button>

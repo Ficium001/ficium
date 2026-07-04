@@ -12,7 +12,7 @@ interface Props {
 
 export function StoryModeToggle({ mode, onChange }: Props) {
   return (
-    <div className="flex bg-ink/[0.05] rounded-pill p-1 gap-1" role="radiogroup" aria-label="Story mode">
+    <div className="flex bg-ink/5 rounded-pill p-1 gap-1" role="radiogroup" aria-label="Story mode">
       {(["everyday", "finance"] as StoryMode[]).map((m) => (
         <button
           key={m}
@@ -22,7 +22,7 @@ export function StoryModeToggle({ mode, onChange }: Props) {
           className={[
             "px-4 py-1.5 rounded-pill text-[12px] font-semibold transition-all",
             mode === m
-              ? "bg-white text-ficium shadow-sm border border-ficium/20"
+              ? "bg-white text-ficium shadow-xs border border-ficium/20"
               : "text-muted hover:text-ink",
           ].join(" ")}
         >

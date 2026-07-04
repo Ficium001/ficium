@@ -1,7 +1,7 @@
 /**
  * @module advisor/config/palette
  * @description Accent tone → token colors used by MoveCard and AskRail.
- *   Mirrors the design tokens in tailwind.config.js (blue/violet/warn/good).
+ *   Mirrors the design tokens in src/index.css @theme (blue/violet/warn/good).
  * @owner Ficium Engineering
  */
 

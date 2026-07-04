@@ -54,8 +54,8 @@ const TURNOVER_RANGES = [
 ];
 
 const inputCls = (err?: boolean) => [
-  "w-full rounded-xl border px-4 py-3.5 text-[16px] outline-none transition-all bg-white text-ink placeholder:text-ink/30",
-  err ? "border-red-400 focus:ring-2 focus:ring-red-200" : "border-ink/[0.12] focus:border-ficium focus:ring-2 focus:ring-ficium/20",
+  "w-full rounded-xl border px-4 py-3.5 text-[16px] outline-hidden transition-all bg-white text-ink placeholder:text-ink/30",
+  err ? "border-red-400 focus:ring-2 focus:ring-red-200" : "border-ink/12 focus:border-ficium focus:ring-2 focus:ring-ficium/20",
 ].join(" ");
 
 export default function RegisterBusiness() {
@@ -118,7 +118,7 @@ export default function RegisterBusiness() {
         </Field>
 
         {/* Company */}
-        <div className="h-px bg-ink/[0.06] my-1" />
+        <div className="h-px bg-ink/6 my-1" />
         <Field label="Company name" htmlFor="companyName" error={errors.companyName?.message}>
           <input id="companyName" {...register("companyName")} className={inputCls(!!errors.companyName)} placeholder="Acme Ltd" />
         </Field>
@@ -154,7 +154,7 @@ export default function RegisterBusiness() {
         </Field>
 
         {/* Password */}
-        <div className="h-px bg-ink/[0.06] my-1" />
+        <div className="h-px bg-ink/6 my-1" />
         <Field label="Password" htmlFor="password" error={errors.password?.message}>
           <input id="password" type="password" {...register("password")} className={inputCls(!!errors.password)} placeholder="At least 8 characters" />
         </Field>

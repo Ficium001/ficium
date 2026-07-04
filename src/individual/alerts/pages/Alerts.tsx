@@ -28,7 +28,7 @@ const KIND_CONFIG: Record<NotificationKind, {
   request_rejected: { icon: ShieldAlert,  bg: "bg-red-50",     fg: "text-red-500",     dot: "bg-red-400",     label: "Request", actionRequired: false },
   bid_received:     { icon: TrendingUp,   bg: "bg-ficium/10",  fg: "text-ficium",      dot: "bg-ficium",      label: "Bid",     actionRequired: true  },
   bid_accepted:     { icon: Sparkles,     bg: "bg-emerald-50", fg: "text-emerald-600", dot: "bg-emerald-400", label: "Bid",     actionRequired: true  },
-  bid_expired:      { icon: TrendingDown, bg: "bg-ink/[0.06]", fg: "text-muted",       dot: "bg-ink/25",      label: "Bid",     actionRequired: false },
+  bid_expired:      { icon: TrendingDown, bg: "bg-ink/6", fg: "text-muted",       dot: "bg-ink/25",      label: "Bid",     actionRequired: false },
   system:           { icon: Sparkles,     bg: "bg-ficium/10",  fg: "text-ficium",      dot: "bg-ficium",      label: "System",  actionRequired: false },
 };
 
@@ -82,7 +82,7 @@ export default function Alerts() {
             <button
               onClick={() => markAll()}
               disabled={markingAll}
-              className="flex items-center gap-1.5 bg-white/[0.08] border border-white/[0.16] text-white/85 text-[12px] font-semibold px-3.5 py-2 rounded-xl hover:bg-white/[0.14] transition-colors disabled:opacity-40"
+              className="flex items-center gap-1.5 bg-white/8 border border-white/16 text-white/85 text-[12px] font-semibold px-3.5 py-2 rounded-xl hover:bg-white/[0.14] transition-colors disabled:opacity-40"
             >
               <CheckCheck size={13} />
               Mark all read
@@ -145,7 +145,7 @@ function TabButton({
           ? highlight
             ? "bg-amber-500 border-amber-500 text-white shadow-lg shadow-amber-500/25"
             : "bg-ficium border-ficium text-white shadow-lg shadow-ficium/25"
-          : "bg-white border-ink/[0.10] text-muted hover:border-ink/25 hover:text-ink",
+          : "bg-white border-ink/10 text-muted hover:border-ink/25 hover:text-ink",
       ].join(" ")}
     >
       {label}
@@ -204,12 +204,12 @@ function NotificationRow({
     <div className={[
       "flex items-start gap-3.5 px-4 py-4 rounded-[18px] border transition-all duration-200",
       unread
-        ? "bg-white border-ink/[0.10] shadow-sm hover:shadow-md"
-        : "bg-white/50 border-ink/[0.05] hover:bg-white hover:border-ink/[0.10]",
+        ? "bg-white border-ink/10 shadow-xs hover:shadow-md"
+        : "bg-white/50 border-ink/5 hover:bg-white hover:border-ink/10",
     ].join(" ")}>
 
       {/* Icon */}
-      <div className={["w-10 h-10 rounded-[13px] grid place-items-center flex-shrink-0", cfg.bg].join(" ")}>
+      <div className={["w-10 h-10 rounded-[13px] grid place-items-center shrink-0", cfg.bg].join(" ")}>
         <Icon size={17} className={cfg.fg} />
       </div>
 
@@ -252,7 +252,7 @@ function NotificationRow({
 
       {/* Unread dot */}
       {unread && (
-        <div className={["w-2 h-2 rounded-full flex-shrink-0 mt-1.5", cfg.dot].join(" ")} />
+        <div className={["w-2 h-2 rounded-full shrink-0 mt-1.5", cfg.dot].join(" ")} />
       )}
     </div>
   );
@@ -273,8 +273,8 @@ function NotificationRow({
    ============================================================ */
 function EmptyState({ tab }: { tab: FilterTab }) {
   return (
-    <div className="bg-white rounded-[22px] border border-ink/[0.06] p-10 text-center shadow-sm">
-      <div className="w-14 h-14 rounded-[20px] bg-ink/[0.04] grid place-items-center mx-auto mb-4">
+    <div className="bg-white rounded-[22px] border border-ink/6 p-10 text-center shadow-xs">
+      <div className="w-14 h-14 rounded-card bg-ink/4 grid place-items-center mx-auto mb-4">
         {tab === "action"
           ? <Zap size={22} className="text-muted" />
           : <BellOff size={22} className="text-muted" />}
@@ -298,12 +298,12 @@ function SkeletonList() {
   return (
     <div className="flex flex-col gap-2">
       {[0, 1, 2, 3].map((i) => (
-        <div key={i} className="bg-white rounded-[18px] border border-ink/[0.06] p-4 flex gap-3.5 animate-pulse">
-          <div className="w-10 h-10 rounded-[13px] bg-ink/10 flex-shrink-0" />
+        <div key={i} className="bg-white rounded-[18px] border border-ink/6 p-4 flex gap-3.5 animate-pulse">
+          <div className="w-10 h-10 rounded-[13px] bg-ink/10 shrink-0" />
           <div className="flex-1">
             <div className="h-2.5 w-12 bg-ink/10 rounded-full mb-2" />
-            <div className="h-3.5 w-44 bg-ink/10 rounded mb-1.5" />
-            <div className="h-2.5 w-full bg-ink/10 rounded" />
+            <div className="h-3.5 w-44 bg-ink/10 rounded-sm mb-1.5" />
+            <div className="h-2.5 w-full bg-ink/10 rounded-sm" />
           </div>
         </div>
       ))}

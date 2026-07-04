@@ -21,16 +21,16 @@ export default function HowItWorks() {
           background: "radial-gradient(ellipse at 20% 50%, rgba(79,70,229,0.5) 0%, transparent 55%), radial-gradient(ellipse at 85% 30%, rgba(201,168,76,0.2) 0%, transparent 50%)"
         }} />
         <div className="absolute top-20 -left-20 w-80 h-80 rounded-full bg-ficium/15 blur-[100px] animate-pulse" />
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#f8f7f4] to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-linear-to-t from-[#f8f7f4] to-transparent" />
 
         <div className="relative z-10 mx-auto max-w-[1100px] px-5 sm:px-8 pt-24 pb-36 text-center">
-          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/15 text-white/80 px-4 py-2 rounded-pill text-[13px] font-semibold mb-6">
+          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-xs border border-white/15 text-white/80 px-4 py-2 rounded-pill text-[13px] font-semibold mb-6">
             <Sparkles size={13} className="text-amber-300" />
             The reverse-banking marketplace
           </div>
           <h1 className="font-display text-5xl sm:text-6xl lg:text-7xl font-bold text-white leading-[1.05] mb-6">
             You post once.<br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-amber-300">
+            <span className="text-transparent bg-clip-text bg-linear-to-r from-indigo-300 to-amber-300">
               Banks compete.
             </span>
           </h1>
@@ -41,7 +41,7 @@ export default function HowItWorks() {
             <Link to="/register" className="inline-flex items-center gap-2 bg-ficium text-white px-7 py-4 rounded-pill text-[15px] font-bold no-underline shadow-ficium hover:-translate-y-0.5 transition-transform">
               Get started free <ArrowRight size={16} />
             </Link>
-            <Link to="/register/institution" className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 text-white px-7 py-4 rounded-pill text-[15px] font-semibold no-underline hover:bg-white/15 transition-colors">
+            <Link to="/register/institution" className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-xs border border-white/20 text-white px-7 py-4 rounded-pill text-[15px] font-semibold no-underline hover:bg-white/15 transition-colors">
               I'm a bank <ChevronRight size={16} />
             </Link>
           </div>
@@ -52,7 +52,7 @@ export default function HowItWorks() {
           STATS BAR
       ══════════════════════════════════════ */}
       <section className="relative z-10 -mt-8 mx-auto max-w-[1100px] px-5 sm:px-8 mb-20">
-        <div className="bg-white rounded-[24px] shadow-xl border border-ink/[0.06] grid grid-cols-2 lg:grid-cols-4 divide-x divide-y lg:divide-y-0 divide-ink/[0.06]">
+        <div className="bg-white rounded-[24px] shadow-xl border border-ink/6 grid grid-cols-2 lg:grid-cols-4 divide-x divide-y lg:divide-y-0 divide-ink/6">
           {[
             { value: "14+", label: "Financial institutions", icon: Building2 },
             { value: "24h", label: "Average first bid", icon: Clock },
@@ -85,7 +85,7 @@ export default function HowItWorks() {
         {/* Steps */}
         <div className="relative">
           {/* Connector line — desktop only */}
-          <div className="hidden lg:block absolute top-[52px] left-[12.5%] right-[12.5%] h-px bg-gradient-to-r from-transparent via-ficium/30 to-transparent" />
+          <div className="hidden lg:block absolute top-[52px] left-[12.5%] right-[12.5%] h-px bg-linear-to-r from-transparent via-ficium/30 to-transparent" />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {INDIVIDUAL_STEPS.map((step, i) => (
@@ -109,17 +109,17 @@ export default function HowItWorks() {
         <div className="relative z-10 mx-auto max-w-[1100px]">
           <div className="text-center mb-12">
             <h2 className="font-display text-4xl sm:text-5xl font-bold text-white leading-tight">
-              The old way vs <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-amber-300">Ficium</span>
+              The old way vs <span className="text-transparent bg-clip-text bg-linear-to-r from-indigo-300 to-amber-300">Ficium</span>
             </h2>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Old way */}
-            <div className="rounded-[22px] bg-white/[0.05] border border-white/10 p-6 sm:p-8">
+            <div className="rounded-[22px] bg-white/5 border border-white/10 p-6 sm:p-8">
               <div className="text-[12px] font-bold uppercase tracking-widest text-red-400 mb-5">❌ The old way</div>
               <div className="flex flex-col gap-4">
                 {OLD_WAY.map((item) => (
                   <div key={item} className="flex items-start gap-3">
-                    <div className="w-5 h-5 rounded-full bg-red-500/20 grid place-items-center flex-shrink-0 mt-0.5">
+                    <div className="w-5 h-5 rounded-full bg-red-500/20 grid place-items-center shrink-0 mt-0.5">
                       <div className="w-1.5 h-1.5 rounded-full bg-red-400" />
                     </div>
                     <span className="text-[15px] text-white/60 leading-snug">{item}</span>
@@ -133,7 +133,7 @@ export default function HowItWorks() {
               <div className="flex flex-col gap-4">
                 {FICIUM_WAY.map((item) => (
                   <div key={item} className="flex items-start gap-3">
-                    <CheckCircle2 size={18} className="text-emerald-400 flex-shrink-0 mt-0.5" />
+                    <CheckCircle2 size={18} className="text-emerald-400 shrink-0 mt-0.5" />
                     <span className="text-[15px] text-white/85 font-medium leading-snug">{item}</span>
                   </div>
                 ))}
@@ -158,7 +158,7 @@ export default function HowItWorks() {
         </div>
 
         <div className="relative">
-          <div className="hidden lg:block absolute top-[52px] left-[12.5%] right-[12.5%] h-px bg-gradient-to-r from-transparent via-blue-400/30 to-transparent" />
+          <div className="hidden lg:block absolute top-[52px] left-[12.5%] right-[12.5%] h-px bg-linear-to-r from-transparent via-blue-400/30 to-transparent" />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {INSTITUTION_STEPS.map((step, i) => (
               <StepCard key={step.title} step={step} index={i} accent="blue" />
@@ -176,7 +176,7 @@ export default function HowItWorks() {
       {/* ══════════════════════════════════════
           TRUST & SECURITY
       ══════════════════════════════════════ */}
-      <section className="bg-white border-y border-ink/[0.06] py-20 px-5 sm:px-8 mb-24">
+      <section className="bg-white border-y border-ink/6 py-20 px-5 sm:px-8 mb-24">
         <div className="mx-auto max-w-[1100px]">
           <div className="text-center mb-12">
             <div className="text-[12px] font-bold text-ficium uppercase tracking-widest mb-2">Security & compliance</div>
@@ -189,7 +189,7 @@ export default function HowItWorks() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {TRUST_ITEMS.map((item) => (
-              <div key={item.title} className="rounded-2xl border border-ink/[0.06] p-6 hover:shadow-md transition-all hover:-translate-y-0.5">
+              <div key={item.title} className="rounded-2xl border border-ink/6 p-6 hover:shadow-md transition-all hover:-translate-y-0.5">
                 <div className={["w-11 h-11 rounded-xl grid place-items-center mb-4", item.iconBg].join(" ")}>
                   <item.icon size={20} className={item.iconColor} />
                 </div>
@@ -225,7 +225,7 @@ export default function HowItWorks() {
         <div className="relative z-10 mx-auto max-w-[700px] px-5 sm:px-8 py-24 text-center">
           <h2 className="font-display text-5xl sm:text-6xl font-bold text-white leading-tight mb-5">
             Ready to let banks<br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-amber-300">fight for you?</span>
+            <span className="text-transparent bg-clip-text bg-linear-to-r from-indigo-300 to-amber-300">fight for you?</span>
           </h2>
           <p className="text-[17px] text-white/50 mb-10 leading-relaxed">
             Free to join. No hidden fees. Your data is never sold.
@@ -252,7 +252,7 @@ function StepCard({ step, index, accent = "ficium" }: {
   const accentLight = accent === "blue" ? "bg-blue-50 text-blue-600" : "bg-ficium/10 text-ficium";
   const Icon = step.icon;
   return (
-    <div className="bg-white rounded-[22px] border border-ink/[0.06] p-6 flex flex-col gap-4 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+    <div className="bg-white rounded-[22px] border border-ink/6 p-6 flex flex-col gap-4 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
       {/* Number + icon */}
       <div className="flex items-center justify-between">
         <div className={["w-10 h-10 rounded-xl grid place-items-center", accentLight].join(" ")}>
@@ -267,7 +267,7 @@ function StepCard({ step, index, accent = "ficium" }: {
         <p className="text-[14px] text-muted leading-relaxed">{step.description}</p>
       </div>
       {step.detail && (
-        <div className="mt-auto pt-3 border-t border-ink/[0.06]">
+        <div className="mt-auto pt-3 border-t border-ink/6">
           <span className="text-[12px] font-semibold text-ficium">{step.detail}</span>
         </div>
       )}
@@ -280,12 +280,12 @@ function StepCard({ step, index, accent = "ficium" }: {
    ============================================================ */
 function FAQItem({ q, a }: { q: string; a: string }) {
   return (
-    <details className="group bg-white rounded-2xl border border-ink/[0.06] overflow-hidden">
+    <details className="group bg-white rounded-2xl border border-ink/6 overflow-hidden">
       <summary className="flex items-center justify-between gap-4 px-6 py-5 cursor-pointer list-none">
         <span className="font-display text-[16px] font-bold">{q}</span>
-        <ChevronRight size={16} className="text-muted flex-shrink-0 group-open:rotate-90 transition-transform" />
+        <ChevronRight size={16} className="text-muted shrink-0 group-open:rotate-90 transition-transform" />
       </summary>
-      <div className="px-6 pb-5 text-[14px] text-muted leading-relaxed border-t border-ink/[0.04]">
+      <div className="px-6 pb-5 text-[14px] text-muted leading-relaxed border-t border-ink/4">
         <div className="pt-4">{a}</div>
       </div>
     </details>

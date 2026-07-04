@@ -68,7 +68,7 @@ export default function RegisterIndividual() {
         <p className="text-sm text-muted mt-2">Personal details for identity verification.</p>
       </div>
 
-      <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-ink/[0.06]">
+      <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-xs border border-ink/6">
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
 
           {/* Row 1: Title + First name */}
@@ -112,7 +112,7 @@ export default function RegisterIndividual() {
             </Field>
           </div>
 
-          <div className="border-t border-ink/[0.06] pt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="border-t border-ink/6 pt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="Password" htmlFor="password" error={errors.password?.message}>
               <Input id="password" type="password" autoComplete="new-password"
                 invalid={!!errors.password} {...register("password")} />

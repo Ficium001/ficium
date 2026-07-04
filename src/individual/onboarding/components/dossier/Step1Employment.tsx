@@ -35,7 +35,7 @@ export function Step1Employment({ control, register, errors, setValue, employmen
                 "relative flex flex-col items-start gap-2 p-4 rounded-2xl border-[1.5px] transition-all text-left",
                 active
                   ? "bg-ficium text-white border-ficium shadow-lg shadow-ficium/20 scale-[1.02]"
-                  : "bg-white border-ink/10 hover:border-ficium/40 hover:bg-ficium/[0.02]",
+                  : "bg-white border-ink/10 hover:border-ficium/40 hover:bg-ficium/2",
               ].join(" ")}>
               <div className={["w-9 h-9 rounded-xl grid place-items-center", active ? "bg-white/20" : "bg-ficium/10"].join(" ")}>
                 <Icon size={18} className={active ? "text-white" : "text-ficium"} />

@@ -120,14 +120,14 @@ function InstitutionAvatar({ name, logoUrl }: { name: string; logoUrl?: string |
         src={logoUrl}
         alt={name}
         onError={() => setImgFailed(true)}
-        className="w-10 h-10 rounded-xl object-contain border border-ink/[0.06] bg-white"
+        className="w-10 h-10 rounded-xl object-contain border border-ink/6 bg-white"
       />
     );
   }
 
   return (
     <div
-      className="w-10 h-10 rounded-xl flex items-center justify-center text-[13px] font-bold flex-shrink-0"
+      className="w-10 h-10 rounded-xl flex items-center justify-center text-[13px] font-bold shrink-0"
       style={{
         background: institutionColor(name),
         color:      institutionTextColor(name),
@@ -166,7 +166,7 @@ function HeroBidRow({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[13px] font-bold text-ink truncate">{bid.institutionName}</span>
-            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 flex-shrink-0">
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 shrink-0">
               <Zap size={9} />
               Best Offer
             </span>
@@ -209,7 +209,7 @@ function HeroBidRow({
 
         <button
           onClick={e => { e.stopPropagation(); navigate(`/requests/${requestId}`); }}
-          className="flex-shrink-0 text-[12px] sm:text-[13px] font-bold px-4 py-2.5 rounded-[10px] bg-emerald-600 text-white hover:bg-emerald-700 transition-colors w-full sm:w-auto"
+          className="shrink-0 text-[12px] sm:text-[13px] font-bold px-4 py-2.5 rounded-[10px] bg-emerald-600 text-white hover:bg-emerald-700 transition-colors w-full sm:w-auto"
           aria-label={`View offer from ${bid.institutionName}`}
         >
           View offer
@@ -237,7 +237,7 @@ function BidRow({
         "flex items-center gap-3 px-4 py-3.5 rounded-[14px] transition-colors cursor-pointer",
         isBest
           ? "bg-emerald-50 border border-emerald-100 hover:bg-emerald-100/60"
-          : "bg-white border border-ink/[0.06] hover:bg-ink/[0.02]",
+          : "bg-white border border-ink/6 hover:bg-ink/2",
       ].join(" ")}
       onClick={() => navigate(`/requests/${requestId}`)}
       role="button"
@@ -255,7 +255,7 @@ function BidRow({
             {bid.institutionName}
           </span>
           {isBest && (
-            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 flex-shrink-0">
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 shrink-0">
               <Zap size={9} />
               Best Offer
             </span>
@@ -271,7 +271,7 @@ function BidRow({
       </div>
 
       {/* Rate */}
-      <div className="text-right flex-shrink-0">
+      <div className="text-right shrink-0">
         <div
           className={[
             "text-[18px] font-extrabold font-display leading-none",
@@ -287,10 +287,10 @@ function BidRow({
       <button
         onClick={e => { e.stopPropagation(); navigate(`/requests/${requestId}`); }}
         className={[
-          "flex-shrink-0 text-[12px] font-bold px-3 py-1.5 rounded-[8px] transition-colors",
+          "shrink-0 text-[12px] font-bold px-3 py-1.5 rounded-[8px] transition-colors",
           isBest
             ? "bg-emerald-600 text-white hover:bg-emerald-700"
-            : "border border-ink/[0.12] text-ink hover:bg-ink/[0.04]",
+            : "border border-ink/12 text-ink hover:bg-ink/4",
         ].join(" ")}
         aria-label={`View offer from ${bid.institutionName}`}
       >
@@ -325,7 +325,7 @@ function RequestBidPanel({
         {[1, 2, 3].map(i => (
           <div
             key={i}
-            className="h-[62px] rounded-[14px] bg-ink/[0.04] animate-pulse"
+            className="h-[62px] rounded-[14px] bg-ink/4 animate-pulse"
           />
         ))}
       </div>
@@ -383,10 +383,10 @@ function RequestTab({
     <button
       onClick={onClick}
       className={[
-        "flex items-center gap-2 px-3.5 py-2 rounded-[12px] transition-all text-[12px] font-semibold flex-shrink-0",
+        "flex items-center gap-2 px-3.5 py-2 rounded-[12px] transition-all text-[12px] font-semibold shrink-0",
         active
           ? "bg-ficium text-white shadow-ficium"
-          : "bg-ink/[0.04] text-muted hover:bg-ink/[0.08]",
+          : "bg-ink/4 text-muted hover:bg-ink/8",
       ].join(" ")}
     >
       <span>{productLabel(request.productType)}</span>
@@ -395,7 +395,7 @@ function RequestTab({
           "text-[10px] font-bold px-1.5 py-0.5 rounded-full",
           active
             ? "bg-white/25 text-white"
-            : "bg-ink/[0.08] text-ink/60",
+            : "bg-ink/8 text-ink/60",
         ].join(" ")}
       >
         {bidCount}
@@ -438,10 +438,10 @@ export function LiveOffersSection() {
   // Loading skeleton
   if (isLoading) {
     return (
-      <div className="bg-white rounded-[22px] border border-ink/[0.06] shadow-card p-5 space-y-3">
-        <div className="h-4 w-32 bg-ink/[0.06] rounded animate-pulse" />
+      <div className="bg-white rounded-[22px] border border-ink/6 shadow-card p-5 space-y-3">
+        <div className="h-4 w-32 bg-ink/6 rounded-sm animate-pulse" />
         {[1, 2, 3].map(i => (
-          <div key={i} className="h-[62px] rounded-[14px] bg-ink/[0.04] animate-pulse" />
+          <div key={i} className="h-[62px] rounded-[14px] bg-ink/4 animate-pulse" />
         ))}
       </div>
     );
@@ -454,7 +454,7 @@ export function LiveOffersSection() {
     if (openCount === 0) return null;
 
     return (
-      <div className="bg-white rounded-[22px] border border-ink/[0.06] shadow-card p-5">
+      <div className="bg-white rounded-[22px] border border-ink/6 shadow-card p-5">
         <div className="flex items-center justify-between mb-4">
           <div>
             <p className="text-[11px] font-bold text-muted uppercase tracking-widest mb-0.5">
@@ -466,7 +466,7 @@ export function LiveOffersSection() {
           </div>
         </div>
         <div className="flex items-center gap-3 p-4 rounded-[14px] bg-amber-50 border border-amber-100">
-          <Clock size={18} className="text-amber-500 flex-shrink-0" />
+          <Clock size={18} className="text-amber-500 shrink-0" />
           <div>
             <p className="text-[13px] font-semibold text-amber-800">
               {openCount} request{openCount > 1 ? "s" : ""} live — providers are reviewing
@@ -487,7 +487,7 @@ export function LiveOffersSection() {
     : null;
 
   return (
-    <div className="bg-white rounded-[22px] border border-ink/[0.06] shadow-card p-5">
+    <div className="bg-white rounded-[22px] border border-ink/6 shadow-card p-5">
 
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
@@ -504,7 +504,7 @@ export function LiveOffersSection() {
             {totalBids} bid{totalBids !== 1 ? "s" : ""} across {liveRequests.length} request{liveRequests.length !== 1 ? "s" : ""}
           </p>
         </div>
-        <div className="text-right flex-shrink-0 ml-4">
+        <div className="text-right shrink-0 ml-4">
           {activeBestRate !== null && (
             <p className="text-[13px] font-extrabold font-display text-emerald-600 leading-none mb-1.5">
               Best {activeBestRate.toFixed(2)}% p.a.

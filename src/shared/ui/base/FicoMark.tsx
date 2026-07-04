@@ -40,7 +40,7 @@ export function FicoMark({
 
   return (
     <span
-      className={`relative inline-grid place-items-center flex-shrink-0 bg-mark ${className}`}
+      className={`relative inline-grid place-items-center shrink-0 bg-mark ${className}`}
       style={{
         width: size,
         height: size,

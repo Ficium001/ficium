@@ -53,7 +53,7 @@ export function Composer({
       <div className="flex gap-2 overflow-x-auto pb-3 lg:hidden scrollbar-hide">
         {QUICK_CHIPS.map((chip) => (
           <button key={chip} onClick={() => onChip(chip)}
-            className="flex-shrink-0 px-3.5 py-2 bg-white border border-line rounded-pill text-[12px] font-semibold
+            className="shrink-0 px-3.5 py-2 bg-white border border-line rounded-pill text-[12px] font-semibold
                        text-ink/70 hover:border-ficium/30 hover:text-ficium transition-colors shadow-card">
             {chip}
           </button>
@@ -68,11 +68,11 @@ export function Composer({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={`Ask ${ASSISTANT.name} anything about your money…`}
-          className="flex-1 text-[15px] text-ink placeholder:text-ink/35 outline-none bg-transparent py-2"
+          className="flex-1 text-[15px] text-ink placeholder:text-ink/35 outline-hidden bg-transparent py-2"
           autoComplete="off" autoCorrect="off" autoCapitalize="none"
         />
         <button type="submit" disabled={!value.trim() || thinking} aria-label="Send"
-          className="w-11 h-11 rounded-[13px] grid place-items-center text-white flex-shrink-0 shadow-ficium
+          className="w-11 h-11 rounded-[13px] grid place-items-center text-white shrink-0 shadow-ficium
                      disabled:opacity-40 disabled:cursor-not-allowed transition-transform hover:scale-105 disabled:hover:scale-100 bg-brand">
           <Send size={18} />
         </button>

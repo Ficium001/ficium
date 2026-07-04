@@ -40,13 +40,13 @@ export function StoriesGrid({ stories, mode }: Props) {
               "w-full text-left bg-white rounded-2xl border transition-all",
               isOpen
                 ? "border-ficium/30 shadow-[0_0_0_2px_rgba(42,31,230,0.08)]"
-                : "border-ink/[0.06] hover:border-ink/[0.14]",
+                : "border-ink/6 hover:border-ink/[0.14]",
             ].join(" ")}
           >
             <div className="p-4">
               {/* Header */}
               <div className="flex items-start gap-3 mb-0">
-                <span className="text-2xl flex-shrink-0 mt-0.5" aria-hidden="true">
+                <span className="text-2xl shrink-0 mt-0.5" aria-hidden="true">
                   {s.emoji}
                 </span>
                 <div className="flex-1 min-w-0">
@@ -71,7 +71,7 @@ export function StoriesGrid({ stories, mode }: Props) {
 
               {/* Expanded body */}
               {isOpen && (
-                <div className="mt-3 pt-3 border-t border-ink/[0.06]">
+                <div className="mt-3 pt-3 border-t border-ink/6">
                   <p className="text-[12px] text-muted leading-relaxed">
                     {content.plain}
                   </p>

@@ -96,7 +96,7 @@ export default function Vault() {
                 Documents are encrypted and never shared with lenders. Only verified data points flow to your applications.
               </p>
             </div>
-            <div className="flex-shrink-0 text-right">
+            <div className="shrink-0 text-right">
               <p className="text-[10px] text-white/40 font-medium uppercase tracking-wider mb-1">
                 {verifiedCount} verified
               </p>
@@ -108,7 +108,7 @@ export default function Vault() {
 
           {/* Property value if any verified */}
           {verifiedPropertyValue > 0 && (
-            <div className="mt-6 pt-5 border-t border-white/[0.10]">
+            <div className="mt-6 pt-5 border-t border-white/10">
               <p className="text-[11px] text-white/40 font-medium uppercase tracking-wider mb-1">
                 Verified property holdings
               </p>
@@ -146,7 +146,7 @@ export default function Vault() {
                   className={[
                     "flex-1 py-2 rounded-xl text-[13px] font-semibold transition-all capitalize",
                     activeTab === tab
-                      ? "bg-white text-ink shadow-sm"
+                      ? "bg-white text-ink shadow-xs"
                       : "text-muted hover:text-ink",
                   ].join(" ")}
                 >
@@ -206,7 +206,7 @@ export default function Vault() {
         {/* ── Empty state ── */}
         {documents.length === 0 && uploadState.phase === "idle" && (
           <div className="text-center py-8">
-            <div className="w-16 h-16 rounded-2xl bg-ficium/[0.06] flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 rounded-2xl bg-ficium/6 flex items-center justify-center mx-auto mb-4">
               <ShieldCheck size={28} className="text-ficium/50" />
             </div>
             <p className="text-[15px] font-semibold text-ink mb-1">Your vault is empty</p>

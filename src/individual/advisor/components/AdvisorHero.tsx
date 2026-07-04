@@ -52,7 +52,7 @@ export function AdvisorHero({ firstName, onReset }: { firstName: string; onReset
       <Blades />
 
       {/* Identity row */}
-      <div className="relative z-[2] flex items-center justify-between gap-4">
+      <div className="relative z-2 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
           <FicoMark size={52} glow pulse />
           <div>
@@ -71,14 +71,14 @@ export function AdvisorHero({ firstName, onReset }: { firstName: string; onReset
           onClick={onReset}
           aria-label="Refresh briefing"
           title="Refresh briefing"
-          className="w-10 h-10 rounded-xl grid place-items-center text-white/80 border border-white/15 bg-white/[0.08] hover:bg-white/[0.14] transition-colors"
+          className="w-10 h-10 rounded-xl grid place-items-center text-white/80 border border-white/15 bg-white/8 hover:bg-white/[0.14] transition-colors"
         >
           <RefreshCw size={18} />
         </button>
       </div>
 
       {/* Greeting */}
-      <div className="relative z-[2] mt-7">
+      <div className="relative z-2 mt-7">
         <div className="text-[12.5px] font-semibold tracking-[.06em] text-[#B9B9D9] mb-3">
           {greetingFor()}, {firstName}
         </div>
@@ -87,13 +87,13 @@ export function AdvisorHero({ firstName, onReset }: { firstName: string; onReset
           <GradText>Three moves stand out.</GradText>
         </h1>
       </div>
-      <p className="relative z-[2] text-[#A6A6C8] mt-3.5 text-[15.5px] max-w-[52ch] leading-relaxed">
+      <p className="relative z-2 text-[#A6A6C8] mt-3.5 text-[15.5px] max-w-[52ch] leading-relaxed">
         Accounts, debt, cards, deposits, FX, investments, cover — I reviewed your full position against every
         provider on Ficium tonight. Here's what's worth your attention, ranked by what it's worth to you.
       </p>
 
       {/* Watch chips */}
-      <div className="relative z-[2] flex flex-wrap gap-2.5 mt-6">
+      <div className="relative z-2 flex flex-wrap gap-2.5 mt-6">
         {WATCH.map(({ label, icon: Icon }) => (
           <span key={label} className="inline-flex items-center gap-2 text-[13px] font-medium text-white/90
                                        bg-white/[0.07] border border-white/[0.14] rounded-pill px-3.5 py-2">
