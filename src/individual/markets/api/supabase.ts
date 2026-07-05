@@ -154,7 +154,7 @@ export async function fetchMarketData(): Promise<MarketDataResult> {
 
 export async function fetchMarketNews(): Promise<NewsResult> {
   const [newsRes, storiesRes] = await Promise.all([
-    supabase.from("market_news").select("*").order("published_at", { ascending: false }).limit(8),
+    supabase.from("market_news").select("*").order("published_at", { ascending: false }).limit(20),
     supabase.from("market_stories").select("*").order("generated_at", { ascending: false }).limit(6),
   ]);
 
@@ -167,9 +167,12 @@ export async function fetchMarketNews(): Promise<NewsResult> {
     category:         row.category as NewsCategory,
     emoji:            row.emoji,
     plainEnglish:     row.plain_english,
+    body:             row.body ?? undefined,
+    scope:            row.scope === "global" ? "global" : "local",
+    sourceName:       row.source_name ?? undefined,
+    sourceUrl:        row.source_url ?? undefined,
     publishedAt:      new Date(row.published_at),
     relatedTickerId:  row.related_ticker_id as TickerId | undefined,
-    source:           row.source,
   }));
 
   const stories: StoryItem[] = (storiesRes.data ?? []).map((row) => ({
@@ -177,13 +180,16 @@ export async function fetchMarketNews(): Promise<NewsResult> {
     emoji:       row.emoji,
     category:    row.category as NewsCategory,
     relatedCTA:  row.related_cta ?? false,
+    generatedAt: row.generated_at ? new Date(row.generated_at) : undefined,
     everyday: {
       headline: row.headline_everyday,
       plain:    row.plain_everyday,
+      detail:   row.detail_everyday || undefined,
     },
     finance: {
       headline: row.headline_finance,
       plain:    row.plain_finance,
+      detail:   row.detail_finance || undefined,
     },
   }));
 

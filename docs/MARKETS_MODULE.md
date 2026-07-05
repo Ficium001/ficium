@@ -279,3 +279,38 @@ Three AI touchpoints, all using `claude-haiku-4-5` for speed and cost:
 Both require `ANTHROPIC_API_KEY` (server-held, never in browser bundle).
 
 **Total AI cost at scale: under $2/month** for typical usage.
+
+---
+
+## 9. Content pipeline v7 (July 2026)
+
+**News is now real.** `market-refresh` v7 ingests actual headlines each run:
+
+1. Two Google News RSS feeds (Mauritius finance → `scope='local'`; global
+   central-bank/markets → `scope='global'`), parsed dependency-free.
+2. Dedupe by `content_hash` (SHA-256 of the canonical link).
+3. One grounded Haiku call rewrites fetched titles into the Ficium format —
+   `headline`, `plain_english`, and a new 2–3 sentence `body`. The prompt
+   forbids inventing facts beyond the title + live snapshot.
+4. Rows carry real `published_at`, `source_name`, `source_url`.
+5. Retention: 7 days / max 40 rows. **On any failure, existing rows are left
+   untouched — the v6 timestamp-bumping fallback was removed** (freshness is
+   never faked).
+
+**Stories regenerate daily.** The same run upserts 6 dual-mode stories into
+`market_stories` (keyed `YYYYMMDD_slug`), built from the live snapshot,
+change-vs-previous deltas, and the top real headlines. Each mode now has a
+long-form `detail_*` body; cards display `generated_at`. Retention: 12 rows.
+
+**Personalisation.** `public.market_preferences` (owner-only RLS) stores each
+user's topics, currencies, coverage scopes, and default story mode.
+
+- `hooks/useMarketPreferences.ts` — load/save; signed-out users get in-memory defaults.
+- `lib/ranking.ts` — pure scoring (category +3, currency +2, scope +1, 48h
+  recency decay). Only preference-driven matches earn the "For you" badge.
+  Unit-tested in `lib/ranking.test.ts`.
+- `MarketNewsFeed` — scope chips (All / Mauritius / World), For-you badges,
+  expandable detail with publisher attribution, "Personalise" entry point.
+- `PreferenceSheet` — chip picker for coverage, topics, currencies.
+
+Migration: `supabase/migrations/20260705_markets_content_v7.sql`.

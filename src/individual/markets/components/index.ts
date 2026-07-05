@@ -21,6 +21,7 @@ export { FxBestRates }      from "./FxBestRates";
 
 // News & stories
 export { MarketNewsFeed }   from "./MarketNewsFeed";
+export { PreferenceSheet }  from "./PreferenceSheet";
 export { StoryModeToggle }  from "./StoryModeToggle";
 export { StoriesGrid }      from "./StoriesGrid";
 
