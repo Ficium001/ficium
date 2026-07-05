@@ -314,3 +314,19 @@ user's topics, currencies, coverage scopes, and default story mode.
 - `PreferenceSheet` — chip picker for coverage, topics, currencies.
 
 Migration: `supabase/migrations/20260705_markets_content_v7.sql`.
+
+## 10. FX "Compare all rates" fix + indicative labeling
+
+`FxBestRates`'s "Compare all rates" button had no `onClick` — dead. Fixed:
+
+- `FxRate` gains `banks: FxBankRate[]` (full per-bank buy/sell breakdown,
+  sorted best-first) and `isIndicative: boolean`.
+- New `FxCompareSheet` — currency tabs + full bank table (buy/sell, best
+  highlighted), opened from the button.
+- `market_fx_rates.rate_basis` (new column, default `'indicative'`) records
+  that today's rates are computed from a live FX feed + fixed per-bank
+  spread assumptions, not each bank's own published counter rate.
+  `FxBestRates` and `FxCompareSheet` both surface an "Indicative" badge/
+  disclaimer while this holds. Flip individual rows to `rate_basis='live'`
+  once real per-bank rate feeds are integrated — the badge disappears
+  automatically per currency once no row is indicative.

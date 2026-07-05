@@ -416,7 +416,10 @@ Deno.serve(async () => {
       { currency_code: "ZAR", bank_name: "Absa",     buy_rate: s(fx.zar,1.020,4), sell_rate: s(fx.zar,1.035,4) },
       { currency_code: "ZAR", bank_name: "MCB",      buy_rate: s(fx.zar,1.010,4), sell_rate: s(fx.zar,1.026,4) },
       { currency_code: "ZAR", bank_name: "MauBank",  buy_rate: s(fx.zar,0.998,4), sell_rate: s(fx.zar,1.016,4) },
-    ].map(r => ({ ...r, currency_pair: `${r.currency_code} / MUR`, fetched_at: ts }));
+    // Computed from a live FX feed + fixed per-bank spread assumption, not
+    // each bank's own published counter rate — honestly marked "indicative"
+    // until real per-bank rate feeds are integrated (see market_fx_rates.rate_basis).
+    ].map(r => ({ ...r, currency_pair: `${r.currency_code} / MUR`, rate_basis: "indicative", fetched_at: ts }));
     const { error, count } = await sb.from("market_fx_rates").upsert(fxRows, { onConflict: "currency_code,bank_name", count: "exact" });
     log.fx_rates = error ? { error: error.message } : { updated: count };
   }

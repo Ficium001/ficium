@@ -58,6 +58,12 @@ export interface Ticker extends TickerConfig {
 // FX — best rate across banks
 // ─────────────────────────────────────────────────────────────────────────────
 
+export interface FxBankRate {
+  bank: string;
+  buyRate: number;
+  sellRate: number;
+}
+
 export interface FxRate {
   currency: string;          // "USD / MUR"
   currencyCode: string;      // "USD"
@@ -66,7 +72,16 @@ export interface FxRate {
   worstBank: string;
   worstRate: number;
   savingPer1000: string;     // "Rs 700 per $1,000"
+  /** Full bank breakdown, sorted best buy rate first. Powers "Compare all rates". */
+  banks: FxBankRate[];
   updatedAt: Date;
+  /**
+   * True while bank buy/sell rates are computed from a live USD/EUR/GBP/ZAR
+   * feed plus per-bank spread assumptions, rather than each bank's own
+   * published counter rate. Drives the "Indicative" disclaimer in the UI.
+   * Flip to false once real per-bank rate feeds are integrated.
+   */
+  isIndicative: boolean;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

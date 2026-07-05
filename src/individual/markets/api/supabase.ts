@@ -86,11 +86,16 @@ export async function fetchMarketData(): Promise<MarketDataResult> {
   }
 
   // ── FX rates — pivot to best/worst per currency ──
-  const fxMap = new Map<string, { bank: string; rate: number }[]>();
+  const fxMap = new Map<string, { bank: string; rate: number; sellRate: number; basis: string }[]>();
   for (const row of fxRes.data ?? []) {
     const code = row.currency_code as string;
     if (!fxMap.has(code)) fxMap.set(code, []);
-    fxMap.get(code)!.push({ bank: row.bank_name, rate: Number(row.buy_rate) });
+    fxMap.get(code)!.push({
+      bank:     row.bank_name,
+      rate:     Number(row.buy_rate),
+      sellRate: Number(row.sell_rate),
+      basis:    row.rate_basis ?? "indicative",
+    });
   }
 
   const CURRENCY_ORDER = ["USD", "EUR", "GBP", "ZAR"];
@@ -108,6 +113,9 @@ export async function fetchMarketData(): Promise<MarketDataResult> {
         worstBank:     worst.bank,
         worstRate:     worst.rate,
         savingPer1000: calcSaving(code, best.rate, worst.rate),
+        banks:         rows.map((r) => ({ bank: r.bank, buyRate: r.rate, sellRate: r.sellRate })),
+        // Whole-currency badge: indicative unless every bank row is a real quote.
+        isIndicative:  rows.some((r) => r.basis !== "live"),
         updatedAt:     new Date(),
       };
     });

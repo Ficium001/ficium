@@ -18,6 +18,7 @@ export { FiciumCTA }        from "./FiciumCTA";
 
 // FX
 export { FxBestRates }      from "./FxBestRates";
+export { FxCompareSheet }   from "./FxCompareSheet";
 
 // News & stories
 export { MarketNewsFeed }   from "./MarketNewsFeed";

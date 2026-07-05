@@ -41,6 +41,27 @@ create unique index if not exists idx_market_news_content_hash
 create index if not exists idx_market_news_scope_published
   on public.market_news (scope, published_at desc);
 
+-- ── 1b. market_fx_rates — rate basis, so the UI can label indicative rates ──
+-- Today every row is computed from a live USD/EUR/GBP/ZAR feed plus a fixed
+-- per-bank spread assumption, NOT each bank's own published counter rate.
+-- Default 'indicative' reflects that honestly; flip individual rows to
+-- 'live' once real per-bank rate feeds are integrated.
+
+alter table public.market_fx_rates
+  add column if not exists rate_basis text not null default 'indicative';
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'market_fx_rates_basis_check'
+  ) then
+    alter table public.market_fx_rates
+      add constraint market_fx_rates_basis_check
+      check (rate_basis in ('indicative', 'live'));
+  end if;
+end $$;
+
 -- ── 2. market_stories — long-form detail per mode ───────────────────────────
 
 alter table public.market_stories
