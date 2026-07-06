@@ -129,7 +129,7 @@ export default function Requests() {
                     { key: "closed"   as const, label: "Closed",   dot: "#9ca3af", activeBg: "linear-gradient(135deg,#4b5563,#9ca3af)",   activeText: "#fff" },
                   ];
                   return (
-                    <div className="flex items-center gap-2 mb-5 p-1 bg-ink/4 rounded-[16px] w-fit">
+                    <div className="flex items-center gap-2 mb-5 p-1 bg-ink/4 rounded-[16px] w-fit max-w-full overflow-x-auto scrollbar-hide">
                       {FILTERS.map(f => {
                         const count = requests.filter(r => r.status === f.key).length;
                         const active = statusFilter === f.key;
@@ -137,7 +137,7 @@ export default function Requests() {
                           <button
                             key={f.key}
                             onClick={() => setStatusFilter(f.key)}
-                            className="relative flex items-center gap-2 px-4 py-2 rounded-[12px] transition-all duration-200 font-semibold text-[13px]"
+                            className="relative flex items-center gap-2 px-4 py-2 rounded-[12px] transition-all duration-200 font-semibold text-[13px] shrink-0"
                             style={
                               active
                                 ? { background: f.activeBg, color: f.activeText, boxShadow: "0 2px 8px rgba(53,110,244,0.25)" }
