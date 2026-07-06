@@ -139,6 +139,12 @@ layer(base);
   ::file-selector-button {
     border-color: var(--color-gray-200, currentcolor);
   }
+
+  /* Tailwind Preflight only sets the -webkit- prefixed property.
+     Add the standard property so Firefox/non-Chromium browsers get it too. */
+  html {
+    text-size-adjust: 100%;
+  }
 }
 
 /* Base body styling — applies to every page */
