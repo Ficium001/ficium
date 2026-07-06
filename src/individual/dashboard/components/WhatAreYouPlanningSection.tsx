@@ -8,6 +8,7 @@ const IconPerson      = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="30" 
 const IconCar         = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="30" height="30" fill={color}><path d="M18.9 6C18.7 5.4 18.1 5 17.5 5h-11c-.7 0-1.2.4-1.4 1L3 12v8c0 .6.4 1 1 1h1c.6 0 1-.4 1-1v-1h12v1c0 .6.4 1 1 1h1c.6 0 1-.4 1-1v-8L18.9 6zM6.5 16c-.8 0-1.5-.7-1.5-1.5S5.7 13 6.5 13s1.5.7 1.5 1.5S7.3 16 6.5 16zm11 0c-.8 0-1.5-.7-1.5-1.5s.7-1.5 1.5-1.5 1.5.7 1.5 1.5-.7 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></svg>);
 const IconRenovation  = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="30" height="30" fill={color}><path d="M13.7 2.3a1 1 0 0 0-1.4 0L8 6.6 3.7 2.3A1 1 0 0 0 2.3 3.7L6.6 8l-4.3 4.3a1 1 0 0 0 1.4 1.4L8 9.4l4.3 4.3a1 1 0 0 0 1.4-1.4L9.4 8l4.3-4.3a1 1 0 0 0 0-1.4zM19 11h-1V3a1 1 0 0 0-2 0v8h-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1zm-1 8h-2v-6h2v6z"/></svg>);
 const IconGradCap     = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="30" height="30" fill={color}><path d="M12 3 1 9l4 2.2V16l7 4 7-4v-4.8L23 9 12 3zm6.8 6L12 12.7 5.2 9 12 5.3 18.8 9zM17 14.4l-5 2.9-5-2.9v-2.7l5 2.8 5-2.8v2.7z"/></svg>);
+const IconCreditCard  = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2.5"/><path d="M2 10h20"/><path d="M6 15h4"/></svg>);
 const IconBank        = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="30" height="30" fill={color}><path d="M4 10v7h3v-7H4zm6 0v7h3v-7h-3zm-5 9h14v2H5v-2zm11-9v7h3v-7h-3zM12 1L2 6v2h20V6L12 1z"/></svg>);
 const IconSeedling    = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="30" height="30" fill={color}><path d="M12 22a1 1 0 0 1-1-1v-5.06C6.94 15.5 4 12.36 4 8.5V6a1 1 0 0 1 1-1h2.5C9.9 5 12 6.8 12 9.5V11c0-2.7 2.1-4.5 4.5-4.5H19a1 1 0 0 1 1 1v2.5c0 3.86-2.94 7-7 7.44V21a1 1 0 0 1-1 1z"/></svg>);
 const IconShares      = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3.5 18.5l4-4 4 4 6-8 3.5 4.5"/><circle cx="19" cy="5" r="2" fill={color} stroke="none"/></svg>);
@@ -22,6 +23,7 @@ const FINANCING = [
   { id: "vehicle",    Icon: IconCar,        label: "Vehicle Loan",    desc: "Best rates for your dream car",  route: "/requests/new?type=vehicle",    bg: "#fef9c3", color: "#ca8a04" },
   { id: "renovation", Icon: IconRenovation, label: "Renovation Loan", desc: "Finance your home improvements", route: "/requests/new?type=renovation", bg: "#ede9fe", color: "#7c3aed" },
   { id: "education",  Icon: IconGradCap,    label: "Education Loan",  desc: "Invest in your future",          route: "/requests/new?type=education",  bg: "#d1fae5", color: "#059669" },
+  { id: "creditcard", Icon: IconCreditCard, label: "Credit Card",     desc: "Compare cashback & rewards",     route: "/requests/new?type=credit",     bg: "#fee2e2", color: "#dc2626" },
 ] as const;
 
 /* ── Save & Earn / Invest card definitions ─────────────────── */
