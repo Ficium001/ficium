@@ -154,7 +154,7 @@ function HeroBidRow({
 
   return (
     <div
-      className="rounded-[16px] bg-emerald-50 border border-emerald-100 p-4 cursor-pointer hover:bg-emerald-100/50 transition-colors"
+      className="group rounded-[16px] bg-emerald-50 border border-emerald-100 p-4 cursor-pointer hover:bg-emerald-100/50 transition-colors"
       onClick={() => navigate(`/requests/${requestId}`)}
       role="button"
       tabIndex={0}
@@ -207,13 +207,12 @@ function HeroBidRow({
           </div>
         )}
 
-        <button
-          onClick={e => { e.stopPropagation(); navigate(`/requests/${requestId}`); }}
-          className="shrink-0 text-[12px] sm:text-[13px] font-bold px-4 py-2.5 rounded-[10px] bg-emerald-600 text-white hover:bg-emerald-700 transition-colors w-full sm:w-auto"
-          aria-label={`View offer from ${bid.institutionName}`}
+        <span
+          className="shrink-0 text-[12px] sm:text-[13px] font-bold px-4 py-2.5 rounded-[10px] bg-emerald-600 text-white group-hover:bg-emerald-700 transition-colors w-full sm:w-auto text-center"
+          aria-hidden="true"
         >
           View offer
-        </button>
+        </span>
       </div>
     </div>
   );
@@ -234,7 +233,7 @@ function BidRow({
   return (
     <div
       className={[
-        "flex items-center gap-3 px-4 py-3.5 rounded-[14px] transition-colors cursor-pointer",
+        "group flex items-center gap-3 px-4 py-3.5 rounded-[14px] transition-colors cursor-pointer",
         isBest
           ? "bg-emerald-50 border border-emerald-100 hover:bg-emerald-100/60"
           : "bg-white border border-ink/6 hover:bg-ink/2",
@@ -284,18 +283,17 @@ function BidRow({
       </div>
 
       {/* View CTA */}
-      <button
-        onClick={e => { e.stopPropagation(); navigate(`/requests/${requestId}`); }}
+      <span
         className={[
           "shrink-0 text-[12px] font-bold px-3 py-1.5 rounded-[8px] transition-colors",
           isBest
-            ? "bg-emerald-600 text-white hover:bg-emerald-700"
-            : "border border-ink/12 text-ink hover:bg-ink/4",
+            ? "bg-emerald-600 text-white group-hover:bg-emerald-700"
+            : "border border-ink/12 text-ink group-hover:bg-ink/4",
         ].join(" ")}
-        aria-label={`View offer from ${bid.institutionName}`}
+        aria-hidden="true"
       >
         View
-      </button>
+      </span>
     </div>
   );
 }
