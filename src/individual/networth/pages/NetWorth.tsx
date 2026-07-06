@@ -12,13 +12,16 @@ import { PageShell } from "@/shared/ui";
 
 const fmt = (n: number) => `Rs ${n.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
 
-type AssetRow  = { key: keyof SnapshotInput; label: string; icon: React.ElementType; color: string };
+type AssetRow  = { key: keyof SnapshotInput; label: string; icon: React.ElementType; color: string; locked?: boolean };
 type LiabRow   = { key: keyof SnapshotInput; label: string; icon: React.ElementType; color: string };
 
+// cashSavings / fixedDeposits / investmentsValue are auto-computed from
+// itemized data in /finances (see finance.recompute_snapshot) — locked
+// here so manual edits can't drift out of sync with that source of truth.
 const ASSET_ROWS: AssetRow[] = [
-  { key: "cashSavings",      label: "Cash & savings",    icon: Wallet,    color: "#2A1FE6" },
-  { key: "fixedDeposits",    label: "Fixed deposits",    icon: Landmark,  color: "#059669" },
-  { key: "investmentsValue", label: "Investments",       icon: BarChart2, color: "#7c3aed" },
+  { key: "cashSavings",      label: "Cash & savings",    icon: Wallet,    color: "#2A1FE6", locked: true },
+  { key: "fixedDeposits",    label: "Fixed deposits",    icon: Landmark,  color: "#059669", locked: true },
+  { key: "investmentsValue", label: "Investments",       icon: BarChart2, color: "#7c3aed", locked: true },
   { key: "propertyValue",    label: "Property",          icon: Home,      color: "#d97706" },
   { key: "vehicleValue",     label: "Vehicles",          icon: Car,       color: "#0ea5e9" },
   { key: "otherAssets",      label: "Other assets",      icon: Plus,      color: "#6b7280" },
@@ -137,12 +140,23 @@ export default function NetWorthPage() {
           <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-[13px] text-red-600">{error}</div>
         )}
 
+        {/* Itemized accounts & investments CTA */}
+        <button onClick={() => navigate("/finances")}
+          className="w-full flex items-center justify-between bg-white rounded-[22px] border border-ink/6 shadow-xs px-5 py-4 hover:border-ficium/30 transition-colors">
+          <div className="text-left">
+            <div className="text-[14px] font-bold text-ink">Manage accounts & investments</div>
+            <div className="text-[12px] text-muted mt-0.5">Add banks like MauBank or AfrAsia, and stocks, bonds, or crypto with live prices</div>
+          </div>
+          <BarChart2 size={18} className="text-ficium shrink-0" />
+        </button>
+
         {/* ASSETS */}
         <Section title="Assets" icon={<TrendingUp size={16} className="text-emerald-600" />} total={fmt(data?.totalAssets ?? 0)} totalColor="text-emerald-700">
-          {ASSET_ROWS.map(({ key, label, icon: Icon, color }) => (
+          {ASSET_ROWS.map(({ key, label, icon: Icon, color, locked }) => (
             <Row key={key} label={label} icon={<Icon size={15} style={{ color }} />}
               value={editing && form ? form[key] as number : (data?.[key as keyof typeof data] as number ?? 0)}
-              editing={editing}
+              editing={editing && !locked}
+              locked={locked}
               onChange={(v) => setField(key, v)}
             />
           ))}
@@ -222,14 +236,22 @@ function Section({ title, icon, total, totalColor, totalLabel = "total", childre
   );
 }
 
-function Row({ label, icon, value, editing, onChange }: {
+function Row({ label, icon, value, editing, onChange, locked }: {
   label: string; icon: React.ReactNode; value: number;
-  editing: boolean; onChange: (v: string) => void;
+  editing: boolean; onChange: (v: string) => void; locked?: boolean;
 }) {
+  const navigate = useNavigate();
   return (
     <div className="flex items-center gap-3 px-5 py-3.5">
       <div className="w-6 grid place-items-center shrink-0">{icon}</div>
-      <div className="flex-1 text-[13px] font-medium text-ink">{label}</div>
+      <div className="flex-1 text-[13px] font-medium text-ink">
+        {label}
+        {locked && (
+          <button onClick={() => navigate("/finances")} className="ml-2 text-[10.5px] font-semibold text-ficium/70 hover:text-ficium hover:underline align-middle">
+            auto · edit in Finances
+          </button>
+        )}
+      </div>
       {editing ? (
         <div className="flex items-center gap-1 border border-ink/12 rounded-lg px-2.5 py-1.5 bg-paper">
           <span className="text-[12px] text-muted">Rs</span>
