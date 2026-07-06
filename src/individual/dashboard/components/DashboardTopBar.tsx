@@ -5,13 +5,13 @@ interface DashboardTopBarProps {
   initial:      string;
   name:         string;
   greeting:     string;
-  totalNewBids: number;
+  unreadCount:  number;
   onSignOut:    () => void;
 }
 
 // Pure presentational — all data and callbacks come from the page.
 export function DashboardTopBar({
-  initial, name, greeting, totalNewBids, onSignOut,
+  initial, name, greeting, unreadCount, onSignOut,
 }: DashboardTopBarProps) {
   return (
     <div className="flex items-center justify-between pt-6 pb-5">
@@ -36,9 +36,9 @@ export function DashboardTopBar({
           aria-label="Alerts"
         >
           <Bell size={16} />
-          {totalNewBids > 0 && (
+          {unreadCount > 0 && (
             <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold grid place-items-center">
-              {totalNewBids}
+              {unreadCount > 9 ? "9+" : unreadCount}
             </span>
           )}
         </Link>
