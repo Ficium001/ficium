@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { useAuth }           from "@/features/auth/context/AuthContext";
 import { useProfile, useMyRequests, useNextActions } from "@/individual/dashboard/hooks/useDashboard";
+import { useUnreadCount } from "@/shared/notifications/useUnreadCount";
 import { useDashboardInsights }  from "@/individual/dashboard/hooks/useDashboardInsights";
 import { useSnapshot }           from "@/individual/networth/hooks/useSnapshot";
 import { getGreeting, SPARK_NETWORTH, SPARK_REQUESTS } from "@/individual/dashboard/config/dashboard";
@@ -32,7 +33,7 @@ function fmtCompact(n: number): string {
 }
 
 export default function Dashboard() {
-  const { signOut }  = useAuth();
+  const { signOut, user } = useAuth();
   const navigate     = useNavigate();
   const [requestFilter, setRequestFilter] = useState<"open" | "accepted" | "rejected" | "closed">("open");
 
@@ -47,6 +48,7 @@ export default function Dashboard() {
   const readyToRequest = kycVerified && hasDossier;
   const activeRequests = requests.filter((r) => r.status === "open").length;
   const totalNewBids   = requests.reduce((s, r) => s + r.bidCount, 0);
+  const { data: unreadCount = 0 } = useUnreadCount(user?.id ?? null);
   const name           = profileLoading ? "" : (profile?.firstName ?? profile?.fullName ?? "");
 
   // Real financial numbers from snapshot — zero if not entered yet
@@ -99,12 +101,12 @@ export default function Dashboard() {
               aria-label="Alerts"
             >
               <Bell size={16} />
-              {totalNewBids > 0 && (
+              {unreadCount > 0 && (
                 <span
                   className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full text-white text-[9px] font-bold grid place-items-center"
                   style={{ background: "linear-gradient(135deg,#7C3AED,#C026D3)" }}
                 >
-                  {totalNewBids}
+                  {unreadCount > 9 ? "9+" : unreadCount}
                 </span>
               )}
             </Link>

@@ -49,37 +49,42 @@ export async function getMyNotifications(limit = 50): Promise<AppNotification[]>
   }));
 }
 
-/* ---------- Unread count ---------- */
-
-/**
- * Count of unread notifications for the current user.
- * Uses Supabase's head + exact count for cheap counting.
- */
-export async function getUnreadCount(): Promise<number> {
-  const { count, error } = await supabase
-    .from("notifications")
-    .select("id", { count: "exact", head: true })
-    .is("read_at", null);
-
-  if (error) return 0;
-  return count ?? 0;
-}
-
 /* ---------- Mark read ---------- */
 
 export async function markAllRead(): Promise<void> {
-  await supabase
+  const { error } = await supabase
     .from("notifications")
     .update({ read_at: new Date().toISOString() })
     .is("read_at", null);
+  if (error) throw error; // let react-query roll back the optimistic update
 }
 
 export async function markOneRead(id: string): Promise<void> {
-  await supabase
+  const { error } = await supabase
     .from("notifications")
     .update({ read_at: new Date().toISOString() })
     .eq("id", id)
     .is("read_at", null); // only update if still unread (idempotent)
+  if (error) throw error;
+}
+
+/* ---------- Clear (delete) ---------- */
+
+/**
+ * Delete all of the current user's notifications.
+ * RLS (`notifications_owner`, user_id = auth.uid()) already scopes the
+ * delete; the explicit user_id filter is defence-in-depth and satisfies
+ * supabase-js's requirement that DELETE carries a filter.
+ */
+export async function clearAllNotifications(): Promise<void> {
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) throw authError ?? new Error("Not authenticated");
+
+  const { error } = await supabase
+    .from("notifications")
+    .delete()
+    .eq("user_id", user.id);
+  if (error) throw error;
 }
 
 /* ---------- Helpers ---------- */

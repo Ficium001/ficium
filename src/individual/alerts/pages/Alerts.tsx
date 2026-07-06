@@ -2,9 +2,9 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
   BellOff, ShieldCheck, ShieldAlert, FileText, Sparkles,
-  TrendingDown, TrendingUp, Clock, CheckCheck, Zap,
+  TrendingDown, TrendingUp, Clock, CheckCheck, Zap, Trash2,
 } from "lucide-react";
-import { useNotifications, useMarkAllRead, useMarkOneRead } from "../hooks/useAlerts";
+import { useNotifications, useMarkAllRead, useMarkOneRead, useClearAll } from "../hooks/useAlerts";
 import { timeAgo } from "../api/notifications";
 import type { AppNotification, NotificationKind } from "../api/notifications";
 import { PageShell } from "../../../shared/ui";
@@ -41,7 +41,15 @@ export default function Alerts() {
   const { data: items = [], isLoading } = useNotifications();
   const { mutate: markAll, isPending: markingAll } = useMarkAllRead();
   const { mutate: markOne } = useMarkOneRead();
+  const { mutate: clearAll, isPending: clearingAll } = useClearAll();
   const [activeTab, setActiveTab] = useState<FilterTab>("all");
+  const [confirmClear, setConfirmClear] = useState(false);
+
+  const handleClearAll = () => {
+    if (!confirmClear) { setConfirmClear(true); return; } // two-step confirm
+    setConfirmClear(false);
+    clearAll();
+  };
 
   const unreadCount  = items.filter((n) => !n.readAt).length;
   const actionCount  = items.filter((n) => KIND_CONFIG[n.kind].actionRequired && !n.readAt).length;
@@ -78,15 +86,32 @@ export default function Alerts() {
             : "You're all caught up"
         }
         actions={
-          unreadCount > 0 ? (
-            <button
-              onClick={() => markAll()}
-              disabled={markingAll}
-              className="flex items-center gap-1.5 bg-white/8 border border-white/16 text-white/85 text-[12px] font-semibold px-3.5 py-2 rounded-xl hover:bg-white/[0.14] transition-colors disabled:opacity-40"
-            >
-              <CheckCheck size={13} />
-              Mark all read
-            </button>
+          items.length > 0 ? (
+            <div className="flex items-center gap-2">
+              {unreadCount > 0 && (
+                <button
+                  onClick={() => markAll()}
+                  disabled={markingAll}
+                  className="flex items-center gap-1.5 bg-white/8 border border-white/16 text-white/85 text-[12px] font-semibold px-3.5 py-2 rounded-xl hover:bg-white/[0.14] transition-colors disabled:opacity-40"
+                >
+                  <CheckCheck size={13} />
+                  Mark all read
+                </button>
+              )}
+              <button
+                onClick={handleClearAll}
+                onBlur={() => setConfirmClear(false)}
+                disabled={clearingAll}
+                className={`flex items-center gap-1.5 text-[12px] font-semibold px-3.5 py-2 rounded-xl transition-colors disabled:opacity-40 border ${
+                  confirmClear
+                    ? "bg-red-500/90 border-red-400/50 text-white hover:bg-red-500"
+                    : "bg-white/8 border-white/16 text-white/85 hover:bg-white/[0.14]"
+                }`}
+              >
+                <Trash2 size={13} />
+                {confirmClear ? "Tap to confirm" : "Clear all"}
+              </button>
+            </div>
           ) : undefined
         }
       />
