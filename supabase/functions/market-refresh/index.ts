@@ -94,9 +94,13 @@ interface RawHeadline {
  *  real publisher names + links per item. `when:` bounds recency. */
 const NEWS_FEEDS: { url: string; scope: NewsScope }[] = [
   {
+    // intitle: forces the term to actually appear in the headline — the
+    // previous loose "Mauritius (economy OR banking OR ...)" query let
+    // Google News broaden to generic global fintech items whenever a
+    // strict match was scarce, mislabeling them as "local".
     scope: "local",
     url: "https://news.google.com/rss/search?q=" +
-      encodeURIComponent('Mauritius (economy OR banking OR "Bank of Mauritius" OR rupee OR MCB OR inflation) when:3d') +
+      encodeURIComponent('(intitle:Mauritius OR intitle:"Bank of Mauritius" OR intitle:MCB OR intitle:"Mauritian rupee") when:3d') +
       "&hl=en&gl=MU&ceid=MU:en",
   },
   {
@@ -268,46 +272,118 @@ async function ingestNews(snap: Record<string, number | undefined>): Promise<Rec
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Lane 3 — regenerated dual-mode stories (snapshot + deltas + real headlines)
+// Lane 3 — regenerated dual-mode stories, deterministic keys, change-gated.
+//
+// v7 generated 6 stories every run with an AI-chosen free-form slug. When
+// nothing had actually moved (e.g. BOM key rate unchanged for days), the
+// model still invented a fresh slug and wrote a near-duplicate card instead
+// of recognising "this is the same story, still true" — so unchanged facts
+// looked like a stream of new content.
+//
+// Fix: story_key is computed in code, not chosen by the model:
+//   - ticker_<id>   — one canonical card per tracked indicator (USD, EUR,
+//     GBP, BOM key rate). Only regenerated when the value moved more than
+//     CHANGE_THRESHOLD_PCT since the prior run, OR it's been more than
+//     STORY_STALE_HOURS since it was last regenerated (so a truly frozen
+//     rate still gets a wording refresh occasionally, just not every run).
+//   - news_<hash8>  — one canonical card per real ingested headline
+//     (content_hash-derived). Generated once per real-world event; never
+//     duplicated on subsequent runs since the key is stable.
+// If nothing qualifies, no AI call is made at all — same facts don't get
+// reworded for the sake of it.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const STORIES_KEEP_MAX = 12;
+const STORIES_KEEP_MAX      = 12;
+const STORY_STALE_HOURS     = 20;    // refresh wording at most this often even if unchanged
+const CHANGE_THRESHOLD_PCT  = 0.05;  // moves smaller than this don't warrant a fresh card
+const MAX_HEADLINE_STORIES  = 3;     // real-event cards considered per run
+
+interface TickerUpdate {
+  ticker_id: string;
+  value: number;
+  display_value: string;
+  change_pct: number;
+}
+
+const TICKER_STORY_TOPICS: { id: string; label: string; category: string; unit: string }[] = [
+  { id: "usd_mur",   label: "US Dollar",     category: "Currency",       unit: "rupees" },
+  { id: "eur_mur",   label: "Euro",          category: "Currency",       unit: "rupees" },
+  { id: "gbp_mur",   label: "British Pound", category: "Currency",       unit: "rupees" },
+  { id: "repo_rate", label: "BOM Key Rate",  category: "Interest Rates", unit: "%" },
+];
 
 async function generateStories(
-  snap: Record<string, number | undefined>,
-  prev: Record<string, number>,
+  tickerUpdates: TickerUpdate[],
 ): Promise<Record<string, unknown>> {
-  const key = Deno.env.get("ANTHROPIC_API_KEY");
-  if (!key) return { skipped: "no API key" };
+  const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
+  if (!anthropicKey) return { skipped: "no API key" };
 
-  const { data: topNews } = await sb.from("market_news")
-    .select("headline,scope,source_name")
-    .order("published_at", { ascending: false }).limit(5);
-  const headlines = (topNews ?? [])
-    .map((n: Record<string, unknown>) => `- [${n.scope}] ${n.headline} (${n.source_name ?? "Ficium"})`)
-    .join("\n") || "- (none available)";
+  const tickerByI: Record<string, TickerUpdate> = Object.fromEntries(
+    tickerUpdates.map((u) => [u.ticker_id, u]),
+  );
 
-  const delta = (id: string, cur?: number) =>
-    cur !== undefined && prev[id] !== undefined && prev[id] !== 0
-      ? `${cur} (prev ${prev[id]}, ${chg(prev[id], cur)}%)`
-      : String(cur ?? "n/a");
+  const { data: existingRows } = await sb.from("market_stories").select("story_key, generated_at");
+  const existingMeta = new Map<string, number>(
+    (existingRows ?? []).map((r: Record<string, unknown>) => [String(r.story_key), Date.parse(String(r.generated_at))]),
+  );
+  const nowMs = Date.now();
+  const staleMs = STORY_STALE_HOURS * 3600 * 1000;
+
+  // ── Candidate 1: ticker-driven topics — gated on material change or staleness ──
+  type Topic =
+    | { kind: "ticker"; key: string; category: string; prompt: string }
+    | { kind: "news";   key: string; category: string; prompt: string };
+
+  const topics: Topic[] = [];
+
+  for (const t of TICKER_STORY_TOPICS) {
+    const u = tickerByI[t.id];
+    if (!u) continue; // this run's source fetch failed — nothing new to say
+    const storyKey = `ticker_${t.id}`;
+    const lastGenMs = existingMeta.get(storyKey);
+    const materialChange = Math.abs(u.change_pct) >= CHANGE_THRESHOLD_PCT;
+    const isStale = lastGenMs === undefined || (nowMs - lastGenMs) > staleMs;
+    if (!materialChange && !isStale) continue; // unchanged and recently confirmed — skip
+    topics.push({
+      kind: "ticker",
+      key: storyKey,
+      category: t.category,
+      prompt: `${t.label}: ${u.display_value}${t.unit === "%" ? "" : ` ${t.unit}`} (${u.change_pct >= 0 ? "+" : ""}${u.change_pct}% vs last refresh)`,
+    });
+  }
+
+  // ── Candidate 2: real headlines — one canonical card per event, never repeated ──
+  const { data: recentNews } = await sb.from("market_news")
+    .select("headline, body, scope, source_name, content_hash")
+    .not("content_hash", "is", null)
+    .order("published_at", { ascending: false })
+    .limit(10);
+
+  for (const n of (recentNews ?? []) as Record<string, unknown>[]) {
+    if (topics.filter((t) => t.kind === "news").length >= MAX_HEADLINE_STORIES) break;
+    const hash = String(n.content_hash);
+    const storyKey = `news_${hash.slice(0, 12)}`;
+    if (existingMeta.has(storyKey)) continue; // already have a canonical card for this event
+    topics.push({
+      kind: "news",
+      key: storyKey,
+      category: "Economy",
+      prompt: `[${n.scope}] ${n.headline} — ${n.body ?? ""} (${n.source_name ?? "Ficium"})`,
+    });
+  }
+
+  if (topics.length === 0) return { skipped: "no material changes or new events since last run" };
 
   const today = new Date();
-  const dateKey = today.toISOString().slice(0, 10).replace(/-/g, "");
   const prompt = `You are a financial storyteller for Ficium, a Mauritius lending marketplace. Today is ${today.toLocaleDateString("en-MU", { day: "numeric", month: "long", year: "numeric", timeZone: "Indian/Mauritius" })}.
 
-Live figures with change vs last refresh:
-USD/MUR ${delta("usd_mur", snap.usd)}, EUR/MUR ${delta("eur_mur", snap.eur)}, GBP/MUR ${delta("gbp_mur", snap.gbp)}, BOM Key Rate ${delta("repo_rate", snap.repo)}%, SEMDEX ${delta("semdex", snap.semdex)}.
+For EACH topic below (in order), write a story card explaining what it means for people's money. Each card has an "everyday" version (warm, jargon-free) and a "finance" version (precise, numeric). Ground every claim ONLY in the topic's own figures/text — never invent numbers or events. Set related_cta true only when a Ficium request genuinely helps (e.g. beating average lending/deposit rates), and on at most one topic.
 
-Real headlines currently in the app:
-${headlines}
+Topics:
+${topics.map((t, i) => `${i}. [${t.category}] ${t.prompt}`).join("\n")}
 
-Write 6 story cards explaining what today's market means for people's money. Each card has an "everyday" version (warm, jargon-free, for non-financial readers) and a "finance" version (precise, numeric, for professionals). Ground every claim in the figures/headlines above — never invent numbers or events. At most 2 cards may set related_cta true (when a Ficium request genuinely helps, e.g. beating average lending/deposit rates).
-
-Respond ONLY with a JSON array of 6 objects, no markdown:
+Respond ONLY with a JSON array of ${topics.length} objects in the same order, no markdown:
 [{
-  "slug": "short-kebab-case-topic",
-  "category": "Interest Rates"|"Currency"|"Stock Market"|"Economy"|"Savings"|"Lending",
   "emoji": "…",
   "related_cta": false,
   "headline_everyday": "<70 chars", "plain_everyday": "<160 chars hook",
@@ -315,10 +391,11 @@ Respond ONLY with a JSON array of 6 objects, no markdown:
   "headline_finance": "<70 chars, numeric", "plain_finance": "<160 chars",
   "detail_finance": "3-4 sentences with the relevant figures"
 }]`;
+
   try {
     const r = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },
+      headers: { "Content-Type": "application/json", "x-api-key": anthropicKey, "anthropic-version": "2023-06-01" },
       body: JSON.stringify({ model: "claude-haiku-4-5-20251001", max_tokens: 4000, messages: [{ role: "user", content: prompt }] }),
       signal: AbortSignal.timeout(30000),
     });
@@ -326,34 +403,46 @@ Respond ONLY with a JSON array of 6 objects, no markdown:
     const d = await r.json();
     const text: string = d.content?.[0]?.text ?? "";
     const items = JSON.parse(text.replace(/```json|```/g, "").trim());
-    if (!Array.isArray(items) || items.length === 0) return { skipped: "empty generation" };
+    if (!Array.isArray(items) || items.length !== topics.length) return { skipped: "malformed generation" };
 
     const ts = now();
-    const rows = items.slice(0, 6).map((s: Record<string, unknown>) => ({
-      story_key:         `${dateKey}_${String(s.slug ?? "story").slice(0, 40)}`,
-      category:          s.category,
-      emoji:             s.emoji ?? "💡",
-      related_cta:       Boolean(s.related_cta),
-      headline_everyday: s.headline_everyday,
-      plain_everyday:    s.plain_everyday,
-      detail_everyday:   s.detail_everyday ?? "",
-      headline_finance:  s.headline_finance,
-      plain_finance:     s.plain_finance,
-      detail_finance:    s.detail_finance ?? "",
+    const rows = topics.map((t, i) => ({
+      story_key:         t.key,
+      category:          t.category,
+      emoji:             items[i].emoji ?? "💡",
+      related_cta:       Boolean(items[i].related_cta),
+      headline_everyday: items[i].headline_everyday,
+      plain_everyday:    items[i].plain_everyday,
+      detail_everyday:   items[i].detail_everyday ?? "",
+      headline_finance:  items[i].headline_finance,
+      plain_finance:     items[i].plain_finance,
+      detail_finance:    items[i].detail_finance ?? "",
       generated_at:      ts,
     }));
     const { error, count } = await sb.from("market_stories")
       .upsert(rows, { onConflict: "story_key", count: "exact" });
     if (error) return { error: error.message };
 
-    // Prune old stories beyond retention window
+    // Prune stories whose real-headline source has rotated out of retention,
+    // then cap total rows.
+    const { data: allHashes } = await sb.from("market_news").select("content_hash").not("content_hash", "is", null);
+    const liveHashPrefixes = new Set((allHashes ?? []).map((r: Record<string, unknown>) => String(r.content_hash).slice(0, 12)));
+    const { data: newsStories } = await sb.from("market_stories").select("id, story_key").like("story_key", "news_%");
+    const orphaned = (newsStories ?? []).filter((s: Record<string, unknown>) => {
+      const prefix = String(s.story_key).replace("news_", "");
+      return !liveHashPrefixes.has(prefix);
+    });
+    if (orphaned.length) {
+      await sb.from("market_stories").delete().in("id", orphaned.map((r: Record<string, unknown>) => r.id));
+    }
+
     const { data: overflow } = await sb.from("market_stories")
       .select("id").order("generated_at", { ascending: false })
       .range(STORIES_KEEP_MAX, STORIES_KEEP_MAX + 100);
     if (overflow?.length) {
       await sb.from("market_stories").delete().in("id", overflow.map((r: Record<string, unknown>) => r.id));
     }
-    return { generated: count };
+    return { regenerated: count, topics: topics.map((t) => t.key) };
   } catch (e) {
     console.error("story generation failed", e);
     return { error: String(e) };
@@ -426,9 +515,9 @@ Deno.serve(async () => {
 
   const snap = { usd: fx?.usd, eur: fx?.eur, gbp: fx?.gbp, repo: bom?.repo, semdex: semdex ?? undefined };
 
-  // Lane 2: real news. Lane 3: stories (uses freshly ingested headlines).
+  // Lane 2: real news. Lane 3: stories — gated on the same run's ticker deltas.
   log.news    = await ingestNews(snap);
-  log.stories = await generateStories(snap, prev);
+  log.stories = await generateStories(ups as TickerUpdate[]);
 
   log.done_at = now();
   return new Response(JSON.stringify({ ok: true, log }, null, 2), { headers: { "Content-Type": "application/json" } });
