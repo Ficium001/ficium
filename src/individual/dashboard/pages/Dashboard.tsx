@@ -200,7 +200,7 @@ export default function Dashboard() {
                 </Link>
               </div>
               {/* Filter pills — segmented control */}
-              <div className="flex items-center gap-2 mb-4 p-1 bg-ink/4 rounded-[16px] w-fit">
+              <div className="flex items-center gap-2 mb-4 p-1 bg-ink/4 rounded-[16px] w-fit max-w-full overflow-x-auto scrollbar-hide">
                 {FILTERS.map(f => {
                   const count = requests.filter(r => r.status === f.key).length;
                   const active = requestFilter === f.key;
@@ -215,7 +215,7 @@ export default function Dashboard() {
                     <button
                       key={f.key}
                       onClick={() => setRequestFilter(f.key)}
-                      className="flex items-center gap-2 px-4 py-2 rounded-[12px] transition-all duration-200 font-semibold text-[13px]"
+                      className="flex items-center gap-2 px-4 py-2 rounded-[12px] transition-all duration-200 font-semibold text-[13px] shrink-0"
                       style={
                         active
                           ? { background: m.activeBg, color: "#fff", boxShadow: "0 2px 8px rgba(53,110,244,0.25)" }
