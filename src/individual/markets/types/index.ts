@@ -24,6 +24,8 @@ export type NewsCategory =
 
 export type Direction = "up" | "down" | "flat";
 
+export type NewsScope = "local" | "global";
+
 export type StoryMode = "everyday" | "finance";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -56,6 +58,12 @@ export interface Ticker extends TickerConfig {
 // FX — best rate across banks
 // ─────────────────────────────────────────────────────────────────────────────
 
+export interface FxBankRate {
+  bank: string;
+  buyRate: number;
+  sellRate: number;
+}
+
 export interface FxRate {
   currency: string;          // "USD / MUR"
   currencyCode: string;      // "USD"
@@ -64,7 +72,16 @@ export interface FxRate {
   worstBank: string;
   worstRate: number;
   savingPer1000: string;     // "Rs 700 per $1,000"
+  /** Full bank breakdown, sorted best buy rate first. Powers "Compare all rates". */
+  banks: FxBankRate[];
   updatedAt: Date;
+  /**
+   * True while bank buy/sell rates are computed from a live USD/EUR/GBP/ZAR
+   * feed plus per-bank spread assumptions, rather than each bank's own
+   * published counter rate. Drives the "Indicative" disclaimer in the UI.
+   * Flip to false once real per-bank rate feeds are integrated.
+   */
+  isIndicative: boolean;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -96,6 +113,13 @@ export interface NewsItem {
   category: NewsCategory;
   emoji: string;
   plainEnglish: string;
+  /** 2–3 sentence detail shown when the item is expanded. */
+  body?: string;
+  /** Mauritius vs international coverage. Defaults to "local" for legacy rows. */
+  scope: NewsScope;
+  /** Real publisher attribution for ingested headlines. */
+  sourceName?: string;
+  sourceUrl?: string;
   publishedAt: Date;
   relatedTickerId?: TickerId;
 }
@@ -105,9 +129,31 @@ export interface StoryItem {
   emoji: string;
   category: NewsCategory;
   relatedCTA: boolean;
-  everyday: { headline: string; plain: string };
-  finance:  { headline: string; plain: string };
+  /** When this story was (re)generated — surfaced so freshness is honest. */
+  generatedAt?: Date;
+  everyday: { headline: string; plain: string; detail?: string };
+  finance:  { headline: string; plain: string; detail?: string };
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Personalisation — per-user market feed preferences
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type CurrencyCode = "USD" | "EUR" | "GBP" | "ZAR";
+
+export interface MarketPreferences {
+  categories: NewsCategory[];
+  currencies: CurrencyCode[];
+  scopes: NewsScope[];
+  defaultMode: StoryMode;
+}
+
+export const DEFAULT_MARKET_PREFERENCES: MarketPreferences = {
+  categories: [],
+  currencies: [],
+  scopes: ["local", "global"],
+  defaultMode: "everyday",
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // API response envelopes

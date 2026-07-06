@@ -1,4 +1,4 @@
-import { useState }           from "react";
+import { useEffect, useState } from "react";
 import { RefreshCw }          from "lucide-react";
 import { BottomNav }          from "@/shared/ui";
 import {
@@ -9,6 +9,7 @@ import { useNavigate }        from "react-router-dom";
 import {
   useMarketData,
   useMarketNews,
+  useMarketPreferences,
   useAiMarketSummary,
 }                             from "@/individual/markets/hooks";
 import {
@@ -17,6 +18,7 @@ import {
   RatesSummaryBar,
   FxBestRates,
   MarketNewsFeed,
+  PreferenceSheet,
   StoryModeToggle,
   StoriesGrid,
   AiMarketChat,
@@ -37,11 +39,20 @@ export default function Markets() {
     isRefreshing, lastUpdated, refresh,
   } = useMarketData();
 
-  const { news, stories }                     = useMarketNews();
+  const {
+    preferences, hasSaved, isSaving, save: savePreferences,
+  } = useMarketPreferences();
+  const { news, forYouIds, stories }          = useMarketNews(preferences);
   const { summary, isStreaming: aiStreaming }  = useAiMarketSummary(_rawResult);
 
   const [activeId,  setActiveId]  = useState<TickerId | null>(null);
   const [storyMode, setStoryMode] = useState<StoryMode>("everyday");
+  const [prefsOpen, setPrefsOpen] = useState(false);
+
+  // Saved default story mode wins once preferences settle.
+  useEffect(() => {
+    if (hasSaved) setStoryMode(preferences.defaultMode);
+  }, [hasSaved, preferences.defaultMode]);
 
   const activeTicker = activeId
     ? tickers.find((t) => t.id === activeId) ?? null
@@ -113,9 +124,14 @@ export default function Markets() {
           <FxBestRates rates={fxRates} />
         </Reveal>
 
-        {/* Market news */}
+        {/* Market news — personalised, scope-filterable */}
         <Reveal>
-          <MarketNewsFeed news={news} />
+          <MarketNewsFeed
+            news={news}
+            forYouIds={forYouIds}
+            personalised={hasSaved}
+            onPersonalise={() => setPrefsOpen(true)}
+          />
         </Reveal>
 
         {/* Financial stories with mode toggle */}
@@ -136,6 +152,17 @@ export default function Markets() {
         <FiciumCTA />
 
       </div>
+
+      <PreferenceSheet
+        open={prefsOpen}
+        initial={preferences}
+        isSaving={isSaving}
+        onClose={() => setPrefsOpen(false)}
+        onSave={async (next) => {
+          const ok = await savePreferences({ ...next, defaultMode: storyMode });
+          if (ok) setPrefsOpen(false);
+        }}
+      />
 
       <BottomNav />
     </div>

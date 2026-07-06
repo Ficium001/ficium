@@ -86,11 +86,16 @@ export async function fetchMarketData(): Promise<MarketDataResult> {
   }
 
   // ── FX rates — pivot to best/worst per currency ──
-  const fxMap = new Map<string, { bank: string; rate: number }[]>();
+  const fxMap = new Map<string, { bank: string; rate: number; sellRate: number; basis: string }[]>();
   for (const row of fxRes.data ?? []) {
     const code = row.currency_code as string;
     if (!fxMap.has(code)) fxMap.set(code, []);
-    fxMap.get(code)!.push({ bank: row.bank_name, rate: Number(row.buy_rate) });
+    fxMap.get(code)!.push({
+      bank:     row.bank_name,
+      rate:     Number(row.buy_rate),
+      sellRate: Number(row.sell_rate),
+      basis:    row.rate_basis ?? "indicative",
+    });
   }
 
   const CURRENCY_ORDER = ["USD", "EUR", "GBP", "ZAR"];
@@ -108,6 +113,9 @@ export async function fetchMarketData(): Promise<MarketDataResult> {
         worstBank:     worst.bank,
         worstRate:     worst.rate,
         savingPer1000: calcSaving(code, best.rate, worst.rate),
+        banks:         rows.map((r) => ({ bank: r.bank, buyRate: r.rate, sellRate: r.sellRate })),
+        // Whole-currency badge: indicative unless every bank row is a real quote.
+        isIndicative:  rows.some((r) => r.basis !== "live"),
         updatedAt:     new Date(),
       };
     });
@@ -154,7 +162,7 @@ export async function fetchMarketData(): Promise<MarketDataResult> {
 
 export async function fetchMarketNews(): Promise<NewsResult> {
   const [newsRes, storiesRes] = await Promise.all([
-    supabase.from("market_news").select("*").order("published_at", { ascending: false }).limit(8),
+    supabase.from("market_news").select("*").order("published_at", { ascending: false }).limit(20),
     supabase.from("market_stories").select("*").order("generated_at", { ascending: false }).limit(6),
   ]);
 
@@ -167,9 +175,12 @@ export async function fetchMarketNews(): Promise<NewsResult> {
     category:         row.category as NewsCategory,
     emoji:            row.emoji,
     plainEnglish:     row.plain_english,
+    body:             row.body ?? undefined,
+    scope:            row.scope === "global" ? "global" : "local",
+    sourceName:       row.source_name ?? undefined,
+    sourceUrl:        row.source_url ?? undefined,
     publishedAt:      new Date(row.published_at),
     relatedTickerId:  row.related_ticker_id as TickerId | undefined,
-    source:           row.source,
   }));
 
   const stories: StoryItem[] = (storiesRes.data ?? []).map((row) => ({
@@ -177,13 +188,16 @@ export async function fetchMarketNews(): Promise<NewsResult> {
     emoji:       row.emoji,
     category:    row.category as NewsCategory,
     relatedCTA:  row.related_cta ?? false,
+    generatedAt: row.generated_at ? new Date(row.generated_at) : undefined,
     everyday: {
       headline: row.headline_everyday,
       plain:    row.plain_everyday,
+      detail:   row.detail_everyday || undefined,
     },
     finance: {
       headline: row.headline_finance,
       plain:    row.plain_finance,
+      detail:   row.detail_finance || undefined,
     },
   }));
 

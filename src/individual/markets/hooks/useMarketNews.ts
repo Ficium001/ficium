@@ -1,16 +1,32 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { fetchMarketNews } from "../api";
-import type { NewsItem, StoryItem } from "../types";
+import { rankNews } from "../lib/ranking";
+import {
+  DEFAULT_MARKET_PREFERENCES,
+  type NewsItem, type StoryItem, type MarketPreferences,
+} from "../types";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// useMarketNews — fetches headlines + stories once, then ranks headlines
+// client-side against the user's preferences (pure lib/ranking). Fetching
+// and ranking are decoupled so preference edits re-rank instantly with no
+// network round-trip.
+// ─────────────────────────────────────────────────────────────────────────────
 
 interface UseMarketNewsReturn {
-  news:      NewsItem[];
-  stories:   StoryItem[];
+  /** Headlines, most relevant to this user first. */
+  news: NewsItem[];
+  /** IDs of items that specifically match the user's saved preferences. */
+  forYouIds: Set<string>;
+  stories: StoryItem[];
   isLoading: boolean;
-  error:     string | null;
+  error: string | null;
 }
 
-export function useMarketNews(): UseMarketNewsReturn {
-  const [news, setNews]           = useState<NewsItem[]>([]);
+export function useMarketNews(
+  preferences: MarketPreferences = DEFAULT_MARKET_PREFERENCES,
+): UseMarketNewsReturn {
+  const [raw, setRaw]             = useState<NewsItem[]>([]);
   const [stories, setStories]     = useState<StoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError]         = useState<string | null>(null);
@@ -18,11 +34,16 @@ export function useMarketNews(): UseMarketNewsReturn {
   useEffect(() => {
     let cancelled = false;
     fetchMarketNews()
-      .then((r) => { if (!cancelled) { setNews(r.items); setStories(r.stories); } })
+      .then((r) => { if (!cancelled) { setRaw(r.items); setStories(r.stories); } })
       .catch(() => { if (!cancelled) setError("Could not load news."); })
       .finally(() => { if (!cancelled) setIsLoading(false); });
     return () => { cancelled = true; };
   }, []);
 
-  return { news, stories, isLoading, error };
+  const { ranked, forYouIds } = useMemo(
+    () => rankNews(raw, preferences),
+    [raw, preferences],
+  );
+
+  return { news: ranked, forYouIds, stories, isLoading, error };
 }

@@ -71,10 +71,20 @@ export function StoriesGrid({ stories, mode }: Props) {
 
               {/* Expanded body */}
               {isOpen && (
-                <div className="mt-3 pt-3 border-t border-ink/6">
+                <div className="mt-3 pt-3 border-t border-ink/6 space-y-2">
                   <p className="text-[12px] text-muted leading-relaxed">
                     {content.plain}
                   </p>
+                  {content.detail && (
+                    <p className="text-[12px] text-ink/80 leading-relaxed">
+                      {content.detail}
+                    </p>
+                  )}
+                  {s.generatedAt && (
+                    <p className="text-[10px] text-muted/60 uppercase tracking-wide">
+                      Updated {s.generatedAt.toLocaleDateString("en-MU", { day: "numeric", month: "short" })}
+                    </p>
+                  )}
                   {s.relatedCTA && (
                     <Link
                       to="/requests/new"
