@@ -32,6 +32,7 @@ const FinancialTools      = lazy(() => import("../individual/tools/pages/Financi
 const ROIPage             = lazy(() => import("../individual/tools/pages/ROIPage"));
 const ClientAudit         = lazy(() => import("../individual/audit/pages/ClientAudit"));
 const NetWorthPage        = lazy(() => import("../individual/networth/pages/NetWorth"));
+const FinancesPage        = lazy(() => import("../individual/finance/pages/Finances"));
 const FinancialHealthPage = lazy(() => import("../individual/health/pages/FinancialHealth"));
 const Vault               = lazy(() => import("../individual/vault/pages/Vault"));
 const Couple              = lazy(() => import("../individual/couple/pages/Couple"));
@@ -120,6 +121,7 @@ export const router = createBrowserRouter([
   { path: "/tools/roi",             element: <ClientOnlyRoute><S><ROIPage /></S></ClientOnlyRoute> },
   { path: "/activity",               element: <ClientOnlyRoute><S><ClientAudit /></S></ClientOnlyRoute> },
   { path: "/networth",               element: <ClientOnlyRoute><S><NetWorthPage /></S></ClientOnlyRoute> },
+  { path: "/finances",               element: <ClientOnlyRoute><S><FinancesPage /></S></ClientOnlyRoute> },
   { path: "/vault",                  element: <ClientOnlyRoute><S><Vault /></S></ClientOnlyRoute> },
   { path: "/couple",                 element: <ClientOnlyRoute><S><Couple /></S></ClientOnlyRoute> },
   { path: "/health",                 element: <ClientOnlyRoute><S><FinancialHealthPage /></S></ClientOnlyRoute> },
