@@ -372,6 +372,7 @@ export default function NewRequest() {
   const [isJoint,      setIsJoint]      = useState(false);
   const [partnerEmail, setPartnerEmail] = useState("");
   const [inviteNote,   setInviteNote]   = useState<string | null>(null);
+  const [deadlineDays, setDeadlineDays] = useState(14);
 
   const questions = product ? (QUESTION_SETS[product.type] ?? []) : [];
   const currentQ  = questions[qIndex];
@@ -417,11 +418,13 @@ export default function NewRequest() {
     setSubmitting(true); setError(null);
     const amount      = Number(answers["__amount"] || product.defaultAmount);
     const termMonths  = Number(answers["__term"]   || product.defaultTerm);
+    const decisionDeadline = new Date(Date.now() + deadlineDays * 86_400_000).toISOString();
     const result = await createRequest({
       productType:         product.type,
       amount,
       purpose:             buildPurpose(answers),
       preferredTermMonths: termMonths,
+      decisionDeadline,
     });
     if (!result.ok) { setError(result.error); setSubmitting(false); return; }
 
@@ -592,6 +595,35 @@ export default function NewRequest() {
                     </p>
                   </div>
                 )}
+              </div>
+
+              <div className="mx-6 mb-5 rounded-xl border border-line overflow-hidden bg-white px-4 py-3.5">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-9 h-9 rounded-lg bg-ficium/10 grid place-items-center shrink-0">
+                    <CalendarDays size={16} className="text-ficium" />
+                  </div>
+                  <div>
+                    <p className="text-[13px] font-semibold text-ink">Bidding window</p>
+                    <p className="text-[11px] text-muted mt-0.5">How long should providers have to respond?</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  {[7, 14, 30].map(d => (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => setDeadlineDays(d)}
+                      className={[
+                        "flex-1 py-2 rounded-lg text-[13px] font-semibold transition-colors",
+                        deadlineDays === d
+                          ? "bg-ficium text-white shadow-ficium"
+                          : "bg-ink/4 text-muted hover:bg-ink/8",
+                      ].join(" ")}
+                    >
+                      {d} days
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="mx-6 mb-5 flex items-start gap-2.5 bg-ficium/4 border border-ficium/12 rounded-xl px-4 py-3">
