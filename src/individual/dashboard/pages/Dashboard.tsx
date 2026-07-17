@@ -35,7 +35,7 @@ function fmtCompact(n: number): string {
 export default function Dashboard() {
   const { signOut, user } = useAuth();
   const navigate     = useNavigate();
-  const [requestFilter, setRequestFilter] = useState<"open" | "accepted" | "rejected" | "closed">("open");
+  const [requestFilter, setRequestFilter] = useState<"open" | "accepted" | "rejected" | "expired" | "closed">("open");
 
   const { data: profile,  isLoading: profileLoading  } = useProfile();
   const { data: requests = [] } = useMyRequests();
@@ -186,6 +186,7 @@ export default function Dashboard() {
             { key: "open",     label: "Open"     },
             { key: "accepted", label: "Accepted" },
             { key: "rejected", label: "Rejected" },
+            { key: "expired",  label: "Expired"  },
             { key: "closed",   label: "Closed"   },
           ] as const;
           const filtered = requests.filter(r => r.status === requestFilter);

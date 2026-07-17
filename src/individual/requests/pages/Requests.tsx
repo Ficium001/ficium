@@ -39,7 +39,7 @@ export default function Requests() {
   const { score: readiness } = useBankReadiness();
   const { data: notifications = [] } = useNotifications();
 
-  const [statusFilter, setStatusFilter] = useState<"open" | "accepted" | "rejected" | "closed">("open");
+  const [statusFilter, setStatusFilter] = useState<"open" | "accepted" | "rejected" | "expired" | "closed">("open");
 
   const openRequests  = requests.filter(r => r.status === "open");
   const filteredRequests = requests.filter(r => r.status === statusFilter);
@@ -126,6 +126,7 @@ export default function Requests() {
                     { key: "open"     as const, label: "Open",     dot: "#356EF4", activeBg: "linear-gradient(135deg,#356EF4,#8231EC)", activeText: "#fff" },
                     { key: "accepted" as const, label: "Accepted", dot: "#10b981", activeBg: "linear-gradient(135deg,#059669,#10b981)",   activeText: "#fff" },
                     { key: "rejected" as const, label: "Rejected", dot: "#ef4444", activeBg: "linear-gradient(135deg,#dc2626,#ef4444)",   activeText: "#fff" },
+                    { key: "expired"  as const, label: "Expired",  dot: "#f59e0b", activeBg: "linear-gradient(135deg,#d97706,#f59e0b)",   activeText: "#fff" },
                     { key: "closed"   as const, label: "Closed",   dot: "#9ca3af", activeBg: "linear-gradient(135deg,#4b5563,#9ca3af)",   activeText: "#fff" },
                   ];
                   return (
