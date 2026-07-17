@@ -10,6 +10,15 @@ updates:
         update-types:
           - "minor"
           - "patch"
+    ignore:
+      # typescript-eslint has no release supporting TS7 yet (its stable
+      # programmatic API doesn't ship until TypeScript 7.1) — every
+      # typescript-eslint release through 8.64.0 still peer-deps on
+      # `typescript <6.1.0`, so bumping past 6.x hard-fails `npm ci`.
+      # Revisit once typescript-eslint ships 7.x support.
+      # See: typescript-eslint/typescript-eslint#12518
+      - dependency-name: "typescript"
+        versions: [">=7.0.0"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
