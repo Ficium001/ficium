@@ -211,6 +211,7 @@ export default function Dashboard() {
                     open:     { dot: "#356EF4", activeBg: "linear-gradient(135deg,#356EF4,#8231EC)" },
                     accepted: { dot: "#10b981", activeBg: "linear-gradient(135deg,#059669,#10b981)" },
                     rejected: { dot: "#ef4444", activeBg: "linear-gradient(135deg,#dc2626,#ef4444)" },
+                    expired:  { dot: "#f59e0b", activeBg: "linear-gradient(135deg,#d97706,#f59e0b)" },
                     closed:   { dot: "#9ca3af", activeBg: "linear-gradient(135deg,#4b5563,#9ca3af)" },
                   } as const;
                   const m = META[f.key];
