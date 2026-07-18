@@ -3,8 +3,9 @@ import { Link, useNavigate } from "react-router-dom";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowRight, ArrowLeft, Camera, Upload, ShieldCheck, MapPin, FileText, Globe } from "lucide-react";
+import { ArrowRight, ArrowLeft, Camera, ShieldCheck, MapPin, FileText, Globe, ScanLine, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { submitKyc } from "../api/kyc";
+import { scanIdDocument } from "../api/kycScan";
 import { Button, Card, Field, Input, Select } from "../../../shared/ui";
 
 /* ---------- Schema ---------- */
@@ -50,11 +51,14 @@ export default function Kyc() {
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [permitFile, setPermitFile] = useState<File | null>(null);
   const [verifyStep, setVerifyStep] = useState<string | null>(null);
+  const [scanState, setScanState] = useState<"idle" | "scanning" | "done" | "error">("idle");
+  const [scanMessage, setScanMessage] = useState<string | null>(null);
 
   const {
     register,
     handleSubmit,
     control,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -70,6 +74,35 @@ export default function Kyc() {
   const sameNatRes     = useWatch({ control, name: "sameNationalityResidence" });
   const residenceStatus = useWatch({ control, name: "residenceStatus" });
   const needsPermit    = residenceStatus === "work_permit" || residenceStatus === "student_permit";
+
+  /**
+   * Fires as soon as the ID photo is selected — scans it for a document
+   * number and pre-fills the field. Non-blocking and best-effort: the
+   * user can always type or correct the number by hand, and the full
+   * verify pipeline re-checks everything at submission regardless.
+   */
+  const runScan = async (file: File) => {
+    setScanState("scanning");
+    setScanMessage(null);
+    try {
+      const result = await scanIdDocument(file);
+      if (result.found) {
+        setValue("documentNumber", result.documentNumber, { shouldValidate: true, shouldDirty: true });
+        setScanState("done");
+        setScanMessage(
+          result.confidence === "high"
+            ? "Document number detected — please confirm it's correct."
+            : "Possible document number detected — please double-check it."
+        );
+      } else {
+        setScanState("error");
+        setScanMessage(result.reason ?? "Couldn't read a document number from this photo. Please enter it manually below.");
+      }
+    } catch {
+      setScanState("error");
+      setScanMessage("Scan failed. Please enter your document number manually below.");
+    }
+  };
 
   const onSubmit = async (data: FormData) => {
     setSubmitError(null);
@@ -169,18 +202,46 @@ export default function Kyc() {
               </Select>
             </Field>
 
-            <Field label="Document number" htmlFor="documentNumber" error={errors.documentNumber?.message}>
-              <Input id="documentNumber" type="text" autoComplete="off" placeholder="e.g. M1234567"
-                invalid={!!errors.documentNumber} {...register("documentNumber")} />
+            <Field
+              label="Document number"
+              htmlFor="documentNumber"
+              error={errors.documentNumber?.message}
+              hint={
+                !errors.documentNumber && scanState === "done"
+                  ? "Auto-filled from your ID scan below — double-check it's correct."
+                  : "Type it in, or scan your ID below to auto-fill this."
+              }
+            >
+              <Input id="documentNumber" type="text" autoComplete="off" placeholder="e.g. J2808952501F"
+                invalid={!!errors.documentNumber}
+                {...register("documentNumber", {
+                  onChange: () => { if (scanState !== "idle") setScanState("idle"); },
+                })} />
             </Field>
 
             <Field label="Date of birth" htmlFor="dateOfBirth" error={errors.dateOfBirth?.message}>
               <Input id="dateOfBirth" type="date" invalid={!!errors.dateOfBirth} {...register("dateOfBirth")} />
             </Field>
 
-            <UploadZone icon={<Upload size={20} />} title="Upload your ID document"
-              hint="Clear photo of the front. JPG or PNG, max 5MB."
-              file={idFile} onFile={setIdFile} inputId="idFile" />
+            <UploadZone icon={<ScanLine size={20} />} title="Scan or upload your ID document"
+              hint="Clear photo of the front — we'll auto-read your document number. JPG or PNG, max 5MB."
+              file={idFile}
+              onFile={(f) => { setIdFile(f); if (f) { void runScan(f); } else { setScanState("idle"); setScanMessage(null); } }}
+              inputId="idFile" capture="environment" />
+
+            {scanState !== "idle" && (
+              <div className={[
+                "flex items-start gap-2.5 px-3.5 py-3 rounded-xl text-[13px] -mt-2",
+                scanState === "scanning" && "bg-ficium/4 border border-ficium/15 text-ink/80",
+                scanState === "done"     && "bg-mint/15 border border-mint text-ink/80",
+                scanState === "error"    && "bg-amber-50 border border-amber-200 text-amber-900",
+              ].filter(Boolean).join(" ")}>
+                {scanState === "scanning" && <Loader2 size={16} className="shrink-0 mt-0.5 animate-spin text-ficium" />}
+                {scanState === "done"     && <CheckCircle2 size={16} className="shrink-0 mt-0.5 text-ink" />}
+                {scanState === "error"    && <AlertCircle size={16} className="shrink-0 mt-0.5 text-amber-600" />}
+                <p>{scanState === "scanning" ? "Scanning ID for your document number…" : scanMessage}</p>
+              </div>
+            )}
 
             <UploadZone icon={<Camera size={20} />} title="Selfie verification"
               hint="A clear front-facing photo of you, in good light."
