@@ -8,3 +8,4 @@ export { FiciumLogo } from "./FiciumLogo";
 export { FicoMark } from "./FicoMark";
 export { PageShell } from "./PageShell";
 export { CardScroller } from "./CardScroller";
+export { UploadZone } from "./UploadZone";

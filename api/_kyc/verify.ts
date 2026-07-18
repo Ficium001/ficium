@@ -28,23 +28,12 @@ import {
   type RekLabel, type FaceCollectionResult,
 } from "./aws.js";
 import { parseMrz } from "./docExtract.js";
+import { supabaseQuery } from "./db.js";
 
 const getEnv = (k: string) => (globalThis as any).process?.env?.[k] ?? "";
 
-/* ── Supabase helpers (fraud checks) ───────────────────────── */
+/* ── Supabase helpers (see ./db.ts) ────────────────────────── */
 
-async function supabaseQuery(path: string): Promise<unknown[]> {
-  const url = getEnv("VITE_SUPABASE_URL") || getEnv("SUPABASE_URL");
-  const key = getEnv("SUPABASE_SERVICE_ROLE_KEY");
-  if (!url || !key) return [];
-  try {
-    const r = await fetch(`${url}/rest/v1/${path}`, {
-      headers: { "apikey": key, "Authorization": `Bearer ${key}`, "Accept": "application/json" },
-    });
-    if (!r.ok) return [];
-    return r.json() as Promise<unknown[]>;
-  } catch { return []; }
-}
 interface KycCheckSettings {
   ai_analysis: boolean; face_match: boolean; duplicate_face: boolean;
   ocr_name_match: boolean; proof_of_address: boolean; velocity_check: boolean;

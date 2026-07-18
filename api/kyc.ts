@@ -8,7 +8,7 @@
  *
  * Routes (was 7 separate functions, now 1):
  *   ?action=verify        → full KYC verification pipeline   (POST)   [was /api/kyc-verify]
- *   ?action=scan           → OCR-only NIC/MRZ scan, ID photo only (POST)
+ *   ?action=scan           → OCR/vision NIC scan, pre-auth capable (POST)
  *   ?action=settings      → read/write KYC settings          (GET|POST) [was /api/kyc-settings]
  *   ?action=notify        → send applicant notification      (POST)   [was /api/kyc-notify]
  *   ?action=admin-faces   → list/delete a clients faces     (GET|DELETE) [was /api/kyc-admin-faces]
@@ -38,7 +38,8 @@ type Gate = "user" | "admin" | "service" | "none";
 const ROUTES: Record<string, { handler: Handler; gate: Gate }> = {
   // A logged-in user verifying their own identity.
   "verify":      { handler: verifyHandler,     gate: "user"    },
-  "scan":        { handler: scanHandler,       gate: "user"    },
+  // Optional auth — handler checks for a token itself (signup has none yet).
+  "scan":        { handler: scanHandler,       gate: "none"    },
   // Admin console operations.
   "settings":    { handler: settingsHandler,   gate: "none"    }, // handler uses service-role key; no client session needed
   "notify":      { handler: notifyHandler,     gate: "admin"   },

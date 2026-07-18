@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ArrowRight, ArrowLeft, Camera, ShieldCheck, MapPin, FileText, Globe, ScanLine, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { submitKyc } from "../api/kyc";
-import { scanIdDocument } from "../api/kycScan";
-import { Button, Card, Field, Input, Select } from "../../../shared/ui";
+import { scanIdDocument } from "../../../shared/lib/kycScan";
+import { supabase } from "../../../shared/lib/supabase";
+import { Button, Card, Field, Input, Select, UploadZone } from "../../../shared/ui";
 
 /* ---------- Schema ---------- */
 
@@ -75,28 +76,51 @@ export default function Kyc() {
   const residenceStatus = useWatch({ control, name: "residenceStatus" });
   const needsPermit    = residenceStatus === "work_permit" || residenceStatus === "student_permit";
 
+  // If date of birth was already captured at signup (via the "Scan NIC"
+  // step there), pre-fill it here so the person isn't asked twice.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data: authData } = await supabase.auth.getUser();
+      const userId = authData.user?.id;
+      if (!userId) return;
+      const { data } = await supabase.from("clients").select("date_of_birth").eq("id", userId).single();
+      if (!cancelled && data?.date_of_birth) {
+        setValue("dateOfBirth", data.date_of_birth, { shouldValidate: true });
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   /**
    * Fires as soon as the ID photo is selected — scans it for a document
-   * number and pre-fills the field. Non-blocking and best-effort: the
-   * user can always type or correct the number by hand, and the full
-   * verify pipeline re-checks everything at submission regardless.
+   * number (and date of birth, if legible) and pre-fills those fields.
+   * Non-blocking and best-effort: the user can always type or correct
+   * anything by hand, and the full verify pipeline re-checks everything
+   * at submission regardless.
    */
   const runScan = async (file: File) => {
     setScanState("scanning");
     setScanMessage(null);
     try {
       const result = await scanIdDocument(file);
-      if (result.found) {
-        setValue("documentNumber", result.documentNumber, { shouldValidate: true, shouldDirty: true });
+      if (result.found && (result.documentNumber || result.dateOfBirth)) {
+        if (result.documentNumber) {
+          setValue("documentNumber", result.documentNumber, { shouldValidate: true, shouldDirty: true });
+        }
+        if (result.dateOfBirth) {
+          setValue("dateOfBirth", result.dateOfBirth, { shouldValidate: true, shouldDirty: true });
+        }
         setScanState("done");
         setScanMessage(
-          result.confidence === "high"
-            ? "Document number detected — please confirm it's correct."
-            : "Possible document number detected — please double-check it."
+          result.documentNumberConfidence === "high" || result.confidence === "high"
+            ? "Details detected from your ID — please confirm they're correct."
+            : "Possible details detected — please double-check them."
         );
       } else {
         setScanState("error");
-        setScanMessage(result.reason ?? "Couldn't read a document number from this photo. Please enter it manually below.");
+        setScanMessage((result as { reason?: string }).reason ?? "Couldn't read a document number from this photo. Please enter it manually below.");
       }
     } catch {
       setScanState("error");
@@ -360,40 +384,5 @@ export default function Kyc() {
       </div>
     </div>
     </>
-  );
-}
-
-/* ---------- Upload zone ---------- */
-
-function UploadZone({
-  icon, title, hint, file, onFile, inputId, capture, accept = "image/jpeg,image/png",
-}: {
-  icon: React.ReactNode;
-  title: string;
-  hint: string;
-  file: File | null;
-  onFile: (f: File | null) => void;
-  inputId: string;
-  capture?: "user" | "environment";
-  accept?: string;
-}) {
-  return (
-    <label htmlFor={inputId} className={[
-      "block cursor-pointer rounded-xl border-[1.5px] border-dashed transition-colors px-4 py-5",
-      file ? "bg-mint/15 border-mint" : "bg-surface border-ink/15 hover:border-ficium/50 hover:bg-ficium/3",
-    ].join(" ")}>
-      <div className="flex items-start gap-3">
-        <div className={["w-10 h-10 rounded-xl grid place-items-center shrink-0", file ? "bg-mint text-ink" : "bg-ficium/10 text-ficium"].join(" ")}>
-          {icon}
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="text-[14px] font-semibold text-ink">{title}</div>
-          <div className="text-xs text-muted mt-0.5">{hint}</div>
-          {file && <div className="mt-2 text-xs font-medium text-ink/80 truncate">✓ {file.name}</div>}
-        </div>
-      </div>
-      <input id={inputId} type="file" accept={accept} capture={capture} className="hidden"
-        onChange={(e) => onFile(e.target.files?.[0] ?? null)} />
-    </label>
   );
 }
