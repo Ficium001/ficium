@@ -27,7 +27,13 @@ jobs:
           fetch-depth: 0
 
       - name: TruffleHog secret scan
-        uses: trufflesecurity/trufflehog@main
+        # Pinned to v3.95.9 by SHA — was floating on @main, which is how a
+        # third-party action can silently break CI without any change on
+        # our side (confirmed: running this exact scan locally, same
+        # --only-verified flag, same base/head range AND full repo
+        # history, found zero verified secrets — the failures weren't
+        # real findings).
+        uses: trufflesecurity/trufflehog@27b0417c16317ca9a472a9a8092acce143b49c55 # v3.95.9
         with:
           extra_args: --only-verified
 
