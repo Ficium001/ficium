@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowRight, ArrowLeft, Camera, Upload, ShieldCheck, MapPin, FileText, Globe } from "lucide-react";
+import { ArrowRight, ArrowLeft, Camera, ShieldCheck, MapPin, FileText, Globe, ScanLine } from "lucide-react";
 import { submitKyc } from "../api/kyc";
-import { Button, Card, Field, Input, Select } from "../../../shared/ui";
+import { scanIdDocument } from "../../../shared/lib/kycScan";
+import { supabase } from "../../../shared/lib/supabase";
+import { Button, Card, Field, Input, Select, UploadZone, ScanStatusBanner } from "../../../shared/ui";
 
 /* ---------- Schema ---------- */
 
@@ -50,11 +52,14 @@ export default function Kyc() {
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [permitFile, setPermitFile] = useState<File | null>(null);
   const [verifyStep, setVerifyStep] = useState<string | null>(null);
+  const [scanState, setScanState] = useState<"idle" | "scanning" | "done" | "error">("idle");
+  const [scanMessage, setScanMessage] = useState<string | null>(null);
 
   const {
     register,
     handleSubmit,
     control,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -70,6 +75,58 @@ export default function Kyc() {
   const sameNatRes     = useWatch({ control, name: "sameNationalityResidence" });
   const residenceStatus = useWatch({ control, name: "residenceStatus" });
   const needsPermit    = residenceStatus === "work_permit" || residenceStatus === "student_permit";
+
+  // If date of birth was already captured at signup (via the "Scan NIC"
+  // step there), pre-fill it here so the person isn't asked twice.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data: authData } = await supabase.auth.getUser();
+      const userId = authData.user?.id;
+      if (!userId) return;
+      const { data } = await supabase.from("clients").select("date_of_birth").eq("id", userId).single();
+      if (!cancelled && data?.date_of_birth) {
+        setValue("dateOfBirth", data.date_of_birth, { shouldValidate: true });
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /**
+   * Fires as soon as the ID photo is selected — scans it for a document
+   * number (and date of birth, if legible) and pre-fills those fields.
+   * Non-blocking and best-effort: the user can always type or correct
+   * anything by hand, and the full verify pipeline re-checks everything
+   * at submission regardless.
+   */
+  const runScan = async (file: File) => {
+    setScanState("scanning");
+    setScanMessage(null);
+    try {
+      const result = await scanIdDocument(file);
+      if (result.found && (result.documentNumber || result.dateOfBirth)) {
+        if (result.documentNumber) {
+          setValue("documentNumber", result.documentNumber, { shouldValidate: true, shouldDirty: true });
+        }
+        if (result.dateOfBirth) {
+          setValue("dateOfBirth", result.dateOfBirth, { shouldValidate: true, shouldDirty: true });
+        }
+        setScanState("done");
+        setScanMessage(
+          result.documentNumberConfidence === "high" || result.confidence === "high"
+            ? "Details detected from your ID — please confirm they're correct."
+            : "Possible details detected — please double-check them."
+        );
+      } else {
+        setScanState("error");
+        setScanMessage((result as { reason?: string }).reason ?? "Couldn't read a document number from this photo. Please enter it manually below.");
+      }
+    } catch {
+      setScanState("error");
+      setScanMessage("Scan failed. Please enter your document number manually below.");
+    }
+  };
 
   const onSubmit = async (data: FormData) => {
     setSubmitError(null);
@@ -169,18 +226,36 @@ export default function Kyc() {
               </Select>
             </Field>
 
-            <Field label="Document number" htmlFor="documentNumber" error={errors.documentNumber?.message}>
-              <Input id="documentNumber" type="text" autoComplete="off" placeholder="e.g. M1234567"
-                invalid={!!errors.documentNumber} {...register("documentNumber")} />
+            <Field
+              label="Document number"
+              htmlFor="documentNumber"
+              error={errors.documentNumber?.message}
+              hint={
+                !errors.documentNumber && scanState === "done"
+                  ? "Auto-filled from your ID scan below — double-check it's correct."
+                  : "Type it in, or scan your ID below to auto-fill this."
+              }
+            >
+              <Input id="documentNumber" type="text" autoComplete="off" placeholder="e.g. J2808952501F"
+                invalid={!!errors.documentNumber}
+                {...register("documentNumber", {
+                  onChange: () => { if (scanState !== "idle") setScanState("idle"); },
+                })} />
             </Field>
 
             <Field label="Date of birth" htmlFor="dateOfBirth" error={errors.dateOfBirth?.message}>
               <Input id="dateOfBirth" type="date" invalid={!!errors.dateOfBirth} {...register("dateOfBirth")} />
             </Field>
 
-            <UploadZone icon={<Upload size={20} />} title="Upload your ID document"
-              hint="Clear photo of the front. JPG or PNG, max 5MB."
-              file={idFile} onFile={setIdFile} inputId="idFile" />
+            <UploadZone icon={<ScanLine size={20} />} title="Scan or upload your ID document"
+              hint="Clear photo of the front — we'll auto-read your document number. JPG or PNG, max 5MB."
+              file={idFile}
+              onFile={(f) => { setIdFile(f); if (f) { void runScan(f); } else { setScanState("idle"); setScanMessage(null); } }}
+              inputId="idFile" capture="environment" />
+
+            {scanState !== "idle" && (
+              <ScanStatusBanner state={scanState} message={scanMessage} scanningLabel="Scanning ID for your document number…" />
+            )}
 
             <UploadZone icon={<Camera size={20} />} title="Selfie verification"
               hint="A clear front-facing photo of you, in good light."
@@ -299,40 +374,5 @@ export default function Kyc() {
       </div>
     </div>
     </>
-  );
-}
-
-/* ---------- Upload zone ---------- */
-
-function UploadZone({
-  icon, title, hint, file, onFile, inputId, capture, accept = "image/jpeg,image/png",
-}: {
-  icon: React.ReactNode;
-  title: string;
-  hint: string;
-  file: File | null;
-  onFile: (f: File | null) => void;
-  inputId: string;
-  capture?: "user" | "environment";
-  accept?: string;
-}) {
-  return (
-    <label htmlFor={inputId} className={[
-      "block cursor-pointer rounded-xl border-[1.5px] border-dashed transition-colors px-4 py-5",
-      file ? "bg-mint/15 border-mint" : "bg-surface border-ink/15 hover:border-ficium/50 hover:bg-ficium/3",
-    ].join(" ")}>
-      <div className="flex items-start gap-3">
-        <div className={["w-10 h-10 rounded-xl grid place-items-center shrink-0", file ? "bg-mint text-ink" : "bg-ficium/10 text-ficium"].join(" ")}>
-          {icon}
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="text-[14px] font-semibold text-ink">{title}</div>
-          <div className="text-xs text-muted mt-0.5">{hint}</div>
-          {file && <div className="mt-2 text-xs font-medium text-ink/80 truncate">✓ {file.name}</div>}
-        </div>
-      </div>
-      <input id={inputId} type="file" accept={accept} capture={capture} className="hidden"
-        onChange={(e) => onFile(e.target.files?.[0] ?? null)} />
-    </label>
   );
 }

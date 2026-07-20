@@ -23,116 +23,17 @@
  *   13. Index verified face into collection (on clean pass)
  */
 
-import { createHmac, createHash } from "crypto";
+import {
+  detectText, detectFaces, detectLabels, compareFaces, searchFaceCollection, indexFace,
+  type RekLabel, type FaceCollectionResult,
+} from "./aws.js";
+import { parseMrz } from "./docExtract.js";
+import { supabaseQuery } from "./db.js";
+
 const getEnv = (k: string) => (globalThis as any).process?.env?.[k] ?? "";
 
-/* ── AWS Sig v4 ─────────────────────────────────────────────── */
+/* ── Supabase helpers (see ./db.ts) ────────────────────────── */
 
-const AWS_REGION    = "ap-south-1";
-const COLLECTION_ID = "ficium-kyc-faces";
-
-function hmac(key: Buffer | string, data: string): Buffer {
-  return createHmac("sha256", key).update(data).digest();
-}
-function hashHex(data: string): string {
-  return createHash("sha256").update(data).digest("hex");
-}
-function getSigningKey(secret: string, date: string, region: string, service: string): Buffer {
-  return hmac(hmac(hmac(hmac("AWS4" + secret, date), region), service), "aws4_request");
-}
-async function awsPost(service: string, target: string, body: object): Promise<unknown> {
-  const accessKey = getEnv("AWS_ACCESS_KEY_ID")     || getEnv("VITE_AWS_ACCESS_KEY_ID");
-  const secretKey = getEnv("AWS_SECRET_ACCESS_KEY") || getEnv("VITE_AWS_SECRET_ACCESS_KEY");
-  const now       = new Date();
-  const amzDate   = now.toISOString().replace(/[:-]|\.\d{3}/g, "").slice(0, 15) + "Z";
-  const dateStamp = amzDate.slice(0, 8);
-  const host      = `${service}.${AWS_REGION}.amazonaws.com`;
-  const bodyStr   = JSON.stringify(body);
-  const bodyHash  = hashHex(bodyStr);
-  const ch        = `content-type:application/x-amz-json-1.1\nhost:${host}\nx-amz-date:${amzDate}\nx-amz-target:${target}\n`;
-  const sh        = "content-type;host;x-amz-date;x-amz-target";
-  const cr        = ["POST", "/", "", ch, sh, bodyHash].join("\n");
-  const cs        = `${dateStamp}/${AWS_REGION}/${service}/aws4_request`;
-  const sts       = ["AWS4-HMAC-SHA256", amzDate, cs, hashHex(cr)].join("\n");
-  const sig       = hmac(getSigningKey(secretKey, dateStamp, AWS_REGION, service), sts).toString("hex");
-  const auth      = `AWS4-HMAC-SHA256 Credential=${accessKey}/${cs}, SignedHeaders=${sh}, Signature=${sig}`;
-  const res = await fetch(`https://${host}/`, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-amz-json-1.1", "X-Amz-Date": amzDate, "X-Amz-Target": target, "Authorization": auth },
-    body: bodyStr,
-  });
-  if (!res.ok) { const t = await res.text(); throw new Error(`AWS ${service} ${target} ${res.status}: ${t}`); }
-  return res.json();
-}
-
-/* ── Rekognition wrappers ───────────────────────────────────── */
-
-interface RekFace  { Confidence: number; BoundingBox: { Width: number; Height: number } }
-interface RekLabel { Name: string; Confidence: number }
-interface FaceMatch { Similarity: number }
-
-async function detectText(b64: string): Promise<string> {
-  const d = await awsPost("rekognition", "RekognitionService.DetectText", { Image: { Bytes: b64 } }) as
-    { TextDetections?: Array<{ DetectedText: string; Type: string; Confidence: number }> };
-  return (d.TextDetections ?? []).filter(b => b.Type === "LINE" && b.Confidence > 50).map(b => b.DetectedText).join("\n");
-}
-async function detectFaces(b64: string): Promise<RekFace[]> {
-  const d = await awsPost("rekognition", "RekognitionService.DetectFaces", { Image: { Bytes: b64 }, Attributes: ["DEFAULT"] }) as { FaceDetails?: RekFace[] };
-  return d.FaceDetails ?? [];
-}
-async function detectLabels(b64: string): Promise<RekLabel[]> {
-  const d = await awsPost("rekognition", "RekognitionService.DetectLabels", { Image: { Bytes: b64 }, MaxLabels: 30, MinConfidence: 70 }) as { Labels?: RekLabel[] };
-  return d.Labels ?? [];
-}
-async function compareFaces(srcB64: string, tgtB64: string): Promise<number> {
-  try {
-    const d = await awsPost("rekognition", "RekognitionService.CompareFaces", {
-      SourceImage: { Bytes: srcB64 }, TargetImage: { Bytes: tgtB64 }, SimilarityThreshold: 50,
-    }) as { FaceMatches?: FaceMatch[] };
-    return d.FaceMatches?.length ? d.FaceMatches[0].Similarity : 0;
-  } catch { return -1; }
-}
-interface FaceCollectionResult { duplicate: boolean; matchedClientId?: string; similarity?: number }
-async function searchFaceCollection(b64: string, clientId: string): Promise<FaceCollectionResult> {
-  try {
-    const d = await awsPost("rekognition", "RekognitionService.SearchFacesByImage", {
-      CollectionId: COLLECTION_ID, Image: { Bytes: b64 }, MaxFaces: 5, FaceMatchThreshold: 90,
-    }) as { FaceMatches?: Array<{ Face: { ExternalImageId: string }; Similarity: number }> };
-    const matches = (d.FaceMatches ?? []).filter(m => m.Face.ExternalImageId !== clientId);
-    if (matches.length > 0) {
-      return { duplicate: true, matchedClientId: matches[0].Face.ExternalImageId, similarity: matches[0].Similarity };
-    }
-    return { duplicate: false };
-  } catch (err) {
-    if (String(err).includes("ResourceNotFoundException")) return { duplicate: false };
-    return { duplicate: false }; // fail open — don't block on collection errors
-  }
-}
-async function indexFace(b64: string, clientId: string): Promise<void> {
-  try {
-    await awsPost("rekognition", "RekognitionService.IndexFaces", {
-      CollectionId: COLLECTION_ID, Image: { Bytes: b64 },
-      ExternalImageId: clientId, MaxFaces: 1, QualityFilter: "AUTO", DetectionAttributes: [],
-    });
-  } catch (err) {
-    console.error("[kyc-verify] IndexFaces error:", err);
-  }
-}
-
-/* ── Supabase helpers (fraud checks) ───────────────────────── */
-
-async function supabaseQuery(path: string): Promise<unknown[]> {
-  const url = getEnv("VITE_SUPABASE_URL") || getEnv("SUPABASE_URL");
-  const key = getEnv("SUPABASE_SERVICE_ROLE_KEY");
-  if (!url || !key) return [];
-  try {
-    const r = await fetch(`${url}/rest/v1/${path}`, {
-      headers: { "apikey": key, "Authorization": `Bearer ${key}`, "Accept": "application/json" },
-    });
-    if (!r.ok) return [];
-    return r.json() as Promise<unknown[]>;
-  } catch { return []; }
-}
 interface KycCheckSettings {
   ai_analysis: boolean; face_match: boolean; duplicate_face: boolean;
   ocr_name_match: boolean; proof_of_address: boolean; velocity_check: boolean;
@@ -225,44 +126,7 @@ Check for name/doc/dob mismatches, nationality inconsistencies, and fraud. Reply
   }
 }
 
-/* ── MRZ parsing ────────────────────────────────────────────── */
-
-const MRZ_CHARS   = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-const MRZ_WEIGHTS = [7, 3, 1];
-function mrzChecksum(str: string): number {
-  let t = 0;
-  for (let i = 0; i < str.length; i++) {
-    const c = str[i] === "<" ? 0 : MRZ_CHARS.indexOf(str[i]);
-    t += (c < 0 ? 0 : c) * MRZ_WEIGHTS[i % 3];
-  }
-  return t % 10;
-}
-interface MrzResult { found: boolean; valid: boolean; docNumber?: string; expiry?: string; expired?: boolean; nationality?: string; surname?: string; givenNames?: string }
-function parseMrz(text: string): MrzResult {
-  const lines = text.split("\n").map(l => l.trim().replace(/\s/g, ""));
-  for (let i = 0; i < lines.length - 1; i++) {
-    if (/^[A-Z0-9<]{44}$/.test(lines[i]) && /^[A-Z0-9<]{44}$/.test(lines[i + 1])) {
-      const l1 = lines[i], l2 = lines[i + 1];
-      try {
-        const docNum   = l2.slice(0, 9).replace(/<+$/, "");
-        const docCheck = parseInt(l2[9]);
-        const dob      = l2.slice(13, 19);
-        const dobCheck = parseInt(l2[19]);
-        const expiry   = l2.slice(21, 27);
-        const expCheck = parseInt(l2[27]);
-        const nat      = l2.slice(10, 13).replace(/</g, "");
-        const names    = l1.slice(5).split("<<");
-        const surname  = (names[0] ?? "").replace(/</g, " ").trim();
-        const given    = (names[1] ?? "").replace(/</g, " ").trim();
-        const valid    = mrzChecksum(l2.slice(0, 9)) === docCheck && mrzChecksum(dob) === dobCheck && mrzChecksum(expiry) === expCheck;
-        const expYear  = parseInt(expiry.slice(0, 2)) + (parseInt(expiry.slice(0, 2)) > 50 ? 1900 : 2000);
-        const expired  = new Date(`${expYear}-${expiry.slice(2, 4)}-${expiry.slice(4, 6)}`) < new Date();
-        return { found: true, valid, docNumber: docNum, expiry, expired, nationality: nat, surname, givenNames: given };
-      } catch { return { found: true, valid: false }; }
-    }
-  }
-  return { found: false, valid: false };
-}
+/* ── MRZ parsing (see ./docExtract.ts) ─────────────────────── */
 
 /* ── DOB matching ───────────────────────────────────────────── */
 

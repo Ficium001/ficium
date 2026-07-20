@@ -3,16 +3,19 @@ import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ScanLine } from "lucide-react";
 import { signUpIndividual } from "../../../shared/lib/auth";
+import { scanIdDocument } from "../../../shared/lib/kycScan";
 import { RegisterShell } from "../../../shared/components/RegisterShell";
-import { Button, Field, Input, Select } from "../../../shared/ui";
+import { Button, Field, Input, Select, UploadZone, ScanStatusBanner } from "../../../shared/ui";
 
 const schema = z.object({
   title: z.string().optional(),
   firstName: z.string().trim().min(1, "First name is required").max(60),
   middleName: z.string().trim().max(60).optional().or(z.literal("")),
   lastName: z.string().trim().min(1, "Last name is required").max(60),
+  sex: z.enum(["M", "F"]).optional().or(z.literal("")),
+  dateOfBirth: z.string().optional().or(z.literal("")),
   email: z.string().email("Enter a valid email address"),
   phone: z.string().trim().max(20).optional().or(z.literal("")),
   country: z.string().min(2, "Country is required"),
@@ -34,12 +37,48 @@ const COUNTRIES = [
 export default function RegisterIndividual() {
   const navigate = useNavigate();
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [scanState, setScanState] = useState<"idle" | "scanning" | "done" | "error">("idle");
+  const [scanMessage, setScanMessage] = useState<string | null>(null);
+  const [scanFile, setScanFile] = useState<File | null>(null);
 
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
     mode: "onTouched",
     defaultValues: { country: "Mauritius" },
   });
+
+  /**
+   * Scan NIC at signup — prefills name/sex/date of birth from the ID
+   * photo so they don't need to be typed twice. Best-effort and always
+   * editable: nothing here is trusted silently, and the full document
+   * capture + biometric verification still happens later at the KYC
+   * step regardless of what this finds.
+   */
+  const runScan = async (file: File) => {
+    setScanState("scanning");
+    setScanMessage(null);
+    try {
+      const result = await scanIdDocument(file);
+      if (result.found && (result.firstName || result.lastName || result.sex || result.dateOfBirth)) {
+        if (result.firstName)   setValue("firstName", result.firstName, { shouldValidate: true, shouldDirty: true });
+        if (result.lastName)    setValue("lastName", result.lastName, { shouldValidate: true, shouldDirty: true });
+        if (result.sex)         setValue("sex", result.sex, { shouldValidate: true, shouldDirty: true });
+        if (result.dateOfBirth) setValue("dateOfBirth", result.dateOfBirth, { shouldValidate: true, shouldDirty: true });
+        setScanState("done");
+        setScanMessage(
+          result.confidence === "high"
+            ? "Details detected from your ID — please check them below and fill in anything missing."
+            : "Some details detected from your ID — please double-check them below and fill in anything missing."
+        );
+      } else {
+        setScanState("error");
+        setScanMessage((result as { reason?: string }).reason ?? "Couldn't read details from this photo. Please fill in the form manually below.");
+      }
+    } catch {
+      setScanState("error");
+      setScanMessage("Scan failed. Please fill in the form manually below.");
+    }
+  };
 
   const onSubmit = async (data: FormData) => {
     setSubmitError(null);
@@ -52,6 +91,8 @@ export default function RegisterIndividual() {
       phone: data.phone || undefined,
       title: data.title || undefined,
       country: data.country,
+      dateOfBirth: data.dateOfBirth || undefined,
+      gender: data.sex || undefined,
     });
 
     if (!result.ok) { setSubmitError(result.error.message); return; }
@@ -70,6 +111,19 @@ export default function RegisterIndividual() {
 
       <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-xs border border-ink/6">
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
+
+          {/* ── SCAN NIC ── */}
+          <UploadZone icon={<ScanLine size={20} />} title="Scan your NIC to speed this up"
+            hint="Optional — we'll read your name, sex, and date of birth off the photo. JPG or PNG."
+            file={scanFile}
+            onFile={(f) => { setScanFile(f); if (f) { void runScan(f); } else { setScanState("idle"); setScanMessage(null); } }}
+            inputId="signupScanFile" capture="environment" />
+
+          {scanState !== "idle" && (
+            <ScanStatusBanner state={scanState} message={scanMessage} scanningLabel="Scanning your ID…" />
+          )}
+
+          <div className="border-t border-ink/6 pt-4" />
 
           {/* Row 1: Title + First name */}
           <div className="grid grid-cols-[80px_1fr] gap-3">
@@ -95,6 +149,19 @@ export default function RegisterIndividual() {
           <Field label="Middle name" htmlFor="middleName" optional error={errors.middleName?.message}>
             <Input id="middleName" autoComplete="additional-name" {...register("middleName")} />
           </Field>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Field label="Sex" htmlFor="sex" optional error={errors.sex?.message}>
+              <Select id="sex" defaultValue="" {...register("sex")}>
+                <option value="">—</option>
+                <option value="M">Male</option>
+                <option value="F">Female</option>
+              </Select>
+            </Field>
+            <Field label="Date of birth" htmlFor="dateOfBirth" optional error={errors.dateOfBirth?.message}>
+              <Input id="dateOfBirth" type="date" {...register("dateOfBirth")} />
+            </Field>
+          </div>
 
           <Field label="Email address" htmlFor="email" error={errors.email?.message}>
             <Input id="email" type="email" autoComplete="email" inputMode="email"

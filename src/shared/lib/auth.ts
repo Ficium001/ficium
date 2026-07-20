@@ -37,10 +37,13 @@ export type SignUpIndividualInput = {
   phone?: string;
   title?: string;
   country: string;
+  /** Optional — captured via the signup-time "Scan NIC" flow. */
+  dateOfBirth?: string; // YYYY-MM-DD
+  gender?: "M" | "F";
 };
 
 export async function signUpIndividual(input: SignUpIndividualInput): Promise<SignUpResult> {
-  const { email, password, firstName, middleName, lastName, phone, title, country } = input;
+  const { email, password, firstName, middleName, lastName, phone, title, country, dateOfBirth, gender } = input;
   const fullName = [firstName, middleName, lastName].filter(Boolean).join(" ").trim();
 
   const { data, error } = await withNetworkRetry(() =>
@@ -58,6 +61,8 @@ export async function signUpIndividual(input: SignUpIndividualInput): Promise<Si
           role: "client",
           user_type: "individual",
           country,
+          date_of_birth: dateOfBirth || "",
+          gender: gender || "",
         },
       },
     })
