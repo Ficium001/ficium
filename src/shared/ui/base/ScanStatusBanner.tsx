@@ -15,20 +15,40 @@ type Props = {
  * On mobile, returning from the native camera (after <input capture>
  * fires) commonly resets the page's scroll position to the top —
  * the person ends up looking at the header with no sign anything
- * happened, disoriented. This scrolls itself into view as soon as
- * a scan starts, so the feedback is always where their eyes land.
+ * happened, disoriented. A single scrollIntoView() right after the
+ * state change isn't reliable here: the browser's own scroll-reset
+ * on camera-return can fire asynchronously (tied to the visual
+ * viewport resizing as the camera UI closes) and land *after* ours,
+ * silently undoing it. So instead of one attempt, we correct
+ * repeatedly for ~1.5s — each retry re-wins the position even if
+ * the browser resets it in between — and also re-trigger on the
+ * visibility/viewport events that specifically mark "returned from
+ * camera", not just on the state change itself.
  */
 export function ScanStatusBanner({ state, message, scanningLabel = "Scanning your ID…" }: Props) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (state === "idle") return;
-    // Small delay lets the mobile browser finish restoring the page
-    // (and any layout shift from the banner appearing) before we scroll.
-    const t = setTimeout(() => {
-      ref.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 100);
-    return () => clearTimeout(t);
+
+    const scroll = () => ref.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+
+    // Repeated corrections: outlasts the browser's own async scroll-reset
+    // on camera-return instead of racing a single call against it.
+    const delays = [50, 150, 300, 500, 800, 1200, 1600];
+    const timers = delays.map((d) => setTimeout(scroll, d));
+
+    // Also re-correct on the events that actually mark "back from camera" —
+    // more reliable than a fixed timeout on some Android WebViews.
+    const onVisible = () => { if (document.visibilityState === "visible") scroll(); };
+    document.addEventListener("visibilitychange", onVisible);
+    window.visualViewport?.addEventListener("resize", scroll);
+
+    return () => {
+      timers.forEach(clearTimeout);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.visualViewport?.removeEventListener("resize", scroll);
+    };
   }, [state]);
 
   if (state === "idle") return null;
