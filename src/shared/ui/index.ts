@@ -9,3 +9,4 @@ export { FicoMark } from "./FicoMark";
 export { PageShell } from "./PageShell";
 export { CardScroller } from "./CardScroller";
 export { UploadZone } from "./UploadZone";
+export { ScanStatusBanner } from "./ScanStatusBanner";

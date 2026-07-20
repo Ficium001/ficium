@@ -3,11 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowRight, ScanLine, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { ArrowRight, ScanLine } from "lucide-react";
 import { signUpIndividual } from "../../../shared/lib/auth";
 import { scanIdDocument } from "../../../shared/lib/kycScan";
 import { RegisterShell } from "../../../shared/components/RegisterShell";
-import { Button, Field, Input, Select, UploadZone } from "../../../shared/ui";
+import { Button, Field, Input, Select, UploadZone, ScanStatusBanner } from "../../../shared/ui";
 
 const schema = z.object({
   title: z.string().optional(),
@@ -120,17 +120,7 @@ export default function RegisterIndividual() {
             inputId="signupScanFile" capture="environment" />
 
           {scanState !== "idle" && (
-            <div className={[
-              "flex items-start gap-2.5 px-3.5 py-3 rounded-xl text-[13px] -mt-1",
-              scanState === "scanning" && "bg-ficium/4 border border-ficium/15 text-ink/80",
-              scanState === "done"     && "bg-mint/15 border border-mint text-ink/80",
-              scanState === "error"    && "bg-amber-50 border border-amber-200 text-amber-900",
-            ].filter(Boolean).join(" ")}>
-              {scanState === "scanning" && <Loader2 size={16} className="shrink-0 mt-0.5 animate-spin text-ficium" />}
-              {scanState === "done"     && <CheckCircle2 size={16} className="shrink-0 mt-0.5 text-ink" />}
-              {scanState === "error"    && <AlertCircle size={16} className="shrink-0 mt-0.5 text-amber-600" />}
-              <p>{scanState === "scanning" ? "Scanning your ID…" : scanMessage}</p>
-            </div>
+            <ScanStatusBanner state={scanState} message={scanMessage} scanningLabel="Scanning your ID…" />
           )}
 
           <div className="border-t border-ink/6 pt-4" />

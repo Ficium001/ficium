@@ -3,11 +3,11 @@ import { Link, useNavigate } from "react-router-dom";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowRight, ArrowLeft, Camera, ShieldCheck, MapPin, FileText, Globe, ScanLine, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { ArrowRight, ArrowLeft, Camera, ShieldCheck, MapPin, FileText, Globe, ScanLine } from "lucide-react";
 import { submitKyc } from "../api/kyc";
 import { scanIdDocument } from "../../../shared/lib/kycScan";
 import { supabase } from "../../../shared/lib/supabase";
-import { Button, Card, Field, Input, Select, UploadZone } from "../../../shared/ui";
+import { Button, Card, Field, Input, Select, UploadZone, ScanStatusBanner } from "../../../shared/ui";
 
 /* ---------- Schema ---------- */
 
@@ -254,17 +254,7 @@ export default function Kyc() {
               inputId="idFile" capture="environment" />
 
             {scanState !== "idle" && (
-              <div className={[
-                "flex items-start gap-2.5 px-3.5 py-3 rounded-xl text-[13px] -mt-2",
-                scanState === "scanning" && "bg-ficium/4 border border-ficium/15 text-ink/80",
-                scanState === "done"     && "bg-mint/15 border border-mint text-ink/80",
-                scanState === "error"    && "bg-amber-50 border border-amber-200 text-amber-900",
-              ].filter(Boolean).join(" ")}>
-                {scanState === "scanning" && <Loader2 size={16} className="shrink-0 mt-0.5 animate-spin text-ficium" />}
-                {scanState === "done"     && <CheckCircle2 size={16} className="shrink-0 mt-0.5 text-ink" />}
-                {scanState === "error"    && <AlertCircle size={16} className="shrink-0 mt-0.5 text-amber-600" />}
-                <p>{scanState === "scanning" ? "Scanning ID for your document number…" : scanMessage}</p>
-              </div>
+              <ScanStatusBanner state={scanState} message={scanMessage} scanningLabel="Scanning ID for your document number…" />
             )}
 
             <UploadZone icon={<Camera size={20} />} title="Selfie verification"
