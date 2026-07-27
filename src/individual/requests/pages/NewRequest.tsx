@@ -441,7 +441,7 @@ export default function NewRequest() {
   const [submitting, setSubmitting] = useState(false);
   const [error,      setError]      = useState<string | null>(null);
   const [submitted,  setSubmitted]  = useState(false);
-  const [stage,      setStage]      = useState<"product" | "quiz_contrib" | "quiz" | "monthly_only" | "both_notice" | "recommend" | "allocate" | "questions" | "review">("product");
+  const [stage,      setStage]      = useState<"product" | "quiz_contrib" | "quiz" | "monthly_only" | "recommend" | "allocate" | "questions" | "review">("product");
   const [isJoint,      setIsJoint]      = useState(false);
   const [partnerEmail, setPartnerEmail] = useState("");
   const [inviteNote,   setInviteNote]   = useState<string | null>(null);
@@ -461,6 +461,7 @@ export default function NewRequest() {
   const [lineAmounts,    setLineAmounts]    = useState<Record<string, number>>({});
   const [multiPurpose,   setMultiPurpose]   = useState("");
   const [multiTermMonths,setMultiTermMonths]= useState(24);
+  const [wantsMonthly,   setWantsMonthly]   = useState(false);
 
   const toggleProduct = (type: ProductType) => {
     setSelectedTypes(prev => prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]);
@@ -473,6 +474,11 @@ export default function NewRequest() {
     "government_bonds", "offshore_investment", "savings_plan",
   ];
 
+  // Monthly Plan's amount is a recurring monthly figure, not a slice of the
+  // lump-sum total - it's excluded from the lump-sum split and from the
+  // "lines must sum to the total" check further down.
+  const lumpSumTypes = (types: ProductType[]) => types.filter(t => t !== "savings_plan");
+
   const proceedFromRecommend = () => {
     if (selectedTypes.length === 0) return;
     if (selectedTypes.length === 1) {
@@ -480,17 +486,19 @@ export default function NewRequest() {
       selectRecommended(p);
       return;
     }
-    const base = Math.floor(quizAmount / selectedTypes.length / 1000) * 1000;
-    const remainder = quizAmount - base * (selectedTypes.length - 1);
+    const lumpSum = lumpSumTypes(selectedTypes);
+    const base = lumpSum.length > 0 ? Math.floor(quizAmount / lumpSum.length / 1000) * 1000 : 0;
+    const remainder = quizAmount - base * (lumpSum.length - 1);
     const evenSplit = Object.fromEntries(
-      selectedTypes.map((t, i) => [t, i === selectedTypes.length - 1 ? remainder : base])
+      lumpSum.map((t, i) => [t, i === lumpSum.length - 1 ? remainder : base])
     );
+    if (selectedTypes.includes("savings_plan")) evenSplit["savings_plan"] = monthlyAmount || 5_000;
     setLineAmounts(evenSplit);
     setAllocationMode("client_specified");
     setStage("allocate");
   };
 
-  const lineAmountSum = selectedTypes.reduce((sum, t) => sum + (lineAmounts[t] || 0), 0);
+  const lineAmountSum = lumpSumTypes(selectedTypes).reduce((sum, t) => sum + (lineAmounts[t] || 0), 0);
   const allocationValid = allocationMode === "institution_decides" || lineAmountSum === quizAmount;
 
   const submitMultiProduct = async () => {
@@ -512,12 +520,12 @@ export default function NewRequest() {
     setTimeout(() => navigate("/requests"), 2500);
   };
 
-  const startQuiz = () => { setSelectedTypes([]); setShowAddPicker(false); setStage("quiz_contrib"); };
+  const startQuiz = () => { setSelectedTypes([]); setShowAddPicker(false); setWantsMonthly(false); setStage("quiz_contrib"); };
 
   const chooseContrib = (type: "lump_sum" | "monthly" | "both") => {
-    if (type === "lump_sum") { setQuizStep(0); setQuizScores({}); setStage("quiz"); }
-    else if (type === "monthly") { setStage("monthly_only"); }
-    else { setStage("both_notice"); }
+    setWantsMonthly(type === "both");
+    if (type === "monthly") { setStage("monthly_only"); }
+    else { setQuizStep(0); setQuizScores({}); setStage("quiz"); } // lump_sum and both share the risk quiz
   };
 
   // Monthly-only path has exactly one fitting product today (Monthly Plan /
@@ -538,6 +546,7 @@ export default function NewRequest() {
     } else {
       const total = Object.values(next).reduce((a, b) => a + (b ?? 0), 0);
       setBucket(scoreToBucket(total));
+      setSelectedTypes(wantsMonthly ? ["savings_plan"] : []);
       setTimeout(() => setStage("recommend"), 200);
     }
   };
@@ -664,7 +673,6 @@ export default function NewRequest() {
             : stage === "quiz_contrib" ? "Quick questions"
             : stage === "quiz"        ? "Quick questions"
             : stage === "monthly_only" ? "Quick questions"
-            : stage === "both_notice"  ? "Quick questions"
             : stage === "recommend"   ? "Your recommendation"
             : stage === "allocate"   ? "Split your investment"
             : product?.label ?? "New request"}
@@ -768,30 +776,6 @@ export default function NewRequest() {
           </div>
         )}
 
-        {/* ── Both lump sum + monthly: not yet a single combined submission,
-             say so plainly rather than fake it. Lets them proceed with the
-             lump-sum side today. ── */}
-        {stage === "both_notice" && (
-          <div>
-            <div className="bg-white rounded-2xl border border-ink/6 shadow-xs p-6 mb-5">
-              <p className="text-[14px] text-ink leading-relaxed mb-3">
-                Combined lump-sum-plus-monthly requests aren't a single submission yet — we're still building that.
-              </p>
-              <p className="text-[13px] text-muted leading-relaxed">
-                For now you can post your lump sum through this wizard, then add a separate Monthly Plan
-                request from your dashboard whenever you're ready.
-              </p>
-            </div>
-            <div className="flex gap-3">
-              <button onClick={() => setStage("quiz_contrib")} className="px-5 py-3.5 rounded-2xl border border-ink/10 text-[13px] font-semibold text-muted hover:bg-ink/3 transition-colors">
-                Back
-              </button>
-              <button onClick={() => chooseContrib("lump_sum")} className="flex-1 flex items-center justify-center gap-2 bg-ficium hover:bg-ficium-deep text-white font-bold py-3.5 rounded-2xl transition-colors text-[14px] shadow-ficium">
-                Continue with lump sum <ArrowRight size={15} />
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* ── "Not sure?" quiz ── */}
         {stage === "quiz" && (() => {
@@ -950,7 +934,7 @@ export default function NewRequest() {
         {stage === "allocate" && (
           <div>
             <div className="mb-6">
-              <p className="text-[13px] text-muted mb-2">Total amount</p>
+              <p className="text-[13px] text-muted mb-2">{selectedTypes.includes("savings_plan") ? "Lump-sum total (separate from Monthly Plan below)" : "Total amount"}</p>
               <div className="text-[32px] font-display font-extrabold text-ficium mb-2">{fmtMUR(quizAmount)}</div>
               <input type="range" min={10_000} max={10_000_000} step={10_000} value={quizAmount}
                 onChange={e => setQuizAmount(Number(e.target.value))} className="w-full" />
@@ -976,11 +960,17 @@ export default function NewRequest() {
                     <div className={`w-9 h-9 rounded-xl grid place-items-center shrink-0 ${p.iconBg}`}>
                       <Icon size={16} className={p.color} />
                     </div>
-                    <div className="flex-1 text-[14px] font-semibold text-ink">{p.label}</div>
+                    <div className="flex-1 text-[14px] font-semibold text-ink">
+                      {p.label}
+                      {t === "savings_plan" && <span className="ml-1.5 text-[10px] font-bold text-ficium bg-ficium/10 rounded-full px-2 py-0.5">Monthly</span>}
+                    </div>
                     {allocationMode === "client_specified" ? (
-                      <input type="number" min={0} step={1000} value={lineAmounts[t] ?? 0}
-                        onChange={e => setLineAmounts(prev => ({ ...prev, [t]: Number(e.target.value) }))}
-                        className="w-32 text-right px-3 py-2 rounded-xl border border-ink/10 text-[14px] font-semibold text-ink" />
+                      <div className="flex items-center gap-1">
+                        <input type="number" min={0} step={t === "savings_plan" ? 500 : 1000} value={lineAmounts[t] ?? 0}
+                          onChange={e => setLineAmounts(prev => ({ ...prev, [t]: Number(e.target.value) }))}
+                          className="w-28 text-right px-3 py-2 rounded-xl border border-ink/10 text-[14px] font-semibold text-ink" />
+                        {t === "savings_plan" && <span className="text-[12px] text-muted">/mo</span>}
+                      </div>
                     ) : (
                       <span className="text-[12px] text-muted">Institution decides</span>
                     )}
@@ -1016,7 +1006,7 @@ export default function NewRequest() {
 
             {allocationMode === "client_specified" && !allocationValid && (
               <p className="text-[12px] text-amber-600 mb-4">
-                Lines add up to {fmtMUR(lineAmountSum)} — needs to match the total ({fmtMUR(quizAmount)}).
+                {selectedTypes.includes("savings_plan") ? "Lump-sum lines" : "Lines"} add up to {fmtMUR(lineAmountSum)} — needs to match the total ({fmtMUR(quizAmount)}).
               </p>
             )}
 
