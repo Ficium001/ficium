@@ -611,6 +611,11 @@ function BidsTab({ bids, request, isClosed, accepting, acceptingBid, onAccept }:
                             {isAccepted && <span className="text-[9px] font-bold px-1.5 py-0.5 bg-emerald-500 text-white rounded-full">ACCEPTED</span>}
                           </div>
                           <div className="text-[10px] text-muted mt-0.5 capitalize">{bid.rateType}</div>
+                          {bid.allocations && bid.allocations.length > 0 && (
+                            <div className="flex items-center gap-1 text-[10px] text-ficium mt-0.5">
+                              <Layers size={10} /> {bid.allocations.length} products — switch to Cards for the split
+                            </div>
+                          )}
                         </td>
                         <td className={`px-4 py-3.5 text-right font-bold ${isBest ? "text-ficium" : "text-ink"}`}>
                           {rateDisplay}%
@@ -950,6 +955,25 @@ function BidCard({ bid, rank, isBest, canAccept, isAccepting, onAccept }: {
             )}
             {typeof bid.conditions?.notes === "string" && bid.conditions.notes && (
               <p className="text-xs text-muted mt-1 leading-relaxed bg-paper rounded-lg px-3 py-2">{bid.conditions.notes}</p>
+            )}
+            {/* Per-product breakdown — mixed_portfolio bids only */}
+            {bid.allocations && bid.allocations.length > 0 && (
+              <div className="mt-2 space-y-1.5">
+                <div className="flex items-center gap-1.5 text-[10px] text-muted uppercase tracking-wide font-bold">
+                  <Layers size={11} /> Per-product offer
+                </div>
+                {bid.allocations.map(a => (
+                  <div key={a.productType} className="flex items-center justify-between bg-paper rounded-lg px-3 py-1.5">
+                    <span className="text-[12px] font-medium text-ink">{a.productLabel}</span>
+                    <span className="text-[12px] text-ink">
+                      {a.rate != null && <span className="font-bold">{(a.rate * 100).toFixed(2)}%</span>}
+                      {a.rate != null && " · "}
+                      MUR {Number(a.amountOffered).toLocaleString()}
+                      {a.termMonths ? ` · ${a.termMonths}m` : ""}
+                    </span>
+                  </div>
+                ))}
+              </div>
             )}
             {/* Benefits */}
             {bid.benefits && bid.benefits.length > 0 && (

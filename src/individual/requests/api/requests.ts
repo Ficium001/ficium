@@ -60,6 +60,14 @@ export type BidBenefit = {
   cat_code:     string | null;
 };
 
+export type BidAllocationLine = {
+  productType:   string;
+  productLabel:  string;
+  amountOffered: number;
+  rate:          number | null;
+  termMonths:    number | null;
+};
+
 export type Bid = {
   id: string;
   requestId: string;
@@ -76,6 +84,9 @@ export type Bid = {
   createdAt: string;
   source: "legacy" | "institution";
   benefits: BidBenefit[];
+  // Present only when the institution proposed a per-product split on a
+  // mixed_portfolio request - empty for ordinary single-product bids.
+  allocations: BidAllocationLine[];
 };
 
 export type Phase2Reveal = {
@@ -311,6 +322,33 @@ export async function getRequest(id: string): Promise<RequestDetail | null> {
   };
 }
 
+function mapApiBid(b: Record<string, unknown>): Bid {
+  return {
+    id:              b.id as string,
+    requestId:       b.request_id as string,
+    bankId:          b.institution_id as string,
+    institutionName: (b.institution_name as string) ?? "Institution",
+    rate:            Number(b.rate) || 0,
+    rateType:        (b.rate_type as "fixed" | "variable") ?? "fixed",
+    amountOffered:   b.amount_offered as number,
+    termMonths:      b.term_months as number,
+    conditions:      b.conditions as Record<string, unknown> | null,
+    terms:           null,
+    status:          "submitted" as const,
+    submittedAt:     b.submitted_at as string,
+    createdAt:       b.submitted_at as string,
+    source:          "institution" as const,
+    benefits:        (b.benefits as BidBenefit[]) ?? [],
+    allocations:     ((b.allocations as Record<string, unknown>[]) ?? []).map(a => ({
+      productType:   a.product_type as string,
+      productLabel:  a.product_label as string,
+      amountOffered: Number(a.amount_offered) || 0,
+      rate:          a.rate != null ? Number(a.rate) : null,
+      termMonths:    a.term_months != null ? Number(a.term_months) : null,
+    })),
+  };
+}
+
 /* ---------- Get bids for many requests at once (bulk) ---------- */
 // Used to avoid an N-request waterfall on the dashboard — one call fetches
 // full Bid[] for every open request, instead of useRequestBids firing
@@ -338,23 +376,7 @@ export async function getBidsForRequests(
 
     const out: Record<string, Bid[]> = {};
     for (const [rid, bids] of Object.entries(bulkData)) {
-      out[rid] = bids.map((b) => ({
-        id:              b.id as string,
-        requestId:       b.request_id as string,
-        bankId:          b.institution_id as string,
-        institutionName: (b.institution_name as string) ?? "Institution",
-        rate:            Number(b.rate) || 0,
-        rateType:        (b.rate_type as "fixed" | "variable") ?? "fixed",
-        amountOffered:   b.amount_offered as number,
-        termMonths:      b.term_months as number,
-        conditions:      b.conditions as Record<string, unknown> | null,
-        terms:           null,
-        status:          "submitted" as const,
-        submittedAt:     b.submitted_at as string,
-        createdAt:       b.submitted_at as string,
-        source:          "institution" as const,
-        benefits:        (b.benefits as BidBenefit[]) ?? [],
-      }));
+      out[rid] = bids.map(mapApiBid);
     }
     return out;
   } catch {
@@ -381,23 +403,7 @@ export async function getRequestBids(requestId: string): Promise<Bid[]> {
 
   if (!data) return [];
 
-  return data.map((b: Record<string, unknown>) => ({
-    id:              b.id as string,
-    requestId:       b.request_id as string,
-    bankId:          b.institution_id as string,
-    institutionName: (b.institution_name as string) ?? "Institution",
-    rate:            Number(b.rate) || 0,
-    rateType:        (b.rate_type as "fixed" | "variable") ?? "fixed",
-    amountOffered:   b.amount_offered as number,
-    termMonths:      b.term_months as number,
-    conditions:      b.conditions as Record<string, unknown> | null,
-    terms:           null,
-    status:          "submitted" as const,
-    submittedAt:     b.submitted_at as string,
-    createdAt:       b.submitted_at as string,
-    source:          "institution" as const,
-    benefits:        (b.benefits as BidBenefit[]) ?? [],
-  }));
+  return data.map(mapApiBid);
 }
 
 /* ---------- Accept a bid ---------- */
