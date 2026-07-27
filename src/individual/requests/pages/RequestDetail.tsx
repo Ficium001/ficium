@@ -8,7 +8,7 @@ import {
   ArrowLeft, Lock, CheckCircle, Clock, TrendingDown,
   Building2, AlertCircle, MessageSquare, FileText,
   User, Percent, LayoutGrid, Sparkles,
-  BarChart3, CheckCircle2, MapPin,
+  BarChart3, CheckCircle2, MapPin, Layers,
 } from "lucide-react";
 import { TrackerTab } from "../tracker/tabs/TrackerTab";
 import { formatProductType } from "../api/requests";
@@ -326,6 +326,25 @@ function DetailsTab({ request, profile }: { request: RequestDetailType; profile:
           </div>
         )}
       </Card>
+
+      {request.allocations && request.allocations.length > 0 && (
+        <Card>
+          <div className="flex items-center gap-2 mb-4">
+            <Layers size={15} className="text-ficium" />
+            <span className="text-[12px] font-bold text-ficium uppercase tracking-wider">Portfolio breakdown</span>
+          </div>
+          <div className="space-y-2">
+            {request.allocations.map(a => (
+              <div key={a.productType} className="flex items-center justify-between px-3 py-2.5 bg-paper rounded-xl">
+                <span className="text-[14px] font-medium text-ink">{formatProductType(a.productType)}</span>
+                <span className="text-[14px] font-semibold text-ink">
+                  {a.amount != null ? fmt(a.amount) : <span className="text-muted font-normal">Institution to decide</span>}
+                </span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {profile && (
         <Card>

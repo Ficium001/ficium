@@ -12,7 +12,7 @@ import {
   TrendingUp, Layers, CalendarDays, Landmark, Globe, Sparkles,
 } from "lucide-react";
 import { useProfile } from "../../dashboard/hooks/useDashboard";
-import { createRequest, type ProductType } from "../api/requests";
+import { createRequest, createMultiProductRequest, type ProductType, type AllocationMode } from "../api/requests";
 import { createInvitation } from "@/individual/couple/api/couple";
 import { Users } from "lucide-react";
 import { useIntelligence } from "@/shared/lib/intelligence";
@@ -441,7 +441,7 @@ export default function NewRequest() {
   const [submitting, setSubmitting] = useState(false);
   const [error,      setError]      = useState<string | null>(null);
   const [submitted,  setSubmitted]  = useState(false);
-  const [stage,      setStage]      = useState<"product" | "quiz_contrib" | "quiz" | "monthly_only" | "both_notice" | "recommend" | "questions" | "review">("product");
+  const [stage,      setStage]      = useState<"product" | "quiz_contrib" | "quiz" | "monthly_only" | "both_notice" | "recommend" | "allocate" | "questions" | "review">("product");
   const [isJoint,      setIsJoint]      = useState(false);
   const [partnerEmail, setPartnerEmail] = useState("");
   const [inviteNote,   setInviteNote]   = useState<string | null>(null);
@@ -454,7 +454,65 @@ export default function NewRequest() {
   const [quizAmount,  setQuizAmount]  = useState(300_000);
   const [bucket,      setBucket]      = useState<RiskBucket | null>(null);
 
-  const startQuiz = () => { setStage("quiz_contrib"); };
+  // Multi-select recommendation + allocation state
+  const [selectedTypes,  setSelectedTypes]  = useState<ProductType[]>([]);
+  const [showAddPicker,  setShowAddPicker]  = useState(false);
+  const [allocationMode, setAllocationMode] = useState<AllocationMode>("client_specified");
+  const [lineAmounts,    setLineAmounts]    = useState<Record<string, number>>({});
+  const [multiPurpose,   setMultiPurpose]   = useState("");
+  const [multiTermMonths,setMultiTermMonths]= useState(24);
+
+  const toggleProduct = (type: ProductType) => {
+    setSelectedTypes(prev => prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]);
+  };
+
+  // Any of the products already wired end-to-end (own catalog/pipeline) are
+  // fair game to add manually, not just the ones the quiz recommended.
+  const ADDABLE_PRODUCT_TYPES: ProductType[] = [
+    "fixed_deposit", "investment_account", "equities", "unit_trust",
+    "government_bonds", "offshore_investment", "savings_plan",
+  ];
+
+  const proceedFromRecommend = () => {
+    if (selectedTypes.length === 0) return;
+    if (selectedTypes.length === 1) {
+      const p = PRODUCTS.find(p => p.type === selectedTypes[0])!;
+      selectRecommended(p);
+      return;
+    }
+    const base = Math.floor(quizAmount / selectedTypes.length / 1000) * 1000;
+    const remainder = quizAmount - base * (selectedTypes.length - 1);
+    const evenSplit = Object.fromEntries(
+      selectedTypes.map((t, i) => [t, i === selectedTypes.length - 1 ? remainder : base])
+    );
+    setLineAmounts(evenSplit);
+    setAllocationMode("client_specified");
+    setStage("allocate");
+  };
+
+  const lineAmountSum = selectedTypes.reduce((sum, t) => sum + (lineAmounts[t] || 0), 0);
+  const allocationValid = allocationMode === "institution_decides" || lineAmountSum === quizAmount;
+
+  const submitMultiProduct = async () => {
+    setSubmitting(true); setError(null);
+    const decisionDeadline = new Date(Date.now() + deadlineDays * 86_400_000).toISOString();
+    const result = await createMultiProductRequest({
+      totalAmount:          quizAmount,
+      purpose:              multiPurpose,
+      preferredTermMonths:  multiTermMonths,
+      decisionDeadline,
+      allocationMode,
+      allocations: selectedTypes.map(t => ({
+        productType: t,
+        amount: allocationMode === "client_specified" ? (lineAmounts[t] ?? null) : null,
+      })),
+    });
+    if (!result.ok) { setError(result.error); setSubmitting(false); return; }
+    setSubmitted(true);
+    setTimeout(() => navigate("/requests"), 2500);
+  };
+
+  const startQuiz = () => { setSelectedTypes([]); setShowAddPicker(false); setStage("quiz_contrib"); };
 
   const chooseContrib = (type: "lump_sum" | "monthly" | "both") => {
     if (type === "lump_sum") { setQuizStep(0); setQuizScores({}); setStage("quiz"); }
@@ -608,6 +666,7 @@ export default function NewRequest() {
             : stage === "monthly_only" ? "Quick questions"
             : stage === "both_notice"  ? "Quick questions"
             : stage === "recommend"   ? "Your recommendation"
+            : stage === "allocate"   ? "Split your investment"
             : product?.label ?? "New request"}
         </h1>
       </div>
@@ -805,29 +864,190 @@ export default function NewRequest() {
               <p className="text-[13px] text-muted leading-relaxed">{BUCKET_BLURB[bucket]}</p>
             </div>
 
-            <p className="text-[14px] text-muted mb-4">Products that typically suit this profile — pick one to continue:</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+            <p className="text-[14px] text-muted mb-4">Products that typically suit this profile — select one or more:</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
               {PRODUCTS.filter(p => BUCKET_PRODUCTS[bucket].includes(p.type)).map(p => {
                 const Icon = p.icon;
+                const isSelected = selectedTypes.includes(p.type);
                 return (
-                  <button key={p.type} onClick={() => selectRecommended(p)}
-                    className="bg-white border border-ink/6 rounded-2xl p-5 text-left hover:border-ficium/30 hover:shadow-md transition-all group">
-                    <div className={`w-10 h-10 rounded-xl grid place-items-center mb-3 ${p.iconBg}`}>
-                      <Icon size={18} className={p.color} />
+                  <button key={p.type} onClick={() => toggleProduct(p.type)}
+                    className={`bg-white border rounded-2xl p-5 text-left transition-all group ${isSelected ? "border-ficium shadow-md ring-2 ring-ficium/20" : "border-ink/6 hover:border-ficium/30 hover:shadow-md"}`}>
+                    <div className="flex items-start justify-between mb-3">
+                      <div className={`w-10 h-10 rounded-xl grid place-items-center ${p.iconBg}`}>
+                        <Icon size={18} className={p.color} />
+                      </div>
+                      {isSelected && <CheckCircle2 size={18} className="text-ficium" />}
                     </div>
                     <div className="font-display text-[16px] font-bold text-ink mb-1">{p.label}</div>
                     <div className="text-[12px] text-muted leading-snug">{p.hint}</div>
-                    <div className="mt-3 flex items-center gap-1 text-[12px] font-semibold text-ficium opacity-0 group-hover:opacity-100 transition-opacity">
-                      Select <ArrowRight size={12} />
+                  </button>
+                );
+              })}
+
+              {/* Manually added products, outside the bucket's suggestions */}
+              {selectedTypes.filter(t => !BUCKET_PRODUCTS[bucket].includes(t)).map(t => {
+                const p = PRODUCTS.find(pp => pp.type === t)!;
+                const Icon = p.icon;
+                return (
+                  <button key={p.type} onClick={() => toggleProduct(p.type)}
+                    className="bg-white border border-ficium shadow-md ring-2 ring-ficium/20 rounded-2xl p-5 text-left transition-all">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className={`w-10 h-10 rounded-xl grid place-items-center ${p.iconBg}`}>
+                        <Icon size={18} className={p.color} />
+                      </div>
+                      <CheckCircle2 size={18} className="text-ficium" />
                     </div>
+                    <div className="font-display text-[16px] font-bold text-ink mb-1">{p.label}</div>
+                    <div className="text-[12px] text-muted leading-snug">Added manually</div>
                   </button>
                 );
               })}
             </div>
+
+            {!showAddPicker ? (
+              <button onClick={() => setShowAddPicker(true)} className="text-[13px] font-semibold text-ficium hover:text-ficium-deep transition-colors mb-5">
+                + Add another product
+              </button>
+            ) : (
+              <div className="bg-white border border-ink/6 rounded-2xl p-4 mb-5">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-[13px] font-semibold text-ink">Add a product</p>
+                  <button onClick={() => setShowAddPicker(false)} className="text-[12px] text-muted hover:text-ink">Close</button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {ADDABLE_PRODUCT_TYPES.filter(t => !selectedTypes.includes(t)).map(t => {
+                    const p = PRODUCTS.find(pp => pp.type === t)!;
+                    return (
+                      <button key={t} onClick={() => { toggleProduct(t); setShowAddPicker(false); }}
+                        className="px-3.5 py-2 rounded-xl border border-ink/10 text-[13px] font-medium text-ink hover:border-ficium/30 transition-all">
+                        {p.label}
+                      </button>
+                    );
+                  })}
+                  {ADDABLE_PRODUCT_TYPES.every(t => selectedTypes.includes(t)) && (
+                    <p className="text-[12px] text-muted">All available products are already added.</p>
+                  )}
+                </div>
+              </div>
+            )}
+
             <p className="text-[11px] text-muted mb-4">This is informational only, not financial advice — you choose which request to post, and institutions bid on it like any other request.</p>
-            <button onClick={() => setStage("product")} className="text-[13px] font-semibold text-muted hover:text-ink transition-colors">
-              ← See all options instead
-            </button>
+
+            <div className="flex gap-3">
+              <button onClick={() => setStage("product")} className="text-[13px] font-semibold text-muted hover:text-ink transition-colors">
+                ← See all options instead
+              </button>
+              <div className="flex-1" />
+              <button onClick={proceedFromRecommend} disabled={selectedTypes.length === 0}
+                className="flex items-center justify-center gap-2 bg-ficium hover:bg-ficium-deep disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold px-6 py-3 rounded-2xl transition-colors text-[14px] shadow-ficium">
+                Continue{selectedTypes.length > 1 ? ` with ${selectedTypes.length}` : ""} <ArrowRight size={15} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Allocation: how the total splits across the selected products ── */}
+        {stage === "allocate" && (
+          <div>
+            <div className="mb-6">
+              <p className="text-[13px] text-muted mb-2">Total amount</p>
+              <div className="text-[32px] font-display font-extrabold text-ficium mb-2">{fmtMUR(quizAmount)}</div>
+              <input type="range" min={10_000} max={10_000_000} step={10_000} value={quizAmount}
+                onChange={e => setQuizAmount(Number(e.target.value))} className="w-full" />
+            </div>
+
+            <div className="flex gap-2 mb-5">
+              <button onClick={() => setAllocationMode("client_specified")}
+                className={`flex-1 px-4 py-3 rounded-2xl border text-[13px] font-semibold transition-all ${allocationMode === "client_specified" ? "border-ficium bg-ficium/5 text-ficium" : "border-ink/10 text-muted hover:border-ink/20"}`}>
+                I'll specify the split
+              </button>
+              <button onClick={() => setAllocationMode("institution_decides")}
+                className={`flex-1 px-4 py-3 rounded-2xl border text-[13px] font-semibold transition-all ${allocationMode === "institution_decides" ? "border-ficium bg-ficium/5 text-ficium" : "border-ink/10 text-muted hover:border-ink/20"}`}>
+                Let institutions propose it
+              </button>
+            </div>
+
+            <div className="space-y-3 mb-5">
+              {selectedTypes.map(t => {
+                const p = PRODUCTS.find(pp => pp.type === t)!;
+                const Icon = p.icon;
+                return (
+                  <div key={t} className="bg-white border border-ink/6 rounded-2xl p-4 flex items-center gap-3">
+                    <div className={`w-9 h-9 rounded-xl grid place-items-center shrink-0 ${p.iconBg}`}>
+                      <Icon size={16} className={p.color} />
+                    </div>
+                    <div className="flex-1 text-[14px] font-semibold text-ink">{p.label}</div>
+                    {allocationMode === "client_specified" ? (
+                      <input type="number" min={0} step={1000} value={lineAmounts[t] ?? 0}
+                        onChange={e => setLineAmounts(prev => ({ ...prev, [t]: Number(e.target.value) }))}
+                        className="w-32 text-right px-3 py-2 rounded-xl border border-ink/10 text-[14px] font-semibold text-ink" />
+                    ) : (
+                      <span className="text-[12px] text-muted">Institution decides</span>
+                    )}
+                    <button onClick={() => toggleProduct(t)} className="text-muted hover:text-ink text-[12px] font-medium ml-1">✕</button>
+                  </div>
+                );
+              })}
+            </div>
+
+            {!showAddPicker ? (
+              <button onClick={() => setShowAddPicker(true)} className="text-[13px] font-semibold text-ficium hover:text-ficium-deep transition-colors mb-5">
+                + Add another product
+              </button>
+            ) : (
+              <div className="bg-white border border-ink/6 rounded-2xl p-4 mb-5">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-[13px] font-semibold text-ink">Add a product</p>
+                  <button onClick={() => setShowAddPicker(false)} className="text-[12px] text-muted hover:text-ink">Close</button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {ADDABLE_PRODUCT_TYPES.filter(t => !selectedTypes.includes(t)).map(t => {
+                    const p = PRODUCTS.find(pp => pp.type === t)!;
+                    return (
+                      <button key={t} onClick={() => { setSelectedTypes(prev => [...prev, t]); setLineAmounts(prev => ({ ...prev, [t]: 0 })); setShowAddPicker(false); }}
+                        className="px-3.5 py-2 rounded-xl border border-ink/10 text-[13px] font-medium text-ink hover:border-ficium/30 transition-all">
+                        {p.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {allocationMode === "client_specified" && !allocationValid && (
+              <p className="text-[12px] text-amber-600 mb-4">
+                Lines add up to {fmtMUR(lineAmountSum)} — needs to match the total ({fmtMUR(quizAmount)}).
+              </p>
+            )}
+
+            <div className="mb-4">
+              <label className="text-[13px] font-semibold text-ink block mb-2">What's this for? <span className="text-muted font-normal">(providers see this, not your name)</span></label>
+              <input type="text" value={multiPurpose} onChange={e => setMultiPurpose(e.target.value)}
+                placeholder="e.g. Diversifying savings, retirement planning"
+                className="w-full px-4 py-3 rounded-xl border border-ink/10 text-[14px]" />
+            </div>
+
+            <div className="mb-6">
+              <label className="text-[13px] font-semibold text-ink block mb-2">Preferred term: {multiTermMonths} months</label>
+              <input type="range" min={6} max={120} step={6} value={multiTermMonths}
+                onChange={e => setMultiTermMonths(Number(e.target.value))} className="w-full" />
+            </div>
+
+            {error && (
+              <div className="flex items-center gap-2 text-red-600 text-[13px] mb-4">
+                <AlertCircle size={15} /> {error}
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button onClick={() => setStage("recommend")} className="px-5 py-3.5 rounded-2xl border border-ink/10 text-[13px] font-semibold text-muted hover:bg-ink/3 transition-colors">
+                Back
+              </button>
+              <button onClick={submitMultiProduct} disabled={!allocationValid || !multiPurpose.trim() || submitting || selectedTypes.length < 2}
+                className="flex-1 flex items-center justify-center gap-2 bg-ficium hover:bg-ficium-deep disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-2xl transition-colors text-[14px] shadow-ficium">
+                {submitting ? <Loader2 size={16} className="animate-spin" /> : <>Post request <ArrowRight size={15} /></>}
+              </button>
+            </div>
           </div>
         )}
 
