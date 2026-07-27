@@ -441,19 +441,36 @@ export default function NewRequest() {
   const [submitting, setSubmitting] = useState(false);
   const [error,      setError]      = useState<string | null>(null);
   const [submitted,  setSubmitted]  = useState(false);
-  const [stage,      setStage]      = useState<"product" | "quiz" | "recommend" | "questions" | "review">("product");
+  const [stage,      setStage]      = useState<"product" | "quiz_contrib" | "quiz" | "monthly_only" | "both_notice" | "recommend" | "questions" | "review">("product");
   const [isJoint,      setIsJoint]      = useState(false);
   const [partnerEmail, setPartnerEmail] = useState("");
   const [inviteNote,   setInviteNote]   = useState<string | null>(null);
   const [deadlineDays, setDeadlineDays] = useState(14);
 
   // "Not sure what fits?" quiz state
+  const [monthlyAmount, setMonthlyAmount] = useState(5_000);
   const [quizStep,    setQuizStep]    = useState(0);
   const [quizScores,  setQuizScores]  = useState<Partial<Record<QuizQuestion["key"], number>>>({});
   const [quizAmount,  setQuizAmount]  = useState(300_000);
   const [bucket,      setBucket]      = useState<RiskBucket | null>(null);
 
-  const startQuiz = () => { setQuizStep(0); setQuizScores({}); setStage("quiz"); };
+  const startQuiz = () => { setStage("quiz_contrib"); };
+
+  const chooseContrib = (type: "lump_sum" | "monthly" | "both") => {
+    if (type === "lump_sum") { setQuizStep(0); setQuizScores({}); setStage("quiz"); }
+    else if (type === "monthly") { setStage("monthly_only"); }
+    else { setStage("both_notice"); }
+  };
+
+  // Monthly-only path has exactly one fitting product today (Monthly Plan /
+  // savings_plan) — no risk quiz needed, go straight to its own question flow.
+  const continueMonthlyOnly = () => {
+    const savingsPlan = PRODUCTS.find(p => p.type === "savings_plan")!;
+    setProduct(savingsPlan);
+    setAnswers({ __amount: String(monthlyAmount), __term: String(savingsPlan.defaultTerm), contribution_type: "Monthly" });
+    setQIndex(0);
+    setStage("questions");
+  };
 
   const answerQuiz = (key: QuizQuestion["key"], score: number) => {
     const next = { ...quizScores, [key]: score };
@@ -472,7 +489,7 @@ export default function NewRequest() {
   // per-product min/max amounts differ, so it's clamped there, not here).
   const selectRecommended = (p: Product) => {
     setProduct(p);
-    setAnswers({ __amount: String(quizAmount), __term: String(p.defaultTerm) });
+    setAnswers({ __amount: String(quizAmount), __term: String(p.defaultTerm), contribution_type: "Lump sum" });
     setQIndex(0);
     setStage("questions");
   };
@@ -585,9 +602,12 @@ export default function NewRequest() {
           </div>
         </div>
         <h1 className="font-display text-[28px] font-extrabold text-white leading-tight mb-8">
-          {stage === "product"   ? "New request"
-            : stage === "quiz"     ? "Quick questions"
-            : stage === "recommend" ? "Your recommendation"
+          {stage === "product"     ? "New request"
+            : stage === "quiz_contrib" ? "Quick questions"
+            : stage === "quiz"        ? "Quick questions"
+            : stage === "monthly_only" ? "Quick questions"
+            : stage === "both_notice"  ? "Quick questions"
+            : stage === "recommend"   ? "Your recommendation"
             : product?.label ?? "New request"}
         </h1>
       </div>
@@ -643,6 +663,77 @@ export default function NewRequest() {
           </div>
         )}
 
+        {/* ── Step 0: how do you want to invest? ── */}
+        {stage === "quiz_contrib" && (
+          <div>
+            <h2 className="font-display text-[22px] sm:text-[26px] font-bold text-ink mb-2 leading-tight">How do you want to invest?</h2>
+            <p className="text-[13px] text-muted mb-6">This decides which questions we ask next</p>
+            <div className="space-y-2">
+              <button onClick={() => chooseContrib("lump_sum")} className="w-full text-left px-5 py-4 rounded-2xl border border-ink/10 bg-white text-ink text-[14px] font-medium hover:border-ficium/30 transition-all">
+                A fixed amount, one-time
+              </button>
+              <button onClick={() => chooseContrib("monthly")} className="w-full text-left px-5 py-4 rounded-2xl border border-ink/10 bg-white text-ink text-[14px] font-medium hover:border-ficium/30 transition-all">
+                Monthly contributions only
+              </button>
+              <button onClick={() => chooseContrib("both")} className="w-full text-left px-5 py-4 rounded-2xl border border-ink/10 bg-white text-ink text-[14px] font-medium hover:border-ficium/30 transition-all">
+                Both — a lump sum plus monthly top-ups
+              </button>
+            </div>
+            <button onClick={() => setStage("product")} className="mt-6 text-[13px] font-semibold text-muted hover:text-ink transition-colors">
+              ← Back
+            </button>
+          </div>
+        )}
+
+        {/* ── Monthly-only: straight to Monthly Plan, no risk quiz needed ── */}
+        {stage === "monthly_only" && (
+          <div className="flex flex-col min-h-[60vh]">
+            <h2 className="font-display text-[22px] sm:text-[26px] font-bold text-ink mb-2 leading-tight">How much can you set aside monthly?</h2>
+            <p className="text-[13px] text-muted mb-6">You can adjust this later</p>
+            <div className="flex-1 space-y-4">
+              <div className="text-[32px] font-display font-extrabold text-ficium">{fmtMUR(monthlyAmount)}<span className="text-[14px] text-muted font-medium">/mo</span></div>
+              <input type="range" min={2_000} max={200_000} step={1_000} value={monthlyAmount}
+                onChange={e => setMonthlyAmount(Number(e.target.value))} className="w-full" />
+              <div className="flex justify-between text-[11px] text-muted">
+                <span>{fmtMUR(2_000)}</span><span>{fmtMUR(200_000)}</span>
+              </div>
+            </div>
+            <div className="flex gap-3 mt-8">
+              <button onClick={() => setStage("quiz_contrib")} className="px-5 py-3.5 rounded-2xl border border-ink/10 text-[13px] font-semibold text-muted hover:bg-ink/3 transition-colors">
+                Back
+              </button>
+              <button onClick={continueMonthlyOnly} className="flex-1 flex items-center justify-center gap-2 bg-ficium hover:bg-ficium-deep text-white font-bold py-3.5 rounded-2xl transition-colors text-[14px] shadow-ficium">
+                Continue <ArrowRight size={15} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Both lump sum + monthly: not yet a single combined submission,
+             say so plainly rather than fake it. Lets them proceed with the
+             lump-sum side today. ── */}
+        {stage === "both_notice" && (
+          <div>
+            <div className="bg-white rounded-2xl border border-ink/6 shadow-xs p-6 mb-5">
+              <p className="text-[14px] text-ink leading-relaxed mb-3">
+                Combined lump-sum-plus-monthly requests aren't a single submission yet — we're still building that.
+              </p>
+              <p className="text-[13px] text-muted leading-relaxed">
+                For now you can post your lump sum through this wizard, then add a separate Monthly Plan
+                request from your dashboard whenever you're ready.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setStage("quiz_contrib")} className="px-5 py-3.5 rounded-2xl border border-ink/10 text-[13px] font-semibold text-muted hover:bg-ink/3 transition-colors">
+                Back
+              </button>
+              <button onClick={() => chooseContrib("lump_sum")} className="flex-1 flex items-center justify-center gap-2 bg-ficium hover:bg-ficium-deep text-white font-bold py-3.5 rounded-2xl transition-colors text-[14px] shadow-ficium">
+                Continue with lump sum <ArrowRight size={15} />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* ── "Not sure?" quiz ── */}
         {stage === "quiz" && (() => {
           const q = QUIZ_QUESTIONS[quizStep];
@@ -672,7 +763,7 @@ export default function NewRequest() {
                     </div>
                   </div>
                   <div className="flex gap-3 mt-8">
-                    <button onClick={() => setStage("product")} className="px-5 py-3.5 rounded-2xl border border-ink/10 text-[13px] font-semibold text-muted hover:bg-ink/3 transition-colors">
+                    <button onClick={() => setStage("quiz_contrib")} className="px-5 py-3.5 rounded-2xl border border-ink/10 text-[13px] font-semibold text-muted hover:bg-ink/3 transition-colors">
                       Back
                     </button>
                     <button onClick={() => setQuizStep(1)} className="flex-1 flex items-center justify-center gap-2 bg-ficium hover:bg-ficium-deep text-white font-bold py-3.5 rounded-2xl transition-colors text-[14px] shadow-ficium">
