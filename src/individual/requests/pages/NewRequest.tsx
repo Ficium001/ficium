@@ -9,10 +9,10 @@ import {
   Loader2, AlertCircle, HandCoins, Building2,
   PiggyBank, LineChart, CreditCard, Briefcase,
   Banknote, Home, Car, BarChart2,
-  TrendingUp, Layers, CalendarDays, Landmark, Globe,
+  TrendingUp, Layers, CalendarDays, Landmark, Globe, Sparkles,
 } from "lucide-react";
 import { useProfile } from "../../dashboard/hooks/useDashboard";
-import { createRequest, type ProductType } from "../api/requests";
+import { createRequest, createMultiProductRequest, type ProductType, type AllocationMode } from "../api/requests";
 import { createInvitation } from "@/individual/couple/api/couple";
 import { Users } from "lucide-react";
 import { useIntelligence } from "@/shared/lib/intelligence";
@@ -54,6 +54,79 @@ const URL_TYPE_MAP: Record<string, ProductType> = {
   government_bonds: "government_bonds", bonds: "government_bonds",
   offshore: "offshore_investment", offshore_investment: "offshore_investment",
 };
+
+/* ─── "Not sure what fits?" risk quiz ───────────────────────
+   Scoped to product types that are fully wired end-to-end on the
+   institution side (catalog.product row + dedicated pipeline template) —
+   see ficium-portal-api migrations from Jul 2026. `savings_plan` is
+   deliberately excluded: catalog.product_id_for_app_type() has no mapping
+   for it yet and it silently falls through to personal_loan. Don't add it
+   here until that's fixed. */
+type RiskBucket = "preservation" | "balanced" | "growth";
+
+const BUCKET_LABEL: Record<RiskBucket, string> = {
+  preservation: "Capital Preservation",
+  balanced:     "Balanced",
+  growth:       "Growth",
+};
+
+const BUCKET_BLURB: Record<RiskBucket, string> = {
+  preservation: "You'd rather protect what you have than chase higher returns.",
+  balanced:     "You're comfortable with some ups and downs for better long-term growth.",
+  growth:       "You're investing for the long run and can ride out volatility.",
+};
+
+const BUCKET_PRODUCTS: Record<RiskBucket, ProductType[]> = {
+  preservation: ["fixed_deposit", "government_bonds"],
+  balanced:     ["unit_trust", "investment_account"],
+  growth:       ["equities", "offshore_investment"],
+};
+
+type QuizQuestion = {
+  key:      "horizon" | "risk_tolerance" | "liquidity";
+  question: string;
+  subtext?: string;
+  options:  { label: string; score: number }[];
+};
+
+const QUIZ_QUESTIONS: QuizQuestion[] = [
+  {
+    key: "horizon",
+    question: "How long can you leave this money invested?",
+    subtext: "Your investment horizon",
+    options: [
+      { label: "Under 1 year", score: 1 },
+      { label: "1–5 years", score: 2 },
+      { label: "5+ years", score: 3 },
+    ],
+  },
+  {
+    key: "risk_tolerance",
+    question: "If your investment dropped 15% in a year, what would you do?",
+    subtext: "There's no wrong answer — this just shapes what we show you",
+    options: [
+      { label: "Move it somewhere safer", score: 1 },
+      { label: "Wait it out", score: 2 },
+      { label: "See it as a buying opportunity", score: 3 },
+    ],
+  },
+  {
+    key: "liquidity",
+    question: "Do you need to be able to access these funds quickly?",
+    subtext: "Liquidity need",
+    options: [
+      { label: "Yes — I may need it any time", score: 1 },
+      { label: "Occasionally, with some notice", score: 2 },
+      { label: "No — this is money I can lock away", score: 3 },
+    ],
+  },
+];
+
+function scoreToBucket(total: number): RiskBucket {
+  if (total <= 4) return "preservation";
+  if (total <= 6) return "balanced";
+  return "growth";
+}
 
 /* ─── Question definition ───────────────────────────────── */
 type QuestionType = "amount" | "term" | "select" | "text" | "number";
@@ -368,11 +441,125 @@ export default function NewRequest() {
   const [submitting, setSubmitting] = useState(false);
   const [error,      setError]      = useState<string | null>(null);
   const [submitted,  setSubmitted]  = useState(false);
-  const [stage,      setStage]      = useState<"product" | "questions" | "review">("product");
+  const [stage,      setStage]      = useState<"product" | "quiz_contrib" | "quiz" | "monthly_only" | "recommend" | "allocate" | "questions" | "review">("product");
   const [isJoint,      setIsJoint]      = useState(false);
   const [partnerEmail, setPartnerEmail] = useState("");
   const [inviteNote,   setInviteNote]   = useState<string | null>(null);
   const [deadlineDays, setDeadlineDays] = useState(14);
+
+  // "Not sure what fits?" quiz state
+  const [monthlyAmount, setMonthlyAmount] = useState(5_000);
+  const [quizStep,    setQuizStep]    = useState(0);
+  const [quizScores,  setQuizScores]  = useState<Partial<Record<QuizQuestion["key"], number>>>({});
+  const [quizAmount,  setQuizAmount]  = useState(300_000);
+  const [bucket,      setBucket]      = useState<RiskBucket | null>(null);
+
+  // Multi-select recommendation + allocation state
+  const [selectedTypes,  setSelectedTypes]  = useState<ProductType[]>([]);
+  const [showAddPicker,  setShowAddPicker]  = useState(false);
+  const [allocationMode, setAllocationMode] = useState<AllocationMode>("client_specified");
+  const [lineAmounts,    setLineAmounts]    = useState<Record<string, number>>({});
+  const [multiPurpose,   setMultiPurpose]   = useState("");
+  const [multiTermMonths,setMultiTermMonths]= useState(24);
+  const [wantsMonthly,   setWantsMonthly]   = useState(false);
+
+  const toggleProduct = (type: ProductType) => {
+    setSelectedTypes(prev => prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]);
+  };
+
+  // Any of the products already wired end-to-end (own catalog/pipeline) are
+  // fair game to add manually, not just the ones the quiz recommended.
+  const ADDABLE_PRODUCT_TYPES: ProductType[] = [
+    "fixed_deposit", "investment_account", "equities", "unit_trust",
+    "government_bonds", "offshore_investment", "savings_plan",
+  ];
+
+  // Monthly Plan's amount is a recurring monthly figure, not a slice of the
+  // lump-sum total - it's excluded from the lump-sum split and from the
+  // "lines must sum to the total" check further down.
+  const lumpSumTypes = (types: ProductType[]) => types.filter(t => t !== "savings_plan");
+
+  const proceedFromRecommend = () => {
+    if (selectedTypes.length === 0) return;
+    if (selectedTypes.length === 1) {
+      const p = PRODUCTS.find(p => p.type === selectedTypes[0])!;
+      selectRecommended(p);
+      return;
+    }
+    const lumpSum = lumpSumTypes(selectedTypes);
+    const base = lumpSum.length > 0 ? Math.floor(quizAmount / lumpSum.length / 1000) * 1000 : 0;
+    const remainder = quizAmount - base * (lumpSum.length - 1);
+    const evenSplit = Object.fromEntries(
+      lumpSum.map((t, i) => [t, i === lumpSum.length - 1 ? remainder : base])
+    );
+    if (selectedTypes.includes("savings_plan")) evenSplit["savings_plan"] = monthlyAmount || 5_000;
+    setLineAmounts(evenSplit);
+    setAllocationMode("client_specified");
+    setStage("allocate");
+  };
+
+  const lineAmountSum = lumpSumTypes(selectedTypes).reduce((sum, t) => sum + (lineAmounts[t] || 0), 0);
+  const allocationValid = allocationMode === "institution_decides" || lineAmountSum === quizAmount;
+
+  const submitMultiProduct = async () => {
+    setSubmitting(true); setError(null);
+    const decisionDeadline = new Date(Date.now() + deadlineDays * 86_400_000).toISOString();
+    const result = await createMultiProductRequest({
+      totalAmount:          quizAmount,
+      purpose:              multiPurpose,
+      preferredTermMonths:  multiTermMonths,
+      decisionDeadline,
+      allocationMode,
+      allocations: selectedTypes.map(t => ({
+        productType: t,
+        amount: allocationMode === "client_specified" ? (lineAmounts[t] ?? null) : null,
+      })),
+    });
+    if (!result.ok) { setError(result.error); setSubmitting(false); return; }
+    setSubmitted(true);
+    setTimeout(() => navigate("/requests"), 2500);
+  };
+
+  const startQuiz = () => { setSelectedTypes([]); setShowAddPicker(false); setWantsMonthly(false); setStage("quiz_contrib"); };
+
+  const chooseContrib = (type: "lump_sum" | "monthly" | "both") => {
+    setWantsMonthly(type === "both");
+    if (type === "monthly") { setStage("monthly_only"); }
+    else { setQuizStep(0); setQuizScores({}); setStage("quiz"); } // lump_sum and both share the risk quiz
+  };
+
+  // Monthly-only path has exactly one fitting product today (Monthly Plan /
+  // savings_plan) — no risk quiz needed, go straight to its own question flow.
+  const continueMonthlyOnly = () => {
+    const savingsPlan = PRODUCTS.find(p => p.type === "savings_plan")!;
+    setProduct(savingsPlan);
+    setAnswers({ __amount: String(monthlyAmount), __term: String(savingsPlan.defaultTerm), contribution_type: "Monthly" });
+    setQIndex(0);
+    setStage("questions");
+  };
+
+  const answerQuiz = (key: QuizQuestion["key"], score: number) => {
+    const next = { ...quizScores, [key]: score };
+    setQuizScores(next);
+    if (quizStep < QUIZ_QUESTIONS.length - 1) {
+      setTimeout(() => setQuizStep(s => s + 1), 200);
+    } else {
+      const total = Object.values(next).reduce((a, b) => a + (b ?? 0), 0);
+      setBucket(scoreToBucket(total));
+      setSelectedTypes(wantsMonthly ? ["savings_plan"] : []);
+      setTimeout(() => setStage("recommend"), 200);
+    }
+  };
+
+  // From the recommendation screen: jump into that product's own question
+  // flow with the quiz amount pre-filled as a starting point (still editable —
+  // per-product min/max amounts differ, so it's clamped there, not here).
+  const selectRecommended = (p: Product) => {
+    setProduct(p);
+    setAnswers({ __amount: String(quizAmount), __term: String(p.defaultTerm), contribution_type: "Lump sum" });
+    setQIndex(0);
+    setStage("questions");
+  };
 
   const questions = product ? (QUESTION_SETS[product.type] ?? []) : [];
   const currentQ  = questions[qIndex];
@@ -482,7 +669,13 @@ export default function NewRequest() {
           </div>
         </div>
         <h1 className="font-display text-[28px] font-extrabold text-white leading-tight mb-8">
-          {stage === "product" ? "New request" : product?.label ?? "New request"}
+          {stage === "product"     ? "New request"
+            : stage === "quiz_contrib" ? "Quick questions"
+            : stage === "quiz"        ? "Quick questions"
+            : stage === "monthly_only" ? "Quick questions"
+            : stage === "recommend"   ? "Your recommendation"
+            : stage === "allocate"   ? "Split your investment"
+            : product?.label ?? "New request"}
         </h1>
       </div>
 
@@ -491,6 +684,21 @@ export default function NewRequest() {
         {/* ── Product picker ── */}
         {stage === "product" && (
           <div>
+            <button
+              type="button"
+              onClick={startQuiz}
+              className="w-full flex items-center gap-3 bg-white border border-ficium/20 rounded-2xl px-5 py-4 mb-5 text-left hover:border-ficium/40 hover:shadow-md transition-all group"
+            >
+              <div className="w-10 h-10 rounded-xl bg-ficium/10 grid place-items-center shrink-0">
+                <Sparkles size={18} className="text-ficium" />
+              </div>
+              <div className="flex-1">
+                <div className="font-display text-[14px] font-bold text-ink">Not sure what fits?</div>
+                <div className="text-[12px] text-muted">Answer 3 quick questions and we'll point you to the right investment options</div>
+              </div>
+              <ArrowRight size={15} className="text-ficium opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+            </button>
+
             <p className="text-[14px] text-muted mb-5">What are you looking for?</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {PRODUCTS.map(p => {
@@ -518,6 +726,317 @@ export default function NewRequest() {
                   </button>
                 );
               })}
+            </div>
+          </div>
+        )}
+
+        {/* ── Step 0: how do you want to invest? ── */}
+        {stage === "quiz_contrib" && (
+          <div>
+            <h2 className="font-display text-[22px] sm:text-[26px] font-bold text-ink mb-2 leading-tight">How do you want to invest?</h2>
+            <p className="text-[13px] text-muted mb-6">This decides which questions we ask next</p>
+            <div className="space-y-2">
+              <button onClick={() => chooseContrib("lump_sum")} className="w-full text-left px-5 py-4 rounded-2xl border border-ink/10 bg-white text-ink text-[14px] font-medium hover:border-ficium/30 transition-all">
+                A fixed amount, one-time
+              </button>
+              <button onClick={() => chooseContrib("monthly")} className="w-full text-left px-5 py-4 rounded-2xl border border-ink/10 bg-white text-ink text-[14px] font-medium hover:border-ficium/30 transition-all">
+                Monthly contributions only
+              </button>
+              <button onClick={() => chooseContrib("both")} className="w-full text-left px-5 py-4 rounded-2xl border border-ink/10 bg-white text-ink text-[14px] font-medium hover:border-ficium/30 transition-all">
+                Both — a lump sum plus monthly top-ups
+              </button>
+            </div>
+            <button onClick={() => setStage("product")} className="mt-6 text-[13px] font-semibold text-muted hover:text-ink transition-colors">
+              ← Back
+            </button>
+          </div>
+        )}
+
+        {/* ── Monthly-only: straight to Monthly Plan, no risk quiz needed ── */}
+        {stage === "monthly_only" && (
+          <div className="flex flex-col min-h-[60vh]">
+            <h2 className="font-display text-[22px] sm:text-[26px] font-bold text-ink mb-2 leading-tight">How much can you set aside monthly?</h2>
+            <p className="text-[13px] text-muted mb-6">You can adjust this later</p>
+            <div className="flex-1 space-y-4">
+              <div className="text-[32px] font-display font-extrabold text-ficium">{fmtMUR(monthlyAmount)}<span className="text-[14px] text-muted font-medium">/mo</span></div>
+              <input type="range" min={2_000} max={200_000} step={1_000} value={monthlyAmount}
+                onChange={e => setMonthlyAmount(Number(e.target.value))} className="w-full" />
+              <div className="flex justify-between text-[11px] text-muted">
+                <span>{fmtMUR(2_000)}</span><span>{fmtMUR(200_000)}</span>
+              </div>
+            </div>
+            <div className="flex gap-3 mt-8">
+              <button onClick={() => setStage("quiz_contrib")} className="px-5 py-3.5 rounded-2xl border border-ink/10 text-[13px] font-semibold text-muted hover:bg-ink/3 transition-colors">
+                Back
+              </button>
+              <button onClick={continueMonthlyOnly} className="flex-1 flex items-center justify-center gap-2 bg-ficium hover:bg-ficium-deep text-white font-bold py-3.5 rounded-2xl transition-colors text-[14px] shadow-ficium">
+                Continue <ArrowRight size={15} />
+              </button>
+            </div>
+          </div>
+        )}
+
+
+        {/* ── "Not sure?" quiz ── */}
+        {stage === "quiz" && (() => {
+          const q = QUIZ_QUESTIONS[quizStep];
+          const pct = Math.round(((quizStep + 1) / (QUIZ_QUESTIONS.length + 1)) * 100);
+          return (
+            <div className="flex flex-col min-h-[60vh]">
+              <div className="mb-8">
+                <div className="flex items-center justify-between text-[11px] text-muted mb-2">
+                  <span>{quizStep + 1} of {QUIZ_QUESTIONS.length + 1}</span>
+                  <span>{pct}%</span>
+                </div>
+                <div className="h-1 bg-ink/[0.07] rounded-full overflow-hidden">
+                  <div className="h-full bg-ficium rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+                </div>
+              </div>
+
+              {quizStep === 0 && (
+                <>
+                  <h2 className="font-display text-[22px] sm:text-[26px] font-bold text-ink mb-2 leading-tight">How much are you looking to invest?</h2>
+                  <p className="text-[13px] text-muted mb-6">A rough figure is fine — you can adjust it later</p>
+                  <div className="flex-1 space-y-4">
+                    <div className="text-[32px] font-display font-extrabold text-ficium">{fmtMUR(quizAmount)}</div>
+                    <input type="range" min={10_000} max={10_000_000} step={10_000} value={quizAmount}
+                      onChange={e => setQuizAmount(Number(e.target.value))} className="w-full" />
+                    <div className="flex justify-between text-[11px] text-muted">
+                      <span>{fmtMUR(10_000)}</span><span>{fmtMUR(10_000_000)}</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-3 mt-8">
+                    <button onClick={() => setStage("quiz_contrib")} className="px-5 py-3.5 rounded-2xl border border-ink/10 text-[13px] font-semibold text-muted hover:bg-ink/3 transition-colors">
+                      Back
+                    </button>
+                    <button onClick={() => setQuizStep(1)} className="flex-1 flex items-center justify-center gap-2 bg-ficium hover:bg-ficium-deep text-white font-bold py-3.5 rounded-2xl transition-colors text-[14px] shadow-ficium">
+                      Continue <ArrowRight size={15} />
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {quizStep > 0 && q && (
+                <>
+                  <h2 className="font-display text-[22px] sm:text-[26px] font-bold text-ink mb-2 leading-tight">{q.question}</h2>
+                  {q.subtext && <p className="text-[13px] text-muted mb-6">{q.subtext}</p>}
+                  <div className="flex-1 space-y-2">
+                    {q.options.map(opt => (
+                      <button key={opt.label} onClick={() => answerQuiz(q.key, opt.score)}
+                        className="w-full text-left px-5 py-4 rounded-2xl border border-ink/10 bg-white text-ink text-[14px] font-medium hover:border-ficium/30 transition-all">
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex gap-3 mt-8">
+                    <button onClick={() => setQuizStep(s => s - 1)} className="px-5 py-3.5 rounded-2xl border border-ink/10 text-[13px] font-semibold text-muted hover:bg-ink/3 transition-colors">
+                      Back
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* ── Quiz result: recommended products ── */}
+        {stage === "recommend" && bucket && (
+          <div>
+            <div className="bg-white rounded-2xl border border-ink/6 shadow-xs p-6 mb-5">
+              <div className="text-[11px] font-bold text-ficium uppercase tracking-widest mb-1">Your profile</div>
+              <div className="font-display text-[22px] font-bold text-ink mb-2">{BUCKET_LABEL[bucket]}</div>
+              <p className="text-[13px] text-muted leading-relaxed">{BUCKET_BLURB[bucket]}</p>
+            </div>
+
+            <p className="text-[14px] text-muted mb-4">Products that typically suit this profile — select one or more:</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+              {PRODUCTS.filter(p => BUCKET_PRODUCTS[bucket].includes(p.type)).map(p => {
+                const Icon = p.icon;
+                const isSelected = selectedTypes.includes(p.type);
+                return (
+                  <button key={p.type} onClick={() => toggleProduct(p.type)}
+                    className={`bg-white border rounded-2xl p-5 text-left transition-all group ${isSelected ? "border-ficium shadow-md ring-2 ring-ficium/20" : "border-ink/6 hover:border-ficium/30 hover:shadow-md"}`}>
+                    <div className="flex items-start justify-between mb-3">
+                      <div className={`w-10 h-10 rounded-xl grid place-items-center ${p.iconBg}`}>
+                        <Icon size={18} className={p.color} />
+                      </div>
+                      {isSelected && <CheckCircle2 size={18} className="text-ficium" />}
+                    </div>
+                    <div className="font-display text-[16px] font-bold text-ink mb-1">{p.label}</div>
+                    <div className="text-[12px] text-muted leading-snug">{p.hint}</div>
+                  </button>
+                );
+              })}
+
+              {/* Manually added products, outside the bucket's suggestions */}
+              {selectedTypes.filter(t => !BUCKET_PRODUCTS[bucket].includes(t)).map(t => {
+                const p = PRODUCTS.find(pp => pp.type === t)!;
+                const Icon = p.icon;
+                return (
+                  <button key={p.type} onClick={() => toggleProduct(p.type)}
+                    className="bg-white border border-ficium shadow-md ring-2 ring-ficium/20 rounded-2xl p-5 text-left transition-all">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className={`w-10 h-10 rounded-xl grid place-items-center ${p.iconBg}`}>
+                        <Icon size={18} className={p.color} />
+                      </div>
+                      <CheckCircle2 size={18} className="text-ficium" />
+                    </div>
+                    <div className="font-display text-[16px] font-bold text-ink mb-1">{p.label}</div>
+                    <div className="text-[12px] text-muted leading-snug">Added manually</div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {!showAddPicker ? (
+              <button onClick={() => setShowAddPicker(true)} className="text-[13px] font-semibold text-ficium hover:text-ficium-deep transition-colors mb-5">
+                + Add another product
+              </button>
+            ) : (
+              <div className="bg-white border border-ink/6 rounded-2xl p-4 mb-5">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-[13px] font-semibold text-ink">Add a product</p>
+                  <button onClick={() => setShowAddPicker(false)} className="text-[12px] text-muted hover:text-ink">Close</button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {ADDABLE_PRODUCT_TYPES.filter(t => !selectedTypes.includes(t)).map(t => {
+                    const p = PRODUCTS.find(pp => pp.type === t)!;
+                    return (
+                      <button key={t} onClick={() => { toggleProduct(t); setShowAddPicker(false); }}
+                        className="px-3.5 py-2 rounded-xl border border-ink/10 text-[13px] font-medium text-ink hover:border-ficium/30 transition-all">
+                        {p.label}
+                      </button>
+                    );
+                  })}
+                  {ADDABLE_PRODUCT_TYPES.every(t => selectedTypes.includes(t)) && (
+                    <p className="text-[12px] text-muted">All available products are already added.</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <p className="text-[11px] text-muted mb-4">This is informational only, not financial advice — you choose which request to post, and institutions bid on it like any other request.</p>
+
+            <div className="flex gap-3">
+              <button onClick={() => setStage("product")} className="text-[13px] font-semibold text-muted hover:text-ink transition-colors">
+                ← See all options instead
+              </button>
+              <div className="flex-1" />
+              <button onClick={proceedFromRecommend} disabled={selectedTypes.length === 0}
+                className="flex items-center justify-center gap-2 bg-ficium hover:bg-ficium-deep disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold px-6 py-3 rounded-2xl transition-colors text-[14px] shadow-ficium">
+                Continue{selectedTypes.length > 1 ? ` with ${selectedTypes.length}` : ""} <ArrowRight size={15} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Allocation: how the total splits across the selected products ── */}
+        {stage === "allocate" && (
+          <div>
+            <div className="mb-6">
+              <p className="text-[13px] text-muted mb-2">{selectedTypes.includes("savings_plan") ? "Lump-sum total (separate from Monthly Plan below)" : "Total amount"}</p>
+              <div className="text-[32px] font-display font-extrabold text-ficium mb-2">{fmtMUR(quizAmount)}</div>
+              <input type="range" min={10_000} max={10_000_000} step={10_000} value={quizAmount}
+                onChange={e => setQuizAmount(Number(e.target.value))} className="w-full" />
+            </div>
+
+            <div className="flex gap-2 mb-5">
+              <button onClick={() => setAllocationMode("client_specified")}
+                className={`flex-1 px-4 py-3 rounded-2xl border text-[13px] font-semibold transition-all ${allocationMode === "client_specified" ? "border-ficium bg-ficium/5 text-ficium" : "border-ink/10 text-muted hover:border-ink/20"}`}>
+                I'll specify the split
+              </button>
+              <button onClick={() => setAllocationMode("institution_decides")}
+                className={`flex-1 px-4 py-3 rounded-2xl border text-[13px] font-semibold transition-all ${allocationMode === "institution_decides" ? "border-ficium bg-ficium/5 text-ficium" : "border-ink/10 text-muted hover:border-ink/20"}`}>
+                Let institutions propose it
+              </button>
+            </div>
+
+            <div className="space-y-3 mb-5">
+              {selectedTypes.map(t => {
+                const p = PRODUCTS.find(pp => pp.type === t)!;
+                const Icon = p.icon;
+                return (
+                  <div key={t} className="bg-white border border-ink/6 rounded-2xl p-4 flex items-center gap-3">
+                    <div className={`w-9 h-9 rounded-xl grid place-items-center shrink-0 ${p.iconBg}`}>
+                      <Icon size={16} className={p.color} />
+                    </div>
+                    <div className="flex-1 text-[14px] font-semibold text-ink">
+                      {p.label}
+                      {t === "savings_plan" && <span className="ml-1.5 text-[10px] font-bold text-ficium bg-ficium/10 rounded-full px-2 py-0.5">Monthly</span>}
+                    </div>
+                    {allocationMode === "client_specified" ? (
+                      <div className="flex items-center gap-1">
+                        <input type="number" min={0} step={t === "savings_plan" ? 500 : 1000} value={lineAmounts[t] ?? 0}
+                          onChange={e => setLineAmounts(prev => ({ ...prev, [t]: Number(e.target.value) }))}
+                          className="w-28 text-right px-3 py-2 rounded-xl border border-ink/10 text-[14px] font-semibold text-ink" />
+                        {t === "savings_plan" && <span className="text-[12px] text-muted">/mo</span>}
+                      </div>
+                    ) : (
+                      <span className="text-[12px] text-muted">Institution decides</span>
+                    )}
+                    <button onClick={() => toggleProduct(t)} className="text-muted hover:text-ink text-[12px] font-medium ml-1">✕</button>
+                  </div>
+                );
+              })}
+            </div>
+
+            {!showAddPicker ? (
+              <button onClick={() => setShowAddPicker(true)} className="text-[13px] font-semibold text-ficium hover:text-ficium-deep transition-colors mb-5">
+                + Add another product
+              </button>
+            ) : (
+              <div className="bg-white border border-ink/6 rounded-2xl p-4 mb-5">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-[13px] font-semibold text-ink">Add a product</p>
+                  <button onClick={() => setShowAddPicker(false)} className="text-[12px] text-muted hover:text-ink">Close</button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {ADDABLE_PRODUCT_TYPES.filter(t => !selectedTypes.includes(t)).map(t => {
+                    const p = PRODUCTS.find(pp => pp.type === t)!;
+                    return (
+                      <button key={t} onClick={() => { setSelectedTypes(prev => [...prev, t]); setLineAmounts(prev => ({ ...prev, [t]: 0 })); setShowAddPicker(false); }}
+                        className="px-3.5 py-2 rounded-xl border border-ink/10 text-[13px] font-medium text-ink hover:border-ficium/30 transition-all">
+                        {p.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {allocationMode === "client_specified" && !allocationValid && (
+              <p className="text-[12px] text-amber-600 mb-4">
+                {selectedTypes.includes("savings_plan") ? "Lump-sum lines" : "Lines"} add up to {fmtMUR(lineAmountSum)} — needs to match the total ({fmtMUR(quizAmount)}).
+              </p>
+            )}
+
+            <div className="mb-4">
+              <label className="text-[13px] font-semibold text-ink block mb-2">What's this for? <span className="text-muted font-normal">(providers see this, not your name)</span></label>
+              <input type="text" value={multiPurpose} onChange={e => setMultiPurpose(e.target.value)}
+                placeholder="e.g. Diversifying savings, retirement planning"
+                className="w-full px-4 py-3 rounded-xl border border-ink/10 text-[14px]" />
+            </div>
+
+            <div className="mb-6">
+              <label className="text-[13px] font-semibold text-ink block mb-2">Preferred term: {multiTermMonths} months</label>
+              <input type="range" min={6} max={120} step={6} value={multiTermMonths}
+                onChange={e => setMultiTermMonths(Number(e.target.value))} className="w-full" />
+            </div>
+
+            {error && (
+              <div className="flex items-center gap-2 text-red-600 text-[13px] mb-4">
+                <AlertCircle size={15} /> {error}
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button onClick={() => setStage("recommend")} className="px-5 py-3.5 rounded-2xl border border-ink/10 text-[13px] font-semibold text-muted hover:bg-ink/3 transition-colors">
+                Back
+              </button>
+              <button onClick={submitMultiProduct} disabled={!allocationValid || !multiPurpose.trim() || submitting || selectedTypes.length < 2}
+                className="flex-1 flex items-center justify-center gap-2 bg-ficium hover:bg-ficium-deep disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-2xl transition-colors text-[14px] shadow-ficium">
+                {submitting ? <Loader2 size={16} className="animate-spin" /> : <>Post request <ArrowRight size={15} /></>}
+              </button>
             </div>
           </div>
         )}
