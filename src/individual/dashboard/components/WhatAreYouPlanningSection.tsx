@@ -3,18 +3,18 @@ import { useNavigate, Link } from "react-router-dom";
 type IC = { color: string };
 
 /* ── Inline SVG icons ──────────────────────────────── */
-const IconHouse       = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="26" height="26" fill={color}><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>);
-const IconPerson      = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="26" height="26" fill={color}><path d="M12 12c2.7 0 4-1.8 4-4s-1.3-4-4-4-4 1.8-4 4 1.3 4 4 4zm0 2c-2.7 0-8 1.3-8 4v2h16v-2c0-2.7-5.3-4-8-4z"/></svg>);
-const IconCar         = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="26" height="26" fill={color}><path d="M18.9 6C18.7 5.4 18.1 5 17.5 5h-11c-.7 0-1.2.4-1.4 1L3 12v8c0 .6.4 1 1 1h1c.6 0 1-.4 1-1v-1h12v1c0 .6.4 1 1 1h1c.6 0 1-.4 1-1v-8L18.9 6zM6.5 16c-.8 0-1.5-.7-1.5-1.5S5.7 13 6.5 13s1.5.7 1.5 1.5S7.3 16 6.5 16zm11 0c-.8 0-1.5-.7-1.5-1.5s.7-1.5 1.5-1.5 1.5.7 1.5 1.5-.7 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></svg>);
-const IconRenovation  = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="26" height="26" fill={color}><path d="M13.7 2.3a1 1 0 0 0-1.4 0L8 6.6 3.7 2.3A1 1 0 0 0 2.3 3.7L6.6 8l-4.3 4.3a1 1 0 0 0 1.4 1.4L8 9.4l4.3 4.3a1 1 0 0 0 1.4-1.4L9.4 8l4.3-4.3a1 1 0 0 0 0-1.4zM19 11h-1V3a1 1 0 0 0-2 0v8h-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1zm-1 8h-2v-6h2v6z"/></svg>);
-const IconGradCap     = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="26" height="26" fill={color}><path d="M12 3 1 9l4 2.2V16l7 4 7-4v-4.8L23 9 12 3zm6.8 6L12 12.7 5.2 9 12 5.3 18.8 9zM17 14.4l-5 2.9-5-2.9v-2.7l5 2.8 5-2.8v2.7z"/></svg>);
-const IconCreditCard  = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2.5"/><path d="M2 10h20"/><path d="M6 15h4"/></svg>);
-const IconBank        = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="26" height="26" fill={color}><path d="M4 10v7h3v-7H4zm6 0v7h3v-7h-3zm-5 9h14v2H5v-2zm11-9v7h3v-7h-3zM12 1L2 6v2h20V6L12 1z"/></svg>);
-const IconSeedling    = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="26" height="26" fill={color}><path d="M12 22a1 1 0 0 1-1-1v-5.06C6.94 15.5 4 12.36 4 8.5V6a1 1 0 0 1 1-1h2.5C9.9 5 12 6.8 12 9.5V11c0-2.7 2.1-4.5 4.5-4.5H19a1 1 0 0 1 1 1v2.5c0 3.86-2.94 7-7 7.44V21a1 1 0 0 1-1 1z"/></svg>);
-const IconShares      = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3.5 18.5l4-4 4 4 6-8 3.5 4.5"/><circle cx="19" cy="5" r="2" fill={color} stroke="none"/></svg>);
-const IconFunds       = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="26" height="26" fill={color}><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>);
-const IconBonds       = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="26" height="26" fill={color}><path d="M6.5 10h-2v7h2v-7zm6 0h-2v7h2v-7zm8.5 9H2v2h19v-2zm-2.5-9h-2v7h2v-7zM11.5 1L2 6v2h19V6l-9.5-5z"/></svg>);
-const IconStack       = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5zM2 12l10 5 10-5M2 17l10 5 10-5"/></svg>);
+const IconHouse       = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="20" height="20" fill={color}><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>);
+const IconPerson      = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="20" height="20" fill={color}><path d="M12 12c2.7 0 4-1.8 4-4s-1.3-4-4-4-4 1.8-4 4 1.3 4 4 4zm0 2c-2.7 0-8 1.3-8 4v2h16v-2c0-2.7-5.3-4-8-4z"/></svg>);
+const IconCar         = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="20" height="20" fill={color}><path d="M18.9 6C18.7 5.4 18.1 5 17.5 5h-11c-.7 0-1.2.4-1.4 1L3 12v8c0 .6.4 1 1 1h1c.6 0 1-.4 1-1v-1h12v1c0 .6.4 1 1 1h1c.6 0 1-.4 1-1v-8L18.9 6zM6.5 16c-.8 0-1.5-.7-1.5-1.5S5.7 13 6.5 13s1.5.7 1.5 1.5S7.3 16 6.5 16zm11 0c-.8 0-1.5-.7-1.5-1.5s.7-1.5 1.5-1.5 1.5.7 1.5 1.5-.7 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></svg>);
+const IconRenovation  = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="20" height="20" fill={color}><path d="M13.7 2.3a1 1 0 0 0-1.4 0L8 6.6 3.7 2.3A1 1 0 0 0 2.3 3.7L6.6 8l-4.3 4.3a1 1 0 0 0 1.4 1.4L8 9.4l4.3 4.3a1 1 0 0 0 1.4-1.4L9.4 8l4.3-4.3a1 1 0 0 0 0-1.4zM19 11h-1V3a1 1 0 0 0-2 0v8h-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1zm-1 8h-2v-6h2v6z"/></svg>);
+const IconGradCap     = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="20" height="20" fill={color}><path d="M12 3 1 9l4 2.2V16l7 4 7-4v-4.8L23 9 12 3zm6.8 6L12 12.7 5.2 9 12 5.3 18.8 9zM17 14.4l-5 2.9-5-2.9v-2.7l5 2.8 5-2.8v2.7z"/></svg>);
+const IconCreditCard  = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2.5"/><path d="M2 10h20"/><path d="M6 15h4"/></svg>);
+const IconBank        = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="20" height="20" fill={color}><path d="M4 10v7h3v-7H4zm6 0v7h3v-7h-3zm-5 9h14v2H5v-2zm11-9v7h3v-7h-3zM12 1L2 6v2h20V6L12 1z"/></svg>);
+const IconSeedling    = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="20" height="20" fill={color}><path d="M12 22a1 1 0 0 1-1-1v-5.06C6.94 15.5 4 12.36 4 8.5V6a1 1 0 0 1 1-1h2.5C9.9 5 12 6.8 12 9.5V11c0-2.7 2.1-4.5 4.5-4.5H19a1 1 0 0 1 1 1v2.5c0 3.86-2.94 7-7 7.44V21a1 1 0 0 1-1 1z"/></svg>);
+const IconShares      = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3.5 18.5l4-4 4 4 6-8 3.5 4.5"/><circle cx="19" cy="5" r="2" fill={color} stroke="none"/></svg>);
+const IconFunds       = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="20" height="20" fill={color}><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>);
+const IconBonds       = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="20" height="20" fill={color}><path d="M6.5 10h-2v7h2v-7zm6 0h-2v7h2v-7zm8.5 9H2v2h19v-2zm-2.5-9h-2v7h2v-7zM11.5 1L2 6v2h19V6l-9.5-5z"/></svg>);
+const IconStack       = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5zM2 12l10 5 10-5M2 17l10 5 10-5"/></svg>);
 const IconDiamond     = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="7" y="7" width="10" height="10" rx="2" transform="rotate(45 12 12)"/></svg>);
 const IconCheck       = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M5 12l5 5L19 8"/></svg>);
 const IconArrowRight  = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M5 12h14M13 6l6 6-6 6"/></svg>);
@@ -104,42 +104,42 @@ const INVEST: readonly ProductDef[] = [
 
 /* ── Product card: icon + badge + stat + checklist + CTA ──── */
 function ProductCard({
-  Icon, label, tagline, statPrefix, statValue, statSuffix, bullets, cta, route, iconBg, ctaBg, accent, badge, onClick,
+  Icon, label, tagline, statPrefix, statValue, statSuffix, bullets, cta, route, iconBg, accent, badge, onClick,
 }: ProductDef & { onClick: (route: string) => void }) {
   return (
     <button
       onClick={() => onClick(route)}
-      className="flex flex-col items-start text-left rounded-[18px] border border-ink/6 bg-white p-4 h-full hover:border-ink/12 hover:shadow-card hover:-translate-y-0.5 transition-all"
+      title={tagline}
+      className="flex flex-col items-start text-left rounded-[16px] border border-ink/6 bg-white p-3 h-full hover:border-ink/12 hover:shadow-card hover:-translate-y-0.5 transition-all"
     >
-      <div className="flex items-start justify-between w-full mb-3">
-        <div className="w-11 h-11 rounded-full grid place-items-center shrink-0" style={{ background: iconBg }}>
+      <div className="flex items-start justify-between w-full mb-2">
+        <div className="w-9 h-9 rounded-full grid place-items-center shrink-0" style={{ background: iconBg }}>
           <Icon color={accent} />
         </div>
         {badge && (
-          <span className="text-[10px] font-bold px-2 py-1 rounded-pill whitespace-nowrap" style={{ background: badge.bg, color: badge.color }}>
+          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-pill whitespace-nowrap" style={{ background: badge.bg, color: badge.color }}>
             {badge.text}
           </span>
         )}
       </div>
 
-      <div className="text-[14px] font-display font-bold text-ink mb-0.5">{label}</div>
-      <div className="text-[11px] text-muted leading-snug mb-2">{tagline}</div>
+      <div className="text-[13px] font-display font-bold text-ink mb-1 leading-snug">{label}</div>
 
-      <div className="mb-3">
-        {statPrefix && <span className="text-[11px] text-muted font-medium">{statPrefix} </span>}
-        <span className="text-[18px] font-display font-extrabold" style={{ color: accent }}>{statValue}</span>
-        {statSuffix && <span className="text-[10px] text-muted font-semibold"> {statSuffix}</span>}
+      <div className="mb-2">
+        {statPrefix && <span className="text-[10px] text-muted font-medium">{statPrefix} </span>}
+        <span className="text-[16px] font-display font-extrabold" style={{ color: accent }}>{statValue}</span>
+        {statSuffix && <span className="text-[9px] text-muted font-semibold"> {statSuffix}</span>}
       </div>
 
-      <ul className="space-y-1.5 mb-4 flex-1 w-full">
-        {bullets.map(b => (
-          <li key={b} className="flex items-center gap-1.5 text-[11px] text-ink/70 leading-snug">
+      <ul className="space-y-1 mb-2.5 w-full">
+        {bullets.slice(0, 2).map(b => (
+          <li key={b} className="flex items-center gap-1 text-[10px] text-ink/70 leading-snug">
             <IconCheck color={accent} /> {b}
           </li>
         ))}
       </ul>
 
-      <div className="w-full flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-[12px] font-bold" style={{ background: ctaBg, color: accent }}>
+      <div className="mt-auto flex items-center gap-1 text-[11px] font-bold" style={{ color: accent }}>
         {cta} <IconArrowRight color={accent} />
       </div>
     </button>
@@ -170,7 +170,7 @@ export function WhatAreYouPlanningSection() {
         <p className="text-[11px] font-bold uppercase tracking-widest mb-3 bg-brand bg-clip-text text-transparent">
           Financing
         </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
           {FINANCING.map(p => (
             <ProductCard key={p.id} {...p} onClick={navigate} />
           ))}
@@ -186,7 +186,7 @@ export function WhatAreYouPlanningSection() {
           <p className="text-[11px] font-bold text-muted uppercase tracking-widest mb-3">
             Save &amp; Earn
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2.5">
             {SAVE_AND_EARN.map(p => (
               <ProductCard key={p.id} {...p} onClick={navigate} />
             ))}
@@ -197,7 +197,7 @@ export function WhatAreYouPlanningSection() {
           <p className="text-[11px] font-bold text-muted uppercase tracking-widest mb-3">
             Invest
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
             {INVEST.map(p => (
               <ProductCard key={p.id} {...p} onClick={navigate} />
             ))}
