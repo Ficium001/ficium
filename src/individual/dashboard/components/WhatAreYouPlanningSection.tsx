@@ -15,6 +15,8 @@ const IconShares      = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="30" 
 const IconFunds       = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="30" height="30" fill={color}><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>);
 const IconBonds       = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="30" height="30" fill={color}><path d="M6.5 10h-2v7h2v-7zm6 0h-2v7h2v-7zm8.5 9H2v2h19v-2zm-2.5-9h-2v7h2v-7zM11.5 1L2 6v2h19V6l-9.5-5z"/></svg>);
 const IconStack       = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5zM2 12l10 5 10-5M2 17l10 5 10-5"/></svg>);
+const IconCompass     = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16.2 7.8l-2.1 6.3-6.3 2.1 2.1-6.3z" fill={color} stroke="none"/></svg>);
+const IconArrowRight  = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M5 12h14M13 6l6 6-6 6"/></svg>);
 
 /* ── Financing product definitions ─────────────────────────── */
 const FINANCING = [
@@ -187,6 +189,21 @@ export function WhatAreYouPlanningSection() {
           </div>
 
         </div>
+
+        <button
+          onClick={() => navigate("/requests/new?quiz=1")}
+          className="w-full flex items-center gap-3 rounded-2xl px-4 py-3.5 mt-4 text-left border border-ficium/15 hover:border-ficium/30 transition-all"
+          style={{ background: "linear-gradient(135deg, rgba(53,110,244,0.06), rgba(130,49,236,0.06))" }}
+        >
+          <div className="w-9 h-9 rounded-xl bg-white grid place-items-center shrink-0 shadow-sm">
+            <IconCompass color="#5b3df0" />
+          </div>
+          <div className="flex-1">
+            <div className="text-[13px] font-bold text-ink">Don't know where to invest or save, or what mix suits you?</div>
+            <div className="text-[11px] text-muted">Click here — answer 3 quick questions and we'll point you to the right options</div>
+          </div>
+          <IconArrowRight color="#5b3df0" />
+        </button>
       </div>
     </div>
 

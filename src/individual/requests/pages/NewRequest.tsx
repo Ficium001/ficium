@@ -565,6 +565,10 @@ export default function NewRequest() {
   const currentQ  = questions[qIndex];
 
   useEffect(() => {
+    if (searchParams.get("quiz") === "1") {
+      startQuiz();
+      return;
+    }
     const urlType = searchParams.get("type");
     if (!urlType) return;
     const pt = URL_TYPE_MAP[urlType];
