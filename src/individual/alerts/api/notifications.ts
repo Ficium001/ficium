@@ -1,4 +1,4 @@
-import { supabase } from "../../../shared/lib/supabase";
+import { supabase , getCachedUser } from "../../../shared/lib/supabase";
 
 /* ---------- Types ---------- */
 
@@ -77,7 +77,7 @@ export async function markOneRead(id: string): Promise<void> {
  * supabase-js's requirement that DELETE carries a filter.
  */
 export async function clearAllNotifications(): Promise<void> {
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const { data: { user }, error: authError } = await getCachedUser();
   if (authError || !user) throw authError ?? new Error("Not authenticated");
 
   const { error } = await supabase

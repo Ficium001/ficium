@@ -1,5 +1,5 @@
 // src/individual/finance/api/history.ts
-import { supabase } from "@/shared/lib/supabase";
+import { supabase , getCachedUser } from "@/shared/lib/supabase";
 import type { Currency, NetWorthHistoryPoint } from "@/individual/finance/types";
 
 function mapRow(row: Record<string, unknown>): NetWorthHistoryPoint {
@@ -16,7 +16,7 @@ function mapRow(row: Record<string, unknown>): NetWorthHistoryPoint {
 }
 
 export async function getNetWorthHistory(days = 180): Promise<NetWorthHistoryPoint[]> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getCachedUser();
   if (!user) return [];
 
   const { data, error } = await supabase.rpc("finance_get_net_worth_history", { p_days: days });
@@ -30,7 +30,7 @@ export async function setReportingCurrency(currency: Currency): Promise<{ ok: bo
 }
 
 export async function getReportingCurrency(): Promise<Currency> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getCachedUser();
   if (!user) return "MUR";
 
   const { data, error } = await supabase

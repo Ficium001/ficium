@@ -5,7 +5,7 @@
 // Writes full KYC detail to kyc_submissions table.
 // Updates kyc_status summary on clients table.
 // =============================================================
-import { supabase } from "../../../shared/lib/supabase";
+import { supabase , getCachedUser } from "../../../shared/lib/supabase";
 import { audit }    from "../../../shared/lib/audit";
 import { activeProvider } from "./kyc-providers";
 
@@ -54,7 +54,7 @@ async function uploadKycFile(
 /* ---------- Public API ---------- */
 
 export async function submitKyc(input: KycInput): Promise<KycResult> {
-  const { data: authData } = await supabase.auth.getUser();
+  const { data: authData } = await getCachedUser();
   const userId = authData.user?.id;
   if (!userId) return { ok: false, error: "Not signed in." };
 

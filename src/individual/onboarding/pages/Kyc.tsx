@@ -6,7 +6,7 @@ import { z } from "zod";
 import { ArrowRight, ArrowLeft, Camera, ShieldCheck, MapPin, FileText, Globe, ScanLine } from "lucide-react";
 import { submitKyc } from "../api/kyc";
 import { scanIdDocument } from "../../../shared/lib/kycScan";
-import { supabase } from "../../../shared/lib/supabase";
+import { supabase , getCachedUser } from "../../../shared/lib/supabase";
 import { Button, Card, Field, Input, Select, UploadZone, ScanStatusBanner } from "../../../shared/ui";
 
 /* ---------- Schema ---------- */
@@ -81,7 +81,7 @@ export default function Kyc() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data: authData } = await supabase.auth.getUser();
+      const { data: authData } = await getCachedUser();
       const userId = authData.user?.id;
       if (!userId) return;
       const { data } = await supabase.from("clients").select("date_of_birth").eq("id", userId).single();

@@ -1,6 +1,6 @@
 // src/individual/networth/api/snapshot.ts
 // Real financial snapshot — assets, liabilities, cashflow
-import { supabase } from "@/shared/lib/supabase";
+import { supabase , getCachedUser } from "@/shared/lib/supabase";
 
 export type FinancialSnapshot = {
   /** false when no snapshot row exists yet for this user (ZERO fallback). */
@@ -50,7 +50,7 @@ const ZERO: FinancialSnapshot = {
 };
 
 export async function getSnapshot(): Promise<FinancialSnapshot> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getCachedUser();
   if (!user) return ZERO;
 
   const { data, error } = await supabase
@@ -88,7 +88,7 @@ export async function getSnapshot(): Promise<FinancialSnapshot> {
 }
 
 export async function upsertSnapshot(input: SnapshotInput): Promise<{ ok: boolean; error?: string }> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getCachedUser();
   if (!user) return { ok: false, error: "Not signed in." };
 
   const { error } = await supabase

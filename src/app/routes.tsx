@@ -3,10 +3,16 @@ import type { ReactNode, ErrorInfo } from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { PublicOnlyRoute, ClientOnlyRoute } from "./ProtectedRoute";
 
+// Splash is the anonymous landing route — keep it eager so it paints immediately.
 import Splash    from "../features/marketing/pages/Splash";
-import Login     from "../features/auth/pages/Login";
-import CheckEmail from "../features/auth/pages/CheckEmail";
 import PortalRedirect from "../shared/components/PortalRedirect";
+
+// Login pulls in react-hook-form + zod + @hookform/resolvers. Importing it
+// statically forced that entire chunk (~124 kB raw) into the first-paint
+// bundle for every visitor, including those who only ever see the splash page.
+// Lazy so the form stack loads when a form is actually reached.
+const Login       = lazy(() => import("../features/auth/pages/Login"));
+const CheckEmail  = lazy(() => import("../features/auth/pages/CheckEmail"));
 
 const RegisterTypeSelect  = lazy(() => import("../features/auth/pages/RegisterTypeSelect"));
 const RegisterIndividual  = lazy(() => import("../individual/auth/pages/RegisterIndividual"));
@@ -93,10 +99,10 @@ export const router = createBrowserRouter([
 
   { path: "/",                       element: <Splash /> },
   { path: "/how-it-works",           element: <S><HowItWorks /></S> },
-  { path: "/onboarding/check-email", element: <CheckEmail /> },
+  { path: "/onboarding/check-email", element: <S><CheckEmail /></S> },
   { path: "/invite/:token",          element: <S><InvitePage /></S> },
 
-  { path: "/login",                  element: <PublicOnlyRoute><Login /></PublicOnlyRoute> },
+  { path: "/login",                  element: <S><PublicOnlyRoute><Login /></PublicOnlyRoute></S> },
   { path: "/forgot-password",        element: <S><ForgotPassword /></S> },
   { path: "/auth/reset-password",    element: <S><ResetPassword /></S> },
   { path: "/register",               element: <S><RegisterTypeSelect /></S> },

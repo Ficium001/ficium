@@ -5,7 +5,7 @@
  * Extraction is handled server-side automatically after upload.
  */
 
-import { supabase } from "@/shared/lib/supabase";
+import { supabase , getCachedUser } from "@/shared/lib/supabase";
 
 export type VaultDocType =
   | "nic" | "passport" | "birth_certificate" | "driving_licence"
@@ -50,7 +50,7 @@ export async function uploadVaultDocument(
   file: File,
   docType: VaultDocType,
 ): Promise<UploadResult> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getCachedUser();
   if (!user) return { ok: false, error: "Not signed in" };
 
   const ext         = file.name.split(".").pop() ?? "bin";
@@ -127,7 +127,7 @@ export async function getVaultDocumentUrl(documentId: string): Promise<string | 
     .from("documents")
     .createSignedUrl(doc.storage_path, 60 * 15);
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getCachedUser();
   if (user) {
     await supabase.from("client_vault_access_log").insert({
       document_id: documentId,
