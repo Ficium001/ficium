@@ -16,7 +16,6 @@ const IconFunds       = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="20" 
 const IconBonds       = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="20" height="20" fill={color}><path d="M6.5 10h-2v7h2v-7zm6 0h-2v7h2v-7zm8.5 9H2v2h19v-2zm-2.5-9h-2v7h2v-7zM11.5 1L2 6v2h19V6l-9.5-5z"/></svg>);
 const IconStack       = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5zM2 12l10 5 10-5M2 17l10 5 10-5"/></svg>);
 const IconDiamond     = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="7" y="7" width="10" height="10" rx="2" transform="rotate(45 12 12)"/></svg>);
-const IconCheck       = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M5 12l5 5L19 8"/></svg>);
 const IconArrowRight  = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M5 12h14M13 6l6 6-6 6"/></svg>);
 
 /* ── Shared product-card shape ─────────────────────────────── */
@@ -102,18 +101,17 @@ const INVEST: readonly ProductDef[] = [
     route: "/requests/new?type=offshore", iconBg: "#fce7f3", ctaBg: "#fdf2f8", accent: "#9d174d" },
 ] as const;
 
-/* ── Product card: icon + badge + stat + checklist + CTA ──── */
+/* ── Product card: icon + badge + tagline + stat + CTA ──────── */
 function ProductCard({
-  Icon, label, tagline, statPrefix, statValue, statSuffix, bullets, cta, route, iconBg, accent, badge, onClick,
+  Icon, label, tagline, statPrefix, statValue, statSuffix, cta, route, iconBg, accent, badge, onClick,
 }: ProductDef & { onClick: (route: string) => void }) {
   return (
     <button
       onClick={() => onClick(route)}
-      title={tagline}
-      className="flex flex-col items-start text-left rounded-[16px] border border-ink/6 bg-white p-3 h-full hover:border-ink/12 hover:shadow-card hover:-translate-y-0.5 transition-all"
+      className="flex flex-col items-start text-left rounded-[18px] border border-ink/6 bg-white p-4 h-full hover:border-ink/12 hover:shadow-card hover:-translate-y-0.5 transition-all"
     >
-      <div className="flex items-start justify-between w-full mb-2">
-        <div className="w-9 h-9 rounded-full grid place-items-center shrink-0" style={{ background: iconBg }}>
+      <div className="flex items-start justify-between w-full mb-3">
+        <div className="w-11 h-11 rounded-full grid place-items-center shrink-0" style={{ background: iconBg }}>
           <Icon color={accent} />
         </div>
         {badge && (
@@ -123,23 +121,16 @@ function ProductCard({
         )}
       </div>
 
-      <div className="text-[13px] font-display font-bold text-ink mb-1 leading-snug">{label}</div>
+      <div className="text-[13px] font-display font-bold text-ink mb-0.5 leading-snug">{label}</div>
+      <div className="text-[11px] text-muted leading-snug mb-3">{tagline}</div>
 
-      <div className="mb-2">
+      <div className="mb-1 mt-auto">
         {statPrefix && <span className="text-[10px] text-muted font-medium">{statPrefix} </span>}
         <span className="text-[16px] font-display font-extrabold" style={{ color: accent }}>{statValue}</span>
         {statSuffix && <span className="text-[9px] text-muted font-semibold"> {statSuffix}</span>}
       </div>
 
-      <ul className="space-y-1 mb-2.5 w-full">
-        {bullets.slice(0, 2).map(b => (
-          <li key={b} className="flex items-center gap-1 text-[10px] text-ink/70 leading-snug">
-            <IconCheck color={accent} /> {b}
-          </li>
-        ))}
-      </ul>
-
-      <div className="mt-auto flex items-center gap-1 text-[11px] font-bold" style={{ color: accent }}>
+      <div className="flex items-center gap-1 text-[11px] font-bold" style={{ color: accent }}>
         {cta} <IconArrowRight color={accent} />
       </div>
     </button>
@@ -170,7 +161,7 @@ export function WhatAreYouPlanningSection() {
         <p className="text-[11px] font-bold uppercase tracking-widest mb-3 bg-brand bg-clip-text text-transparent">
           Financing
         </p>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {FINANCING.map(p => (
             <ProductCard key={p.id} {...p} onClick={navigate} />
           ))}
@@ -186,7 +177,7 @@ export function WhatAreYouPlanningSection() {
           <p className="text-[11px] font-bold text-muted uppercase tracking-widest mb-3">
             Save &amp; Earn
           </p>
-          <div className="grid grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-2 gap-3">
             {SAVE_AND_EARN.map(p => (
               <ProductCard key={p.id} {...p} onClick={navigate} />
             ))}
@@ -197,7 +188,7 @@ export function WhatAreYouPlanningSection() {
           <p className="text-[11px] font-bold text-muted uppercase tracking-widest mb-3">
             Invest
           </p>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {INVEST.map(p => (
               <ProductCard key={p.id} {...p} onClick={navigate} />
             ))}
