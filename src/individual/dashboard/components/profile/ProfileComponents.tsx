@@ -1,7 +1,7 @@
 import { useState }          from "react";
 import { useQueryClient }     from "@tanstack/react-query";
 import { Edit3, X, AlertCircle, Eye, EyeOff, Save } from "lucide-react";
-import { supabase }           from "@/shared/lib/supabase";
+import { supabase , getCachedUser }           from "@/shared/lib/supabase";
 import type { ProfileSummary } from "@/individual/dashboard/api/profile";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -172,7 +172,7 @@ export function IdentityEditForm({ profile, onClose }: { profile: ProfileSummary
 
   const handleSave = async () => {
     setSaving(true);
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await getCachedUser();
     if (user) {
       // Write to public.clients (v2 schema) — the old public.users was dropped,
       // which is why this previously 404'd. Reads come from client_profile_view,
@@ -221,7 +221,7 @@ export function AddressEditForm({ profile, onClose }: { profile: ProfileSummary 
 
   const handleSave = async () => {
     setSaving(true);
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await getCachedUser();
     if (user) {
       const { error } = await supabase.from("clients")
         .update({ address_line_1: form.addressLine1, city: form.city, country: form.country })
@@ -264,7 +264,7 @@ export function FinancialEditForm({ profile, onClose, hidden, setHidden }: {
 
   const handleSave = async () => {
     setSaving(true);
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await getCachedUser();
     if (user) {
       // v2 replaced financial_profiles with client_dossier (keyed on client_id).
       // Writing to the old table silently no-op'd, so edits never persisted.

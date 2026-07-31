@@ -5,7 +5,7 @@
 // rather than supabase.schema("finance") directly — the `finance` schema
 // is not guaranteed to be in PostgREST's exposed-schemas allowlist, while
 // `public` always is. See migration `finance_public_rpc_wrappers`.
-import { supabase } from "@/shared/lib/supabase";
+import { supabase , getCachedUser } from "@/shared/lib/supabase";
 import type { Account, AccountInput } from "@/individual/finance/types";
 
 function mapRow(row: Record<string, unknown>): Account {
@@ -23,7 +23,7 @@ function mapRow(row: Record<string, unknown>): Account {
 }
 
 export async function listAccounts(): Promise<Account[]> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getCachedUser();
   if (!user) return [];
 
   const { data, error } = await supabase.rpc("finance_accounts_summary", { p_reporting_currency: null });

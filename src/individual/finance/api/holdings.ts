@@ -1,5 +1,5 @@
 // src/individual/finance/api/holdings.ts
-import { supabase } from "@/shared/lib/supabase";
+import { supabase , getCachedUser } from "@/shared/lib/supabase";
 import type { Holding, HoldingInput } from "@/individual/finance/types";
 
 function mapRow(row: Record<string, unknown>): Holding {
@@ -24,7 +24,7 @@ function mapRow(row: Record<string, unknown>): Holding {
 }
 
 export async function listHoldings(): Promise<Holding[]> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getCachedUser();
   if (!user) return [];
 
   const { data, error } = await supabase.rpc("finance_holdings_summary", { p_reporting_currency: null });

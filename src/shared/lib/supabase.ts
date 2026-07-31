@@ -9,6 +9,7 @@
 // that reads the live session from the primary client.
 // =============================================================
 import { createClient } from "@supabase/supabase-js";
+import type { User as AuthUser } from "@supabase/supabase-js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyClient = ReturnType<typeof createClient<any, any, any>>;
@@ -36,6 +37,30 @@ export const supabase: AnyClient = createClient(url, key, {
 });
 
 export type SchemaName = "public" | "institution" | "admin";
+
+/**
+ * Locally-cached equivalent of `supabase.auth.getUser()`.
+ *
+ * `getUser()` issues a `GET /auth/v1/user` network round-trip on every call to
+ * re-validate the JWT against the auth server. Our data-fetch paths call it
+ * purely to obtain `user.id` for a query that RLS already scopes server-side,
+ * so that round-trip buys nothing: a forged or expired token cannot widen
+ * access, because Postgres rejects it regardless of what this returns.
+ *
+ * This reads the session already held in memory/localStorage (zero network).
+ * `autoRefreshToken` keeps it current. Return shape intentionally mirrors
+ * `getUser()` so call sites are a drop-in swap.
+ *
+ * Prefer `supabase.auth.getUser()` ONLY where server-verified identity is
+ * genuinely required (a privileged action not guarded by RLS).
+ */
+export async function getCachedUser(): Promise<{
+  data: { user: AuthUser | null };
+  error: null;
+}> {
+  const { data } = await supabase.auth.getSession();
+  return { data: { user: data.session?.user ?? null }, error: null };
+}
 
 /**
  * A no-op storage adapter — schema clients use this so their internal
@@ -91,6 +116,14 @@ export function db(schema: SchemaName = "public"): AnyClient {
   return client;
 }
 
-/** Convenience exports for the two non-public schemas. */
-export const institutionDb: AnyClient = db("institution");
-export const adminDb:       AnyClient = db("admin");
+// NOTE: no eagerly-instantiated schema clients here by design.
+//
+// `institutionDb` / `adminDb` used to be constructed at module load, so every
+// page view — including anonymous landings on the marketing splash — built two
+// extra Supabase clients and two extra GoTrueClients (each doing storage setup
+// and timer registration) before first paint. The borrower app references
+// neither schema, so that work was pure waste.
+//
+// Any caller that genuinely needs a non-public schema should call `db("institution")`
+// / `db("admin")` at the point of use — `db()` caches, so there is still exactly
+// one client per schema.

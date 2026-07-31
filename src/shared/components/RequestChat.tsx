@@ -7,6 +7,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Send, MessageSquare, Loader2 } from "lucide-react";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { getCachedUser } from "../lib/supabase";
 
 export interface ChatMessage {
   id: string;
@@ -77,7 +78,10 @@ export default function RequestChat({
     if (!text || sending) return;
     setSending(true);
     setBody("");
-    const { data: { user } } = await client.auth.getUser();
+    // Identity comes from the primary client, which owns the real session.
+    // `client` may be a schema-scoped client created with persistSession:false
+    // + nullStorage, so its own auth state is intentionally empty.
+    const { data: { user } } = await getCachedUser();
     if (!user) { setSending(false); return; }
     const { error } = await client
       .from("request_messages")

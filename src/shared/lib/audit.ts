@@ -1,4 +1,4 @@
-import { supabase } from "./supabase";
+import { supabase, getCachedUser } from "./supabase";
 
 /* ============================================================
    TYPES
@@ -78,7 +78,7 @@ function toActionCategory(eventName: AuditEventName): string {
 
 export async function logAudit(event: AuditEvent): Promise<void> {
   try {
-    const { data: authData } = await supabase.auth.getUser();
+    const { data: authData } = await getCachedUser();
     const userId = authData.user?.id ?? null;
     if (!userId) return; // not signed in — skip audit
 

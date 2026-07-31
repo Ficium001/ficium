@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { supabase } from "@/shared/lib/supabase";
+import { supabase , getCachedUser } from "@/shared/lib/supabase";
 import {
   DEFAULT_MARKET_PREFERENCES,
   type MarketPreferences,
@@ -50,7 +50,7 @@ export function useMarketPreferences(): UseMarketPreferencesReturn {
     let cancelled = false;
     (async () => {
       try {
-        const { data: auth } = await supabase.auth.getUser();
+        const { data: auth } = await getCachedUser();
         if (!auth?.user) return;
         const { data, error } = await supabase
           .from("market_preferences")
@@ -74,7 +74,7 @@ export function useMarketPreferences(): UseMarketPreferencesReturn {
 
   const save = useCallback(async (next: MarketPreferences): Promise<boolean> => {
     setPreferences(next); // optimistic — the feed re-ranks immediately
-    const { data: auth } = await supabase.auth.getUser();
+    const { data: auth } = await getCachedUser();
     if (!auth?.user) return true; // signed-out: in-memory only, still "works"
 
     setIsSaving(true);
