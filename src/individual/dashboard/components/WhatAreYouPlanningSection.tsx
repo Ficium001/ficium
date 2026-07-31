@@ -192,17 +192,17 @@ export function WhatAreYouPlanningSection() {
 
         <button
           onClick={() => navigate("/requests/new?quiz=1")}
-          className="w-full flex items-center gap-3 rounded-2xl px-4 py-3.5 mt-4 text-left transition-transform hover:-translate-y-0.5"
-          style={{ background: "linear-gradient(135deg, #356ef4, #8231ec)" }}
+          className="w-full flex items-center gap-3 rounded-2xl px-4 py-3.5 mt-4 text-left border border-ficium/15 hover:border-ficium/30 transition-all"
+          style={{ background: "linear-gradient(135deg, rgba(53,110,244,0.06), rgba(130,49,236,0.06))" }}
         >
-          <div className="w-9 h-9 rounded-xl bg-white/15 grid place-items-center shrink-0">
-            <IconCompass color="#ffffff" />
+          <div className="w-9 h-9 rounded-xl bg-white grid place-items-center shrink-0 shadow-sm">
+            <IconCompass color="#5b3df0" />
           </div>
           <div className="flex-1">
-            <div className="text-[13px] font-bold text-white">Not sure what fits?</div>
-            <div className="text-[11px] text-white/75">Answer 3 quick questions and we'll point you to the right investment options</div>
+            <div className="text-[13px] font-bold text-ink">Not sure what fits?</div>
+            <div className="text-[11px] text-muted">Answer 3 quick questions and we'll point you to the right investment options</div>
           </div>
-          <IconArrowRight color="#ffffff" />
+          <IconArrowRight color="#5b3df0" />
         </button>
       </div>
     </div>
