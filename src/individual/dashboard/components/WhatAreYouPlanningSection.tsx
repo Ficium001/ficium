@@ -15,6 +15,8 @@ const IconShares      = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="30" 
 const IconFunds       = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="30" height="30" fill={color}><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>);
 const IconBonds       = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="30" height="30" fill={color}><path d="M6.5 10h-2v7h2v-7zm6 0h-2v7h2v-7zm8.5 9H2v2h19v-2zm-2.5-9h-2v7h2v-7zM11.5 1L2 6v2h19V6l-9.5-5z"/></svg>);
 const IconStack       = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5zM2 12l10 5 10-5M2 17l10 5 10-5"/></svg>);
+const IconSparkles    = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="18" height="18" fill={color}><path d="M12 2l1.9 5.6L19.5 9.5l-5.6 1.9L12 17l-1.9-5.6L4.5 9.5l5.6-1.9L12 2zM19 14l.9 2.6L22.5 17.5l-2.6.9L19 21l-.9-2.6-2.6-.9 2.6-.9L19 14z"/></svg>);
+const IconArrowRight  = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0"><path d="M5 12h14M13 6l6 6-6 6"/></svg>);
 
 /* ── Financing product definitions ─────────────────────────── */
 const FINANCING = [
@@ -162,6 +164,20 @@ export function WhatAreYouPlanningSection() {
            Rows still render as single grids so card heights line up;
            inner split just controls column width. ── */}
       <div className="bg-white rounded-[22px] border border-ink/6 shadow-card p-5">
+        <button
+          onClick={() => navigate("/requests/new?quiz=1")}
+          className="w-full flex items-center gap-3 bg-ficium/6 border border-ficium/20 rounded-2xl px-4 py-3 mb-4 text-left hover:border-ficium/40 hover:bg-ficium/10 transition-all group"
+        >
+          <div className="w-9 h-9 rounded-xl bg-ficium/10 grid place-items-center shrink-0">
+            <IconSparkles color="#7c3aed" />
+          </div>
+          <div className="flex-1">
+            <div className="text-[13px] font-bold text-ink">Not sure what fits?</div>
+            <div className="text-[11px] text-muted">Answer 3 quick questions and we'll point you to the right investment options</div>
+          </div>
+          <IconArrowRight color="#7c3aed" />
+        </button>
+
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-4">
 
           <div>
