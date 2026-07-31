@@ -3,127 +3,145 @@ import { useNavigate, Link } from "react-router-dom";
 type IC = { color: string };
 
 /* ── Inline SVG icons ──────────────────────────────── */
-const IconHouse       = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="30" height="30" fill={color}><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>);
-const IconPerson      = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="30" height="30" fill={color}><path d="M12 12c2.7 0 4-1.8 4-4s-1.3-4-4-4-4 1.8-4 4 1.3 4 4 4zm0 2c-2.7 0-8 1.3-8 4v2h16v-2c0-2.7-5.3-4-8-4z"/></svg>);
-const IconCar         = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="30" height="30" fill={color}><path d="M18.9 6C18.7 5.4 18.1 5 17.5 5h-11c-.7 0-1.2.4-1.4 1L3 12v8c0 .6.4 1 1 1h1c.6 0 1-.4 1-1v-1h12v1c0 .6.4 1 1 1h1c.6 0 1-.4 1-1v-8L18.9 6zM6.5 16c-.8 0-1.5-.7-1.5-1.5S5.7 13 6.5 13s1.5.7 1.5 1.5S7.3 16 6.5 16zm11 0c-.8 0-1.5-.7-1.5-1.5s.7-1.5 1.5-1.5 1.5.7 1.5 1.5-.7 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></svg>);
-const IconRenovation  = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="30" height="30" fill={color}><path d="M13.7 2.3a1 1 0 0 0-1.4 0L8 6.6 3.7 2.3A1 1 0 0 0 2.3 3.7L6.6 8l-4.3 4.3a1 1 0 0 0 1.4 1.4L8 9.4l4.3 4.3a1 1 0 0 0 1.4-1.4L9.4 8l4.3-4.3a1 1 0 0 0 0-1.4zM19 11h-1V3a1 1 0 0 0-2 0v8h-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1zm-1 8h-2v-6h2v6z"/></svg>);
-const IconGradCap     = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="30" height="30" fill={color}><path d="M12 3 1 9l4 2.2V16l7 4 7-4v-4.8L23 9 12 3zm6.8 6L12 12.7 5.2 9 12 5.3 18.8 9zM17 14.4l-5 2.9-5-2.9v-2.7l5 2.8 5-2.8v2.7z"/></svg>);
-const IconCreditCard  = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2.5"/><path d="M2 10h20"/><path d="M6 15h4"/></svg>);
-const IconBank        = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="30" height="30" fill={color}><path d="M4 10v7h3v-7H4zm6 0v7h3v-7h-3zm-5 9h14v2H5v-2zm11-9v7h3v-7h-3zM12 1L2 6v2h20V6L12 1z"/></svg>);
-const IconSeedling    = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="30" height="30" fill={color}><path d="M12 22a1 1 0 0 1-1-1v-5.06C6.94 15.5 4 12.36 4 8.5V6a1 1 0 0 1 1-1h2.5C9.9 5 12 6.8 12 9.5V11c0-2.7 2.1-4.5 4.5-4.5H19a1 1 0 0 1 1 1v2.5c0 3.86-2.94 7-7 7.44V21a1 1 0 0 1-1 1z"/></svg>);
-const IconShares      = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3.5 18.5l4-4 4 4 6-8 3.5 4.5"/><circle cx="19" cy="5" r="2" fill={color} stroke="none"/></svg>);
-const IconFunds       = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="30" height="30" fill={color}><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>);
-const IconBonds       = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="30" height="30" fill={color}><path d="M6.5 10h-2v7h2v-7zm6 0h-2v7h2v-7zm8.5 9H2v2h19v-2zm-2.5-9h-2v7h2v-7zM11.5 1L2 6v2h19V6l-9.5-5z"/></svg>);
-const IconStack       = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5zM2 12l10 5 10-5M2 17l10 5 10-5"/></svg>);
-const IconCompass     = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16.2 7.8l-2.1 6.3-6.3 2.1 2.1-6.3z" fill={color} stroke="none"/></svg>);
-const IconArrowRight  = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M5 12h14M13 6l6 6-6 6"/></svg>);
+const IconHouse       = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="26" height="26" fill={color}><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>);
+const IconPerson      = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="26" height="26" fill={color}><path d="M12 12c2.7 0 4-1.8 4-4s-1.3-4-4-4-4 1.8-4 4 1.3 4 4 4zm0 2c-2.7 0-8 1.3-8 4v2h16v-2c0-2.7-5.3-4-8-4z"/></svg>);
+const IconCar         = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="26" height="26" fill={color}><path d="M18.9 6C18.7 5.4 18.1 5 17.5 5h-11c-.7 0-1.2.4-1.4 1L3 12v8c0 .6.4 1 1 1h1c.6 0 1-.4 1-1v-1h12v1c0 .6.4 1 1 1h1c.6 0 1-.4 1-1v-8L18.9 6zM6.5 16c-.8 0-1.5-.7-1.5-1.5S5.7 13 6.5 13s1.5.7 1.5 1.5S7.3 16 6.5 16zm11 0c-.8 0-1.5-.7-1.5-1.5s.7-1.5 1.5-1.5 1.5.7 1.5 1.5-.7 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></svg>);
+const IconRenovation  = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="26" height="26" fill={color}><path d="M13.7 2.3a1 1 0 0 0-1.4 0L8 6.6 3.7 2.3A1 1 0 0 0 2.3 3.7L6.6 8l-4.3 4.3a1 1 0 0 0 1.4 1.4L8 9.4l4.3 4.3a1 1 0 0 0 1.4-1.4L9.4 8l4.3-4.3a1 1 0 0 0 0-1.4zM19 11h-1V3a1 1 0 0 0-2 0v8h-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1zm-1 8h-2v-6h2v6z"/></svg>);
+const IconGradCap     = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="26" height="26" fill={color}><path d="M12 3 1 9l4 2.2V16l7 4 7-4v-4.8L23 9 12 3zm6.8 6L12 12.7 5.2 9 12 5.3 18.8 9zM17 14.4l-5 2.9-5-2.9v-2.7l5 2.8 5-2.8v2.7z"/></svg>);
+const IconCreditCard  = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2.5"/><path d="M2 10h20"/><path d="M6 15h4"/></svg>);
+const IconBank        = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="26" height="26" fill={color}><path d="M4 10v7h3v-7H4zm6 0v7h3v-7h-3zm-5 9h14v2H5v-2zm11-9v7h3v-7h-3zM12 1L2 6v2h20V6L12 1z"/></svg>);
+const IconSeedling    = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="26" height="26" fill={color}><path d="M12 22a1 1 0 0 1-1-1v-5.06C6.94 15.5 4 12.36 4 8.5V6a1 1 0 0 1 1-1h2.5C9.9 5 12 6.8 12 9.5V11c0-2.7 2.1-4.5 4.5-4.5H19a1 1 0 0 1 1 1v2.5c0 3.86-2.94 7-7 7.44V21a1 1 0 0 1-1 1z"/></svg>);
+const IconShares      = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3.5 18.5l4-4 4 4 6-8 3.5 4.5"/><circle cx="19" cy="5" r="2" fill={color} stroke="none"/></svg>);
+const IconFunds       = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="26" height="26" fill={color}><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>);
+const IconBonds       = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="26" height="26" fill={color}><path d="M6.5 10h-2v7h2v-7zm6 0h-2v7h2v-7zm8.5 9H2v2h19v-2zm-2.5-9h-2v7h2v-7zM11.5 1L2 6v2h19V6l-9.5-5z"/></svg>);
+const IconStack       = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5zM2 12l10 5 10-5M2 17l10 5 10-5"/></svg>);
+const IconDiamond     = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="7" y="7" width="10" height="10" rx="2" transform="rotate(45 12 12)"/></svg>);
+const IconCheck       = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M5 12l5 5L19 8"/></svg>);
+const IconArrowRight  = ({ color }: IC) => (<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M5 12h14M13 6l6 6-6 6"/></svg>);
+
+/* ── Shared product-card shape ─────────────────────────────── */
+type Badge = { text: string; bg: string; color: string };
+type ProductDef = {
+  id: string;
+  Icon: React.ComponentType<IC>;
+  label: string;
+  tagline: string;
+  statPrefix?: string;
+  statValue: string;
+  statSuffix?: string;
+  bullets: readonly string[];
+  cta: string;
+  route: string;
+  iconBg: string;
+  ctaBg: string;
+  accent: string;
+  badge?: Badge;
+};
 
 /* ── Financing product definitions ─────────────────────────── */
-const FINANCING = [
-  { id: "mortgage",   Icon: IconHouse,      label: "Home Loan",       desc: "Compare lowest mortgage rates",  route: "/requests/new?type=mortgage",   bg: "#dbeafe", color: "#1d4ed8" },
-  { id: "personal",   Icon: IconPerson,     label: "Personal Loan",   desc: "Quick funds for your needs",     route: "/requests/new?type=personal",   bg: "#fce7f3", color: "#be185d" },
-  { id: "vehicle",    Icon: IconCar,        label: "Vehicle Loan",    desc: "Best rates for your dream car",  route: "/requests/new?type=vehicle",    bg: "#fef9c3", color: "#ca8a04" },
-  { id: "renovation", Icon: IconRenovation, label: "Renovation Loan", desc: "Finance your home improvements", route: "/requests/new?type=renovation", bg: "#ede9fe", color: "#7c3aed" },
-  { id: "education",  Icon: IconGradCap,    label: "Education Loan",  desc: "Invest in your future",          route: "/requests/new?type=education",  bg: "#d1fae5", color: "#059669" },
-  { id: "creditcard", Icon: IconCreditCard, label: "Credit Card",     desc: "Compare cashback & rewards",     route: "/requests/new?type=credit",     bg: "#fee2e2", color: "#dc2626" },
+const FINANCING: readonly ProductDef[] = [
+  { id: "mortgage",   Icon: IconHouse,      label: "Home Loan",       tagline: "Compare lowest mortgage rates",
+    statPrefix: "From", statValue: "5.29%", statSuffix: "p.a.",
+    bullets: ["Up to Rs 50M", "20+ providers", "Approval in 24 hrs"], cta: "Compare Rates",
+    route: "/requests/new?type=mortgage", iconBg: "#dbeafe", ctaBg: "#eff6ff", accent: "#1d4ed8",
+    badge: { text: "Most Popular", bg: "#dcfce7", color: "#15803d" } },
+  { id: "personal",   Icon: IconPerson,     label: "Personal Loan",   tagline: "Quick funds for your needs",
+    statPrefix: "From", statValue: "6.49%", statSuffix: "p.a.",
+    bullets: ["Up to Rs 2M", "15+ providers", "Funds in 24 hrs"], cta: "Get Offers",
+    route: "/requests/new?type=personal", iconBg: "#fce7f3", ctaBg: "#fdf2f8", accent: "#be185d",
+    badge: { text: "Quick Funds", bg: "#fce7f3", color: "#be185d" } },
+  { id: "vehicle",    Icon: IconCar,        label: "Vehicle Loan",    tagline: "Best rates for your dream car",
+    statPrefix: "From", statValue: "4.99%", statSuffix: "p.a.",
+    bullets: ["Up to Rs 5M", "18+ providers", "Quick approval"], cta: "Compare Rates",
+    route: "/requests/new?type=vehicle", iconBg: "#fef9c3", ctaBg: "#fefce8", accent: "#ca8a04",
+    badge: { text: "Best Rates", bg: "#ffedd5", color: "#c2410c" } },
+  { id: "renovation", Icon: IconRenovation, label: "Renovation Loan", tagline: "Finance your home improvements",
+    statPrefix: "From", statValue: "6.25%", statSuffix: "p.a.",
+    bullets: ["Up to Rs 3M", "10+ providers", "Fast approval"], cta: "Get Offers",
+    route: "/requests/new?type=renovation", iconBg: "#ede9fe", ctaBg: "#f5f3ff", accent: "#7c3aed",
+    badge: { text: "New", bg: "#ede9fe", color: "#7c3aed" } },
+  { id: "education",  Icon: IconGradCap,    label: "Education Loan",  tagline: "Invest in your future",
+    statPrefix: "From", statValue: "5.75%", statSuffix: "p.a.",
+    bullets: ["Up to Rs 3M", "Grace period options", "Fast approval"], cta: "Compare Rates",
+    route: "/requests/new?type=education", iconBg: "#d1fae5", ctaBg: "#ecfdf5", accent: "#059669" },
+  { id: "creditcard", Icon: IconCreditCard, label: "Credit Card",     tagline: "Compare cashback & rewards",
+    statPrefix: "Up to", statValue: "10%", statSuffix: "cashback",
+    bullets: ["25+ cards", "No annual fee options", "Instant approval"], cta: "Find My Card",
+    route: "/requests/new?type=credit", iconBg: "#fee2e2", ctaBg: "#fef2f2", accent: "#dc2626",
+    badge: { text: "Top Cashback", bg: "#fee2e2", color: "#dc2626" } },
 ] as const;
 
-/* ── Save & Earn / Invest card definitions ─────────────────── */
-const SAVE_AND_EARN = [
-  { id: "deposit", Icon: IconBank,     label: "Fixed Deposit",   desc: "Earn guaranteed returns up to",         rate: "6.25%", rateSub: "p.a.", route: "/requests/new?type=deposit", bg: "#d1fae5", iconBg: "#a7f3d0", color: "#065f46" },
-  { id: "savings", Icon: IconSeedling, label: "Savings Account", desc: "High interest savings account up to",   rate: "4.00%", rateSub: "p.a.", route: "/requests/new?type=savings", bg: "#d1fae5", iconBg: "#a7f3d0", color: "#065f46" },
+/* ── Save & Earn / Invest product definitions ─────────────── */
+const SAVE_AND_EARN: readonly ProductDef[] = [
+  { id: "deposit", Icon: IconBank,     label: "Fixed Deposit",   tagline: "Guaranteed returns",
+    statPrefix: "Up to", statValue: "6.25%", statSuffix: "p.a.",
+    bullets: ["Tenure: 3M to 5Y", "20+ banks", "Capital protected"], cta: "View Rates",
+    route: "/requests/new?type=deposit", iconBg: "#d1fae5", ctaBg: "#ecfdf5", accent: "#065f46" },
+  { id: "savings", Icon: IconSeedling, label: "Savings Account", tagline: "High interest savings",
+    statPrefix: "Up to", statValue: "4.00%", statSuffix: "p.a.",
+    bullets: ["No minimum balance", "Free debit card", "Instant account opening"], cta: "Explore Accounts",
+    route: "/requests/new?type=savings", iconBg: "#d1fae5", ctaBg: "#ecfdf5", accent: "#065f46" },
 ] as const;
 
-const INVEST = [
-  { id: "equities", Icon: IconShares, label: "Stocks",              desc: "Invest in top companies",          route: "/requests/new?type=equities", bg: "#e0e7ff", iconBg: "#c7d2fe", color: "#3730a3" },
-  { id: "funds",    Icon: IconFunds,  label: "ETFs",                 desc: "Diversify with low-cost ETFs",     route: "/requests/new?type=funds",    bg: "#dbeafe", iconBg: "#bfdbfe", color: "#1e40af" },
-  { id: "bonds",    Icon: IconBonds,  label: "Bonds",                 desc: "Stable income with bonds",         route: "/requests/new?type=bonds",    bg: "#fef3c7", iconBg: "#fde68a", color: "#92400e" },
-  { id: "offshore", Icon: IconStack,  label: "Structured Products",   desc: "Enhanced returns with protection", route: "/requests/new?type=offshore", bg: "#fce7f3", iconBg: "#fbcfe8", color: "#9d174d" },
+const INVEST: readonly ProductDef[] = [
+  { id: "equities", Icon: IconShares, label: "Stocks",             tagline: "Invest in top companies",
+    statValue: "Zero commission*",
+    bullets: ["2,000+ stocks", "Expert analysis", "Easy investing"], cta: "Start Investing",
+    route: "/requests/new?type=equities", iconBg: "#e0e7ff", ctaBg: "#eef2ff", accent: "#3730a3" },
+  { id: "funds",    Icon: IconFunds,  label: "ETFs",                tagline: "Diversify with low-cost ETFs",
+    statPrefix: "From", statValue: "0.15%", statSuffix: "expense ratio",
+    bullets: ["150+ ETFs", "Low fees", "Diversified"], cta: "Explore ETFs",
+    route: "/requests/new?type=funds", iconBg: "#dbeafe", ctaBg: "#eff6ff", accent: "#1e40af" },
+  { id: "bonds",    Icon: IconBonds,  label: "Bonds",               tagline: "Stable income with bonds",
+    statPrefix: "Up to", statValue: "8.50%", statSuffix: "p.a.",
+    bullets: ["Government & corporate bonds", "Regular income", "Lower risk"], cta: "Explore Bonds",
+    route: "/requests/new?type=bonds", iconBg: "#fef3c7", ctaBg: "#fffbeb", accent: "#92400e" },
+  { id: "offshore", Icon: IconStack,  label: "Structured Products", tagline: "Enhanced returns with protection",
+    statPrefix: "Up to", statValue: "12.00%", statSuffix: "p.a.",
+    bullets: ["Capital protection", "Higher returns", "Diverse options"], cta: "Explore Products",
+    route: "/requests/new?type=offshore", iconBg: "#fce7f3", ctaBg: "#fdf2f8", accent: "#9d174d" },
 ] as const;
 
-/* ── Financing tile: icon block + title + description + Compare → ── */
-function FinancingTile({
-  Icon, label, desc, route, bg, color, onClick,
-}: {
-  Icon: React.ComponentType<IC>;
-  label: string;
-  desc: string;
-  route: string;
-  bg: string;
-  color: string;
-  onClick: (route: string) => void;
-}) {
-  return (
-    <button
-      onClick={() => onClick(route)}
-      className="rounded-[18px] p-[1.5px] bg-line hover:shadow-card hover:-translate-y-0.5 transition-all"
-    >
-      <div className="flex flex-col items-start text-left rounded-[16.5px] p-4 bg-white h-full">
-        <div
-          className="w-14 h-14 rounded-full flex items-center justify-center mb-3"
-          style={{ background: bg }}
-        >
-          <Icon color={color} />
-        </div>
-        <div className="text-[13px] font-bold mb-1 bg-brand bg-clip-text text-transparent">
-          {label}
-        </div>
-        <div className="text-[11px] text-muted leading-snug mb-2 min-h-[28px]">
-          {desc}
-        </div>
-        <span className="text-[11px] font-bold bg-brand bg-clip-text text-transparent">
-          Compare →
-        </span>
-      </div>
-    </button>
-  );
-}
-
-/* ── Colored product card: icon + title + desc + rate + Explore → ── */
+/* ── Product card: icon + badge + stat + checklist + CTA ──── */
 function ProductCard({
-  Icon, label, desc, rate, rateSub, route, bg, iconBg, color, onClick,
-}: {
-  Icon: React.ComponentType<IC>;
-  label: string;
-  desc: string;
-  rate?: string;
-  rateSub?: string;
-  route: string;
-  bg: string;
-  iconBg?: string;
-  color: string;
-  onClick: (route: string) => void;
-}) {
+  Icon, label, tagline, statPrefix, statValue, statSuffix, bullets, cta, route, iconBg, ctaBg, accent, badge, onClick,
+}: ProductDef & { onClick: (route: string) => void }) {
   return (
     <button
       onClick={() => onClick(route)}
-      className="flex flex-col items-start text-left rounded-[18px] p-4 h-full min-h-[172px] hover:-translate-y-0.5 transition-transform"
-      style={{ background: bg }}
+      className="flex flex-col items-start text-left rounded-[18px] border border-ink/6 bg-white p-4 h-full hover:border-ink/12 hover:shadow-card hover:-translate-y-0.5 transition-all"
     >
-      {iconBg && (
-        <div
-          className="w-11 h-11 rounded-full flex items-center justify-center mb-3"
-          style={{ background: iconBg }}
-        >
-          <Icon color={color} />
+      <div className="flex items-start justify-between w-full mb-3">
+        <div className="w-11 h-11 rounded-full grid place-items-center shrink-0" style={{ background: iconBg }}>
+          <Icon color={accent} />
         </div>
-      )}
-      <div className="text-[13px] font-bold mb-1 leading-snug min-h-[32px]" style={{ color }}>
-        {label}
-      </div>
-      <div className="text-[11px] leading-snug mb-2 flex-1" style={{ color, opacity: 0.75 }}>
-        {desc}
-        {rate && (
-          <>
-            {" "}
-            <span className="text-[15px] font-extrabold font-display">{rate}</span>{" "}
-            {rateSub && <span className="text-[10px] font-semibold">{rateSub}</span>}
-          </>
+        {badge && (
+          <span className="text-[10px] font-bold px-2 py-1 rounded-pill whitespace-nowrap" style={{ background: badge.bg, color: badge.color }}>
+            {badge.text}
+          </span>
         )}
       </div>
-      <span className="text-[11px] font-bold" style={{ color }}>
-        Explore →
-      </span>
+
+      <div className="text-[14px] font-display font-bold text-ink mb-0.5">{label}</div>
+      <div className="text-[11px] text-muted leading-snug mb-2">{tagline}</div>
+
+      <div className="mb-3">
+        {statPrefix && <span className="text-[11px] text-muted font-medium">{statPrefix} </span>}
+        <span className="text-[18px] font-display font-extrabold" style={{ color: accent }}>{statValue}</span>
+        {statSuffix && <span className="text-[10px] text-muted font-semibold"> {statSuffix}</span>}
+      </div>
+
+      <ul className="space-y-1.5 mb-4 flex-1 w-full">
+        {bullets.map(b => (
+          <li key={b} className="flex items-center gap-1.5 text-[11px] text-ink/70 leading-snug">
+            <IconCheck color={accent} /> {b}
+          </li>
+        ))}
+      </ul>
+
+      <div className="w-full flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-[12px] font-bold" style={{ background: ctaBg, color: accent }}>
+        {cta} <IconArrowRight color={accent} />
+      </div>
     </button>
   );
 }
@@ -152,60 +170,56 @@ export function WhatAreYouPlanningSection() {
         <p className="text-[11px] font-bold uppercase tracking-widest mb-3 bg-brand bg-clip-text text-transparent">
           Financing
         </p>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          {FINANCING.map(({ id, Icon, label, desc, route, bg, color }) => (
-            <FinancingTile key={id} Icon={Icon} label={label} desc={desc} route={route} bg={bg} color={color} onClick={navigate} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {FINANCING.map(p => (
+            <ProductCard key={p.id} {...p} onClick={navigate} />
           ))}
         </div>
       </div>
 
-      {/* ── Save & Earn / Invest — same outlined card treatment as the
-           "Providers compete for you" box above, for visual consistency.
-           Rows still render as single grids so card heights line up;
-           inner split just controls column width. ── */}
+      {/* ── Save & Earn / Invest — stacked full-width rows so cards
+           have room for the badge/stat/checklist/CTA content at
+           mobile widths, where 90%+ of traffic lands. ── */}
       <div className="bg-white rounded-[22px] border border-ink/6 shadow-card p-5">
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-4">
 
-          <div>
-            <p className="text-[11px] font-bold text-muted uppercase tracking-widest mb-3">
-              Save &amp; Earn
-            </p>
-            <div className="grid grid-cols-2 gap-3">
-              {SAVE_AND_EARN.map(({ id, Icon, label, desc, rate, rateSub, route, bg, iconBg, color }) => (
-                <ProductCard key={id} Icon={Icon} label={label} desc={desc} rate={rate} rateSub={rateSub} route={route} bg={bg} iconBg={iconBg} color={color} onClick={navigate} />
-              ))}
-            </div>
+        <div className="mb-5">
+          <p className="text-[11px] font-bold text-muted uppercase tracking-widest mb-3">
+            Save &amp; Earn
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {SAVE_AND_EARN.map(p => (
+              <ProductCard key={p.id} {...p} onClick={navigate} />
+            ))}
           </div>
+        </div>
 
-          <div>
-            <p className="text-[11px] font-bold text-muted uppercase tracking-widest mb-3">
-              Invest
-            </p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {INVEST.map(({ id, Icon, label, desc, route, bg, iconBg, color }) => (
-                <ProductCard key={id} Icon={Icon} label={label} desc={desc} route={route} bg={bg} iconBg={iconBg} color={color} onClick={navigate} />
-              ))}
-            </div>
+        <div className="mb-4">
+          <p className="text-[11px] font-bold text-muted uppercase tracking-widest mb-3">
+            Invest
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {INVEST.map(p => (
+              <ProductCard key={p.id} {...p} onClick={navigate} />
+            ))}
           </div>
-
         </div>
 
         <button
           onClick={() => navigate("/requests/new?quiz=1")}
-          className="w-full flex items-center gap-3 rounded-2xl px-4 py-3.5 mt-4 text-left border border-ficium/15 hover:border-ficium/30 transition-all"
-          style={{ background: "linear-gradient(135deg, rgba(53,110,244,0.06), rgba(130,49,236,0.06))" }}
+          className="w-full flex items-center gap-3 rounded-2xl px-4 py-3.5 text-left border-2 transition-all hover:shadow-sm"
+          style={{ borderColor: "#5b3df0", background: "#f7f5ff" }}
         >
-          <div className="w-9 h-9 rounded-xl bg-white grid place-items-center shrink-0 shadow-sm">
-            <IconCompass color="#5b3df0" />
+          <div className="w-11 h-11 rounded-full border-2 bg-white grid place-items-center shrink-0" style={{ borderColor: "#5b3df0" }}>
+            <IconDiamond color="#5b3df0" />
           </div>
           <div className="flex-1">
-            <div className="text-[13px] font-bold text-ink">Not sure what fits?</div>
-            <div className="text-[11px] text-muted">Answer 3 quick questions and we'll point you to the right investment options</div>
+            <div className="text-[14px] font-bold text-ink">Not sure what fits you?</div>
+            <div className="text-[11px] text-muted leading-snug">
+              Answer 3 quick questions and get personalised recommendations across invest &amp; earn options.
+            </div>
           </div>
-          <IconArrowRight color="#5b3df0" />
         </button>
       </div>
     </div>
-
   );
 }
