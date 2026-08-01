@@ -616,6 +616,9 @@ export default function NewRequest() {
       purpose:             buildPurpose(answers),
       preferredTermMonths: termMonths,
       decisionDeadline,
+      productAnswers:      Object.fromEntries(
+        Object.entries(answers).filter(([k, v]) => v && !k.startsWith("__"))
+      ),
     });
     if (!result.ok) { setError(result.error); setSubmitting(false); return; }
 
