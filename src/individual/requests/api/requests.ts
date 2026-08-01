@@ -33,6 +33,12 @@ export type CreateRequestInput = {
   preferredTermMonths: number;
   maxRate?: number;
   decisionDeadline?: string;
+  // Raw per-product intake answers (risk_appetite, investment_horizon,
+  // liquidity, investment_style, target_amount, etc. — shape varies by
+  // productType). `purpose` remains the human-readable flattened summary
+  // for the anonymized brief; this preserves the same data as structured
+  // key/value pairs so downstream consumers don't have to re-parse text.
+  productAnswers?: Record<string, string>;
 };
 
 export type CreateRequestResult =
@@ -206,6 +212,7 @@ export async function createRequest(input: CreateRequestInput): Promise<CreateRe
       max_rate:              input.maxRate ?? null,
       decision_deadline:     input.decisionDeadline ?? null,
       anonymized_brief:      anonymizedBrief,
+      product_answers:       input.productAnswers ?? {},
       status:                "open",
     })
     .select("id")
