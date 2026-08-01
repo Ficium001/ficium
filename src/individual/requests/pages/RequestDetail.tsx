@@ -15,7 +15,7 @@ import { formatProductType } from "../api/requests";
 import type { Bid, RequestDetail as RequestDetailType, Phase2Reveal } from "../api/requests";
 import { Button, Card, BottomNav } from "../../../shared/ui";
 import { monthlyRepayment } from "@/shared/lib/finance";
-import RequestChat from "../../../shared/components/RequestChat";
+import RequestThreads from "../components/RequestThreads";
 import { supabase } from "../../../shared/lib/supabase";
 import { useProfile } from "../../dashboard/hooks/useDashboard";
 import { useRequest, useRequestBids, useAcceptBid } from "../hooks/useRequests";
@@ -890,7 +890,7 @@ export default function RequestDetail() {
         {tab === "tracker"   && <TrackerTab requestId={id!} />}
         {tab === "chat"      && (
           <div className="rounded-2xl overflow-hidden border border-ink/8 bg-white" style={{ height: "520px", display: "flex", flexDirection: "column" }}>
-            <RequestChat requestId={id!} senderType="client" client={supabase} height="flex-1" />
+            <RequestThreads requestId={id!} bids={bids} />
           </div>
         )}
       </div>

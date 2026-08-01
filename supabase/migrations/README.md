@@ -49,6 +49,33 @@ All migrations are applied via the **Supabase SQL editor** in the order below. T
 
 > `v2-phase2/bid_notify_trigger.sql` — **Portal DB only.** Creates `bid_notify` schema on `egwobcajdlragubtkpqp`. Do not run on App DB.
 
+### Phase 2 — request chat (per-lender, structured)
+
+| File | Purpose | Notes |
+|------|---------|-------|
+| `v2-phase2/request_chat_per_lender_structured.sql` | Scopes `request_messages` per lender, adds the `request_message_template` catalogue, freezes losing threads, replaces the client RLS policies | Run before any institution-side chat is wired |
+
+Scopes chat to `(request_id, institution_id)` — previously `request_messages` was keyed on `request_id` alone, so every institution bidding on a request shared one thread and could read each other's messages. Also restricts both sides to the seeded template catalogue until a bid is accepted, since the marketplace is anonymous until the Phase 2 reveal and free text is an identity-leak channel; free text unlocks for the winning lender only.
+
+Enforcement is in a `BEFORE INSERT OR UPDATE` trigger, **not** RLS alone — `ficium-portal-api` reaches this DB with a service session and would otherwise bypass RLS entirely.
+
+Verify after running (each should return zero rows):
+```sql
+-- Messages not scoped to a lender (pre-migration rows excepted)
+SELECT id FROM public.request_messages
+ WHERE institution_id IS NULL AND created_at > now() - interval '1 minute';
+
+-- Structured messages whose template doesn't match the sender
+SELECT m.id FROM public.request_messages m
+  JOIN public.request_message_template t ON t.code = m.template_code
+ WHERE m.kind = 'structured' AND t.sender_type <> m.sender_type;
+
+-- Free-text messages on a thread that never won
+SELECT m.id FROM public.request_messages m
+ WHERE m.kind = 'free'
+   AND NOT public.request_chat_is_winner(m.request_id, m.institution_id);
+```
+
 ### Phase 2 — Vault
 
 | File | Purpose |
@@ -97,6 +124,8 @@ WHERE name IN ('portal_api_url', 'app_service_secret');
 | `requests` | `public` | Financing requests |
 | `bid_acceptances` | `public` | Accepted bid record (App DB side; full reveal on Portal DB) |
 | `notifications` | `public` | In-app notifications — `kind` (text), `title`, `body`, `link`, `metadata` (jsonb), `read_at` |
+| `request_messages` | `public` | Chat, scoped per lender via `(request_id, institution_id)`. `kind` = `structured` (template-driven, pre-acceptance) or `free` (winning lender only). Append-only — no UPDATE/DELETE policy |
+| `request_message_template` | `public` | Catalogue of permitted pre-acceptance messages; `sender_type` fixes who may send each one |
 
 ### Financial profile
 
@@ -146,6 +175,8 @@ Every table follows these rules:
 - Clients can only access their own rows (`user_id = auth.uid()` or `client_id = auth.uid()`)
 - `service_role` has unrestricted access for server-side Vercel handlers
 - Audit tables are append-only (no UPDATE/DELETE policies for non-service roles)
+
+> **Caveat:** `service_role` bypasses RLS entirely, and `ficium-portal-api` reaches this DB with a service session. Any rule that must also hold against the portal belongs in a trigger, not only in a policy — see `request_messages_enforce()` in the request-chat migration.
 
 ---
 
