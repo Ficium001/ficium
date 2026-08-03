@@ -132,4 +132,5 @@ Five notification kinds, all written to `public.notifications` (polled every 30s
 | `docs/ARCHITECTURE.md` | Consumer app architecture detail |
 | `docs/DATABASE.md` | App DB schema, RLS, migrations |
 | `docs/API.md` | Vercel API endpoint reference |
-| `ficium-portal/ARCHITECTURE.md` | **Full platform architecture (start here)** |
+| `docs/platform/` | **Cross-repo platform docs — architecture, functional spec, full data dictionary, API reference, security model. Start here.** |
+| `ficium-portal/ARCHITECTURE.md` | Portal-specific architecture detail |
