@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   Plus, HandCoins, CreditCard, PiggyBank,
   Calculator, Wallet, ShieldCheck, TrendingUp, LineChart,
-  Bell, LogOut,
+  Bell, LogOut, Briefcase,
 } from "lucide-react";
 import { useAuth }           from "@/features/auth/context/AuthContext";
 import { useProfile, useMyRequests, useNextActions } from "@/individual/dashboard/hooks/useDashboard";
@@ -349,6 +349,7 @@ function SectionHeader({
 }
 
 const TOOLS = [
+  { icon: <Briefcase   size={20} className="text-ficium"      />, bg: "bg-ficium/10",  title: "My Portfolio",         desc: "Your approved facilities",         to: "/portfolio"        },
   { icon: <Calculator  size={20} className="text-ficium"      />, bg: "bg-ficium/10",  title: "Loan Calculator",      desc: "Estimate your monthly repayments", to: "/tools#credit"     },
   { icon: <LineChart   size={20} className="text-emerald-600" />, bg: "bg-emerald-50", title: "Investment Calculator", desc: "Project your future wealth",       to: "/tools#investment" },
   { icon: <Wallet      size={20} className="text-amber-600"   />, bg: "bg-amber-50",   title: "Affordability Check",  desc: "Find what you can afford",         to: "/networth"         },
