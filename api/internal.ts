@@ -18,6 +18,7 @@
  */
 
 import { Env }  from "./_lib/env.js";
+import { handleIntegration, isIntegrationRequest } from "./_lib/integration/handler.js";
 
 // ── Import handler logic from co-located modules ───────────────────────────
 // Each module exports a named `handle` function that receives (body, res).
@@ -41,6 +42,11 @@ const HANDLERS: Record<Action, (body: unknown, res: any) => Promise<void>> = {
   "bid-accepted":      handleBidAccepted,
 };
 export default async function handler(req: any, res: any): Promise<void> {
+  // Integration contract v1 (?op=events|dispatch). Checked BEFORE the legacy
+  // X-Service-Secret gate: it has its own auth (HMAC signature / CRON_SECRET)
+  // and must read the raw body before anything parses it.
+  if (isIntegrationRequest(req)) return handleIntegration(req, res);
+
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }

@@ -160,6 +160,7 @@ WHERE name IN ('portal_api_url', 'app_service_secret');
 |---|---|---|---|
 | `marketplace-sync-sweep` | `*/5 * * * *` | `marketplace_sync.dispatch()` | Safety-net sweep — catches any pg_net misses |
 | `notify-expiring-requests` | `0 * * * *` | `notify_expiring_requests()` | Warn consumers 24h before bid window closes |
+| `integration-dispatch` | `* * * * *` | `integration.trigger_dispatch()` | Contract v1: wakes the outbox dispatcher; no-op until Vault secrets exist or when nothing is due |
 
 View scheduled jobs:
 ```sql

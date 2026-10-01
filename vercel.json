@@ -2,7 +2,7 @@
   "installCommand": "git config --global url.\"https://${GITHUB_TOKEN}@github.com/\".insteadOf \"ssh://git@github.com/\" && npm install",
   "functions": {
     "api/**/*.ts": {
-      "includeFiles": "api/{_lib,_kyc}/**",
+      "includeFiles": "{api/_lib/**,api/_kyc/**,node_modules/@ficium/contract/schemas/**}",
       "maxDuration": 30
     }
   },
