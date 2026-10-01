@@ -1,21 +1,26 @@
 /**
- * api/integration.ts — integration contract v1, borrower side.
+ * Integration contract v1, borrower side. Mounted on api/internal.ts (the
+ * project is at Vercel Hobby's 12-function limit, so no new function file):
  *
- *   POST /api/integration?op=events    inbound events from the institution app
- *                                      (I2B signature, validated, institution-only)
- *   POST /api/integration?op=dispatch  send pending outbox rows (B2I signed).
+ *   POST /api/internal?op=events    inbound events from the institution app
+ *                                   (I2B signature, validated, institution-only)
+ *   POST /api/internal?op=dispatch  send pending outbox rows (B2I signed).
  *                                      Triggered every minute by pg_cron.
  *                                      Auth: Authorization: Bearer <CRON_SECRET>
  *
  * Inert until INTEGRATION_* env vars are set. Never uses APP_SERVICE_SECRET.
  */
 import { timingSafeEqual } from "node:crypto";
-import { getServiceDb } from "./_lib/db.js";
-import { Env } from "./_lib/env.js";
-import { dispatchOnce, receive } from "./_lib/integration/core.js";
-import { appliers, outboxStore } from "./_lib/integration/supabase.js";
+import { getServiceDb } from "../db.js";
+import { Env } from "../env.js";
+import { dispatchOnce, receive } from "./core.js";
+import { appliers, outboxStore } from "./supabase.js";
 
-export const config = { runtime: "nodejs" };
+/** True when this request is for the integration channel, not a legacy action. */
+export function isIntegrationRequest(req: { url?: string }): boolean {
+  const op = new URL(req.url ?? "", "http://localhost").searchParams.get("op");
+  return op === "events" || op === "dispatch";
+}
 
 async function readRaw(req: AsyncIterable<Buffer | string>): Promise<Buffer> {
   const chunks: Buffer[] = [];
@@ -30,7 +35,7 @@ function bearerOk(header: string | undefined, secret: string): boolean {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-export default async function handler(req: any, res: any): Promise<void> {
+export async function handleIntegration(req: any, res: any): Promise<void> {
   const op = new URL(req.url ?? "", "http://localhost").searchParams.get("op");
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
