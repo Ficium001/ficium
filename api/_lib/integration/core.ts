@@ -86,6 +86,18 @@ export async function dispatchOnce(
 ): Promise<Record<string, number>> {
   const counts: Record<string, number> = { delivered: 0, pending: 0, dead: 0 };
   for (const row of await store.claim(limit)) {
+    // Never send anything that breaks the contract (e.g. an employer name in Phase 1). Events are built in SQL,
+    // which cannot validate against the JSON Schema, so this is the gate. A violation is a failure like any other:
+    // it is recorded and retried, and it blocks later events of the same aggregate (ordered delivery).
+    try {
+      validateEvent(row.envelope);
+    } catch (e) {
+      const reason = `contract violation: ${e instanceof Error ? e.message.slice(0, 300) : "invalid envelope"}`;
+      const outcome = await store.failed(row.id, reason);
+      counts[outcome] = (counts[outcome] ?? 0) + 1;
+      console.warn(JSON.stringify({ evt: "integration_blocked_by_contract", id: row.id, type: row.envelope.type, outcome, reason }));
+      continue;
+    }
     const body = encode(row.envelope);
     let ok = false;
     let error = "";
