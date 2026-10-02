@@ -87,4 +87,40 @@ describe("dispatchOnce", () => {
   it("encodes exactly the bytes it signs", () => {
     expect(encode(ping()).toString()).toBe(JSON.stringify(ping()));
   });
+
+  it("refuses to send an event that breaks the contract (employer in Phase 1) and records the failure", async () => {
+    const bad: Envelope = {
+      id: "evt_0123456789abcdef", type: "request.published", version: 1, source: "borrower",
+      occurred_at: "2026-10-02T09:00:00Z", aggregate_id: "00000000-0000-4000-8000-000000000001", sequence: 1,
+      data: { request_id: "00000000-0000-4000-8000-000000000001", anon_borrower_id: "00000000-0000-4000-8000-000000000002",
+              product_type: "personal_loan", amount: 1000, currency: "MUR", created_at: "2026-10-02T09:00:00Z",
+              phase1: { kyc_verified: true, employer: "Example Ltd" } },
+    };
+    const log: string[] = [];
+    const store: OutboxStore = {
+      claim: async () => [{ id: bad.id, envelope: bad }],
+      delivered: async (id) => void log.push(`delivered:${id}`),
+      failed: async (_id, e) => (log.push(`failed:${e.slice(0, 40)}`), "pending"),
+    };
+    const f = vi.fn();
+    const counts = await dispatchOnce(store, f as unknown as typeof fetch, "https://portal.test", B2I);
+    expect(f).not.toHaveBeenCalled();
+    expect(counts.pending).toBe(1);
+    expect(log).toEqual([expect.stringContaining("failed:contract violation")]);
+  });
+
+  it("still sends a valid request.published", async () => {
+    const good: Envelope = {
+      id: "evt_0123456789abcdee", type: "request.published", version: 1, source: "borrower",
+      occurred_at: "2026-10-02T09:00:00Z", aggregate_id: "00000000-0000-4000-8000-000000000001", sequence: 1,
+      data: { request_id: "00000000-0000-4000-8000-000000000001", anon_borrower_id: "00000000-0000-4000-8000-000000000002",
+              product_type: "personal_loan", amount: 1000, currency: "MUR", created_at: "2026-10-02T09:00:00Z",
+              phase1: { kyc_verified: true, age: 34 } },
+    };
+    const store: OutboxStore = { claim: async () => [{ id: good.id, envelope: good }], delivered: async () => {}, failed: async () => "pending" };
+    const f = vi.fn(async () => new Response("{}", { status: 200 }));
+    const counts = await dispatchOnce(store, f as unknown as typeof fetch, "https://portal.test", B2I);
+    expect(f).toHaveBeenCalledOnce();
+    expect(counts.delivered).toBe(1);
+  });
 });
