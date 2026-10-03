@@ -36,5 +36,16 @@ export function appliers(db: ServiceDb): Record<string, Applier> {
       console.log(JSON.stringify({ evt: "integration_ping_received", id: env.id, sequence: env.sequence, outcome: data }));
       return data as InboxOutcome;
     },
+    // Step 4 (shadow mode): bids published by the institution side. ONE RPC = one transaction, so the
+    // inbox record and the change to integration.bid_shadow commit together or not at all.
+    "bid.placed": (env) => applyBid(db, env),
+    "bid.updated": (env) => applyBid(db, env),
+    "bid.withdrawn": (env) => applyBid(db, env),
   };
+}
+
+async function applyBid(db: ServiceDb, env: Envelope): Promise<InboxOutcome> {
+  const { data, error } = await db.rpc("integration_apply_bid_event", { p_env: env });
+  if (error) throw new Error(`apply_bid_event: ${error.message}`);
+  return data as InboxOutcome;
 }
