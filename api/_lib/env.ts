@@ -31,6 +31,10 @@ export const Env = {
   integrationI2bVerifyKeys: () => getEnv("INTEGRATION_I2B_VERIFY_KEYS").split(",").map((k) => k.trim()).filter(Boolean),
   integrationB2iSigningKey: () => getEnv("INTEGRATION_B2I_SIGNING_KEY"),
   integrationPeerUrl:       () => getEnv("INTEGRATION_PEER_URL"),
+  // Step 5: the acceptance call. OFF unless "true". Its own key, separate from the event keys.
+  integrationAcceptanceEnabled: () => getEnv("INTEGRATION_ACCEPTANCE_ENABLED") === "true",
+  integrationAcceptSigningKey:  () => getEnv("INTEGRATION_ACCEPT_SIGNING_KEY"),
+  integrationAcceptUrl:         () => getEnv("INTEGRATION_ACCEPT_URL"),
   cronSecret:               () => getEnv("CRON_SECRET"),
 } as const;
 
