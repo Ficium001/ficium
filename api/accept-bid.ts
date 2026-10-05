@@ -21,6 +21,8 @@ import { Env }                                    from "./_lib/env.js";
 import { Response }                               from "./_lib/response.js";
 import { requireUser, requireOwnership, sendAuthError } from "./_lib/auth.js";
 import { writeBidAcceptedNotification }           from "./_lib/handlers/bid-accepted.js";
+import { getServiceDb }                           from "./_lib/db.js";
+import { acceptViaContract, type Prepared }       from "./_lib/integration/acceptance.js";
 
 export const config = { runtime: "nodejs" };
 export default async function handler(req: any, res: any): Promise<void> {
@@ -82,34 +84,68 @@ async function _handler(req: any, res: any): Promise<void> {
   }
 
   // ── 3. Portal-api — atomic Phase 2 reveal ─────────────────────────────────
-  const portalUrl = Env.portalApiUrl();
-  const secret    = Env.appServiceSecret();
-  if (!portalUrl || !secret) {
-    return Response.error(res, "Portal not configured", 503, "PORTAL_NOT_CONFIGURED");
-  }
-
   let reveal: Record<string, unknown>;
-  try {
-    const portalRes = await fetch(
-      `${portalUrl}/public/requests/${encodeURIComponent(requestId)}/accept-bid`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type":     "application/json",
-          "X-Service-Secret": secret,
-        },
-        body: JSON.stringify({ bid_id: bidId, consumer_id: consumerId }),
-      },
-    );
-    if (!portalRes.ok) {
-      const errBody = await portalRes.text();
-      console.error("[accept-bid] portal error:", portalRes.status, errBody);
-      return Response.error(res, `Portal error: ${errBody}`, portalRes.status, "PORTAL_ERROR");
+  if (Env.integrationAcceptanceEnabled()) {
+    // Contract path (step 5): only the borrower's released fields leave this side; audited in the App DB.
+    const url = Env.integrationAcceptUrl();
+    const key = Env.integrationAcceptSigningKey();
+    if (!url || !key) {
+      return Response.error(res, "Acceptance call not configured", 503, "ACCEPTANCE_NOT_CONFIGURED");
     }
-    reveal = await portalRes.json() as Record<string, unknown>;
-  } catch (e) {
-    console.error("[accept-bid] portal fetch threw:", e);
-    return Response.error(res, "Portal request failed", 502, "PORTAL_REQUEST_FAILED");
+    const db = getServiceDb();
+    const out = await acceptViaContract(
+      {
+        async prepare(c, r, b) {
+          const { data, error } = await (db as any).rpc("integration_prepare_acceptance", { p_client: c, p_request: r, p_bid: b });
+          if (error) throw new Error(error.message);
+          return data as Prepared;
+        },
+        async complete(ref, outcome, inst) {
+          const { error } = await (db as any).rpc("integration_complete_acceptance", { p_consent_ref: ref, p_outcome: outcome, p_institution: inst });
+          if (error) console.error("[accept-bid] audit completion failed:", error.message);
+        },
+        fetchFn: fetch,
+        url,
+        signingKey: key,
+      },
+      consumerId,
+      requestId,
+      bidId,
+    );
+    if (out.status !== 200 || !out.reveal) {
+      console.error("[accept-bid] contract acceptance failed:", out.status, out.error);
+      return Response.error(res, `Acceptance failed: ${out.error ?? "unknown"}`, out.status, "ACCEPTANCE_FAILED");
+    }
+    reveal = out.reveal;
+  } else {
+    const portalUrl = Env.portalApiUrl();
+    const secret    = Env.appServiceSecret();
+    if (!portalUrl || !secret) {
+      return Response.error(res, "Portal not configured", 503, "PORTAL_NOT_CONFIGURED");
+    }
+
+    try {
+      const portalRes = await fetch(
+        `${portalUrl}/public/requests/${encodeURIComponent(requestId)}/accept-bid`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":     "application/json",
+            "X-Service-Secret": secret,
+          },
+          body: JSON.stringify({ bid_id: bidId, consumer_id: consumerId }),
+        },
+      );
+      if (!portalRes.ok) {
+        const errBody = await portalRes.text();
+        console.error("[accept-bid] portal error:", portalRes.status, errBody);
+        return Response.error(res, `Portal error: ${errBody}`, portalRes.status, "PORTAL_ERROR");
+      }
+      reveal = await portalRes.json() as Record<string, unknown>;
+    } catch (e) {
+      console.error("[accept-bid] portal fetch threw:", e);
+      return Response.error(res, "Portal request failed", 502, "PORTAL_REQUEST_FAILED");
+    }
   }
 
   // ── 4. App DB — write bid_acceptance + close request ──────────────────────

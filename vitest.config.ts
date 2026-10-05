@@ -13,7 +13,7 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
-    include: ["src/**/*.{test,spec}.{ts,tsx}"],
+    include: ["src/**/*.{test,spec}.{ts,tsx}", "api/**/*.test.ts"],
     // Dummy values so modules that construct the Supabase client at import
     // time don't throw in DEV during tests. Never used for real requests.
     env: {
