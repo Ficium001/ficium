@@ -27,7 +27,7 @@ export const Env = {
   portalApiUrl:       () => getEnv("PORTAL_API_URL"),
   appServiceSecret:   () => getEnv("APP_SERVICE_SECRET"),
   isProduction:       () => getEnv("NODE_ENV") === "production",
-  // Integration contract v1 (ficium-contract). Comma-separated verify keys allow rotation.
+  // Integration contract v1 (ficium-integration). Comma-separated verify keys allow rotation.
   integrationI2bVerifyKeys: () => getEnv("INTEGRATION_I2B_VERIFY_KEYS").split(",").map((k) => k.trim()).filter(Boolean),
   integrationB2iSigningKey: () => getEnv("INTEGRATION_B2I_SIGNING_KEY"),
   integrationPeerUrl:       () => getEnv("INTEGRATION_PEER_URL"),
