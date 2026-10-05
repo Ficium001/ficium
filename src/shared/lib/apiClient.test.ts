@@ -41,9 +41,9 @@ describe("apiFetch", () => {
     const fetchMock = vi.fn().mockResolvedValue(new globalThis.Response(body, { status: 403 }));
     vi.stubGlobal("fetch", fetchMock);
 
-    await expect(apiFetch("/api/kyc?action=settings")).rejects.toMatchObject({
+    await expect(apiFetch("/api/kyc?action=verify")).rejects.toMatchObject({
       name: "ApiAuthError", status: 403, code: "FORBIDDEN",
     });
-    await expect(apiFetch("/api/kyc?action=settings")).rejects.toBeInstanceOf(ApiAuthError);
+    await expect(apiFetch("/api/kyc?action=verify")).rejects.toBeInstanceOf(ApiAuthError);
   });
 });

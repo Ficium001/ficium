@@ -9,7 +9,6 @@
  * Routes (was 7 separate functions, now 1):
  *   ?action=verify        → full KYC verification pipeline   (POST)   [was /api/kyc-verify]
  *   ?action=scan           → OCR/vision NIC scan, pre-auth capable (POST)
- *   ?action=settings      → read/write KYC settings          (GET|POST) [was /api/kyc-settings]
  *   ?action=notify        → send applicant notification      (POST)   [was /api/kyc-notify]
  *   ?action=admin-faces   → list/delete a clients faces     (GET|DELETE) [was /api/kyc-admin-faces]
  *   ?action=faces         → face collection (create/search/index) (POST) [was /api/kyc-faces]
@@ -19,7 +18,6 @@
 
 import { verifyHandler }     from "./_kyc/verify.js";
 import { scanHandler }       from "./_kyc/scan.js";
-import { settingsHandler }   from "./_kyc/settings.js";
 import { notifyHandler }     from "./_kyc/notify.js";
 import { adminFacesHandler } from "./_kyc/adminFaces.js";
 import { facesHandler }      from "./_kyc/faces.js";
@@ -40,8 +38,8 @@ const ROUTES: Record<string, { handler: Handler; gate: Gate }> = {
   "verify":      { handler: verifyHandler,     gate: "user"    },
   // Optional auth — handler checks for a token itself (signup has none yet).
   "scan":        { handler: scanHandler,       gate: "none"    },
-  // Admin console operations.
-  "settings":    { handler: settingsHandler,   gate: "none"    }, // handler uses service-role key; no client session needed
+  // Admin operations. (KYC check settings are NOT here any more: they moved to the internal admin app,
+  // ficium-admin, and can only change through the audited DB function admin.set_kyc_check.)
   "notify":      { handler: notifyHandler,     gate: "admin"   },
   "admin-faces": { handler: adminFacesHandler, gate: "admin"   },
   // Internal / server-to-server utilities — never called from a browser.
