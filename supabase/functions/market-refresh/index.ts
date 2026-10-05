@@ -31,11 +31,18 @@ const chg = (p: number, c: number) => p === 0 ? 0 : parseFloat(((c - p) / p * 10
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function fetchFx() {
+  // NOTE (Aug 2026): Frankfurter/ECB never carries MUR (ECB tracks ~31
+  // currencies, Mauritian Rupee isn't one of them) — rates.MUR was always
+  // undefined here, so this silently failed on every run since v7 shipped.
+  // Switched to ExchangeRate-API's free, keyless open endpoint (161
+  // currencies incl. MUR, daily updates). Same USD-base cross-rate math.
   try {
-    const r = await fetch("https://api.frankfurter.app/latest?from=USD&to=EUR,GBP,ZAR,MUR", { signal: AbortSignal.timeout(8000) });
+    const r = await fetch("https://open.er-api.com/v6/latest/USD", { signal: AbortSignal.timeout(8000) });
     if (!r.ok) return null;
-    const { rates } = await r.json();
+    const { result, rates } = await r.json();
+    if (result !== "success") return null;
     const m = rates.MUR;
+    if (!m) return null;
     return { usd: +m.toFixed(2), eur: +(m/rates.EUR).toFixed(2), gbp: +(m/rates.GBP).toFixed(2), zar: +(m/rates.ZAR).toFixed(4) };
   } catch { return null; }
 }
@@ -54,14 +61,18 @@ async function fetchBom() {
 }
 
 async function fetchSemdex(): Promise<number | null> {
+  // NOTE (Aug 2026): /api/v1/market/indices was never a real SEM endpoint —
+  // it 404'd on every run since v7 shipped. SEM publishes the indices table
+  // as plain server-rendered HTML, not JSON. Scrape that page instead: the
+  // SEMDEX row is Ticker, Trend, Last Closing, Latest(bold), Change, %Change
+  // — take the second decimal figure after the SEMDEX label ("Latest").
   try {
-    const r = await fetch("https://www.stockexchangeofmauritius.com/api/v1/market/indices", { signal: AbortSignal.timeout(8000) });
+    const r = await fetch("https://www.stockexchangeofmauritius.com/products-market-data/indices", { headers: { "User-Agent": "Ficium/1.0" }, signal: AbortSignal.timeout(10000) });
     if (!r.ok) return null;
-    const data = await r.json();
-    const rows: Record<string,unknown>[] = Array.isArray(data) ? data : Object.values(data);
-    const row = rows.find(i => String(i.name ?? i.index_name ?? "").toUpperCase().includes("SEMDEX"));
-    if (!row) return null;
-    const v = parseFloat(String(row.value ?? row.current ?? row.close ?? "0"));
+    const html = await r.text();
+    const m = html.match(/SEMDEX[\s\S]{0,500}?([\d,]+\.\d+)[\s\S]{0,200}?([\d,]+\.\d+)/i);
+    if (!m) return null;
+    const v = parseFloat(m[2].replace(/,/g, ""));
     return v > 100 ? v : null;
   } catch { return null; }
 }
@@ -376,7 +387,7 @@ Deno.serve(async () => {
   if (fx) {
     for (const [id, val] of [["usd_mur", fx.usd], ["eur_mur", fx.eur], ["gbp_mur", fx.gbp]] as [string, number][]) {
       const p = prev[id] ?? val, h = await getHist(id);
-      ups.push({ ticker_id: id, value: val, display_value: val.toFixed(2), change_pct: chg(p, val), direction: dir(p, val), history: [...h, val], source: "frankfurter", fetched_at: ts });
+      ups.push({ ticker_id: id, value: val, display_value: val.toFixed(2), change_pct: chg(p, val), direction: dir(p, val), history: [...h, val], source: "exchangerate-api", fetched_at: ts });
     }
   }
   if (bom) {
