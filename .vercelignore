@@ -1,0 +1,5 @@
+# Vercel turns every non-underscore .ts under api/ into a serverless function (Hobby cap: 12).
+# Tests must never ship or count toward that cap.
+api/**/*.test.ts
+api/**/*.spec.ts
+api/_tests/

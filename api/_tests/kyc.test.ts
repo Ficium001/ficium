@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import handler from "./kyc";
+import handler from "../kyc";
 
 function fakeRes() {
   const r: any = { statusCode: 0, body: undefined };
