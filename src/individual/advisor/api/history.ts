@@ -1,7 +1,7 @@
 /**
  * @module advisor/api/history
  * @description
- *   Persistence for FICO's conversation. Reads/writes `public.advisor_messages`
+ *   Persistence for Fia's conversation. Reads/writes `public.advisor_messages`
  *   straight from the browser; owner-only RLS scopes every call to the
  *   signed-in user, so no user id is ever trusted from the client.
  *
@@ -51,7 +51,7 @@ export async function saveExchange(userText: string, assistantText: string, user
   } catch { /* best-effort */ }
 }
 
-/** Deletes the signed-in user's entire FICO history. */
+/** Deletes the signed-in user's entire Fia history. */
 export async function clearHistory(): Promise<boolean> {
   try {
     const { error } = await supabase

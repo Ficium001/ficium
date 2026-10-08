@@ -5,7 +5,7 @@ export { Input } from "./Input";
 export { Select } from "./Select";
 export { BottomNav } from "./BottomNav";
 export { FiciumLogo } from "./FiciumLogo";
-export { FicoMark } from "./FicoMark";
+export { FiaMark } from "./FiaMark";
 export { PageShell } from "./PageShell";
 export { CardScroller } from "./CardScroller";
 export { UploadZone } from "./UploadZone";

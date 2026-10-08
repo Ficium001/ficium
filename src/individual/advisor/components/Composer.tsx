@@ -8,7 +8,7 @@
 
 import { useRef } from 'react'
 import { Send } from 'lucide-react'
-import { FicoMark } from '@/shared/ui'
+import { FiaMark } from '@/shared/ui'
 import { ASSISTANT } from '../config/assistant'
 import { QUICK_CHIPS } from '../config/briefing'
 import { FREE_LIMIT } from '../hooks/useAdvisorChat'
@@ -29,7 +29,7 @@ export function Composer({
   if (exhausted) {
     return (
       <div className="bg-white border border-line rounded-card p-6 text-center shadow-card">
-        <FicoMark size={48} glow className="mx-auto mb-4" />
+        <FiaMark size={48} glow className="mx-auto mb-4" />
         <div className="font-display font-bold tracking-display text-[18px] text-ink mb-1">
           {FREE_LIMIT} free messages used
         </div>

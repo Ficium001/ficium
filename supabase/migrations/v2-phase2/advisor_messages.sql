@@ -1,5 +1,5 @@
 -- =============================================================================
--- FICO advisor — persistent chat history
+-- Fia advisor — persistent chat history
 -- APP DB (wixfhjlsjkiwfvqewvmt)
 --
 -- One row per message. Owner-only RLS: a user can read, append and delete

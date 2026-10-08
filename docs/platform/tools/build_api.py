@@ -248,7 +248,7 @@ for title, files in GROUPS:
 vercel = sorted(Path(p).stem for p in glob.glob(str(ROOT / "ficium/api/*.ts")))
 VDESC = {
     "accept-bid": "Accept a bid — proxies `/public/requests/{id}/accept-bid`",
-    "chat": "FICO advisor streaming chat (SSE)",
+    "chat": "Fia advisor streaming chat (SSE)",
     "intelligence": "Market intelligence for the Markets module",
     "internal": "Internal cron and maintenance handlers",
     "keepalive": "Warms the Railway API to reduce cold starts",

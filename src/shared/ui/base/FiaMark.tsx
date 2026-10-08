@@ -1,23 +1,23 @@
 /**
- * @component FicoMark
+ * @component FiaMark
  * @description
- *   FICO's identity mark — the AI relationship manager's "logo": a dark
- *   ink chip with a gradient spark. Used wherever FICO appears (advisor
+ *   Fia's identity mark — the AI relationship manager's "logo": a dark
+ *   ink chip with a gradient spark. Used wherever Fia appears (advisor
  *   hero, chat avatar, the raised nav tab) so the brand reads consistently.
  *
  *   Single source of truth for the mark's look — restyle here, everywhere
  *   follows. `useId` keeps the gradient unique when several render at once.
  *
- *   <FicoMark size={44} glow />        — hero / nav (with depth + glow)
- *   <FicoMark size={38} />             — chat avatar
- *   <FicoMark size={52} glow pulse />  — focal identity (animated ring)
+ *   <FiaMark size={44} glow />        — hero / nav (with depth + glow)
+ *   <FiaMark size={38} />             — chat avatar
+ *   <FiaMark size={52} glow pulse />  — focal identity (animated ring)
  *
  * @owner Ficium Engineering
  */
 
 import { useId } from 'react'
 
-export function FicoMark({
+export function FiaMark({
   size = 44,
   radius,
   glow = false,
@@ -76,4 +76,4 @@ export function FicoMark({
   )
 }
 
-export default FicoMark
+export default FiaMark

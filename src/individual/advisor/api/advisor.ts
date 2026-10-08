@@ -35,7 +35,7 @@ export async function sendToAdvisor(messages: ChatMessage[]): Promise<SendResult
 
 /**
  * Profile-aware send: passes `userId` so the serverless function can load
- * the user's finances and ground FICO's reply in real data. Throws on
+ * the user's finances and ground Fia's reply in real data. Throws on
  * failure so callers can decide whether to count the message against quota.
  */
 export async function askAdvisor(messages: ChatMessage[], userId?: string): Promise<string> {

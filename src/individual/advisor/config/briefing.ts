@@ -1,7 +1,7 @@
 /**
  * @module advisor/config/briefing
  * @description
- *   Content config for FICO's briefing: the quick-ask prompts, the remit
+ *   Content config for Fia's briefing: the quick-ask prompts, the remit
  *   outline (what a full relationship manager covers), and the default
  *   proactive "moves".
  *
@@ -44,7 +44,7 @@ export const QUICK_CHIPS: string[] = [
   'Which provider fits me?',
 ]
 
-/** FICO's remit — the full relationship-manager surface area. */
+/** Fia's remit — the full relationship-manager surface area. */
 export const REMIT: RemitItem[] = [
   { label: 'Accounts & everyday banking', icon: Wallet,        tone: 'blue'   },
   { label: 'Cards & credit',              icon: CreditCard,    tone: 'violet' },
@@ -93,7 +93,7 @@ export const DEFAULT_MOVES: Move[] = [
   },
 ]
 
-/** Watch chips shown in the hero — what FICO is actively monitoring. */
+/** Watch chips shown in the hero — what Fia is actively monitoring. */
 export const WATCH: { label: string; icon: ElementType }[] = [
   { label: 'Watching 6 things for you', icon: ShieldCheck },
   { label: 'Home-loan rate now above market', icon: Building2 },

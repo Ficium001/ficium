@@ -1,7 +1,7 @@
 /**
  * @page Advisor
  * @description
- *   FICO — the AI relationship manager. Thin orchestrator: wires the chat
+ *   Fia — the AI relationship manager. Thin orchestrator: wires the chat
  *   hook to the hero, the ask-rail, the briefing/chat stream and the
  *   composer. All content lives in ../config; all logic in ../hooks.
  * @owner Ficium Engineering

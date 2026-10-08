@@ -12,7 +12,7 @@ export type Tone = 'blue' | 'violet' | 'warn' | 'good'
 export type MessageRole = 'ai' | 'user'
 
 /**
- * A proactive "move" FICO surfaces in the briefing — a recommendation
+ * A proactive "move" Fia surfaces in the briefing — a recommendation
  * spanning any financial domain (borrowing, savings, FX, wealth, cover…).
  */
 export interface Move {
@@ -34,7 +34,7 @@ export interface Move {
   icon:      ElementType
 }
 
-/** An entry in FICO's "remit" outline shown in the rail. */
+/** An entry in Fia's "remit" outline shown in the rail. */
 export interface RemitItem {
   label: string
   icon:  ElementType

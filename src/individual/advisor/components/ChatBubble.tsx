@@ -2,12 +2,12 @@
  * @component ChatBubble / ThinkingBubble
  * @description Message rendering for the advisor stream. The seeded briefing
  *   message renders the proactive MoveCards + quick chips; subsequent AI
- *   replies render as plain bubbles. FICO's avatar is the shared dark mark.
+ *   replies render as plain bubbles. Fia's avatar is the shared dark mark.
  * @owner Ficium Engineering
  */
 
 import { User, Boxes, MessageCircle } from 'lucide-react'
-import { FicoMark } from '@/shared/ui'
+import { FiaMark } from '@/shared/ui'
 import { ASSISTANT } from '../config/assistant'
 import { MoveCard } from './MoveCard'
 import type { ChatMessage } from '../types'
@@ -29,7 +29,7 @@ export function ChatBubble({ message, onChip }: { message: ChatMessage; onChip: 
 
   return (
     <div className="flex gap-3 items-start">
-      <FicoMark size={38} className="mt-0.5 rounded-[11px]!" />
+      <FiaMark size={38} className="mt-0.5 rounded-[11px]!" />
       <div className="flex-1 min-w-0">
         <div className="bg-white border border-line rounded-[6px_18px_18px_18px] px-[22px] py-[19px] shadow-card">
           {message.text && (
@@ -84,7 +84,7 @@ export function ChatBubble({ message, onChip }: { message: ChatMessage; onChip: 
 export function ThinkingBubble() {
   return (
     <div className="flex gap-3 items-start">
-      <FicoMark size={38} className="mt-0.5 rounded-[11px]!" />
+      <FiaMark size={38} className="mt-0.5 rounded-[11px]!" />
       <div className="bg-white border border-line rounded-[6px_18px_18px_18px] px-[22px] py-[19px] shadow-card">
         <div className="flex items-center gap-3">
           <div className="flex gap-1">
