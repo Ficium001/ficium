@@ -12,7 +12,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { Home, Target, TrendingUp, User } from "lucide-react";
 import { FiciumLogo } from "./FiciumLogo";
-import { FicoMark } from "./FicoMark";
+import { FiaMark } from "./FiaMark";
 
 const tabs = [
   { to: "/dashboard", label: "Home",     icon: Home,       key: "home"     },
@@ -63,14 +63,14 @@ export function TopNav({ role }: { role: string | null | undefined }) {
         })}
       </nav>
 
-      {/* FICO advisor CTA */}
+      {/* Fia advisor CTA */}
       <Link
         to="/advisor"
-        aria-label="FICO Advisor"
+        aria-label="Fia Advisor"
         className="ml-4 no-underline flex items-center gap-2 px-4 py-1.5 rounded-pill bg-hero text-white text-sm font-semibold transition-opacity hover:opacity-90"
       >
-        <FicoMark size={20} />
-        FICO
+        <FiaMark size={20} />
+        Fia
       </Link>
     </header>
   );

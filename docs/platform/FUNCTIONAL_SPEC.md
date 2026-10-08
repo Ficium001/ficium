@@ -128,7 +128,7 @@ verification.
 | Finances | `/finances` | Bank accounts and investment holdings, live pricing via Finnhub/CoinGecko, feeds net worth |
 | Vault | `/vault` | Document store with AI extraction, property records, access log, retention dates |
 | Markets | `/markets` | Rates, FX, deposit comparison, news in "everyday" or "finance" register |
-| FICO advisor | `/advisor` | AI relationship manager (see §7) |
+| Fia advisor | `/advisor` | AI relationship manager (see §7) |
 | Financial health | `/health` | Composite health / risk / affordability score |
 | Couple | `/couple` | Joint finances with a verified partner (see §3.7) |
 | Tools | `/tools` | ROI and other calculators |
@@ -280,7 +280,7 @@ backoff, a configurable retry ceiling and timeout, a failure counter acting as a
 circuit breaker, and a full delivery log. Endpoint URLs are SSRF-validated on
 registration.
 
-## 7. FICO — AI advisor
+## 7. Fia — AI advisor
 
 A borrower-facing AI relationship manager built on Claude, feature-flagged
 through `app_features`.
@@ -292,7 +292,7 @@ through `app_features`.
   (`fico.message_meter`, `consume_message()`).
 - `max_tokens: 400`, temperature 0.8.
 
-Regulatory guardrails in the system prompt: **inform, do not decide** — FICO does
+Regulatory guardrails in the system prompt: **inform, do not decide** — Fia does
 not recommend a specific institution or product — and no Phase-1 identity
 leakage.
 

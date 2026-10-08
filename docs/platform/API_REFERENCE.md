@@ -316,7 +316,7 @@ Module-gated routes carry a `require_module(...)` dependency and return **403** 
 | Function | Purpose |
 |---|---|
 | `/api/accept-bid` | Accept a bid — proxies `/public/requests/{id}/accept-bid` |
-| `/api/chat` | FICO advisor streaming chat (SSE) |
+| `/api/chat` | Fia advisor streaming chat (SSE) |
 | `/api/intelligence` | Market intelligence for the Markets module |
 | `/api/internal` | Internal cron and maintenance handlers |
 | `/api/keepalive` | Warms the Railway API to reduce cold starts |

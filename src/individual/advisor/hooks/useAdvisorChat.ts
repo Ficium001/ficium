@@ -9,8 +9,9 @@
  * @owner Ficium Engineering
  */
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { askAdvisor, type ChatMessage as WireMessage } from '../api/advisor'
+import { clearHistory, loadHistory, saveExchange } from '../api/history'
 import { ASSISTANT, greetingFor } from '../config/assistant'
 import { DEFAULT_MOVES, QUICK_CHIPS } from '../config/briefing'
 import type { ChatMessage, Move } from '../types'
@@ -47,6 +48,9 @@ function buildBriefing(firstName: string, moves: Move[]): ChatMessage {
   }
 }
 
+/** Max recent messages sent to the model (server also caps at 20). */
+const CONTEXT_WINDOW = 20
+
 export interface UseAdvisorChat {
   messages:   ChatMessage[]
   thinking:   boolean
@@ -54,7 +58,10 @@ export interface UseAdvisorChat {
   remaining:  number
   exhausted:  boolean
   send:       (text: string) => void
+  /** Refreshes the briefing card in place; the conversation is kept. */
   reset:      () => void
+  /** Permanently deletes the saved conversation and starts over. */
+  clear:      () => Promise<void>
 }
 
 export function useAdvisorChat(
@@ -69,35 +76,60 @@ export function useAdvisorChat(
   const remaining = Math.max(0, FREE_LIMIT - used)
   const exhausted = used >= FREE_LIMIT
 
-  // Refresh the seeded briefing once the profile name resolves — but only
-  // while the stream is still untouched, so we never wipe a live conversation.
+  // Keep the briefing card current (profile name / moves) without touching
+  // the conversation around it.
   useEffect(() => {
-    setMessages((cur) =>
-      cur.length === 1 && cur[0].id === 'briefing' ? [buildBriefing(firstName, moves)] : cur,
-    )
+    setMessages((cur) => cur.map((m) => (m.id === 'briefing' ? buildBriefing(firstName, moves) : m)))
   }, [firstName, moves])
 
+  // Restore the saved conversation once the signed-in user is known.
+  const loadedFor = useRef<string | null>(null)
+  useEffect(() => {
+    if (!userId || loadedFor.current === userId) return
+    loadedFor.current = userId
+    let cancelled = false
+    void loadHistory().then((saved) => {
+      if (cancelled || saved.length === 0) return
+      const restored: ChatMessage[] = saved.map((m) => ({
+        id:   m.id,
+        role: m.role === 'assistant' ? 'ai' : 'user',
+        text: m.content,
+      }))
+      // Anything sent while loading is already in `cur` after the briefing.
+      setMessages((cur) => [cur[0], ...restored, ...cur.slice(1)])
+    })
+    return () => { cancelled = true }
+  }, [userId])
+
   const reset = useCallback(() => {
-    setMessages([buildBriefing(firstName, moves)])
+    setMessages((cur) => cur.map((m) => (m.id === 'briefing' ? buildBriefing(firstName, moves) : m)))
+  }, [firstName, moves])
+
+  const clear = useCallback(async () => {
+    if (await clearHistory()) setMessages([buildBriefing(firstName, moves)])
   }, [firstName, moves])
 
   const send = useCallback((text: string) => {
     const trimmed = text.trim()
     if (!trimmed || thinking || exhausted) return
 
-    const userMsg: ChatMessage = { id: Date.now().toString(), role: 'user', text: trimmed }
+    const sentAt = Date.now()
+    const userMsg: ChatMessage = { id: sentAt.toString(), role: 'user', text: trimmed }
     setMessages((prev) => [...prev, userMsg])
     setThinking(true)
 
-    const history: WireMessage[] = [...messages, userMsg].map((m) => ({
-      role:    m.role === 'ai' ? 'assistant' : 'user',
-      content: m.text ?? '',
-    }))
+    const history: WireMessage[] = [...messages, userMsg]
+      .slice(-CONTEXT_WINDOW)
+      .map((m) => ({
+        role:    m.role === 'ai' ? 'assistant' : 'user',
+        content: m.text ?? '',
+      }))
 
     void (async () => {
       try {
         const reply = await askAdvisor(history, userId)
         setUsed(bumpUsed()) // only count on success — a network error shouldn't burn a free message
+        void saveExchange(trimmed, reply, sentAt)
         setMessages((cur) => [...cur, { id: `${Date.now() + 1}`, role: 'ai', text: reply }])
       } catch {
         setMessages((cur) => [...cur, {
@@ -110,7 +142,7 @@ export function useAdvisorChat(
     })()
   }, [thinking, exhausted, messages, userId])
 
-  return { messages, thinking, used, remaining, exhausted, send, reset }
+  return { messages, thinking, used, remaining, exhausted, send, reset, clear }
 }
 
 export { ASSISTANT, greetingFor }

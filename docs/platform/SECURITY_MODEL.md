@@ -23,7 +23,7 @@ team without further translation.
 | Class | Examples | Where it lives |
 |---|---|---|
 | **Restricted** | Borrower name, email, phone, address, DOB, ID number, KYC images, `auth.uid()` | App DB only. Crosses to the Portal DB only into `marketplace.bid_acceptance`, only on acceptance, only for the winner |
-| **Confidential** | Dossier, income, liabilities, vault documents, net worth, FICO transcripts | App DB only. Never crosses |
+| **Confidential** | Dossier, income, liabilities, vault documents, net worth, Fia transcripts | App DB only. Never crosses |
 | **Internal** | Bids, rates, pipelines, approvals, tenant configuration | Portal DB, tenant-scoped |
 | **Public** | Product catalogue, currencies, countries, market rates | Either, unrestricted read |
 
@@ -171,7 +171,7 @@ configuration.
 
 External credentials in use: AWS IAM `AWSficium_Rekognition` (`ap-south-1`) for
 KYC; Google Cloud project `storied-toolbox-498217-n2`; Anthropic API for Claude
-Vision, FICO and the request builder; Finnhub and CoinGecko for market pricing.
+Vision, Fia and the request builder; Finnhub and CoinGecko for market pricing.
 
 ## 9. Supply chain
 

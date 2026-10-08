@@ -1,6 +1,6 @@
 /**
  * @component AdvisorHero
- * @description FICO's opening band — identity (dark mark + role + live),
+ * @description Fia's opening band — identity (dark mark + role + live),
  *   the personalised greeting with a gradient accent line, and the "watching"
  *   chips that signal proactive monitoring. Built on the app's ink-hero
  *   treatment (radial #181842 → #0B0B1E) with drifting logo blades.
@@ -10,7 +10,7 @@
 import { useId } from 'react'
 import { RefreshCw } from 'lucide-react'
 import { GradText } from '@/shared/ui/dashboard'
-import { FicoMark } from '@/shared/ui'
+import { FiaMark } from '@/shared/ui'
 import { ASSISTANT, greetingFor } from '../config/assistant'
 import { WATCH } from '../config/briefing'
 
@@ -54,7 +54,7 @@ export function AdvisorHero({ firstName, onReset }: { firstName: string; onReset
       {/* Identity row */}
       <div className="relative z-2 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
-          <FicoMark size={52} glow pulse />
+          <FiaMark size={52} glow pulse />
           <div>
             <div className="flex items-center gap-2.5">
               <span className="font-display font-bold tracking-display text-[21px] leading-none">{ASSISTANT.name}</span>

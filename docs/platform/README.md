@@ -41,7 +41,7 @@ drifted materially. Corrections worth calling out:
   of them — that schema lives in the Portal DB.
 - Table count was documented as approximate. It is 47 in the App DB and 84 in the
   Portal DB.
-- The Finance module, FICO advisor, couple finance, KYC NIC scanning, per-lender
+- The Finance module, Fia advisor, couple finance, KYC NIC scanning, per-lender
   structured chat, document templates, e-signature, approval chains and auto-bid
   were all undocumented.
 - The marketplace sync was documented as a cron pull. It is a trigger kick plus a

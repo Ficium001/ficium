@@ -12,7 +12,7 @@ gradients, radii or shadows — they reference tokens.
 | Page frame (bg, width, nav) | `src/shared/ui/PageShell.tsx` |
 | Hero band | `src/shared/ui/dashboard/Hero.tsx` (`bg-hero`) |
 | Cards / panels / stats | `src/shared/ui/dashboard/kit.tsx` |
-| Brand mark / FICO mark | `FiciumLogo.tsx`, `FicoMark.tsx` |
+| Brand mark / Fia mark | `FiciumLogo.tsx`, `FiaMark.tsx` |
 
 ## Gradient tokens
 
@@ -22,7 +22,7 @@ Reference these as Tailwind classes — never inline a `linear-gradient(...)`:
 |---|---|
 | `bg-hero` | Dark ink hero band |
 | `bg-callout` | Dark callout panels |
-| `bg-mark` | FICO identity mark backdrop |
+| `bg-mark` | Fia identity mark backdrop |
 | `bg-brand` | Primary brand fill (CTAs, nav, composer) |
 | `bg-brand-cta` | Hero action button |
 | `bg-brand-soft` | Tinted icon chips |

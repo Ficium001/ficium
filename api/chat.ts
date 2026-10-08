@@ -67,17 +67,19 @@ async function handleChat(body: ChatBody, apiKey: string, res: any): Promise<voi
     return Response.error(res, "messages array required", 400, "INVALID_BODY");
   }
 
-  const totalChars = body.messages.reduce((s, m) => s + (m.content?.length ?? 0), 0);
-  if (totalChars > 20_000) return Response.error(res, "Conversation too large", 413, "PAYLOAD_TOO_LARGE");
-
+  // Cap to the recent window BEFORE the size check: persisted history can be
+  // long, and only the last 20 messages are ever sent to the model.
   const messages = body.messages.slice(-20).map((m) => ({
     role:    (m.role === "assistant" ? "assistant" : "user") as "assistant" | "user",
     content: String(m.content ?? "").slice(0, 4_000),
   }));
 
+  const totalChars = messages.reduce((s, m) => s + m.content.length, 0);
+  if (totalChars > 20_000) return Response.error(res, "Conversation too large", 413, "PAYLOAD_TOO_LARGE");
+
   // Build system prompt
   const parts: string[] = [`\
-You are Ficium AI — an intelligent personal financial coach for clients in Mauritius \
+You are Fia, the Ficium AI — an intelligent personal financial coach for clients in Mauritius \
 using the Ficium reverse-banking marketplace, where banks compete with bids for each \
 client's financial request. You help users understand their finances, plan goals, compare \
 products, and improve their eligibility. Be specific — use their real numbers. \
@@ -145,8 +147,13 @@ Return ONLY valid JSON (no markdown):
 export default async function handler(req: any, res: any): Promise<void> {
   if (req.method !== "POST") return Response.methodNotAllowed(res, ["POST"]);
 
-  try { await requireUser(req); }
+  let authed;
+  try { authed = await requireUser(req); }
   catch (e) { if (sendAuthError(res, e)) return; throw e; }
+
+  // Never trust a client-supplied userId: the profile lookup below runs with
+  // the service key, so it must be bound to the verified caller.
+  const body = { ...((req.body as object) ?? {}), userId: authed.id };
 
   const apiKey = Env.anthropicApiKey();
   if (!apiKey) return Response.error(res, "AI service not configured", 503, "NO_API_KEY");
@@ -155,9 +162,9 @@ export default async function handler(req: any, res: any): Promise<void> {
 
   try {
     if (action === "journey-calculate") {
-      return await handleJourneyCalculate(req.body as JourneyBody, apiKey, res);
+      return await handleJourneyCalculate(body as JourneyBody, apiKey, res);
     }
-    return await handleChat(req.body as ChatBody, apiKey, res);
+    return await handleChat(body as ChatBody, apiKey, res);
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "AI temporarily unavailable";
     return Response.error(res, msg, 503, "AI_ERROR");

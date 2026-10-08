@@ -2,7 +2,7 @@
  * @module advisor/config/assistant
  * @description
  *   Single source of truth for the AI relationship manager's identity.
- *   Rename or re-scope FICO here and the whole advisor surface follows
+ *   Rename or re-scope Fia here and the whole advisor surface follows
  *   (hero, chat avatar label, composer placeholder, footnote).
  *
  *   Note: the bottom-nav tab label lives in shared/ui/BottomNav.tsx and
@@ -13,7 +13,7 @@
 
 export const ASSISTANT = {
   /** Display name of the assistant. */
-  name: 'FICO',
+  name: 'Fia',
   /** One-line positioning shown under the name in the hero. */
   role: 'Your private relationship manager — across your whole financial life',
   /** Attribution shown in the footnote. */

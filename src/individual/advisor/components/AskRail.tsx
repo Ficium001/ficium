@@ -1,6 +1,6 @@
 /**
  * @component AskRail
- * @description Left rail: quick-ask prompts, FICO's full remit outline
+ * @description Left rail: quick-ask prompts, Fia's full remit outline
  *   (signals breadth beyond lending), and the competing-bids CTA.
  * @owner Ficium Engineering
  */
@@ -14,7 +14,7 @@ import { TONE_TEXT, TONE_SOFT } from '../config/palette'
 export function AskRail({ onAsk }: { onAsk: (q: string) => void }) {
   return (
     <aside className="flex flex-col gap-[18px] lg:sticky lg:top-4">
-      {/* Ask FICO */}
+      {/* Ask Fia */}
       <div className="bg-white border border-line rounded-card shadow-card">
         <div className="px-5 pt-[18px] pb-0.5">
           <div className="text-[13.5px] font-semibold text-ink">Ask {ASSISTANT.name}</div>
