@@ -10,6 +10,8 @@
  *   POST { action: "invitation-create", ... }  → invite a co-applicant
  *   POST { action: "invitation-respond", ... } → accept/decline an invitation
  *   POST { action: "invitation-revoke", ... }  → cancel a pending invitation
+ *   GET  ?action=documents&requestId=          → the bank's document request, with vault matches
+ *   POST { action: "document-send", ... }      → send a vault document to the bank (interface API)
  *
  * invitation-preview is the one public (unauthenticated) route — it's shown
  * on /invite/:token before the invitee has logged in — so the auth gate
@@ -20,6 +22,7 @@ import { Response }                   from "./_lib/response.js";
 import { requireUser, sendAuthError } from "./_lib/auth.js";
 import { getServiceDb }               from "./_lib/db.js";
 import { generateToken, hashToken, sendInvitationEmail } from "./_lib/handlers/joint-invitation.js";
+import { listDocuments, sendDocument } from "./_lib/handlers/deal-documents.js";
 
 export const config = { runtime: "nodejs" };
 
@@ -76,6 +79,37 @@ async function route(req: any, res: any): Promise<void> {
     } catch (_e) {
       return Response.error(res, "Portal request failed", 502, "PORTAL_REQUEST_FAILED");
     }
+  }
+
+  // ── Bank document requests (contract 1.6, through the interface API) ────────
+  if (action === "documents") {
+    if (req.method !== "GET") return Response.methodNotAllowed(res, ["GET"]);
+    const requestId = req.query?.requestId as string | undefined;
+    if (!requestId) return Response.error(res, "Missing requestId", 400, "MISSING_PARAM");
+    const out = await listDocuments(getServiceDb(), consumerId, requestId);
+    return Response.ok(res, out.body);
+  }
+  if (action === "document-send") {
+    if (req.method !== "POST") return Response.methodNotAllowed(res, ["POST"]);
+    const b = (req.body ?? {}) as Record<string, unknown>;
+    const uuid = /^[0-9a-f-]{36}$/i;
+    if (![b.requestId, b.requirementId, b.vaultDocumentId].every((v) => typeof v === "string" && uuid.test(v))
+        || (b.source !== "vault" && b.source !== "new")
+        || (b.documentDate != null && !(typeof b.documentDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.documentDate)))) {
+      return Response.error(res, "Invalid document request", 400, "INVALID_INPUT");
+    }
+    const out = await sendDocument(getServiceDb(), {
+      enabled: Env.integrationDocumentsEnabled(),
+      uploadsUrl: Env.integrationDocumentsUrl(),
+      signingKey: Env.integrationAcceptSigningKey(),
+      fetchFn: fetch,
+    }, consumerId, {
+      requestId: b.requestId as string, requirementId: b.requirementId as string,
+      vaultDocumentId: b.vaultDocumentId as string, source: b.source as "vault" | "new",
+      documentDate: (b.documentDate as string | undefined) ?? null,
+    });
+    return out.status === 200 ? Response.ok(res, out.body)
+      : Response.error(res, String((out.body as { error?: string }).error ?? "Failed"), out.status, "DOCUMENT_SEND");
   }
 
   // ── POST action=relist ─────────────────────────────────────────────────────

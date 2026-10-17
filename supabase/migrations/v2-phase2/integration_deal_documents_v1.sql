@@ -154,3 +154,12 @@ GRANT EXECUTE ON FUNCTION public.integration_apply_deal_documents_event(jsonb) T
 GRANT EXECUTE ON FUNCTION public.integration_deal_documents_for(uuid, uuid) TO service_role;
 GRANT EXECUTE ON FUNCTION public.integration_start_document_submission(uuid, uuid, uuid, text, uuid, date) TO service_role;
 GRANT EXECUTE ON FUNCTION public.integration_finish_document_submission(uuid, boolean, uuid, text, text, text) TO service_role;
+
+-- Applied separately as integration_anon_borrower_id_wrapper (2026-10-17): the document calls carry the
+-- caller's anon_borrower_id, derived exactly as for the acceptance call.
+CREATE OR REPLACE FUNCTION public.integration_anon_borrower_id(p_client_id uuid)
+RETURNS uuid LANGUAGE sql STABLE SECURITY DEFINER SET search_path = pg_catalog, integration AS $$
+  SELECT integration.anon_borrower_id(p_client_id);
+$$;
+REVOKE ALL ON FUNCTION public.integration_anon_borrower_id(uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.integration_anon_borrower_id(uuid) TO service_role;
