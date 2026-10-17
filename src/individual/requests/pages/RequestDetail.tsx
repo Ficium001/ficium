@@ -3,6 +3,7 @@
 // Unified 7-tab workspace: Plan | Documents | Insights | Details | Bids | Progress | Chat
 // =============================================================
 import { useState, useEffect } from "react";
+import { bidCost, byEffectiveCost } from "@/individual/requests/lib/bidCost";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   ArrowLeft, Lock, CheckCircle, Clock, TrendingDown,
@@ -14,7 +15,6 @@ import { TrackerTab } from "../tracker/tabs/TrackerTab";
 import { formatProductType } from "../api/requests";
 import type { Bid, RequestDetail as RequestDetailType, Phase2Reveal } from "../api/requests";
 import { Button, Card, BottomNav } from "../../../shared/ui";
-import { monthlyRepayment } from "@/shared/lib/finance";
 import RequestThreads from "../components/RequestThreads";
 import { supabase } from "../../../shared/lib/supabase";
 import { useProfile } from "../../dashboard/hooks/useDashboard";
@@ -510,12 +510,8 @@ function BidsTab({ bids, request, isClosed, accepting, acceptingBid, onAccept }:
   const countdown  = useCountdown(request.decisionDeadline ?? null);
   const acceptedBid = bids.find(b => b.status === "accepted");
 
-  // Sort bids: best rate first
-  const sorted = [...bids].sort((a, b) => {
-    const ra = a.source === "institution" ? a.rate * 100 : a.rate;
-    const rb = b.source === "institution" ? b.rate * 100 : b.rate;
-    return ra - rb;
-  });
+  // Cheapest first: rate after guaranteed discounts, then guaranteed cashback.
+  const sorted = [...bids].sort(byEffectiveCost);
 
   return (
     <div>
@@ -589,16 +585,18 @@ function BidsTab({ bids, request, isClosed, accepting, acceptingBid, onAccept }:
                     <th className="text-right px-4 py-3 text-[10px] font-bold text-muted uppercase tracking-wider">Amount</th>
                     <th className="text-right px-4 py-3 text-[10px] font-bold text-muted uppercase tracking-wider">Term</th>
                     <th className="text-right px-4 py-3 text-[10px] font-bold text-muted uppercase tracking-wider">Monthly</th>
-                    <th className="text-right px-4 py-3 text-[10px] font-bold text-muted uppercase tracking-wider">Total cost</th>
+                    <th className="text-right px-4 py-3 text-[10px] font-bold text-muted uppercase tracking-wider" title="Interest over the term, minus guaranteed cashback">Cost of credit</th>
                     <th className="px-4 py-3" />
                   </tr>
                 </thead>
                 <tbody>
                   {sorted.map((bid, i) => {
-                    const annualRate  = bid.source === "institution" ? bid.rate : bid.rate / 100;
-                    const monthly     = monthlyRepayment(bid.amountOffered, annualRate, bid.termMonths);
-                    const totalCost   = monthly ? monthly * bid.termMonths : null;
-                    const rateDisplay = (bid.source === "institution" ? bid.rate * 100 : bid.rate).toFixed(2);
+                    const cost        = bidCost(bid);
+                    const monthly     = cost.monthly;
+                    // Interest minus guaranteed cashback. Was monthly x term, which
+                    // counted the loan itself as a cost.
+                    const totalCost   = cost.costOfCredit;
+                    const rateDisplay = (cost.effectiveRate * 100).toFixed(2);
                     const isBest      = i === 0;
                     const isAccepted  = bid.status === "accepted";
                     return (
@@ -619,6 +617,11 @@ function BidsTab({ bids, request, isClosed, accepting, acceptingBid, onAccept }:
                         </td>
                         <td className={`px-4 py-3.5 text-right font-bold ${isBest ? "text-ficium" : "text-ink"}`}>
                           {rateDisplay}%
+                          {cost.rateDiscount > 0 && (
+                            <div className="text-[10px] font-normal text-muted">
+                              <s>{(cost.headlineRate * 100).toFixed(2)}%</s> with guaranteed discount
+                            </div>
+                          )}
                         </td>
                         <td className="px-4 py-3.5 text-right font-semibold text-ink">
                           {bid.amountOffered > 0 ? `MUR ${Number(bid.amountOffered).toLocaleString()}` : "—"}
@@ -912,8 +915,8 @@ function BidCard({ bid, rank, isBest, canAccept, isAccepting, onAccept }: {
   bid: Bid; rank: number; isBest: boolean; canAccept: boolean; isAccepting: boolean; onAccept: () => void;
 }) {
   const isAccepted  = bid.status === "accepted";
-  const annualRate  = bid.source === "institution" ? bid.rate : bid.rate / 100;
-  const monthly     = monthlyRepayment(bid.amountOffered, annualRate, bid.termMonths);
+  const cost        = bidCost(bid);
+  const monthly     = cost.monthly;
 
   return (
     <Card padded={false} className={["p-4", isBest ? "border-ficium/30 bg-ficium/2" : "", isAccepted ? "border-green-300 bg-green-50/50" : ""].join(" ")}>
@@ -927,12 +930,18 @@ function BidCard({ bid, rank, isBest, canAccept, isAccepting, onAccept }: {
             <div className="flex items-center gap-2">
               <Building2 size={13} className="text-muted shrink-0" />
               <span className="text-[13px] font-semibold truncate">{bid.institutionName}</span>
-              {isBest && <span className="text-[10px] font-bold px-2 py-0.5 bg-ficium text-white rounded-pill">Best rate</span>}
+              {isBest && <span className="text-[10px] font-bold px-2 py-0.5 bg-ficium text-white rounded-pill">Best value</span>}
             </div>
             <div className="font-display text-2xl font-bold mt-0.5">
-              {bid.source === "institution" ? (bid.rate * 100).toFixed(2) : bid.rate.toFixed(2)}%
+              {(cost.effectiveRate * 100).toFixed(2)}%
               <span className="text-sm font-normal text-muted ml-1">{bid.rateType === "variable" ? "variable" : "fixed"} APR</span>
             </div>
+            {cost.rateDiscount > 0 && (
+              <div className="text-[11px] text-muted">
+                <s>{(cost.headlineRate * 100).toFixed(2)}%</s> before a guaranteed{" "}
+                {(cost.rateDiscount * 100).toFixed(2)}% discount
+              </div>
+            )}
             {bid.source === "institution" && bid.amountOffered > 0 && (
               <div className="flex flex-wrap gap-2 mt-2">
                 <div className="bg-paper rounded-lg px-3 py-1.5">
@@ -949,6 +958,12 @@ function BidCard({ bid, rank, isBest, canAccept, isAccepting, onAccept }: {
                   <div className="bg-ficium/6 border border-ficium/15 rounded-lg px-3 py-1.5">
                     <div className="text-[9px] text-ficium uppercase tracking-wide font-bold">Monthly</div>
                     <div className="text-[12px] font-bold text-ficium">MUR {Math.round(monthly).toLocaleString()}</div>
+                  </div>
+                )}
+                {cost.costOfCredit !== null && (
+                  <div className="bg-paper rounded-lg px-3 py-1.5" title="Interest over the term, minus guaranteed cashback">
+                    <div className="text-[9px] text-muted uppercase tracking-wide">Cost of credit</div>
+                    <div className="text-[12px] font-bold text-ink">MUR {Math.round(cost.costOfCredit).toLocaleString()}</div>
                   </div>
                 )}
               </div>
@@ -996,6 +1011,14 @@ function BidCard({ bid, rank, isBest, canAccept, isAccepting, onAccept }: {
                   </span>
                 ))}
               </div>
+            )}
+            {cost.notCounted.some(n => n.reason !== "no_value") && (
+              <p className="mt-1.5 text-[10px] text-muted">
+                Not in the price above:{" "}
+                {cost.notCounted.filter(n => n.reason !== "no_value").map(n =>
+                  `${n.benefit.title} (${n.reason === "not_guaranteed" ? "not guaranteed" : "fee amount not given"})`,
+                ).join(", ")}.
+              </p>
             )}
           </div>
         </div>

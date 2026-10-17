@@ -64,6 +64,10 @@ export type BidBenefit = {
   value_display: string | null;
   is_guaranteed: boolean;
   cat_code:     string | null;
+  /** Contract 1.3.0: the benefit's number, in value_unit. Absent = wording only. */
+  value_amount?: number | null;
+  /** rate_pa: yearly rate reduction (decimal fraction); fee_fraction: share of a fee; amount: money. */
+  value_unit?:   "rate_pa" | "fee_fraction" | "amount" | null;
 };
 
 export type BidAllocationLine = {
@@ -329,6 +333,25 @@ export async function getRequest(id: string): Promise<RequestDetail | null> {
   };
 }
 
+const UNIT_MAX = { rate_pa: 0.1, fee_fraction: 1, amount: Infinity } as const;
+
+/** Benefits now set the ranking, so trust only well-formed numbers (contract 1.3.0
+ *  limits). Anything else falls back to wording only. */
+export function normalizeBenefit(raw: Record<string, unknown>): BidBenefit {
+  const unit = raw.value_unit as string | null | undefined;
+  const amount = raw.value_amount == null ? NaN : Number(raw.value_amount);
+  const valid = unit != null && unit in UNIT_MAX && Number.isFinite(amount)
+    && amount > 0 && amount <= UNIT_MAX[unit as keyof typeof UNIT_MAX];
+  return {
+    title:         String(raw.title ?? ""),
+    value_display: (raw.value_display as string | null) ?? null,
+    is_guaranteed: raw.is_guaranteed === true,
+    cat_code:      (raw.cat_code as string | null) ?? null,
+    value_amount:  valid ? amount : null,
+    value_unit:    valid ? (unit as BidBenefit["value_unit"]) : null,
+  };
+}
+
 function mapApiBid(b: Record<string, unknown>): Bid {
   return {
     id:              b.id as string,
@@ -345,7 +368,7 @@ function mapApiBid(b: Record<string, unknown>): Bid {
     submittedAt:     b.submitted_at as string,
     createdAt:       b.submitted_at as string,
     source:          "institution" as const,
-    benefits:        (b.benefits as BidBenefit[]) ?? [],
+    benefits:        ((b.benefits as Record<string, unknown>[] | null) ?? []).map(normalizeBenefit),
     allocations:     ((b.allocations as Record<string, unknown>[]) ?? []).map(a => ({
       productType:   a.product_type as string,
       productLabel:  a.product_label as string,
