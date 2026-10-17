@@ -6,8 +6,9 @@
  * max_age_days. Otherwise the borrower must upload new. Enforced here, again in the App DB
  * (integration_start_document_submission), and checkable by the bank from document_date.
  *
- * Bytes never pass through either API: the borrower side asks the portal for a one-time https slot,
- * PUTs the file there, then confirms with its SHA-256. Pure: everything external is injected.
+ * Everything goes through the institution's interface API (contract 1.6): the borrower side asks for a
+ * one-time slot, PUTs the file to the interface's content endpoint (signed over the bytes, like every call),
+ * then confirms with its SHA-256. Never to either side's storage. Pure: everything external is injected.
  */
 import { createHash } from "node:crypto";
 import {
@@ -142,7 +143,9 @@ export async function shareFromVault(
     });
     uploadId = slot.upload_id;
     const put = await deps.fetchFn(slot.upload_url, {
-      method: "PUT", headers: { "Content-Type": file.mime_type }, body: file.bytes,
+      method: "PUT",
+      headers: { "Content-Type": file.mime_type, [SIGNATURE_HEADER]: sign(Buffer.from(file.bytes), deps.signingKey) },
+      body: file.bytes,
       signal: AbortSignal.timeout(60_000),
     });
     if (!put.ok) throw new DocumentCallError(502, `upload failed: ${put.status}`);

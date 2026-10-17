@@ -58,8 +58,8 @@ describe("shareFromVault", () => {
     const fetchFn = vi.fn(async (url: string, init: RequestInit) => {
       calls.push({ url, init });
       if (url.endsWith("/uploads")) return new Response(JSON.stringify({
-        upload_id: U, upload_url: "https://storage.example/slot?token=t", expires_at: "2026-10-17T10:10:00Z" }), { status: 201 });
-      if (url.startsWith("https://storage.example")) return new Response("", { status: 200 });
+        upload_id: U, upload_url: "https://portal.example/integration/v1/deal-documents/uploads/00000000-0000-4000-8000-000000000050/content", expires_at: "2026-10-17T10:10:00Z" }), { status: 201 });
+      if (url.endsWith("/content")) return new Response("{}", { status: 200 });
       return new Response(JSON.stringify({ pipeline_id: P, document: { ...item, mandatory: true, status: "received" } }), { status: 200 });
     });
     const finish = vi.fn(async () => {});
@@ -79,12 +79,15 @@ describe("shareFromVault", () => {
     const out = await shareFromVault(d, input);
     expect(out.document.status).toBe("received");
     expect(calls.map((c) => c.url)).toEqual([
-      d.uploadsUrl, "https://storage.example/slot?token=t", `${d.uploadsUrl}/${U}/complete`]);
+      d.uploadsUrl, "https://portal.example/integration/v1/deal-documents/uploads/00000000-0000-4000-8000-000000000050/content", `${d.uploadsUrl}/${U}/complete`]);
     const slotBody = JSON.parse(calls[0].init.body as string);
     expect(slotBody).toMatchObject({ source: "vault", document_date: "2026-09-30", size_bytes: bytes.byteLength });
     const sig = (calls[0].init.headers as Record<string, string>)["Ficium-Signature"];
     expect(() => verify(sig, Buffer.from(calls[0].init.body as string), [KEY])).not.toThrow();
     expect(JSON.parse(calls[2].init.body as string).sha256).toBe(sha256Hex(bytes));
+    // the bytes are signed too: the interface refuses unsigned content
+    const putSig = (calls[1].init.headers as Record<string, string>)["Ficium-Signature"];
+    expect(() => verify(putSig, Buffer.from(bytes), [KEY])).not.toThrow();
     expect(finish).toHaveBeenCalledWith("sub-1", true, U, sha256Hex(bytes), null);
   });
 
