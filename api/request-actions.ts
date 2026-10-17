@@ -57,28 +57,18 @@ async function route(req: any, res: any): Promise<void> {
     return Response.error(res, "Auth check failed", 500, "AUTH_ERROR");
   }
 
-  const portalUrl = Env.portalApiUrl();
-  const secret    = Env.appServiceSecret();
-
   // ── GET ?action=tracker ────────────────────────────────────────────────────
+  // From the borrower side's own copy of the deal (deal.progress_updated, contract 1.7). No call to the
+  // portal: the old call sent the borrower's account id to portal-api.
   if (action === "tracker") {
     if (req.method !== "GET") return Response.methodNotAllowed(res, ["GET"]);
-    if (!portalUrl || !secret) return Response.error(res, "Portal not configured", 503, "NOT_CONFIGURED");
-
     const requestId = req.query?.requestId as string | undefined;
     if (!requestId) return Response.error(res, "Missing requestId", 400, "MISSING_PARAM");
-
-    try {
-      const portalRes = await fetch(
-        `${portalUrl}/public/requests/${encodeURIComponent(requestId)}/pipeline`
-          + `?consumer_id=${encodeURIComponent(consumerId)}`,
-        { headers: { "X-Service-Secret": secret } },
-      );
-      if (!portalRes.ok) return Response.error(res, await portalRes.text(), portalRes.status, "PORTAL_ERROR");
-      return Response.ok(res, await portalRes.json());
-    } catch (_e) {
-      return Response.error(res, "Portal request failed", 502, "PORTAL_REQUEST_FAILED");
-    }
+    const { data, error } = await (getServiceDb() as any).rpc("integration_deal_progress_for", {
+      p_client_id: consumerId, p_request_id: requestId,
+    });
+    if (error) return Response.error(res, "Couldn't load your deal's progress", 500, "TRACKER_ERROR");
+    return Response.ok(res, data ?? { status: "pending", stages: [], message: "Pipeline not yet created." });
   }
 
   // ── Bank document requests (contract 1.6, through the interface API) ────────
@@ -113,28 +103,25 @@ async function route(req: any, res: any): Promise<void> {
   }
 
   // ── POST action=relist ─────────────────────────────────────────────────────
+  // On the borrower's own side; the request events tell the portal (no direct link). The old path called a
+  // portal endpoint that never existed, so every relist failed.
   if (action === "relist") {
     if (req.method !== "POST") return Response.methodNotAllowed(res, ["POST"]);
-    if (!portalUrl || !secret) return Response.error(res, "Portal not configured", 503, "NOT_CONFIGURED");
-
     const { requestId } = (req.body ?? {}) as { requestId?: string };
     if (!requestId) return Response.error(res, "Missing requestId", 400, "MISSING_PARAM");
-
-    try {
-      const portalRes = await fetch(
-        `${portalUrl}/public/requests/${encodeURIComponent(requestId)}/relist`,
-        {
-          method:  "POST",
-          headers: { "Content-Type": "application/json", "X-Service-Secret": secret },
-          body: JSON.stringify({ consumer_id: consumerId }),
-        },
-      );
-      if (!portalRes.ok) return Response.error(res, await portalRes.text(), portalRes.status, "PORTAL_ERROR");
-      return Response.ok(res, await portalRes.json());
-    } catch (_e) {
-      return Response.error(res, "Portal request failed", 502, "REQUEST_FAILED");
+    const { data, error } = await (getServiceDb() as any).rpc("relist_request", {
+      p_client_id: consumerId, p_request_id: requestId,
+    });
+    if (error) {
+      if (/RELIST_NOT_FOUND/.test(error.message)) return Response.error(res, "Request not found", 404, "NOT_FOUND");
+      if (/RELIST_NOT_ALLOWED/.test(error.message)) {
+        return Response.error(res, "Only an expired or declined request can be relisted", 409, "NOT_ALLOWED");
+      }
+      return Response.error(res, "Couldn't relist the request", 500, "RELIST_ERROR");
     }
+    return Response.ok(res, data);
   }
+
 
   // ── GET action=couple ───────────────────────────────────────────────────
   if (action === "couple") {
