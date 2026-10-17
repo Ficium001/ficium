@@ -31,12 +31,16 @@ export interface VaultDoc {
   doc_type: string;
   file_name: string;
   doc_date: string | null; // the document's own date, from extraction
+  mime_type?: string | null;
   deleted_at?: string | null;
 }
 
+/** File types the contract accepts. The vault also holds WebP and Word files; banks can't receive those. */
+export const SENDABLE_MIME = new Set(["application/pdf", "image/jpeg", "image/png"]);
+
 export type VaultOption =
   | { doc: VaultDoc; usable: true; ageDays: number }
-  | { doc: VaultDoc; usable: false; reason: "undated" | "too_old"; ageDays?: number };
+  | { doc: VaultDoc; usable: false; reason: "undated" | "too_old" | "format"; ageDays?: number };
 
 const DAY = 86_400_000;
 const ageInDays = (date: string, today: Date): number =>
@@ -49,6 +53,7 @@ export function vaultOptions(item: ChecklistItem, vault: VaultDoc[], today = new
     .filter((d) => !d.deleted_at && d.doc_type === item.document_type)
     .sort((a, b) => (b.doc_date ?? "").localeCompare(a.doc_date ?? ""))
     .map((doc): VaultOption => {
+      if (doc.mime_type && !SENDABLE_MIME.has(doc.mime_type)) return { doc, usable: false, reason: "format" };
       if (!doc.doc_date) return { doc, usable: false, reason: "undated" };
       const ageDays = ageInDays(doc.doc_date, today);
       if (item.max_age_days != null && ageDays > item.max_age_days) {
@@ -127,19 +132,27 @@ export interface ShareDeps extends PortalCallDeps {
   readVaultFile(): Promise<{ bytes: Uint8Array; mime_type: string }>;
 }
 
-/** Share one vault copy with the bank: record, slot, upload, confirm, record. */
+/**
+ * Send one document from the borrower's vault to the bank: record, slot, PUT bytes, confirm, record.
+ * source "vault": an existing copy (dated, within max age; checked again by the App DB and the bank).
+ * source "new": uploaded for this request (saved to the vault first, so it never leaves via the browser).
+ */
 export async function shareFromVault(
   deps: ShareDeps,
-  input: Omit<SlotInput, "source" | "size_bytes" | "mime_type"> & { document_date: string },
+  input: Omit<SlotInput, "source" | "size_bytes" | "mime_type" | "document_date"> & {
+    source?: "vault" | "new"; document_date: string | null;
+  },
 ) {
+  const source = input.source ?? "vault";
   const submissionId = await deps.start();
   let uploadId: string | null = null;
   let sha: string | null = null;
   try {
     const file = await deps.readVaultFile();
     sha = sha256Hex(file.bytes);
+    const { source: _s, ...rest } = input;
     const slot = await requestSlot(deps, {
-      ...input, source: "vault", mime_type: file.mime_type, size_bytes: file.bytes.byteLength,
+      ...rest, source, mime_type: file.mime_type, size_bytes: file.bytes.byteLength,
     });
     uploadId = slot.upload_id;
     const put = await deps.fetchFn(slot.upload_url, {

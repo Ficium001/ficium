@@ -35,6 +35,10 @@ export const Env = {
   integrationAcceptanceEnabled: () => getEnv("INTEGRATION_ACCEPTANCE_ENABLED") === "true",
   integrationAcceptSigningKey:  () => getEnv("INTEGRATION_ACCEPT_SIGNING_KEY"),
   integrationAcceptUrl:         () => getEnv("INTEGRATION_ACCEPT_URL"),
+  // Contract 1.6: answering a bank's document request. OFF unless "true". Same key as acceptance
+  // (same caller). URL = https://<interface>/integration/v1/deal-documents/uploads
+  integrationDocumentsEnabled:  () => getEnv("INTEGRATION_DOCUMENTS_ENABLED") === "true",
+  integrationDocumentsUrl:      () => getEnv("INTEGRATION_DOCUMENTS_URL"),
   cronSecret:               () => getEnv("CRON_SECRET"),
 } as const;
 

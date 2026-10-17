@@ -4,6 +4,7 @@
 // =============================================================
 import { useState, useEffect } from "react";
 import { bidCost, byEffectiveCost } from "@/individual/requests/lib/bidCost";
+import { BankDocuments } from "@/individual/requests/documents/components/BankDocuments";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   ArrowLeft, Lock, CheckCircle, Clock, TrendingDown,
@@ -138,8 +139,8 @@ function PlanTab({ request, bidCount }: { request: RequestDetailType; bidCount: 
   );
 }
 
-/* ── Documents tab — real vault data ── */
-function DocumentsTab() {
+/* ── Documents tab — the bank's request (accepted deals), then real vault data ── */
+function DocumentsTab({ requestId, isAccepted }: { requestId: string; isAccepted: boolean }) {
   const navigate = useNavigate();
   const { documents, loading } = useVault();
 
@@ -158,6 +159,7 @@ function DocumentsTab() {
 
   return (
     <div className="space-y-4">
+      {isAccepted && <BankDocuments requestId={requestId} />}
       <div className="bg-white rounded-[22px] border border-ink/6 shadow-xs p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="text-[12px] font-bold text-muted uppercase tracking-widest">Document vault</div>
@@ -877,7 +879,7 @@ export default function RequestDetail() {
       {/* Tab content */}
       <div className="max-w-[680px] mx-auto px-4 sm:px-6 pt-5">
         {tab === "plan"      && <PlanTab request={request} bidCount={bids.length} />}
-        {tab === "documents" && <DocumentsTab />}
+        {tab === "documents" && <DocumentsTab requestId={request.id} isAccepted={isAccepted} />}
         {tab === "insights"  && <InsightsTab bids={bids} request={request} profile={profile} />}
         {tab === "details"   && <DetailsTab request={request} profile={profile} />}
         {tab === "bids"      && (
