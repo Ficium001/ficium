@@ -44,6 +44,18 @@ export function appliers(db: ServiceDb): Record<string, Applier> {
     "bid.withdrawn": (env) => applyBid(db, env),
     // Contract 1.4+: a deal's document checklist (Phase 2, accepted deals only). The RPC refuses a checklist
     // for any bid other than the one the borrower accepted, and rolls back its inbox record so it can retry.
+    // Contract 1.10: a request's bidding window closed (offers / no offers): a notice to the borrower.
+    "request.window_closed": async (env) => {
+      const { data, error } = await db.rpc("integration_apply_request_window_closed_event", { p_env: env });
+      if (error) throw new Error(`apply_request_window_closed_event: ${error.message}`);
+      return data as InboxOutcome;
+    },
+    // Contract 1.10: aggregate market data for the adviser (full snapshot).
+    "market.intelligence": async (env) => {
+      const { data, error } = await db.rpc("integration_apply_market_intelligence_event", { p_env: env });
+      if (error) throw new Error(`apply_market_intelligence_event: ${error.message}`);
+      return data as InboxOutcome;
+    },
     // Contract 1.9: a bank's chat message. A structured one is re-rendered with the shared contract renderer;
     // a body that differs is refused (recorded, not retried). The App DB rules trigger decides the rest.
     "chat.message": async (env) => {
