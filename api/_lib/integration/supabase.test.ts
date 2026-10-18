@@ -27,3 +27,15 @@ describe("bid appliers", () => {
     expect(a["pipeline.stage_advanced"]).toBeUndefined();
   });
 });
+
+describe("Phase 2 and decline appliers", () => {
+  it.each([
+    ["request.declined", "integration_apply_request_declined_event"],
+    ["deal.progress_updated", "integration_apply_deal_progress_event"],
+    ["deal.documents_updated", "integration_apply_deal_documents_event"],
+  ])("%s goes through its own atomic RPC", async (t, fn) => {
+    const rpc = vi.fn(async () => ({ data: "apply", error: null }));
+    expect(await appliers({ rpc } as never)[t](env(t))).toBe("apply");
+    expect(rpc).toHaveBeenCalledWith(fn, { p_env: env(t) });
+  });
+});
