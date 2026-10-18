@@ -7,14 +7,15 @@
  * Responsibilities:
  *   1. Verify the caller's Supabase session.
  *   2. Confirm they own the request (IDOR guard — App DB).
- *   3. Call portal-api /public/requests/{id}/accept-bid (server-to-server).
- *      Portal-api handles: ownership (anon UUID), PII fetch, atomic DB writes.
+ *   3. The contract acceptance call (ficium-integration step 5), the only path: only the fields the
+ *      borrower released leave this side, signed, audited in the App DB. The legacy direct call to
+ *      portal-api (shared secret + raw account id) was removed: no direct link between the apps.
  *   4. Write bid_acceptances row in App DB.
  *   5. Update requests.status = 'accepted' in App DB.
  *   6. Return Phase 2 institution contact to the browser.
  *
  * Env required (Vercel + .env):
- *   PORTAL_API_URL, APP_SERVICE_SECRET,
+ *   INTEGRATION_ACCEPTANCE_ENABLED, INTEGRATION_ACCEPT_URL, INTEGRATION_ACCEPT_SIGNING_KEY,
  *   SUPABASE_URL / VITE_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
  */
 import { Env }                                    from "./_lib/env.js";
@@ -83,9 +84,13 @@ async function _handler(req: any, res: any): Promise<void> {
     return Response.error(res, "Request already accepted", 409, "ALREADY_ACCEPTED");
   }
 
-  // ── 3. Portal-api — atomic Phase 2 reveal ─────────────────────────────────
+  // ── 3. Contract acceptance call — Phase 2 reveal ──────────────────────────
+  // Contract acceptance is the only path (no direct link to the portal).
+  if (!Env.integrationAcceptanceEnabled()) {
+    return Response.error(res, "Accepting bids is unavailable right now", 503, "ACCEPTANCE_DISABLED");
+  }
   let reveal: Record<string, unknown>;
-  if (Env.integrationAcceptanceEnabled()) {
+  {
     // Contract path (step 5): only the borrower's released fields leave this side; audited in the App DB.
     const url = Env.integrationAcceptUrl();
     const key = Env.integrationAcceptSigningKey();
@@ -117,35 +122,6 @@ async function _handler(req: any, res: any): Promise<void> {
       return Response.error(res, `Acceptance failed: ${out.error ?? "unknown"}`, out.status, "ACCEPTANCE_FAILED");
     }
     reveal = out.reveal;
-  } else {
-    const portalUrl = Env.portalApiUrl();
-    const secret    = Env.appServiceSecret();
-    if (!portalUrl || !secret) {
-      return Response.error(res, "Portal not configured", 503, "PORTAL_NOT_CONFIGURED");
-    }
-
-    try {
-      const portalRes = await fetch(
-        `${portalUrl}/public/requests/${encodeURIComponent(requestId)}/accept-bid`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type":     "application/json",
-            "X-Service-Secret": secret,
-          },
-          body: JSON.stringify({ bid_id: bidId, consumer_id: consumerId }),
-        },
-      );
-      if (!portalRes.ok) {
-        const errBody = await portalRes.text();
-        console.error("[accept-bid] portal error:", portalRes.status, errBody);
-        return Response.error(res, `Portal error: ${errBody}`, portalRes.status, "PORTAL_ERROR");
-      }
-      reveal = await portalRes.json() as Record<string, unknown>;
-    } catch (e) {
-      console.error("[accept-bid] portal fetch threw:", e);
-      return Response.error(res, "Portal request failed", 502, "PORTAL_REQUEST_FAILED");
-    }
   }
 
   // ── 4. App DB — write bid_acceptance + close request ──────────────────────
@@ -166,7 +142,9 @@ async function _handler(req: any, res: any): Promise<void> {
     fetch(`${supabaseUrl}/rest/v1/requests?id=eq.${encodeURIComponent(requestId)}`, {
       method:  "PATCH",
       headers: { ...headers, Prefer: "return=minimal" },
-      body: JSON.stringify({ status: "accepted" }),
+      // accepted_bid_id: the deal progress and document receivers apply events only for this bid.
+      // integration_complete_acceptance sets it too; this is the second guarantee.
+      body: JSON.stringify({ status: "accepted", accepted_bid_id: bidId }),
     }),
   ]);
 
