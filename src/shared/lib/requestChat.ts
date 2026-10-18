@@ -84,6 +84,24 @@ export function renderTemplate(
   });
 }
 
+async function chatSend(client: SupabaseClient, body: Record<string, unknown>): Promise<void> {
+  const { data: { session } } = await client.auth.getSession();
+  const res = await fetch("/api/request-actions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${session?.access_token ?? ""}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "chat-send", ...body }),
+  });
+  if (!res.ok) {
+    const j = (await res.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(j?.error ?? "Your message wasn't sent. Try again.");
+  }
+}
+
+/**
+ * Send a structured message to one lender. The server renders it with the shared contract renderer, so what
+ * the lender receives is exactly the template (the browser no longer writes chat rows). Identity comes from
+ * the session; senderType/senderId are kept for callers and ignored.
+ */
 export async function sendStructured(
   client: SupabaseClient,
   args: {
@@ -95,20 +113,11 @@ export async function sendStructured(
     params?: Record<string, unknown>;
   },
 ): Promise<void> {
-  const { error } = await client.from("request_messages").insert({
-    request_id: args.requestId,
-    institution_id: args.institutionId,
-    sender_type: args.senderType,
-    sender_id: args.senderId,
-    body: renderTemplate(args.template, args.params ?? {}),
-    kind: "structured",
-    template_code: args.template.code,
-    params: args.params ?? {},
-  });
-  if (error) throw error;
+  await chatSend(client, { requestId: args.requestId, institutionId: args.institutionId,
+                   templateCode: args.template.code, params: args.params ?? {} });
 }
 
-/** Only accepted by the DB for the winning lender, post-acceptance. */
+/** Free text: only accepted for the lender whose offer the borrower accepted. */
 export async function sendFree(
   client: SupabaseClient,
   args: {
@@ -119,15 +128,7 @@ export async function sendFree(
     body: string;
   },
 ): Promise<void> {
-  const { error } = await client.from("request_messages").insert({
-    request_id: args.requestId,
-    institution_id: args.institutionId,
-    sender_type: args.senderType,
-    sender_id: args.senderId,
-    body: args.body,
-    kind: "free",
-  });
-  if (error) throw error;
+  await chatSend(client, { requestId: args.requestId, institutionId: args.institutionId, body: args.body });
 }
 
 /**

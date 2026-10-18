@@ -1,4 +1,5 @@
 /** Supabase-backed stores for the integration core (service_role only). */
+import { renderChatMessage, ContractError } from "@ficium/contract";
 import type { ServiceDb } from "../db.js";
 import type { Applier, Envelope, InboxOutcome, OutboxStore } from "./core.js";
 
@@ -43,6 +44,24 @@ export function appliers(db: ServiceDb): Record<string, Applier> {
     "bid.withdrawn": (env) => applyBid(db, env),
     // Contract 1.4+: a deal's document checklist (Phase 2, accepted deals only). The RPC refuses a checklist
     // for any bid other than the one the borrower accepted, and rolls back its inbox record so it can retry.
+    // Contract 1.9: a bank's chat message. A structured one is re-rendered with the shared contract renderer;
+    // a body that differs is refused (recorded, not retried). The App DB rules trigger decides the rest.
+    "chat.message": async (env) => {
+      const d = env.data as { template_code?: string | null; params?: Record<string, unknown>; body?: string };
+      let refuse: string | null = null;
+      if (d.template_code) {
+        try {
+          if (renderChatMessage(d.template_code, d.params ?? {}, "institution").body !== d.body) {
+            refuse = "body does not match its template";
+          }
+        } catch (e) {
+          refuse = e instanceof ContractError ? `template: ${e.message}` : String(e);
+        }
+      }
+      const { data, error } = await db.rpc("integration_apply_chat_message_event", { p_env: env, p_refuse: refuse });
+      if (error) throw new Error(`apply_chat_message_event: ${error.message}`);
+      return (data === "refused" ? "apply" : data) as InboxOutcome;
+    },
     // Contract 1.8: one institution declined (anonymous notice; the request stays open to the others).
     "request.declined": async (env) => {
       const { data, error } = await db.rpc("integration_apply_request_declined_event", { p_env: env });

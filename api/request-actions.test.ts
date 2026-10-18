@@ -55,3 +55,32 @@ describe("relist", () => {
     expect(r.statusCode).toBe(status);
   });
 });
+
+describe("chat-send", () => {
+  const post = async (body: Record<string, unknown>, rpcResult: unknown = { data: { id: "m1" }, error: null }) => {
+    rpc.mockResolvedValue(rpcResult);
+    const r = res();
+    await handler({ method: "POST", query: {}, body: { action: "chat-send", ...body }, headers: {} }, r);
+    return r;
+  };
+  const ids = { requestId: "00000000-0000-4000-8000-000000000001", institutionId: "00000000-0000-4000-8000-000000000060" };
+
+  it("renders a structured message on the server with the contract, never trusting a client body", async () => {
+    const r = await post({ ...ids, templateCode: "q.fees_breakdown", body: "anything the browser says" });
+    expect(r.statusCode).toBe(200);
+    expect(rpc).toHaveBeenCalledWith("integration_send_borrower_message", expect.objectContaining({
+      p_client_id: "client-1", p_template_code: "q.fees_breakdown",
+      p_body: "Can you break down the fees on this offer?" }));
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("refuses a bank's template from a borrower", async () => {
+    expect((await post({ ...ids, templateCode: "a.rate_final" })).statusCode).toBe(422);
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("maps the database rules (closed thread, free text too early) to 409", async () => {
+    const r = await post({ ...ids, body: "hello" }, { data: null, error: { message: "This conversation is closed" } });
+    expect(r.statusCode).toBe(409);
+  });
+});

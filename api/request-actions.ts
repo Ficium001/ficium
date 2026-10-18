@@ -10,6 +10,7 @@
  *   POST { action: "invitation-create", ... }  → invite a co-applicant
  *   POST { action: "invitation-respond", ... } → accept/decline an invitation
  *   POST { action: "invitation-revoke", ... }  → cancel a pending invitation
+ *   POST { action: "chat-send", ... }          → a message to one lender (rendered with the contract)
  *   GET  ?action=documents&requestId=          → the bank's document request, with vault matches
  *   POST { action: "document-send", ... }      → send a vault document to the bank (interface API)
  *
@@ -23,6 +24,7 @@ import { requireUser, sendAuthError } from "./_lib/auth.js";
 import { getServiceDb }               from "./_lib/db.js";
 import { generateToken, hashToken, sendInvitationEmail } from "./_lib/handlers/joint-invitation.js";
 import { listDocuments, sendDocument } from "./_lib/handlers/deal-documents.js";
+import { renderChatMessage, ContractError } from "@ficium/contract";
 
 export const config = { runtime: "nodejs" };
 
@@ -69,6 +71,45 @@ async function route(req: any, res: any): Promise<void> {
     });
     if (error) return Response.error(res, "Couldn't load your deal's progress", 500, "TRACKER_ERROR");
     return Response.ok(res, data ?? { status: "pending", stages: [], message: "Pipeline not yet created." });
+  }
+
+  // ── POST action=chat-send ──────────────────────────────────────────────────
+  // Borrowers no longer insert chat rows from the browser (the body was rendered there and never checked).
+  // The server renders a structured message with the shared contract renderer; the App DB records it (its rules
+  // trigger applies) and emits chat.message to the lender in the same transaction.
+  if (action === "chat-send") {
+    if (req.method !== "POST") return Response.methodNotAllowed(res, ["POST"]);
+    const b = (req.body ?? {}) as Record<string, unknown>;
+    const uuid = /^[0-9a-f-]{36}$/i;
+    if (![b.requestId, b.institutionId].every((v) => typeof v === "string" && uuid.test(v))) {
+      return Response.error(res, "Invalid message", 400, "INVALID_INPUT");
+    }
+    let body: string;
+    let templateCode: string | null = null;
+    let params: Record<string, unknown> = {};
+    if (typeof b.templateCode === "string" && b.templateCode) {
+      try {
+        const out = renderChatMessage(b.templateCode, (b.params as Record<string, unknown>) ?? {}, "borrower");
+        body = out.body;
+        params = out.params;
+        templateCode = b.templateCode;
+      } catch (e) {
+        return Response.error(res, e instanceof ContractError ? e.message : "Invalid message", 422, "TEMPLATE");
+      }
+    } else {
+      body = typeof b.body === "string" ? b.body.trim() : "";
+      if (!body || body.length > 2000) return Response.error(res, "Write a message (up to 2000 characters)", 422, "BODY");
+    }
+    const { data, error } = await (getServiceDb() as any).rpc("integration_send_borrower_message", {
+      p_client_id: consumerId, p_request_id: b.requestId, p_institution_id: b.institutionId,
+      p_template_code: templateCode, p_params: params, p_body: body,
+    });
+    if (error) {
+      if (/CHAT_NOT_YOURS/.test(error.message)) return Response.error(res, "Request not found", 404, "NOT_FOUND");
+      // The rules trigger: closed thread, free text before acceptance, wrong template side.
+      return Response.error(res, error.message.split("\n")[0], 409, "CHAT_RULE");
+    }
+    return Response.ok(res, data);
   }
 
   // ── Bank document requests (contract 1.6, through the interface API) ────────

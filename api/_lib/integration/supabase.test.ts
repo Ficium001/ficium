@@ -21,10 +21,8 @@ describe("bid appliers", () => {
     await expect(appliers({ rpc } as never)["bid.placed"](env("bid.placed"))).rejects.toThrow("apply_bid_event: boom");
   });
 
-  it("chat and pipeline events are still not handled (sender keeps retrying until their step ships)", () => {
-    const a = appliers({ rpc: vi.fn() } as never);
-    expect(a["chat.message"]).toBeUndefined();
-    expect(a["pipeline.stage_advanced"]).toBeUndefined();
+  it("pipeline.stage_advanced is deprecated and never handled", () => {
+    expect(appliers({ rpc: vi.fn() } as never)["pipeline.stage_advanced"]).toBeUndefined();
   });
 });
 
@@ -37,5 +35,45 @@ describe("Phase 2 and decline appliers", () => {
     const rpc = vi.fn(async () => ({ data: "apply", error: null }));
     expect(await appliers({ rpc } as never)[t](env(t))).toBe("apply");
     expect(rpc).toHaveBeenCalledWith(fn, { p_env: env(t) });
+  });
+});
+
+describe("chat.message applier (contract 1.9)", () => {
+  const chat = (data: Record<string, unknown>): Envelope => ({
+    ...env("chat.message"), aggregate_id: "r1",
+    data: { message_id: "m1", request_id: "r1", institution_id: "i1", sender_side: "institution",
+            sent_at: "2026-10-18T09:00:00Z", ...data },
+  });
+  const run = async (e: Envelope, result = "apply") => {
+    const rpc = vi.fn(async () => ({ data: result, error: null }));
+    const out = await appliers({ rpc } as never)["chat.message"](e);
+    return { out, rpc };
+  };
+
+  it("a structured message whose body matches the shared renderer is applied", async () => {
+    const { rpc } = await run(chat({ template_code: "a.processing_days", params: { days: 5 },
+                                     body: "Approval typically takes 5 business days." }));
+    expect(rpc).toHaveBeenCalledWith("integration_apply_chat_message_event",
+      expect.objectContaining({ p_refuse: null }));
+  });
+
+  it("a body that differs from its template is refused", async () => {
+    const { rpc } = await run(chat({ template_code: "a.processing_days", params: { days: 5 },
+                                     body: "Call me at 5 5 5 1 2 3 4" }));
+    expect(rpc).toHaveBeenCalledWith("integration_apply_chat_message_event",
+      expect.objectContaining({ p_refuse: "body does not match its template" }));
+  });
+
+  it("a borrower template sent as the bank is refused", async () => {
+    const { rpc } = await run(chat({ template_code: "q.fees_breakdown", params: {},
+                                     body: "Can you break down the fees on this offer?" }));
+    expect(String((rpc.mock.calls[0] as unknown[])[1] && ((rpc.mock.calls[0] as unknown[])[1] as { p_refuse: string }).p_refuse))
+      .toMatch(/not available to institution/);
+  });
+
+  it("free text goes to the App DB rules; a refused message is acknowledged, not retried", async () => {
+    const { out, rpc } = await run(chat({ template_code: null, body: "Hello" }), "refused");
+    expect(rpc).toHaveBeenCalledWith("integration_apply_chat_message_event", expect.objectContaining({ p_refuse: null }));
+    expect(out).toBe("apply");
   });
 });
