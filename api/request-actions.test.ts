@@ -84,3 +84,15 @@ describe("chat-send", () => {
     expect(r.statusCode).toBe(409);
   });
 });
+
+describe("portfolio", () => {
+  it("comes from this side's own deal progress, never the portal", async () => {
+    rpc.mockResolvedValue({ data: [{ id: "p1" }], error: null });
+    const r = res();
+    await handler({ method: "GET", query: { action: "portfolio" }, headers: {} }, r);
+    expect(r.statusCode).toBe(200);
+    expect(r.body.data).toEqual({ facilities: [{ id: "p1" }] });
+    expect(rpc).toHaveBeenCalledWith("integration_portfolio_for", { p_client_id: "client-1" });
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+});

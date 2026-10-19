@@ -1,20 +1,13 @@
 // src/individual/portfolio/api/portfolio.ts
 //
-// Unlike every other api/ module in this app, portfolio data does NOT live in
-// the App Supabase project. Accepted facilities live in `marketplace.loan_pipeline`
-// in the Institution project, which the borrower's Supabase client has no route
-// to. This calls ficium-portal-api instead, which reads that table with a
-// service session under an explicit consumer_id guard.
-//
-// Auth: we send the borrower's own Supabase access token. portal-api verifies
-// it against the App project's GoTrue (`/auth/v1/user`) — see its
-// app/core/app_auth.py. Nothing here is trusted client-side; the token IS the
-// identity claim and the API derives consumer_id from it, never from us.
+// The borrower's deals, from this side's own copy of each deal's progress (deal.progress_updated, contract
+// 1.7+), served by /api/request-actions?action=portfolio. No direct link to the portal: this used to call
+// ficium-portal-api from the browser, which verified this app's login there and compared a raw account id
+// with a hashed one, so it never returned anything.
 
 import { supabase } from "@/shared/lib/supabase";
 import type { Facility, FacilityStage } from "@/individual/portfolio/types";
 
-const API_URL = import.meta.env.VITE_PORTAL_API_URL as string | undefined;
 
 function num(v: unknown): number | null {
   if (v === null || v === undefined || v === "") return null;
@@ -56,25 +49,11 @@ function mapFacility(row: Record<string, unknown>): Facility {
 }
 
 export async function getPortfolio(): Promise<Facility[]> {
-  if (!API_URL) {
-    throw new Error("Portfolio is unavailable: VITE_PORTAL_API_URL is not configured.");
-  }
-
-  // Real getSession (not getCachedUser) — we need the access_token itself to
-  // forward, not just the user id, and it must be fresh enough for the remote
-  // service to accept it.
   const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.access_token) return [];
-
-  const resp = await fetch(`${API_URL.replace(/\/$/, "")}/marketplace/borrower/portfolio`, {
-    headers: { Authorization: `Bearer ${session.access_token}` },
+  const resp = await fetch("/api/request-actions?action=portfolio", {
+    headers: { Authorization: `Bearer ${session?.access_token ?? ""}` },
   });
-
-  if (!resp.ok) {
-    if (resp.status === 401) throw new Error("Your session expired. Please sign in again.");
-    throw new Error(`Could not load your portfolio (${resp.status}).`);
-  }
-
-  const body = await resp.json() as { facilities?: Record<string, unknown>[] };
-  return (body.facilities ?? []).map(mapFacility);
+  if (!resp.ok) throw new Error(`Could not load your portfolio (${resp.status}).`);
+  const json = (await resp.json()) as { data?: { facilities?: Record<string, unknown>[] } };
+  return (json.data?.facilities ?? []).map(mapFacility);
 }

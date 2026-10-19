@@ -77,3 +77,14 @@ describe("chat.message applier (contract 1.9)", () => {
     expect(out).toBe("apply");
   });
 });
+
+describe("contract 1.10 appliers", () => {
+  it.each([
+    ["request.window_closed", "integration_apply_request_window_closed_event"],
+    ["market.intelligence", "integration_apply_market_intelligence_event"],
+  ])("%s goes through its own atomic RPC", async (t, fn) => {
+    const rpc = vi.fn(async () => ({ data: "apply", error: null }));
+    expect(await appliers({ rpc } as never)[t](env(t))).toBe("apply");
+    expect(rpc).toHaveBeenCalledWith(fn, { p_env: env(t) });
+  });
+});

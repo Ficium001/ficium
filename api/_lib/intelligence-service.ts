@@ -5,21 +5,15 @@
  * all market data consumed by Claude and the frontend.
  *
  * Architecture:
- *   App DB view (v_request_patterns)         ─┐
- *   Portal DB via portal-api                  ├─→ IntelligenceService.fetch() → ServerCache → Claude prompts
- *   (/public/market-intelligence: rates,       │                                             → /api/intelligence
- *    acceptance, competitiveness)             ─┘
+ *   App DB view (v_request_patterns)                ─┐
+ *   market.intelligence snapshot (contract 1.10:     ├─→ IntelligenceService.fetch() → ServerCache → Claude prompts
+ *    rates, acceptance, competitiveness)            ─┘                                             → /api/intelligence
  *
- * Request-demand data (v_request_patterns) is still computed as an App DB
- * view — request rows live there. Rate/acceptance/competitiveness data is
- * NOT: bids live in the Portal DB's marketplace.bid table since the
- * institution-portal migration, so those three aggregates are computed by
- * portal-api and fetched over the same service-secret channel used by
- * /api/request-bids-bulk.
+ * Request demand is this app's own data. Rate/acceptance/competitiveness data is institution-side (bids), so it
+ * arrives as a contract event and is read from this side's snapshot: no direct call to the portal.
  */
 import { ServerCache, CacheKeys } from "./cache.js";
 import { getServiceDb } from "./db.js";
-import { Env } from "./env.js";
 import type {
   FiciumIntelligence,
   MarketRate,
@@ -30,44 +24,27 @@ import type {
 
 const CACHE_TTL_SECS = 300; // 5 minutes
 
-// Rates/acceptance/competitiveness now live entirely in the Portal DB
-// (marketplace.bid), not the App DB — the App-side v_market_rates,
-// v_acceptance_intelligence, and v_market_competitiveness views were
-// written against a legacy institution.institution_bids table that no
-// longer exists post the institution-portal migration, and were never
-// repointed. Rather than resurrect App DB views for data that isn't
-// there, fetch the equivalent aggregate from portal-api's
-// GET /public/market-intelligence, same service-secret pattern already
-// used by /api/request-bids-bulk. v_request_patterns is unaffected —
-// request demand data is still local to the App DB — so that stays a
-// direct query.
+// Rates, acceptance and competitiveness are institution-side data (bids). They arrive as the
+// market.intelligence contract event (1.10) and are read from this side's snapshot. Request
+// demand (v_request_patterns) is this app's own data and stays a direct query.
 async function _fetchMarketplaceIntel(): Promise<{
   marketRates: MarketRate[];
   acceptanceIntel: AcceptanceIntel[];
   competitiveness: MarketCompetitiveness[];
 }> {
-  const portalUrl = Env.portalApiUrl();
-  const secret    = Env.appServiceSecret();
-  const empty     = { marketRates: [], acceptanceIntel: [], competitiveness: [] };
-  if (!portalUrl || !secret) return empty;
-
+  // The latest market.intelligence snapshot (contract 1.10), received from the institution side.
+  // No call to portal-api: that used the shared service secret, a direct link between the apps.
+  const empty = { marketRates: [], acceptanceIntel: [], competitiveness: [] };
   try {
-    const res = await fetch(`${portalUrl}/public/market-intelligence`, {
-      headers: { "X-Service-Secret": secret },
-    });
-    if (!res.ok) return empty;
-    const data = await res.json() as {
-      marketRates?: MarketRate[];
-      acceptanceIntel?: AcceptanceIntel[];
-      competitiveness?: MarketCompetitiveness[];
-    };
+    const { data, error } = await (getServiceDb() as any).rpc("integration_market_intelligence");
+    if (error || !data) return empty;
     return {
       marketRates:     (data.marketRates     ?? []) as MarketRate[],
       acceptanceIntel: (data.acceptanceIntel ?? []) as AcceptanceIntel[],
       competitiveness: (data.competitiveness ?? []) as MarketCompetitiveness[],
     };
   } catch {
-    return empty; // degrade gracefully — request patterns still work
+    return empty; // degrade gracefully: request patterns still work
   }
 }
 

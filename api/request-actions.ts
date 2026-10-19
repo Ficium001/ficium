@@ -11,6 +11,7 @@
  *   POST { action: "invitation-respond", ... } → accept/decline an invitation
  *   POST { action: "invitation-revoke", ... }  → cancel a pending invitation
  *   POST { action: "chat-send", ... }          → a message to one lender (rendered with the contract)
+ *   GET  ?action=portfolio                     → the borrower's deals, from this side's own deal progress
  *   GET  ?action=documents&requestId=          → the bank's document request, with vault matches
  *   POST { action: "document-send", ... }      → send a vault document to the bank (interface API)
  *
@@ -71,6 +72,16 @@ async function route(req: any, res: any): Promise<void> {
     });
     if (error) return Response.error(res, "Couldn't load your deal's progress", 500, "TRACKER_ERROR");
     return Response.ok(res, data ?? { status: "pending", stages: [], message: "Pipeline not yet created." });
+  }
+
+  // ── GET action=portfolio ───────────────────────────────────────────────────
+  // From this side's own copy of each deal (deal.progress_updated). The browser used to call portal-api
+  // directly (verified against this app's auth there), and it never returned anything.
+  if (action === "portfolio") {
+    if (req.method !== "GET") return Response.methodNotAllowed(res, ["GET"]);
+    const { data, error } = await (getServiceDb() as any).rpc("integration_portfolio_for", { p_client_id: consumerId });
+    if (error) return Response.error(res, "Couldn't load your portfolio", 500, "PORTFOLIO_ERROR");
+    return Response.ok(res, { facilities: data ?? [] });
   }
 
   // ── POST action=chat-send ──────────────────────────────────────────────────
