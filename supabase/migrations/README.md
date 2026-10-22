@@ -202,3 +202,16 @@ SELECT * FROM marketplace_sync.health();
 -- Check recent sync calls
 SELECT * FROM marketplace_sync.recent_calls(5);
 ```
+
+---
+
+## Offers feed (Oct 2026)
+
+| File | Purpose | Status |
+|------|---------|--------|
+| `20261022120000_offers_v1.sql` | `admin.offer` + `admin.offer_change` (append-only) + `public.offer_listing` (borrower read model) + `admin.offer_*` functions | **Applied** 2026-10-22 as migration `offers_v1` |
+
+Ficium staff curate offers in `ficium-admin` (role `ficium_admin_app`, functions only). The only path
+into `public.offer_listing` is `admin.offer_publish`. Borrowers (`authenticated`) can SELECT live rows
+only (`live_until > now()`, i.e. not expired and verified within 30 days); `anon` has no access.
+Explicit GRANTs are included — RLS alone grants nothing.
