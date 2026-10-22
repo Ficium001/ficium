@@ -94,7 +94,7 @@ export function Phone({ scene, sceneIndex, activeOffer }: { scene: Scene; sceneI
       <div className="w-full h-full rounded-[32px] sm:rounded-[38px] p-[44px_22px_22px] overflow-hidden relative" style={{ background: GRADIENT }}>
         <div className="absolute top-3.5 left-1/2 -translate-x-1/2 w-[100px] h-[26px] bg-ink rounded-pill" />
         <div className="flex justify-between items-center mt-2 mb-5">
-          <div className="text-white text-[13px] opacity-70">Your request</div>
+          <div className="text-white text-[13px] opacity-70">Example request</div>
           <div className="bg-white/15 px-2.5 py-1 rounded-pill text-white text-[11px] font-semibold flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-good animate-pulse-ring-green" /> LIVE
           </div>
@@ -325,7 +325,7 @@ function StoryCard({ beat, local }: { beat: number; local: number }) {
   return (
     <div className="w-[360px] rounded-hero p-7 text-white shadow-phone relative overflow-hidden" style={{ background: GRADIENT }}>
       <div className="flex justify-between items-center mb-5">
-        <div className="text-[13px] opacity-70">Your request</div>
+        <div className="text-[13px] opacity-70">Example request</div>
         <div className="bg-white/15 px-2.5 py-1 rounded-pill text-[11px] font-semibold flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-good" /> {beat === 0 ? "DRAFT" : beat === 2 ? "MATCHED" : "LIVE"}
         </div>
