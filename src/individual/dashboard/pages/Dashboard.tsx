@@ -10,7 +10,8 @@ import { useProfile, useMyRequests, useNextActions } from "@/individual/dashboar
 import { useUnreadCount } from "@/shared/notifications/useUnreadCount";
 import { useDashboardInsights }  from "@/individual/dashboard/hooks/useDashboardInsights";
 import { useSnapshot }           from "@/individual/networth/hooks/useSnapshot";
-import { getGreeting, SPARK_NETWORTH, SPARK_REQUESTS } from "@/individual/dashboard/config/dashboard";
+import { getGreeting } from "@/individual/dashboard/config/dashboard";
+import { useNetWorthHistory } from "@/individual/finance/hooks/useFinanceReporting";
 import {
   OnboardingBanners,
   SmartInsightsFeed, MarketTile, NextActions,
@@ -40,6 +41,7 @@ export default function Dashboard() {
   const { data: profile,  isLoading: profileLoading  } = useProfile();
   const { data: requests = [] } = useMyRequests();
   const { data: snapshot } = useSnapshot();
+  const { data: history = [] } = useNetWorthHistory(90);
   const { actions }      = useNextActions();
   const { insights, activeIdx, next } = useDashboardInsights();
 
@@ -55,6 +57,9 @@ export default function Dashboard() {
   const netWorth       = snapshot?.netWorth      ?? profile?.totalNetWorth ?? null;
   const totalAssets    = snapshot?.totalAssets    ?? 0;
   const totalLiabs     = snapshot?.totalLiabilities ?? 0;
+  // Sparkline only from the user's real net-worth history (finance.net_worth_history);
+  // with fewer than two points there is no trend to show, so none is drawn.
+  const netWorthTrend  = history.length >= 2 ? history.map((p) => p.netWorth) : undefined;
 
   const handleSignOut = async () => { await signOut(); navigate("/"); };
 
@@ -71,7 +76,7 @@ export default function Dashboard() {
     hasNetWorth
       ? {
           label: "Net worth", value: netWorth ?? 0, prefix: "Rs ", format: "comma", accounting: true,
-          sparkline: SPARK_NETWORTH, sparklineColor: "#A78BFA",
+          sparkline: netWorthTrend, sparklineColor: "#A78BFA",
           link: { label: "View breakdown →", onClick: () => navigate("/networth") },
           breakdown: [
             { label: "Assets",      value: totalAssets > 0 ? fmtCompact(totalAssets) : "—" },
@@ -79,8 +84,8 @@ export default function Dashboard() {
           ],
         }
       : { label: "Net worth", display: "—", hint: "Add finances" },
-    { label: "Active requests", value: activeRequests, sparkline: SPARK_REQUESTS, sparklineColor: "#60A5FA" },
-    { label: "New bids", value: totalNewBids, badge: totalNewBids > 0 ? "Live" : undefined, sparkline: SPARK_REQUESTS, sparklineColor: "#4ADE80", trendTone: "good" },
+    { label: "Active requests", value: activeRequests },
+    { label: "New bids", value: totalNewBids, badge: totalNewBids > 0 ? "Live" : undefined },
     healthScore != null
       ? { label: "Health score", value: healthScore, suffix: "/100", ring: healthScore, ringMax: 100, link: { label: "Full report →", onClick: () => navigate("/health") } }
       : { label: "Health score", display: "—", hint: "Complete profile" },
