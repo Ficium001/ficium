@@ -72,33 +72,6 @@ export function EmptySection({ message, cta, onCta }: { message: string; cta: st
   );
 }
 
-const BRAND_GRADIENT = "linear-gradient(135deg, #3536DC 0%, #356EF4 50%, #8231EC 100%)";
-const GOOD_GRADIENT  = "linear-gradient(135deg, #12B98A 0%, #0B8A66 100%)";
-
-export function ScoreCard({ label, value, suffix, icon: Icon, tone }: {
-  label: string; value: number | null | undefined; suffix: string;
-  icon: React.ElementType; tone: "gradient" | "good" | "plain";
-}) {
-  const dark = tone !== "plain";
-  const bg = tone === "gradient" ? BRAND_GRADIENT : tone === "good" ? GOOD_GRADIENT : undefined;
-  return (
-    <div
-      className={[
-        "rounded-card p-4 flex flex-col gap-1.5",
-        dark ? "shadow-xs" : "bg-white border border-line shadow-xs",
-      ].join(" ")}
-      style={bg ? { background: bg } : undefined}
-    >
-      <Icon size={15} className={dark ? "text-white/70" : "text-muted"} />
-      <div className={["font-display text-[28px] font-extrabold leading-none", dark ? "text-white" : "text-ink"].join(" ")}>
-        {value == null ? "—" : value}
-        <span className="text-[12px] font-semibold ml-0.5 opacity-60">{value != null ? suffix : ""}</span>
-      </div>
-      <div className={["text-[11px] font-semibold leading-tight", dark ? "text-white/65" : "text-muted"].join(" ")}>{label}</div>
-    </div>
-  );
-}
-
 export function LoadingScreen() {
   return (
     <div className="min-h-screen bg-paper flex items-center justify-center">
@@ -111,7 +84,7 @@ export function LoadingScreen() {
 // Edit form shared primitives
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function EditField({ label, value, onChange, type = "text", readOnly }: {
+function EditField({ label, value, onChange, type = "text", readOnly }: {
   label: string; value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   type?: string; readOnly?: boolean;
@@ -132,7 +105,7 @@ export function EditField({ label, value, onChange, type = "text", readOnly }: {
   );
 }
 
-export function SaveBar({ onSave, onCancel, saving }: {
+function SaveBar({ onSave, onCancel, saving }: {
   onSave: () => void; onCancel: () => void; saving?: boolean;
 }) {
   return (

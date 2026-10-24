@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchLoanTracker } from "../api/tracker";
 
-export const TrackerKeys = {
+const TrackerKeys = {
   detail: (requestId: string) => ["tracker", requestId] as const,
 };
 

@@ -22,7 +22,7 @@ const GRADIENT = "linear-gradient(135deg, #3536DC 0%, #356EF4 50%, #8231EC 100%)
 
 // ── FLogo ─────────────────────────────────────────────────────────────────────
 
-export function FLogo({ size = 32, className = "", colorClass = "" }: {
+function FLogo({ size = 32, className = "", colorClass = "" }: {
   size?: number; className?: string; colorClass?: string;
 }) {
   const mono = colorClass.includes("white") || colorClass.includes("paper") || colorClass.includes("cream");
@@ -88,7 +88,7 @@ export function Nav({ scrollY, progress }: { scrollY: number; progress: number }
 
 // ── Phone ─────────────────────────────────────────────────────────────────────
 
-export function Phone({ scene, sceneIndex, activeOffer }: { scene: Scene; sceneIndex: number; activeOffer: number }) {
+function Phone({ scene, sceneIndex, activeOffer }: { scene: Scene; sceneIndex: number; activeOffer: number }) {
   return (
     <div className="w-[280px] sm:w-[320px] lg:w-[340px] aspect-340/680 bg-ink rounded-[40px] sm:rounded-[48px] p-3 relative shadow-phone">
       <div className="w-full h-full rounded-[32px] sm:rounded-[38px] p-[44px_22px_22px] overflow-hidden relative" style={{ background: GRADIENT }}>

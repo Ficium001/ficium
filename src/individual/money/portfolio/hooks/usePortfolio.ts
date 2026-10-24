@@ -2,7 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { getPortfolio } from "@/individual/money/portfolio/api/portfolio";
 
-export const PortfolioQueryKeys = {
+const PortfolioQueryKeys = {
   facilities: ["portfolio", "facilities"] as const,
 };
 

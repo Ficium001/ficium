@@ -1,8 +1,8 @@
 export * from '../base/index';
 export {
-  SectionHead, Panel, PanelHead, HoverCard, CardIcon,
-  StatMini, Feed, FeedItem, DarkCallout,
-  Tag, statusTone, ProgressBar, SkeletonBlock,
+  SectionHead, Panel, PanelHead, HoverCard, 
+   Feed, FeedItem, DarkCallout,
+     
 } from './kit';
 export { default as Hero, GradText, HeroButton } from './Hero';
 export type { HeroStat } from './Hero';
