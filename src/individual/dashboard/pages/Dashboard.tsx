@@ -269,10 +269,10 @@ export default function Dashboard() {
             action={{ label: "View all offers →", to: "/requests" }}
           />
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <MarketTile icon={<HandCoins size={18} />} label="Personal Loan"  title="Loans that compete for you"   metric="Best rate"    metricValue="8.2% from 6 providers"      bg="bg-ficium"      href="/requests/new" />
-            <MarketTile icon={<CreditCard size={18} />} label="Credit Card"   title="Card offers tailored to you"  metric="Top cashback" metricValue="3.5% from 4 providers"      bg="bg-violet-600"  href="/requests/new" />
-            <MarketTile icon={<PiggyBank size={18} />}  label="Deposit"       title="Deposits with real yield"     metric="Top yield"    metricValue="5.4% from 3 providers"      bg="bg-amber-400"   dark href="/requests/new" />
-            <MarketTile icon={<LineChart size={18} />}  label="Wealth"        title="Investments that find you"    metric="Fee saving"   metricValue="0.4% potential saving"      bg="bg-emerald-400" dark href="/requests/new" />
+            <MarketTile icon={<HandCoins size={18} />} label="Personal Loan"  title="Loans that compete for you"   metric="How it works" metricValue="Banks bid for you"  bg="bg-ficium"      href="/requests/new?type=personal" />
+            <MarketTile icon={<CreditCard size={18} />} label="Credit Card"   title="Card offers tailored to you"  metric="How it works" metricValue="Compare card offers" bg="bg-violet-600"  href="/requests/new?type=credit" />
+            <MarketTile icon={<PiggyBank size={18} />}  label="Deposit"       title="Deposits with real yield"     metric="How it works" metricValue="Banks bid on yield" bg="bg-amber-400"   dark href="/requests/new?type=deposit" />
+            <MarketTile icon={<LineChart size={18} />}  label="Wealth"        title="Investments that find you"    metric="Not sure?"    metricValue="Find your fit"     bg="bg-emerald-400" dark href="/requests/new?quiz=1" />
           </div>
         </div>
 

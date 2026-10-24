@@ -394,10 +394,10 @@ export function Products() {
       </Reveal>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5 lg:gap-6">
         {[
-          { icon: <HandCoins size={28} />, tone: "gradient" as Tone, tag: "Personal", title: "Loans that compete for you", desc: "Personal loans, car loans, home loans. Banks across Mauritius bid against each other for your business.", metric: "Best rate seen", metricValue: "8.2% APR" },
-          { icon: <Building2 size={28} />, tone: "ink" as Tone, tag: "Business", title: "SME funding, on demand", desc: "Working capital, equipment finance, growth credit. Banks compete to fund your business.", metric: "Best rate seen", metricValue: "7.9% APR" },
-          { icon: <PiggyBank size={28} />, tone: "light" as Tone, tag: "Deposits", title: "Deposits with real yield", desc: "Lock in fixed-term deposits. Banks bid against each other to hold your money.", metric: "Top yield this week", metricValue: "5.4% p.a." },
-          { icon: <LineChart size={28} />, tone: "tint" as Tone, tag: "Wealth", title: "Investments that find you", desc: "Bank wealth desks pitch their best portfolios for your profile. Compare returns, fees, terms.", metric: "Avg. fee saving", metricValue: "0.4%" },
+          { icon: <HandCoins size={28} />, tone: "gradient" as Tone, tag: "Personal", title: "Loans that compete for you", desc: "Personal loans, car loans, home loans. Banks across Mauritius bid against each other for your business.", metric: "You post once", metricValue: "Banks bid" },
+          { icon: <Building2 size={28} />, tone: "ink" as Tone, tag: "Business", title: "SME funding, on demand", desc: "Working capital, equipment finance, growth credit. Banks compete to fund your business.", metric: "One request", metricValue: "Banks compete" },
+          { icon: <PiggyBank size={28} />, tone: "light" as Tone, tag: "Deposits", title: "Deposits with real yield", desc: "Lock in fixed-term deposits. Banks bid against each other to hold your money.", metric: "You set the terms", metricValue: "Banks bid" },
+          { icon: <LineChart size={28} />, tone: "tint" as Tone, tag: "Wealth", title: "Investments that find you", desc: "Bank wealth desks pitch their best portfolios for your profile. Compare returns, fees, terms.", metric: "Your profile", metricValue: "Desks pitch" },
         ].map((c, i) => (
           <Reveal key={c.tag} delay={i * 90}>
             <ProductCard {...c} />
