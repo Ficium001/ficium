@@ -15,7 +15,7 @@
 import { useNavigate }       from "react-router-dom";
 import { Target, Plus }      from "lucide-react";
 import { useMyRequests }     from "@/individual/requests/hooks/useRequests";
-import { useSnapshot }       from "@/individual/networth/hooks/useSnapshot";
+import { useSnapshot }       from "@/individual/money/networth/hooks/useSnapshot";
 
 // ─── types ────────────────────────────────────────────────────
 
