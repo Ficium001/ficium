@@ -3,7 +3,6 @@ import {
   getProfileSummary,
   computeNextActions,
   computeBankReadiness,
-  computeHealthRecommendations,
 } from "@/individual/dashboard/api/profile";
 
 export { useMyRequests } from "@/individual/requests/hooks/useRequests";
@@ -39,10 +38,3 @@ export function useBankReadiness() {
   };
 }
 
-export function useHealthRecommendations() {
-  const { data: profile } = useProfile();
-  return {
-    recommendations: profile ? computeHealthRecommendations(profile) : [],
-    isReady:         !!profile,
-  };
-}

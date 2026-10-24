@@ -10,7 +10,7 @@ import {
 } from "@/individual/requests/api/requests";
 
 // ── Query keys ────────────────────────────────────────────────────────────────
-export const RequestQueryKeys = {
+const RequestQueryKeys = {
   all:      ["requests"]                          as const,
   mine:     ["requests", "mine"]                  as const,
   detail:   (id: string) => ["requests", id]      as const,

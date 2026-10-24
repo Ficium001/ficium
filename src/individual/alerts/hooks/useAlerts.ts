@@ -8,7 +8,6 @@ import {
 import type { AppNotification } from "@/individual/alerts/api/notifications";
 
 // Unread count lives in shared/ (page-chrome bell badge is cross-module).
-export { useUnreadCount } from "@/shared/notifications/useUnreadCount";
 
 // ── Query keys — single registry for all notification cache ──────────────────
 export const NotificationQueryKeys = {

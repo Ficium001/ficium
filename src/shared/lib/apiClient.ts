@@ -69,11 +69,3 @@ export async function apiFetch(input: string, init: RequestInit = {}): Promise<R
   return res;
 }
 
-/** apiFetch + JSON parse. Throws on non-OK (after the auth-error mapping above). */
-export async function apiJson<T>(input: string, init: RequestInit = {}): Promise<T> {
-  const res = await apiFetch(input, init);
-  if (!res.ok) {
-    throw new Error(`Request failed (${res.status})`);
-  }
-  return res.json() as Promise<T>;
-}

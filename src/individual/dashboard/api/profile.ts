@@ -1,5 +1,4 @@
 import { supabase } from "@/shared/lib/supabase";
-export { formatMUR, formatProductType } from "@/shared/lib/format";
 
 export type ProfileCompletion = {
   accountCreated: boolean; kycVerified: boolean; proofOfAddressDone: boolean;
@@ -86,20 +85,3 @@ export function computeBankReadiness(p: ProfileSummary): number {
   return Math.min(100, score);
 }
 
-export function computeHealthRecommendations(p: ProfileSummary): string[] {
-  const recs: string[] = [];
-  if (!p.completion.financialProfileDone) {
-    recs.push("Complete your financial profile to unlock a full health score.");
-    return recs;
-  }
-  if (p.healthScore !== null && p.healthScore < 60) {
-    if (p.hasExistingLoans) recs.push("Reducing existing debt will improve your score.");
-    if ((p.monthlyIncome ?? 0) < 25000) recs.push("A higher declared income improves your health score.");
-    if (!p.completion.proofOfAddressDone) recs.push("Adding proof of address improves eligibility.");
-    if (!p.completion.sourceOfWealthDone) recs.push("Declaring your source of wealth boosts compliance score.");
-  }
-  if (recs.length === 0 && p.healthScore !== null && p.healthScore >= 60) {
-    recs.push("Your profile looks strong. Keep it up to date for the best offers.");
-  }
-  return recs;
-}

@@ -78,10 +78,3 @@ export function formatDistanceToNow(dateStr: string): string {
   return past ? `${label} ago` : `in ${label}`;
 }
 
-/**
- * Truncate a UUID for display.
- * e.g. "a1b2c3d4-..." → "a1b2c3d4…"
- */
-export function shortId(id: string): string {
-  return id.slice(0, 8) + "…";
-}

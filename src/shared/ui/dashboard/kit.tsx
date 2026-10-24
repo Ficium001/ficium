@@ -21,7 +21,6 @@
 import { type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
-import { useInView, usePrefersReducedMotion } from '../motion/hooks'
 
 // ─── SectionHead ──────────────────────────────────────────────
 export function SectionHead({
@@ -100,55 +99,6 @@ export function HoverCard({
   )
 }
 
-export function CardIcon({ children }: { children: ReactNode }) {
-  return (
-    <div
-      className='w-[42px] h-[42px] rounded-[13px] grid place-items-center shrink-0 bg-brand-soft'
-    >
-      {children}
-    </div>
-  )
-}
-
-// ─── StatMini ─────────────────────────────────────────────────
-export function StatMini({
-  icon, label, value, tone = 'violet', live = false, to,
-}: {
-  icon:  ReactNode
-  label: string
-  value: ReactNode
-  tone?: 'violet' | 'green'
-  live?: boolean
-  to?:   string
-}) {
-  const inner = (
-    <div className='bg-white border border-line rounded-[18px] shadow-card px-5 py-5 flex items-center gap-3.5
-                    transition-transform duration-300 ease-swift hover:-translate-y-0.5'>
-      <div
-        className={`w-[38px] h-[38px] rounded-[11px] grid place-items-center shrink-0 ${
-          tone === 'green' ? 'bg-[#F2FBF7]' : 'bg-[#F4EFFE]'
-        }`}
-      >
-        {icon}
-      </div>
-      <div className='min-w-0'>
-        <div className='text-[13.5px] font-semibold text-ink truncate'>{label}</div>
-        {live ? (
-          <div className='text-[12px] text-good font-semibold flex items-center gap-1.5 mt-0.5'>
-            <span className='w-[7px] h-[7px] rounded-full bg-good animate-pulse-ring-green' aria-hidden />
-            {value}
-          </div>
-        ) : (
-          <div className='font-display font-bold tracking-display text-[20px] text-ink leading-tight'>
-            {value}
-          </div>
-        )}
-      </div>
-    </div>
-  )
-  return to ? <Link to={to} className='block'>{inner}</Link> : inner
-}
-
 // ─── FeedItem ─────────────────────────────────────────────────
 const FEED_DOT: Record<string, string> = {
   good:   '#0FA47A',
@@ -214,67 +164,3 @@ export function DarkCallout({
   )
 }
 
-// ─── Tag ──────────────────────────────────────────────────────
-const TAG_STYLES: Record<string, string> = {
-  green: 'bg-[#E9F9F2] text-good',
-  amber: 'bg-[#FDF3E3] text-warn',
-  red:   'bg-[#FDECEC] text-bad',
-  blue:  'bg-[#ECF2FE] text-[#1E6CF5]',
-  grey:  'bg-ink/5 text-muted',
-}
-
-export function Tag({
-  tone = 'grey', children,
-}: { tone?: keyof typeof TAG_STYLES; children: ReactNode }) {
-  return (
-    <span className={`inline-flex items-center gap-1.5 text-[11.5px] font-semibold px-2.5 py-[3px] rounded-pill capitalize ${TAG_STYLES[tone]}`}>
-      {children}
-    </span>
-  )
-}
-
-// statusTone maps a domain status to a Tag tone. Co-located with Tag/TAG_STYLES
-// on purpose; fast-refresh only-export-components doesn't apply to this helper.
-export function statusTone(status: string): keyof typeof TAG_STYLES {
-  switch (status) {
-    case 'accepted': case 'approved': case 'success': return 'green'
-    case 'pending': case 'expired': case 'expiring':  return 'amber'
-    case 'rejected': case 'failed': case 'blocked':   return 'red'
-    case 'open': case 'bidding': case 'submitted':
-    case 'in-progress':                               return 'blue'
-    default:                                          return 'grey'
-  }
-}
-
-// ─── ProgressBar ──────────────────────────────────────────────
-export function ProgressBar({
-  value, label = 'Score',
-}: { value: number; label?: string }) {
-  const reduced = usePrefersReducedMotion()
-  const { ref, inView } = useInView<HTMLDivElement>(0.4)
-  const pct = Math.max(0, Math.min(100, Math.round(value)))
-  const shown = reduced || inView
-
-  return (
-    <div ref={ref} className='my-3'>
-      <div className='flex justify-between text-[12px] text-muted font-medium mb-1.5'>
-        <span>{label}</span>
-        <b className='text-ink'>{pct}%</b>
-      </div>
-      <div className='h-1.5 rounded-pill bg-[#EFEFF5] overflow-hidden'>
-        <div
-          className='h-full rounded-pill bg-edge-h'
-          style={{
-            width: shown ? `${pct}%` : 0,
-            transition: reduced ? undefined : 'width 1.2s cubic-bezier(.22,1,.36,1)',
-          }}
-        />
-      </div>
-    </div>
-  )
-}
-
-// ─── Skeleton ─────────────────────────────────────────────────
-export function SkeletonBlock({ className = 'h-24' }: { className?: string }) {
-  return <div className={`animate-pulse bg-ink/5 rounded-card ${className}`} aria-hidden />
-}

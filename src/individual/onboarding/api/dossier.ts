@@ -62,7 +62,7 @@ function computeDebtToIncome(d: DossierInput): number {
   return totalRepayment / totalIncome;
 }
 
-export function computeHealthScore(d: DossierInput): number {
+function computeHealthScore(d: DossierInput): number {
   let score = 50;
   const income = computeTotalIncome(d);
   if (income >= 200000) score += 22; else if (income >= 100000) score += 16;
@@ -86,7 +86,7 @@ export function computeHealthScore(d: DossierInput): number {
   return Math.max(0, Math.min(100, Math.round(score)));
 }
 
-export function computeRiskScore(d: DossierInput): number {
+function computeRiskScore(d: DossierInput): number {
   let risk = 30;
   if (d.compliance.bankruptcy) risk += 35; if (d.compliance.blacklisted) risk += 30;
   if (d.compliance.missedRepayments) risk += 18; if (d.compliance.legalDisputes) risk += 12;
@@ -100,7 +100,7 @@ export function computeRiskScore(d: DossierInput): number {
   return Math.max(0, Math.min(100, Math.round(risk)));
 }
 
-export function computeAffordabilityScore(d: DossierInput): number {
+function computeAffordabilityScore(d: DossierInput): number {
   const income = computeTotalIncome(d);
   if (income === 0) return 0;
   const dti = computeDebtToIncome(d);
@@ -128,7 +128,7 @@ function requiresEDD(d: DossierInput): boolean {
  * NetWorth editor to fill — we never fabricate them. Generated columns
  * (total_*, net_worth, debt_to_income_ratio) are intentionally omitted.
  */
-export function snapshotFromDossier(input: DossierInput, clientId: string) {
+function snapshotFromDossier(input: DossierInput, clientId: string) {
   const loans = input.hasExistingLoans ? input.loans : [];
   const balByType = (t: LoanType) =>
     loans.filter((l) => l.loanType === t).reduce((s, l) => s + (l.outstandingAmount || 0), 0);

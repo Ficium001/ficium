@@ -10,11 +10,11 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { supabase } from "@/shared/lib/supabase";
 
-export const UnreadCountQueryKey = (userId: string) =>
+const UnreadCountQueryKey = (userId: string) =>
   ["notifications", "unread", userId] as const;
 
 /** Count of unread notifications for the current user (RLS-scoped). */
-export async function getUnreadCount(): Promise<number> {
+async function getUnreadCount(): Promise<number> {
   const { count, error } = await supabase
     .from("notifications")
     .select("id", { count: "exact", head: true })
