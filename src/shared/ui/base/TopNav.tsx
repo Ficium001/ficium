@@ -10,13 +10,14 @@
  */
 
 import { Link, useLocation } from "react-router-dom";
-import { Home, Target, TrendingUp, User } from "lucide-react";
+import { Home, Tag, Target, TrendingUp, User } from "lucide-react";
 import { FiciumLogo } from "./FiciumLogo";
 import { FiaMark } from "./FiaMark";
 
 const tabs = [
   { to: "/dashboard", label: "Home",     icon: Home,       key: "home"     },
   { to: "/requests",  label: "Requests", icon: Target,     key: "requests" },
+  { to: "/offers",    label: "Offers",   icon: Tag,        key: "offers"   },
   { to: "/markets",   label: "Markets",  icon: TrendingUp, key: "markets"  },
   { to: "/profile",   label: "Profile",  icon: User,       key: "profile"  },
 ] as const;

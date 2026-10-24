@@ -58,10 +58,10 @@ const URL_TYPE_MAP: Record<string, ProductType> = {
 /* ─── "Not sure what fits?" risk quiz ───────────────────────
    Scoped to product types that are fully wired end-to-end on the
    institution side (catalog.product row + dedicated pipeline template) —
-   see ficium-portal-api migrations from Jul 2026. `savings_plan` is
-   deliberately excluded: catalog.product_id_for_app_type() has no mapping
-   for it yet and it silently falls through to personal_loan. Don't add it
-   here until that's fixed. */
+   see ficium-portal-api migrations from Jul 2026. `savings_plan` is not in
+   the quiz yet. Its portal mapping now exists (checked on the Portal DB,
+   22 Oct 2026: savings_plan -> catalog 'savings_plan'), so adding it is a
+   product decision, no longer a wiring gap. */
 type RiskBucket = "preservation" | "balanced" | "growth";
 
 const BUCKET_LABEL: Record<RiskBucket, string> = {
