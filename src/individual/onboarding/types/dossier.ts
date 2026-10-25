@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 // ── Loan sub-schema ───────────────────────────────────────────────────────────
-export const loanSchema = z.object({
+const loanSchema = z.object({
   loanType:          z.enum(["personal","mortgage","vehicle","business","credit_card","other"]),
   outstandingAmount: z.number().min(0).max(1_000_000_000),
   monthlyRepayment:  z.number().min(0).max(10_000_000),

@@ -254,11 +254,9 @@ VDESC = {
     "keepalive": "Warms the Railway API to reduce cold starts",
     "kyc": "KYC — Rekognition face match, liveness, MRZ, Claude Vision extraction",
     "market": "Market data refresh",
-    "rate-applicant": "Calls the rating engine for risk tier and score",
     "request-actions": "Request lifecycle actions",
     "request-bids-bulk": "Bids for many requests in one call",
     "request-bids": "Bids for one request",
-    "request-builder": "AI-assisted request construction",
 }
 lines += [
     "## Borrower app serverless functions (`ficium/api/*.ts`, Vercel)",

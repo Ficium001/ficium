@@ -121,7 +121,6 @@ export async function signUpBusiness(input: SignUpBusinessInput): Promise<SignUp
   return { ok: true, userId: data.user.id, needsEmailConfirmation: !data.session };
 }
 
-
 /* ============================================================
    SIGN IN
    ============================================================ */
@@ -181,34 +180,9 @@ export async function signIn(
    SIGN OUT
    ============================================================ */
 
-export async function signOut(): Promise<void> {
-  await audit.logout();
-  await supabase.auth.signOut();
-}
-
 /* ============================================================
    CURRENT USER
    ============================================================ */
-
-/**
- * Current user's id, read from the locally-cached session.
- *
- * Deliberately uses `getSession()` (local, zero network) rather than
- * `getUser()`, which issues a `GET /auth/v1/user` round-trip on EVERY call
- * to re-validate the JWT against the auth server.
- *
- * That validation is redundant for our use: the id is only ever used to
- * scope a query the database already enforces via RLS. A forged or expired
- * token cannot widen access — Postgres rejects it regardless of what this
- * returns. `autoRefreshToken` keeps the cached session fresh.
- *
- * Use `supabase.auth.getUser()` directly only when server-verified identity
- * is genuinely required (e.g. before a privileged, non-RLS-guarded action).
- */
-export async function getCurrentUserId(): Promise<string | null> {
-  const { data } = await supabase.auth.getSession();
-  return data.session?.user?.id ?? null;
-}
 
 /* ============================================================
    ERROR MAPPING

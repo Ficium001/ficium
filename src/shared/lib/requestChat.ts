@@ -66,24 +66,6 @@ export async function getThread(
   return (data ?? []) as ChatMessage[];
 }
 
-/**
- * Substitute {param} placeholders in a template body.
- *
- * The rendered text is what gets stored, so the thread stays readable
- * without re-resolving templates; `template_code` and `params` are kept
- * alongside it so the structured origin is still auditable.
- */
-export function renderTemplate(
-  tpl: MessageTemplate,
-  params: Record<string, unknown> = {},
-): string {
-  return tpl.body_template.replace(/\{(\w+)\}/g, (whole, key: string) => {
-    const v = params[key];
-    if (v === undefined || v === null) return whole;
-    return Array.isArray(v) ? v.join(", ") : String(v);
-  });
-}
-
 async function chatSend(client: SupabaseClient, body: Record<string, unknown>): Promise<void> {
   const { data: { session } } = await client.auth.getSession();
   const res = await fetch("/api/request-actions", {

@@ -17,19 +17,8 @@
 import { execSync } from "node:child_process";
 
 const ALLOWLIST = [
-  {
-    ghsa: "GHSA-qwww-vcr4-c8h2",
-    package: "react-router",
-    reason:
-      "CSRF bypass in React Router's RSC (React Server Components) mode. This " +
-      "app is a client-rendered Vite SPA using createBrowserRouter/RouterProvider " +
-      "(src/app/routes.tsx, src/main.tsx); it has no RSC entrypoint and no " +
-      "server-side action handling, so the vulnerable code path is not reachable. " +
-      "No fixed release exists: the advisory covers 7.12.0-8.2.0 and the latest " +
-      "published react-router-dom is 7.18.1, so the only npm-offered 'fix' is a " +
-      "downgrade to 7.11.0 -- older, breaking, and no safer for this usage.",
-    reviewBy: "2026-10-31",
-  },
+  // Empty. GHSA-qwww-vcr4-c8h2 (react-router) removed 2026-10-24: no longer
+  // reported against the locked react-router-dom 7.18.4.
 ];
 
 const raw = (() => {

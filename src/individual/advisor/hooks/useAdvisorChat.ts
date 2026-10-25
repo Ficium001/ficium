@@ -12,7 +12,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { askAdvisor, type ChatMessage as WireMessage } from '../api/advisor'
 import { clearHistory, loadHistory, saveExchange } from '../api/history'
-import { ASSISTANT, greetingFor } from '../config/assistant'
 import { DEFAULT_MOVES, QUICK_CHIPS } from '../config/briefing'
 import type { ChatMessage, Move } from '../types'
 
@@ -145,4 +144,3 @@ export function useAdvisorChat(
   return { messages, thinking, used, remaining, exhausted, send, reset, clear }
 }
 
-export { ASSISTANT, greetingFor }

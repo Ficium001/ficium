@@ -62,60 +62,6 @@ export async function getCachedUser(): Promise<{
   return { data: { user: data.session?.user ?? null }, error: null };
 }
 
-/**
- * A no-op storage adapter — schema clients use this so their internal
- * GoTrueClient never reads/writes localStorage and never triggers the
- * "multiple GoTrueClient instances" warning.
- */
-const nullStorage = {
-  getItem:    (_key: string) => null,
-  setItem:    (_key: string, _val: string) => {},
-  removeItem: (_key: string) => {},
-};
-
-// Schema-scoped clients are cached — no duplicate instances.
-const schemaClients = new Map<SchemaName, AnyClient>();
-schemaClients.set("public", supabase);
-
-/**
- * Returns a Supabase client scoped to the given Postgres schema.
- * Uses a no-op storage + fetch interceptor so:
- *  - No extra GoTrueClient warnings
- *  - RLS always sees the authenticated user via injected Bearer token
- */
-export function db(schema: SchemaName = "public"): AnyClient {
-  if (schema === "public") return supabase;
-  const cached = schemaClients.get(schema);
-  if (cached) return cached;
-
-  const client: AnyClient = createClient(url, key, {
-    db:   { schema },
-    auth: {
-      persistSession:     false,
-      autoRefreshToken:   false,
-      detectSessionInUrl: false,
-      storage:            nullStorage,
-      // Unique per-schema key so each schema client's internal GoTrueClient
-      // owns a distinct storageKey. Without this they all default to the same
-      // key, which trips supabase-js's "multiple GoTrueClient instances"
-      // warning. Combined with nullStorage, nothing is ever persisted.
-      storageKey:         `ficium-${schema}-noauth`,
-    },
-    global: {
-      fetch: async (input, init) => {
-        const { data } = await supabase.auth.getSession();
-        const token = data.session?.access_token;
-        const headers = new Headers((init as RequestInit | undefined)?.headers);
-        if (token) headers.set("Authorization", `Bearer ${token}`);
-        return fetch(input as RequestInfo, { ...(init as RequestInit | undefined), headers });
-      },
-    },
-  });
-
-  schemaClients.set(schema, client);
-  return client;
-}
-
 // NOTE: no eagerly-instantiated schema clients here by design.
 //
 // `institutionDb` / `adminDb` used to be constructed at module load, so every

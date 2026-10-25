@@ -6,34 +6,6 @@ export type SendResult =
   | { ok: false; error: string };
 
 /**
- * Send the conversation to our Vercel serverless function (which proxies Anthropic).
- * Browser never touches the API key.
- */
-export async function sendToAdvisor(messages: ChatMessage[]): Promise<SendResult> {
-  try {
-    const res = await apiFetch("/api/chat", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ messages }),
-    });
-
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      return { ok: false, error: data.error || `Server returned ${res.status}` };
-    }
-
-    const data = await res.json();
-    return {
-      ok: true,
-      reply: data.reply,
-      usage: data.usage,
-    };
-  } catch {
-    return { ok: false, error: "Network error. Please try again." };
-  }
-}
-
-/**
  * Profile-aware send: passes `userId` so the serverless function can load
  * the user's finances and ground Fia's reply in real data. Throws on
  * failure so callers can decide whether to count the message against quota.

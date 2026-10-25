@@ -9,8 +9,9 @@ import { useAuth }           from "@/features/auth/context/AuthContext";
 import { useProfile, useMyRequests, useNextActions } from "@/individual/dashboard/hooks/useDashboard";
 import { useUnreadCount } from "@/shared/notifications/useUnreadCount";
 import { useDashboardInsights }  from "@/individual/dashboard/hooks/useDashboardInsights";
-import { useSnapshot }           from "@/individual/networth/hooks/useSnapshot";
-import { getGreeting, SPARK_NETWORTH, SPARK_REQUESTS } from "@/individual/dashboard/config/dashboard";
+import { useSnapshot }           from "@/individual/money/networth/hooks/useSnapshot";
+import { getGreeting } from "@/individual/dashboard/config/dashboard";
+import { useNetWorthHistory } from "@/individual/money/finance/hooks/useFinanceReporting";
 import {
   OnboardingBanners,
   SmartInsightsFeed, MarketTile, NextActions,
@@ -40,6 +41,7 @@ export default function Dashboard() {
   const { data: profile,  isLoading: profileLoading  } = useProfile();
   const { data: requests = [] } = useMyRequests();
   const { data: snapshot } = useSnapshot();
+  const { data: history = [] } = useNetWorthHistory(90);
   const { actions }      = useNextActions();
   const { insights, activeIdx, next } = useDashboardInsights();
 
@@ -55,6 +57,9 @@ export default function Dashboard() {
   const netWorth       = snapshot?.netWorth      ?? profile?.totalNetWorth ?? null;
   const totalAssets    = snapshot?.totalAssets    ?? 0;
   const totalLiabs     = snapshot?.totalLiabilities ?? 0;
+  // Sparkline only from the user's real net-worth history (finance.net_worth_history);
+  // with fewer than two points there is no trend to show, so none is drawn.
+  const netWorthTrend  = history.length >= 2 ? history.map((p) => p.netWorth) : undefined;
 
   const handleSignOut = async () => { await signOut(); navigate("/"); };
 
@@ -71,18 +76,18 @@ export default function Dashboard() {
     hasNetWorth
       ? {
           label: "Net worth", value: netWorth ?? 0, prefix: "Rs ", format: "comma", accounting: true,
-          sparkline: SPARK_NETWORTH, sparklineColor: "#A78BFA",
-          link: { label: "View breakdown →", onClick: () => navigate("/networth") },
+          sparkline: netWorthTrend, sparklineColor: "#A78BFA",
+          link: { label: "View breakdown →", onClick: () => navigate("/money?tab=assets") },
           breakdown: [
             { label: "Assets",      value: totalAssets > 0 ? fmtCompact(totalAssets) : "—" },
             { label: "Liabilities", value: totalLiabs  > 0 ? fmtCompact(totalLiabs)  : "—" },
           ],
         }
       : { label: "Net worth", display: "—", hint: "Add finances" },
-    { label: "Active requests", value: activeRequests, sparkline: SPARK_REQUESTS, sparklineColor: "#60A5FA" },
-    { label: "New bids", value: totalNewBids, badge: totalNewBids > 0 ? "Live" : undefined, sparkline: SPARK_REQUESTS, sparklineColor: "#4ADE80", trendTone: "good" },
+    { label: "Active requests", value: activeRequests },
+    { label: "New bids", value: totalNewBids, badge: totalNewBids > 0 ? "Live" : undefined },
     healthScore != null
-      ? { label: "Health score", value: healthScore, suffix: "/100", ring: healthScore, ringMax: 100, link: { label: "Full report →", onClick: () => navigate("/health") } }
+      ? { label: "Health score", value: healthScore, suffix: "/100", ring: healthScore, ringMax: 100, link: { label: "Full report →", onClick: () => navigate("/money?tab=health") } }
       : { label: "Health score", display: "—", hint: "Complete profile" },
   ];
 
@@ -269,10 +274,10 @@ export default function Dashboard() {
             action={{ label: "View all offers →", to: "/requests" }}
           />
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <MarketTile icon={<HandCoins size={18} />} label="Personal Loan"  title="Loans that compete for you"   metric="Best rate"    metricValue="8.2% from 6 providers"      bg="bg-ficium"      href="/requests/new" />
-            <MarketTile icon={<CreditCard size={18} />} label="Credit Card"   title="Card offers tailored to you"  metric="Top cashback" metricValue="3.5% from 4 providers"      bg="bg-violet-600"  href="/requests/new" />
-            <MarketTile icon={<PiggyBank size={18} />}  label="Deposit"       title="Deposits with real yield"     metric="Top yield"    metricValue="5.4% from 3 providers"      bg="bg-amber-400"   dark href="/requests/new" />
-            <MarketTile icon={<LineChart size={18} />}  label="Wealth"        title="Investments that find you"    metric="Fee saving"   metricValue="0.4% potential saving"      bg="bg-emerald-400" dark href="/requests/new" />
+            <MarketTile icon={<HandCoins size={18} />} label="Personal Loan"  title="Loans that compete for you"   metric="How it works" metricValue="Banks bid for you"  bg="bg-ficium"      href="/requests/new?type=personal" />
+            <MarketTile icon={<CreditCard size={18} />} label="Credit Card"   title="Card offers tailored to you"  metric="How it works" metricValue="Compare card offers" bg="bg-violet-600"  href="/requests/new?type=credit" />
+            <MarketTile icon={<PiggyBank size={18} />}  label="Deposit"       title="Deposits with real yield"     metric="How it works" metricValue="Banks bid on yield" bg="bg-amber-400"   dark href="/requests/new?type=deposit" />
+            <MarketTile icon={<LineChart size={18} />}  label="Wealth"        title="Investments that find you"    metric="Not sure?"    metricValue="Find your fit"     bg="bg-emerald-400" dark href="/requests/new?quiz=1" />
           </div>
         </div>
 
@@ -281,7 +286,7 @@ export default function Dashboard() {
           <SectionHeader
             title="Tools &"
             highlight="Calculators"
-            action={{ label: "View all tools →", to: "/tools" }}
+            action={{ label: "View all tools →", to: "/money?tab=calculators" }}
           />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
             {TOOLS.map(({ icon, bg, title, desc, to }) => (
@@ -349,10 +354,10 @@ function SectionHeader({
 }
 
 const TOOLS = [
-  { icon: <Briefcase   size={20} className="text-ficium"      />, bg: "bg-ficium/10",  title: "My Portfolio",         desc: "Your approved facilities",         to: "/portfolio"        },
-  { icon: <Calculator  size={20} className="text-ficium"      />, bg: "bg-ficium/10",  title: "Loan Calculator",      desc: "Estimate your monthly repayments", to: "/tools#credit"     },
-  { icon: <LineChart   size={20} className="text-emerald-600" />, bg: "bg-emerald-50", title: "Investment Calculator", desc: "Project your future wealth",       to: "/tools#investment" },
-  { icon: <Wallet      size={20} className="text-amber-600"   />, bg: "bg-amber-50",   title: "Affordability Check",  desc: "Find what you can afford",         to: "/networth"         },
-  { icon: <ShieldCheck size={20} className="text-violet-600"  />, bg: "bg-violet-50",  title: "Debt Analyser",        desc: "Understand your debt better",      to: "/health"           },
-  { icon: <TrendingUp  size={20} className="text-good"        />, bg: "bg-good/10",    title: "ROI Calculator",       desc: "Calculate your return on any asset", to: "/tools/roi"      },
+  { icon: <Briefcase   size={20} className="text-ficium"      />, bg: "bg-ficium/10",  title: "My money",             desc: "Accounts, net worth and health",   to: "/money"        },
+  { icon: <Calculator  size={20} className="text-ficium"      />, bg: "bg-ficium/10",  title: "Loan Calculator",      desc: "Estimate your monthly repayments", to: "/money?tab=calculators&tool=loan"     },
+  { icon: <LineChart   size={20} className="text-emerald-600" />, bg: "bg-emerald-50", title: "Investment Calculator", desc: "Project your future wealth",       to: "/money?tab=calculators&tool=savings" },
+  { icon: <Wallet      size={20} className="text-amber-600"   />, bg: "bg-amber-50",   title: "Affordability Check",  desc: "Find what you can afford",         to: "/money?tab=assets"         },
+  { icon: <ShieldCheck size={20} className="text-violet-600"  />, bg: "bg-violet-50",  title: "Debt Analyser",        desc: "Understand your debt better",      to: "/money?tab=health"           },
+  { icon: <TrendingUp  size={20} className="text-good"        />, bg: "bg-good/10",    title: "ROI Calculator",       desc: "Calculate your return on any asset", to: "/money?tab=calculators&tool=roi"      },
 ];

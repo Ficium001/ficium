@@ -375,7 +375,23 @@ Respond ONLY with a JSON array of 6 objects, no markdown:
 // Handler
 // ─────────────────────────────────────────────────────────────────────────────
 
-Deno.serve(async () => {
+// Only the scheduled job may run this: it costs Anthropic credit and scrapes
+// BOM/SEM from our IPs. pg_cron sends x-cron-secret from Vault; we verify it
+// through a service_role-only definer function, so the secret is never in env
+// or code. (Security audit 2026-10-24: previously publicly invokable.)
+async function authorised(req: Request): Promise<boolean> {
+  const secret = req.headers.get("x-cron-secret");
+  if (!secret) return false;
+  const { data, error } = await sb.rpc("verify_market_refresh_secret", { p_secret: secret });
+  return !error && data === true;
+}
+
+Deno.serve(async (req: Request) => {
+  if (!(await authorised(req))) {
+    return new Response(JSON.stringify({ error: "unauthorised" }), {
+      status: 401, headers: { "Content-Type": "application/json" },
+    });
+  }
   const ts = now();
   const log: Record<string,unknown> = { started_at: ts, version: "v7" };
 

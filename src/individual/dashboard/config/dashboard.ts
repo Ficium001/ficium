@@ -1,11 +1,6 @@
 import { TrendingUp, CheckCircle2, AlertTriangle } from "lucide-react";
 import type { ElementType } from "react";
 
-// ── Sparkline seed data ───────────────────────────────────────────────────────
-export const SPARK_HEALTH   = [30, 35, 32, 40, 38, 44, 46];
-export const SPARK_NETWORTH = [20, 22, 21, 24, 25, 27, 28];
-export const SPARK_REQUESTS = [0, 0, 0, 1, 1, 1, 1];
-
 // ── Insight shape ─────────────────────────────────────────────────────────────
 export type InsightItem = {
   icon:  ElementType;

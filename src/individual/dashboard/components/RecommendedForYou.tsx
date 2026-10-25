@@ -111,7 +111,7 @@ export function RecommendedForYou() {
           Recommended <span className="text-ficium">for you</span>
         </h2>
         <button
-          onClick={() => navigate("/tools")}
+          onClick={() => navigate("/money?tab=calculators")}
           className="text-[12px] font-semibold text-muted hover:text-ink shrink-0 ml-3"
         >
           View all →

@@ -34,13 +34,8 @@ const RequestDetail       = lazy(() => import("../individual/requests/pages/Requ
 const Alerts              = lazy(() => import("../individual/alerts/pages/Alerts"));
 const Markets             = lazy(() => import("../individual/markets/pages/Markets"));
 const Advisor             = lazy(() => import("../individual/advisor/pages/Advisor"));
-const FinancialTools      = lazy(() => import("../individual/tools/pages/FinancialTools"));
-const ROIPage             = lazy(() => import("../individual/tools/pages/ROIPage"));
 const ClientAudit         = lazy(() => import("../individual/audit/pages/ClientAudit"));
-const NetWorthPage        = lazy(() => import("../individual/networth/pages/NetWorth"));
-const FinancesPage        = lazy(() => import("../individual/finance/pages/Finances"));
-const PortfolioPage       = lazy(() => import("../individual/portfolio/pages/Portfolio"));
-const FinancialHealthPage = lazy(() => import("../individual/health/pages/FinancialHealth"));
+const MoneyPage           = lazy(() => import("../individual/money/pages/Money"));
 const Vault               = lazy(() => import("../individual/vault/pages/Vault"));
 const Couple              = lazy(() => import("../individual/couple/pages/Couple"));
 const InvitePage          = lazy(() => import("../features/invite/pages/InvitePage"));
@@ -125,17 +120,19 @@ export const router = createBrowserRouter([
   { path: "/alerts",                 element: <ClientOnlyRoute><S><Alerts /></S></ClientOnlyRoute> },
   { path: "/markets",                element: <ClientOnlyRoute><S><Markets /></S></ClientOnlyRoute> },
   { path: "/advisor",                element: <ClientOnlyRoute><S><Advisor /></S></ClientOnlyRoute> },
-  { path: "/tools",                  element: <ClientOnlyRoute><S><FinancialTools /></S></ClientOnlyRoute> },
-  { path: "/tools/roi",             element: <ClientOnlyRoute><S><ROIPage /></S></ClientOnlyRoute> },
   { path: "/activity",               element: <ClientOnlyRoute><S><ClientAudit /></S></ClientOnlyRoute> },
-  { path: "/networth",               element: <ClientOnlyRoute><S><NetWorthPage /></S></ClientOnlyRoute> },
-  { path: "/finances",               element: <ClientOnlyRoute><S><FinancesPage /></S></ClientOnlyRoute> },
-  { path: "/portfolio",              element: <ClientOnlyRoute><S><PortfolioPage /></S></ClientOnlyRoute> },
+  { path: "/money",                  element: <ClientOnlyRoute><S><MoneyPage /></S></ClientOnlyRoute> },
   { path: "/vault",                  element: <ClientOnlyRoute><S><Vault /></S></ClientOnlyRoute> },
   { path: "/couple",                 element: <ClientOnlyRoute><S><Couple /></S></ClientOnlyRoute> },
-  { path: "/health",                 element: <ClientOnlyRoute><S><FinancialHealthPage /></S></ClientOnlyRoute> },
 
   // Dead route redirects
+  // Old money pages, merged into /money (Oct 2026)
+  { path: "/finances",               element: <Navigate to="/money?tab=accounts" replace /> },
+  { path: "/networth",               element: <Navigate to="/money?tab=assets" replace /> },
+  { path: "/portfolio",              element: <Navigate to="/money" replace /> },
+  { path: "/health",                 element: <Navigate to="/money?tab=health" replace /> },
+  { path: "/tools",                  element: <Navigate to="/money?tab=calculators" replace /> },
+  { path: "/tools/roi",              element: <Navigate to="/money?tab=calculators&tool=roi" replace /> },
   { path: "/goals",                  element: <Navigate to="/requests" replace /> },
   { path: "/goals/*",               element: <Navigate to="/requests" replace /> },
   { path: "/journeys",               element: <Navigate to="/requests" replace /> },

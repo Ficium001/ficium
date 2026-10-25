@@ -76,7 +76,7 @@ function toActionCategory(eventName: AuditEventName): string {
    Never throws — audit failures must not break user flows
    ============================================================ */
 
-export async function logAudit(event: AuditEvent): Promise<void> {
+async function logAudit(event: AuditEvent): Promise<void> {
   try {
     const { data: authData } = await getCachedUser();
     const userId = authData.user?.id ?? null;
