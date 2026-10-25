@@ -17,6 +17,7 @@
  * All handlers are idempotent and non-fatal on downstream errors.
  */
 
+import { timingSafeEqual } from "node:crypto";
 import { Env }  from "./_lib/env.js";
 import { handleIntegration, isIntegrationRequest } from "./_lib/integration/handler.js";
 
@@ -50,8 +51,11 @@ export default async function handler(req: any, res: any): Promise<void> {
   }
 
   // ── Auth ─────────────────────────────────────────────────────────────────
-  const secret = (req.headers["x-service-secret"] as string) ?? "";
-  if (!secret || secret !== Env.appServiceSecret()) {
+  const secret = String(req.headers["x-service-secret"] ?? "");
+  const expected = Env.appServiceSecret() ?? "";
+  // Constant-time compare: a plain !== leaks how many leading characters matched.
+  const a = Buffer.from(secret), b = Buffer.from(expected);
+  if (!secret || !expected || a.length !== b.length || !timingSafeEqual(a, b)) {
     return res.status(403).json({ error: "Forbidden" });
   }
 
