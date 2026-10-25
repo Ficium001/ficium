@@ -90,6 +90,7 @@ SELECT m.id FROM public.request_messages m
 |------|---------|
 | `20261025170000_fix_handle_new_user_role_escalation.sql` | Signup trigger no longer reads a role from client-controlled metadata; revokes stray `anon`/`authenticated` grants on `admin.admin_users` / `admin.platform_config` |
 | `20261025180000_admin_sync_v1.sql` | `admin.sync_apply` — the only entry point for the ficium-admin outbox worker (admin DB on Neon → `offer_listing`, `kyc_settings`, `admin.platform_config`); idempotent, version-ordered, append-only `admin.sync_log`; `ficium_admin_sync` role (NOLOGIN until a password is set) |
+| `20261025190000_admin_outbox_trigger_v1.sql` | Hourly `pg_cron` job `admin-outbox-sweep` → `admin.trigger_outbox_dispatch()` → ficium-admin `/api/outbox-dispatch` via `pg_net`; needs Vault secret `admin_outbox_cron_secret` (same value as `CRON_SECRET`) |
 
 
 ## Required extensions
