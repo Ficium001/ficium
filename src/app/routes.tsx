@@ -23,6 +23,7 @@ const HowItWorks          = lazy(() => import("../features/marketing/pages/HowIt
 const NotFound            = lazy(() => import("../shared/pages/NotFound"));
 
 const Dashboard           = lazy(() => import("../individual/dashboard/pages/Dashboard"));
+const Offers              = lazy(() => import("../individual/offers/pages/Offers"));
 const Profile             = lazy(() => import("../individual/dashboard/pages/Profile"));
 const Kyc                 = lazy(() => import("../individual/onboarding/pages/Kyc"));
 const KycPending          = lazy(() => import("../individual/onboarding/pages/KycPending"));
@@ -115,6 +116,7 @@ export const router = createBrowserRouter([
   { path: "/requests",               element: <ClientOnlyRoute><S><Requests /></S></ClientOnlyRoute> },
   { path: "/requests/new",           element: <ClientOnlyRoute><S><NewRequest /></S></ClientOnlyRoute> },
   { path: "/requests/:id",           element: <ClientOnlyRoute><S><RequestDetail /></S></ClientOnlyRoute> },
+  { path: "/offers",                 element: <ClientOnlyRoute><S><Offers /></S></ClientOnlyRoute> },
   { path: "/alerts",                 element: <ClientOnlyRoute><S><Alerts /></S></ClientOnlyRoute> },
   { path: "/markets",                element: <ClientOnlyRoute><S><Markets /></S></ClientOnlyRoute> },
   { path: "/advisor",                element: <ClientOnlyRoute><S><Advisor /></S></ClientOnlyRoute> },

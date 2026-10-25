@@ -16,12 +16,12 @@
  */
 
 import { Link, useLocation } from "react-router-dom";
-import { Home, Target, TrendingUp, User } from "lucide-react";
+import { Home, Tag, Target, TrendingUp, User } from "lucide-react";
 import { FiaMark } from "./FiaMark";
 
 const tabs = [
   { to: "/dashboard", label: "Home",     icon: Home,       key: "home"     },
-  { to: "/requests",  label: "Requests", icon: Target,     key: "requests" },
+  { to: "/offers",    label: "Offers",   icon: Tag,        key: "offers"   },
   { to: "/advisor",   label: "Fia",     icon: Target,     key: "advisor", accent: true },
   { to: "/markets",   label: "Market",   icon: TrendingUp, key: "markets"  },
   { to: "/profile",   label: "Profile",  icon: User,       key: "profile"  },

@@ -91,7 +91,6 @@ SELECT m.id FROM public.request_messages m
 | `20261025170000_fix_handle_new_user_role_escalation.sql` | Signup trigger no longer reads a role from client-controlled metadata; revokes stray `anon`/`authenticated` grants on `admin.admin_users` / `admin.platform_config` |
 | `20261025180000_admin_sync_v1.sql` | `admin.sync_apply` — the only entry point for the ficium-admin outbox worker (admin DB on Neon → `offer_listing`, `kyc_settings`, `admin.platform_config`); idempotent, version-ordered, append-only `admin.sync_log`; `ficium_admin_sync` role (NOLOGIN until a password is set) |
 
-> **Gap:** `ficium-admin/db/002_offers.sql` cites `20261022120000_offers_v1.sql` here as its source of truth, but that file was never committed. The live definitions of `admin.offer*` / `public.offer_listing` exist only in the database. Being superseded by the admin DB, but recover it with `pg_dump --schema-only` before retiring it.
 
 ## Required extensions
 
@@ -211,3 +210,16 @@ SELECT * FROM marketplace_sync.health();
 -- Check recent sync calls
 SELECT * FROM marketplace_sync.recent_calls(5);
 ```
+
+---
+
+## Offers feed (Oct 2026)
+
+| File | Purpose | Status |
+|------|---------|--------|
+| `20261022120000_offers_v1.sql` | `admin.offer` + `admin.offer_change` (append-only) + `public.offer_listing` (borrower read model) + `admin.offer_*` functions | **Applied** 2026-10-22 as migration `offers_v1` |
+
+Ficium staff curate offers in `ficium-admin` (role `ficium_admin_app`, functions only). The only path
+into `public.offer_listing` is `admin.offer_publish`. Borrowers (`authenticated`) can SELECT live rows
+only (`live_until > now()`, i.e. not expired and verified within 30 days); `anon` has no access.
+Explicit GRANTs are included — RLS alone grants nothing.
