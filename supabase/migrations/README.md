@@ -91,6 +91,7 @@ SELECT m.id FROM public.request_messages m
 | `20261025170000_fix_handle_new_user_role_escalation.sql` | Signup trigger no longer reads a role from client-controlled metadata; revokes stray `anon`/`authenticated` grants on `admin.admin_users` / `admin.platform_config` |
 | `20261025180000_admin_sync_v1.sql` | `admin.sync_apply` — the only entry point for the ficium-admin outbox worker (admin DB on Neon → `offer_listing`, `kyc_settings`, `admin.platform_config`); idempotent, version-ordered, append-only `admin.sync_log`; `ficium_admin_sync` role (NOLOGIN until a password is set) |
 | `20261025190000_admin_outbox_trigger_v1.sql` | Hourly `pg_cron` job `admin-outbox-sweep` → `admin.trigger_outbox_dispatch()` → ficium-admin `/api/outbox-dispatch` via `pg_net`; needs Vault secret `admin_outbox_cron_secret` (same value as `CRON_SECRET`) |
+| `20261025200000_admin_legacy_retire_v1.sql` | Retires the old ficium-admin write path after the cut-over to the admin DB: drops `admin.offer`, `admin.offer_change`, `admin.offer_*`, `admin.set_kyc_check`, the `admin_app_read` policies and role `ficium_admin_app`. `public.offer_listing` stays (borrower read model) |
 
 
 ## Required extensions
@@ -218,7 +219,7 @@ SELECT * FROM marketplace_sync.recent_calls(5);
 
 | File | Purpose | Status |
 |------|---------|--------|
-| `20261022120000_offers_v1.sql` | `admin.offer` + `admin.offer_change` (append-only) + `public.offer_listing` (borrower read model) + `admin.offer_*` functions | **Applied** 2026-10-22 as migration `offers_v1` |
+| `20261022120000_offers_v1.sql` | `admin.offer` + `admin.offer_change` (append-only) + `public.offer_listing` (borrower read model) + `admin.offer_*` functions | **Applied** 2026-10-22 as migration `offers_v1`; write side retired 2026-10-25 (`admin_legacy_retire_v1`) |
 
 Ficium staff curate offers in `ficium-admin` (role `ficium_admin_app`, functions only). The only path
 into `public.offer_listing` is `admin.offer_publish`. Borrowers (`authenticated`) can SELECT live rows
