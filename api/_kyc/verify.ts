@@ -217,7 +217,7 @@ interface KycInput {
 /* ── Handler ────────────────────────────────────────────────── */
 export async function verifyHandler(req: any, res: any) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
-  if (!getEnv("AWS_ACCESS_KEY_ID") && !getEnv("VITE_AWS_ACCESS_KEY_ID"))
+  if (!getEnv("AWS_ACCESS_KEY_ID"))
     return res.status(503).json({ error: "AWS credentials not configured" });
 
   // Parse body — Vercel may pass it as a string if Content-Type header is missing

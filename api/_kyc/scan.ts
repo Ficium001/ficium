@@ -57,7 +57,7 @@ async function tooManyAttempts(key: string, keyType: "ip_hash" | "client_id", li
 
 export async function scanHandler(req: any, res: any) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
-  if (!(globalThis as any).process?.env?.AWS_ACCESS_KEY_ID && !(globalThis as any).process?.env?.VITE_AWS_ACCESS_KEY_ID) {
+  if (!(globalThis as any).process?.env?.AWS_ACCESS_KEY_ID) {
     return res.status(503).json({ error: "AWS credentials not configured" });
   }
 
