@@ -208,7 +208,7 @@ Uses Smile ID (in-house provider) or falls back to manual review.
 
 ```
 DELETE /api/kyc-admin-faces?clientId=<uuid>
-x-admin-secret: <VITE_ADMIN_SECRET>
+x-admin-secret: <ADMIN_SECRET>
 ```
 
 ---

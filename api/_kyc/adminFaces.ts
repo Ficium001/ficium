@@ -46,7 +46,7 @@ async function awsPost(target: string, body: object): Promise<unknown> {
 }
 export async function adminFacesHandler(req: any, res: any) {
   // Simple admin check — require a secret header
-  const adminSecret = getEnv("ADMIN_SECRET") || getEnv("VITE_ADMIN_SECRET");
+  const adminSecret = getEnv("ADMIN_SECRET");
   const provided    = req.headers["x-admin-secret"] ?? req.query?.secret;
   if (!adminSecret || provided !== adminSecret) {
     return res.status(401).json({ error: "Unauthorized" });

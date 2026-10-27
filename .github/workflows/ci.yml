@@ -61,6 +61,14 @@ jobs:
           node-version: 24
           cache: npm
 
+      - name: No secrets behind a VITE_ name (Vite ships VITE_* to the browser)
+        run: |
+          if grep -rEn --include=*.ts --include=*.tsx --include=*.js --include=*.mjs --include=*.example \
+               'VITE_[A-Z0-9_]*(SECRET|ACCESS_KEY|PRIVATE|SERVICE_ROLE|PASSWORD|TOKEN)' \
+               api src supabase scripts .env.example; then
+            echo "::error::A secret uses a VITE_ name. Server secrets must never start with VITE_."; exit 1
+          fi
+
       - name: Authenticate private @ficium/shared (SSH -> HTTPS with token)
         run: |
           git config --global url."https://${FICIUM_SHARED_TOKEN}@github.com/".insteadOf "ssh://git@github.com/"

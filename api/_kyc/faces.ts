@@ -26,8 +26,8 @@ function getSigningKey(secret: string, date: string, region: string, service: st
 }
 
 async function awsPost(target: string, body: object): Promise<unknown> {
-  const accessKey = getEnv("AWS_ACCESS_KEY_ID")     || getEnv("VITE_AWS_ACCESS_KEY_ID");
-  const secretKey = getEnv("AWS_SECRET_ACCESS_KEY") || getEnv("VITE_AWS_SECRET_ACCESS_KEY");
+  const accessKey = getEnv("AWS_ACCESS_KEY_ID");
+  const secretKey = getEnv("AWS_SECRET_ACCESS_KEY");
   const now       = new Date();
   const amzDate   = now.toISOString().replace(/[:-]|\.\d{3}/g, "").slice(0, 15) + "Z";
   const dateStamp = amzDate.slice(0, 8);
