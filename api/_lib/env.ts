@@ -40,6 +40,8 @@ export const Env = {
   integrationDocumentsEnabled:  () => getEnv("INTEGRATION_DOCUMENTS_ENABLED") === "true",
   integrationDocumentsUrl:      () => getEnv("INTEGRATION_DOCUMENTS_URL"),
   cronSecret:               () => getEnv("CRON_SECRET"),
+  /** Verify keys for the app admin site's signed sync calls (comma-separated: rotation). */
+  adminSyncVerifyKeys:      () => getEnv("ADMIN_SYNC_VERIFY_KEYS").split(",").map((k) => k.trim()).filter(Boolean),
 } as const;
 
 /** Throws at startup if a required var is missing — fail fast, fail loud */

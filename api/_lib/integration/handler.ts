@@ -4,6 +4,7 @@
  *
  *   POST /api/internal?op=events    inbound events from the institution app
  *                                   (I2B signature, validated, institution-only)
+ *   POST /api/internal?op=admin-sync  change from the app admin site (ADMIN_SYNC signed)
  *   POST /api/internal?op=dispatch  send pending outbox rows (B2I signed).
  *                                      Triggered every minute by pg_cron.
  *                                      Auth: Authorization: Bearer <CRON_SECRET>
@@ -15,11 +16,12 @@ import { getServiceDb } from "../db.js";
 import { Env } from "../env.js";
 import { dispatchOnce, receive } from "./core.js";
 import { appliers, outboxStore } from "./supabase.js";
+import { receiveAdminSync } from "./admin-sync.js";
 
 /** True when this request is for the integration channel, not a legacy action. */
 export function isIntegrationRequest(req: { url?: string }): boolean {
   const op = new URL(req.url ?? "", "http://localhost").searchParams.get("op");
-  return op === "events" || op === "dispatch";
+  return op === "events" || op === "dispatch" || op === "admin-sync";
 }
 
 async function readRaw(req: AsyncIterable<Buffer | string>): Promise<Buffer> {
@@ -47,6 +49,21 @@ export async function handleIntegration(req: any, res: any): Promise<void> {
       Env.integrationI2bVerifyKeys(),
       appliers(getServiceDb()),
     );
+    return res.status(result.status).json(result.body);
+  }
+
+  if (op === "admin-sync") {
+    const raw = await readRaw(req);
+    const db = getServiceDb();
+    const result = await receiveAdminSync(raw, String(req.headers["ficium-signature"] ?? ""), Env.adminSyncVerifyKeys(),
+      async (e) => {
+        const { data, error } = await db.rpc("admin_sync_apply", {
+          p_event_id: e.event_id, p_topic: e.topic, p_aggregate_type: e.aggregate_type,
+          p_aggregate_id: e.aggregate_id, p_version: e.aggregate_version, p_payload: e.payload,
+        });
+        if (error) throw new Error(`admin_sync_apply: ${error.message}`);
+        return String(data);
+      });
     return res.status(result.status).json(result.body);
   }
 
