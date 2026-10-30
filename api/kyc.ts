@@ -68,6 +68,8 @@ export default async function handler(req: any, res: any) {
     } else {
       const user = await requireUser(req);
       if (route.gate === "admin") await requireAdmin(user);
+      // Handlers act for THIS user only; never for an id the browser sends.
+      req.authUserId = user.id;
     }
   } catch (e) {
     if (sendAuthError(res, e)) return;

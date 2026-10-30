@@ -3,7 +3,7 @@
 //
 // Handles: upload → provider.verify() → DB write → audit log.
 // Writes full KYC detail to kyc_submissions table.
-// Updates kyc_status summary on clients table.
+// The server records the submission and kyc_status (see api/_kyc/verify.ts).
 // =============================================================
 import { supabase , getCachedUser } from "../../../shared/lib/supabase";
 import { audit }    from "../../../shared/lib/audit";
@@ -110,54 +110,8 @@ export async function submitKyc(input: KycInput): Promise<KycResult> {
     return { ok: false, error: verification.reason ?? "We could not verify your ID. Please try again." };
   }
 
-  const kycStatus = verification.needsReview ? "pending_review" : "verified";
-
-  // 3. Insert into kyc_submissions
-  const { error: submissionError } = await supabase
-    .from("kyc_submissions")
-    .insert({
-      client_id:            userId,
-      provider:             activeProvider.name,
-      reference_id:         verification.referenceId ?? null,
-      risk_score:           verification.riskScore   ?? null,
-      status:               kycStatus,
-      flags:                verification.flags                        ?? [],
-      details:              verification.details                      ?? null,
-      mrz_valid:            verification.details?.mrz?.valid           ?? null,
-      face_match_score:     verification.details?.faceMatch?.similarity ?? null,
-      name_match_score:     verification.details?.idOcr?.nameMatchScore ?? null,
-      document_expired:     verification.details?.mrz?.expiry?.expired  ?? null,
-      document_type:        input.documentType,
-      document_number:      input.documentNumber,
-      id_document_path:     idUpload.path,
-      selfie_path:          selfieUpload.path,
-      proof_of_address_path:proofUpload.path,
-      nationality:          input.nationality          ?? null,
-      residence_status:     input.residenceStatus      ?? null,
-      same_nationality_residence: input.sameNationalityResidence ?? true,
-      permit_path:          permitUpload?.path         ?? null,
-    });
-
-  if (submissionError) return { ok: false, error: submissionError.message };
-
-  // 4. Update kyc_status summary + address on clients
-  const { error: clientError } = await supabase
-    .from("clients")
-    .update({
-      kyc_status:   kycStatus,
-      date_of_birth: input.dateOfBirth,
-      address_line_1: input.addressLine1,
-      address_line_2: input.addressLine2 || null,
-      city:           input.city,
-      postal_code:    input.postalCode   || null,
-      country:        input.country,
-      nationality:    input.nationality    || null,
-      residence_status: input.residenceStatus || null,
-    })
-    .eq("id", userId);
-
-  if (clientError) return { ok: false, error: clientError.message };
-
+  // The server has already recorded the submission and set the KYC status
+  // (borrowers can't write either). Nothing to save from the browser.
   await audit.kycSubmitted(userId);
   return { ok: true, needsReview: verification.needsReview ?? false };
 }

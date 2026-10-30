@@ -28,7 +28,7 @@ import {
   type RekLabel, type FaceCollectionResult,
 } from "./aws.js";
 import { parseMrz } from "./docExtract.js";
-import { supabaseQuery } from "./db.js";
+import { supabaseQuery, supabaseWrite } from "./db.js";
 
 const getEnv = (k: string) => (globalThis as any).process?.env?.[k] ?? "";
 
@@ -194,7 +194,16 @@ function classifyIdDocument(labels: RekLabel[]): { isIdDoc: boolean; confidence:
 /* ── Input type ─────────────────────────────────────────────── */
 
 interface KycInput {
-  clientId?:       string;
+  clientId?:       string;   // ignored from the body: always the signed-in user
+  documentType?:   string;
+  addressLine2?:   string;
+  postalCode?:     string;
+  // Where the borrower's files are stored (kyc-documents/<uid>/...). When present,
+  // the server records the outcome; the browser never writes KYC status itself.
+  idPath?:         string;
+  selfiePath?:     string;
+  poaPath?:        string;
+  permitPath?:     string;
   fullName?:       string;
   documentNumber?: string;
   dateOfBirth?:    string;
@@ -214,6 +223,50 @@ interface KycInput {
   permitB64?:          string;
 }
 
+/* ── Recording (server-side only) ───────────────────────────── */
+
+/** The submission (every outcome, for the AML record) and, unless rejected, the
+ *  borrower's KYC status. Service role: borrowers can't write either. */
+async function recordOutcome(
+  uid: string, input: KycInput, status: "verified" | "pending_review" | "rejected",
+  r: { referenceId: string; riskScore: number; flags: string[]; details: any; faceMatchScore: number; nm: number | null; mrz: any },
+): Promise<boolean> {
+  const ok = await supabaseWrite("POST", "kyc_submissions", {
+    client_id:             uid,
+    provider:              "inhouse_aws",
+    reference_id:          r.referenceId,
+    risk_score:            r.riskScore,
+    status,
+    flags:                 r.flags,
+    details:               r.details,
+    mrz_valid:             r.mrz?.found ? r.mrz.valid : null,
+    face_match_score:      r.faceMatchScore >= 0 ? r.faceMatchScore : null,
+    name_match_score:      r.nm,
+    document_expired:      r.mrz?.found ? r.mrz.expired ?? null : null,
+    document_type:         input.documentType ?? null,
+    document_number:       input.documentNumber ?? null,
+    id_document_path:      input.idPath,
+    selfie_path:           input.selfiePath,
+    proof_of_address_path: input.poaPath,
+    permit_path:           input.permitPath ?? null,
+    nationality:           input.nationality ?? null,
+    residence_status:      input.residenceStatus ?? null,
+    same_nationality_residence: input.sameNationalityResidence ?? true,
+  });
+  if (!ok || status === "rejected") return ok;   // a rejection is recorded; the borrower may retry
+  return supabaseWrite("PATCH", `clients?id=eq.${uid}`, {
+    kyc_status:       status,
+    date_of_birth:    input.dateOfBirth ?? null,
+    address_line_1:   input.addressLine1 ?? null,
+    address_line_2:   input.addressLine2 || null,
+    city:             input.city ?? null,
+    postal_code:      input.postalCode || null,
+    country:          input.country ?? null,
+    nationality:      input.nationality || null,
+    residence_status: input.residenceStatus || null,
+  });
+}
+
 /* ── Handler ────────────────────────────────────────────────── */
 export async function verifyHandler(req: any, res: any) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
@@ -229,6 +282,20 @@ export async function verifyHandler(req: any, res: any) {
   }
   if (!input || !input.idB64 || !input.selfieB64 || !input.poaB64)
     return res.status(400).json({ error: "idB64, selfieB64, poaB64 required — body keys received: " + Object.keys(input ?? {}).join(", ") });
+
+  // Act for the signed-in user only. The body's clientId and fullName are not
+  // trusted: velocity, duplicate-face and document-reuse checks key on the id,
+  // and the ID must match the name on the borrower's own record.
+  const uid = String(req.authUserId ?? "");
+  if (!uid) return res.status(401).json({ error: "Sign in required" });
+  input.clientId = uid;
+  const own = await supabaseQuery(`clients?id=eq.${uid}&select=full_name`) as { full_name?: string }[];
+  input.fullName = own[0]?.full_name ?? undefined;
+  const paths = [input.idPath, input.selfiePath, input.poaPath, input.permitPath].filter(Boolean) as string[];
+  const records = Boolean(input.idPath && input.selfiePath && input.poaPath);
+  if (paths.some((p) => !p.startsWith(`${uid}/`) || p.includes(".."))) {
+    return res.status(400).json({ error: "Documents must be your own uploads" });
+  }
 
   const poaIsPdf    = (input.poaMimeType ?? "").includes("pdf") || (input.poaFileName ?? "").endsWith(".pdf");
   const referenceId = `aws-${Date.now()}`;
@@ -452,6 +519,14 @@ export async function verifyHandler(req: any, res: any) {
       indexFace(input.selfieB64, input.clientId).catch(() => {});
     }
 
+    const outcome = hardReject || aiNameMismatch ? "rejected" : needsReview ? "pending_review" : "verified";
+    if (records) {
+      const saved = await recordOutcome(uid, input, outcome, { referenceId, riskScore, flags, details, faceMatchScore, nm, mrz });
+      if (!saved) {
+        return res.status(500).json({ ok: false, referenceId, reason: "We couldn't save your verification. Nothing was changed. Please try again." });
+      }
+    }
+
     // Name/address mismatch: reject with a specific user-facing message
     if (aiNameMismatch) {
       return res.status(200).json({
@@ -467,7 +542,7 @@ export async function verifyHandler(req: any, res: any) {
     }
 
     return res.status(200).json({
-      ok: true, referenceId, riskScore, flags, details, needsReview,
+      ok: true, referenceId, riskScore, flags, details, needsReview, status: outcome,
       reason: flags.length > 0 ? flags.join("; ") : undefined,
     });
 
@@ -476,7 +551,7 @@ export async function verifyHandler(req: any, res: any) {
     console.error("[kyc-verify] PIPELINE ERROR:", msg);
     return res.status(200).json({
       ok: false, referenceId, riskScore: 50, flags: [], details: null,
-      reason: `Pipeline error: ${msg}`,
+      reason: "We couldn't complete the checks just now. Nothing was saved. Please try again.",
     });
   }
 }
