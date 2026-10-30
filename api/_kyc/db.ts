@@ -38,3 +38,27 @@ export async function supabaseInsert(table: string, row: Record<string, unknown>
     });
   } catch { /* best-effort — never block the request on a logging failure */ }
 }
+
+/** A write the caller must know about: true only on a 2xx. */
+export async function supabaseWrite(
+  method: "POST" | "PATCH", path: string, body: Record<string, unknown>,
+): Promise<boolean> {
+  const url = Env.supabaseUrl();
+  const key = Env.supabaseServiceKey();
+  if (!url || !key) return false;
+  try {
+    const r = await fetch(`${url}/rest/v1/${path}`, {
+      method,
+      headers: {
+        "apikey": key, "Authorization": `Bearer ${key}`,
+        "Content-Type": "application/json", "Prefer": "return=minimal",
+      },
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) console.error("[kyc] write failed", method, path.split("?")[0], r.status, (await r.text()).slice(0, 200));
+    return r.ok;
+  } catch (e) {
+    console.error("[kyc] write failed", method, path.split("?")[0], e instanceof Error ? e.message : e);
+    return false;
+  }
+}
