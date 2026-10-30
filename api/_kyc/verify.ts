@@ -28,7 +28,7 @@ import {
   type RekLabel, type FaceCollectionResult,
 } from "./aws.js";
 import { parseMrz } from "./docExtract.js";
-import { supabaseQuery, supabaseWrite } from "./db.js";
+import { supabaseQuery, supabaseRpc } from "./db.js";
 
 const getEnv = (k: string) => (globalThis as any).process?.env?.[k] ?? "";
 
@@ -54,16 +54,10 @@ async function loadKycSettings(): Promise<KycCheckSettings> {
   return DEFAULT_SETTINGS;
 }
 
-async function checkVelocity(clientId: string): Promise<{ tooMany: boolean; count: number }> {
-  const since = new Date(Date.now() - 86400000).toISOString();
-  const rows  = await supabaseQuery(`kyc_submissions?client_id=eq.${clientId}&submitted_at=gte.${since}&select=id`);
-  return { tooMany: rows.length >= 3, count: rows.length };
-}
-async function checkDocumentReuse(docNum: string, clientId: string): Promise<boolean> {
-  if (!docNum) return false;
-  const rows = await supabaseQuery(`kyc_submissions?document_number=eq.${encodeURIComponent(docNum)}&client_id=neq.${clientId}&select=id&limit=1`);
-  return rows.length > 0;
-}
+// Velocity and document reuse come from kyc_server_context (service_role has no
+// table rights on kyc_submissions; the old direct reads were refused and
+// silently counted nothing).
+interface ServerContext { full_name: string | null; attempts_24h: number; document_reused: boolean }
 
 /* ── Claude AI reasoning ────────────────────────────────────── */
 
@@ -226,45 +220,46 @@ interface KycInput {
 /* ── Recording (server-side only) ───────────────────────────── */
 
 /** The submission (every outcome, for the AML record) and, unless rejected, the
- *  borrower's KYC status. Service role: borrowers can't write either. */
+ *  borrower's KYC status, via kyc_record_outcome (server-only). */
 async function recordOutcome(
   uid: string, input: KycInput, status: "verified" | "pending_review" | "rejected",
   r: { referenceId: string; riskScore: number; flags: string[]; details: any; faceMatchScore: number; nm: number | null; mrz: any },
 ): Promise<boolean> {
-  const ok = await supabaseWrite("POST", "kyc_submissions", {
-    client_id:             uid,
-    provider:              "inhouse_aws",
-    reference_id:          r.referenceId,
-    risk_score:            r.riskScore,
-    status,
-    flags:                 r.flags,
-    details:               r.details,
-    mrz_valid:             r.mrz?.found ? r.mrz.valid : null,
-    face_match_score:      r.faceMatchScore >= 0 ? r.faceMatchScore : null,
-    name_match_score:      r.nm,
-    document_expired:      r.mrz?.found ? r.mrz.expired ?? null : null,
-    document_type:         input.documentType ?? null,
-    document_number:       input.documentNumber ?? null,
-    id_document_path:      input.idPath,
-    selfie_path:           input.selfiePath,
-    proof_of_address_path: input.poaPath,
-    permit_path:           input.permitPath ?? null,
-    nationality:           input.nationality ?? null,
-    residence_status:      input.residenceStatus ?? null,
-    same_nationality_residence: input.sameNationalityResidence ?? true,
+  const { ok } = await supabaseRpc("kyc_record_outcome", {
+    p_client: uid,
+    p_status: status,
+    p_submission: {
+      provider:              "inhouse_aws",
+      reference_id:          r.referenceId,
+      risk_score:            r.riskScore,
+      flags:                 r.flags,
+      details:               r.details,
+      mrz_valid:             r.mrz?.found ? r.mrz.valid : null,
+      face_match_score:      r.faceMatchScore >= 0 ? r.faceMatchScore : null,
+      name_match_score:      r.nm,
+      document_expired:      r.mrz?.found ? r.mrz.expired ?? null : null,
+      document_type:         input.documentType ?? null,
+      document_number:       input.documentNumber ?? null,
+      id_document_path:      input.idPath,
+      selfie_path:           input.selfiePath,
+      proof_of_address_path: input.poaPath,
+      permit_path:           input.permitPath ?? null,
+      nationality:           input.nationality ?? null,
+      residence_status:      input.residenceStatus ?? null,
+      same_nationality_residence: input.sameNationalityResidence ?? true,
+    },
+    p_profile: {
+      date_of_birth:    input.dateOfBirth ?? null,
+      address_line_1:   input.addressLine1 ?? null,
+      address_line_2:   input.addressLine2 ?? "",
+      city:             input.city ?? null,
+      postal_code:      input.postalCode ?? "",
+      country:          input.country ?? null,
+      nationality:      input.nationality ?? "",
+      residence_status: input.residenceStatus ?? "",
+    },
   });
-  if (!ok || status === "rejected") return ok;   // a rejection is recorded; the borrower may retry
-  return supabaseWrite("PATCH", `clients?id=eq.${uid}`, {
-    kyc_status:       status,
-    date_of_birth:    input.dateOfBirth ?? null,
-    address_line_1:   input.addressLine1 ?? null,
-    address_line_2:   input.addressLine2 || null,
-    city:             input.city ?? null,
-    postal_code:      input.postalCode || null,
-    country:          input.country ?? null,
-    nationality:      input.nationality || null,
-    residence_status: input.residenceStatus || null,
-  });
+  return ok;
 }
 
 /* ── Handler ────────────────────────────────────────────────── */
@@ -289,8 +284,14 @@ export async function verifyHandler(req: any, res: any) {
   const uid = String(req.authUserId ?? "");
   if (!uid) return res.status(401).json({ error: "Sign in required" });
   input.clientId = uid;
-  const own = await supabaseQuery(`clients?id=eq.${uid}&select=full_name`) as { full_name?: string }[];
-  input.fullName = own[0]?.full_name ?? undefined;
+  const ctxRes = await supabaseRpc<ServerContext>("kyc_server_context", {
+    p_client: uid, p_document_number: input.documentNumber ?? null,
+  });
+  if (!ctxRes.ok || !ctxRes.data) {
+    return res.status(503).json({ ok: false, reason: "Verification is temporarily unavailable. Nothing was saved. Please try again shortly." });
+  }
+  const ctx = ctxRes.data;
+  input.fullName = ctx.full_name ?? undefined;
   const paths = [input.idPath, input.selfiePath, input.poaPath, input.permitPath].filter(Boolean) as string[];
   const records = Boolean(input.idPath && input.selfiePath && input.poaPath);
   if (paths.some((p) => !p.startsWith(`${uid}/`) || p.includes(".."))) {
@@ -322,10 +323,8 @@ export async function verifyHandler(req: any, res: any) {
       cfg.duplicate_face && input.clientId
         ? searchFaceCollection(input.selfieB64, input.clientId)
         : Promise.resolve({ duplicate: false } as FaceCollectionResult),
-      cfg.velocity_check && input.clientId ? checkVelocity(input.clientId)                 : Promise.resolve({ tooMany: false, count: 0 }),
-      cfg.document_reuse && input.clientId && input.documentNumber
-        ? checkDocumentReuse(input.documentNumber, input.clientId)
-        : Promise.resolve(false),
+      Promise.resolve(cfg.velocity_check ? { tooMany: ctx.attempts_24h >= 3, count: ctx.attempts_24h } : { tooMany: false, count: 0 }),
+      Promise.resolve(Boolean(cfg.document_reuse && input.documentNumber && ctx.document_reused)),
     ]);
 
     // ── Claude AI analysis (after OCR, uses results + ID image) ─

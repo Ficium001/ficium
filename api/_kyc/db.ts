@@ -62,3 +62,27 @@ export async function supabaseWrite(
     return false;
   }
 }
+
+/** Call a server-only database function. ok=false on any failure (logged). */
+export async function supabaseRpc<T = unknown>(
+  fn: string, args: Record<string, unknown>,
+): Promise<{ ok: boolean; data: T | null }> {
+  const url = Env.supabaseUrl();
+  const key = Env.supabaseServiceKey();
+  if (!url || !key) return { ok: false, data: null };
+  try {
+    const r = await fetch(`${url}/rest/v1/rpc/${fn}`, {
+      method: "POST",
+      headers: { "apikey": key, "Authorization": `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify(args),
+    });
+    if (!r.ok) {
+      console.error("[kyc] rpc failed", fn, r.status, (await r.text()).slice(0, 200));
+      return { ok: false, data: null };
+    }
+    return { ok: true, data: (await r.json()) as T };
+  } catch (e) {
+    console.error("[kyc] rpc failed", fn, e instanceof Error ? e.message : e);
+    return { ok: false, data: null };
+  }
+}
