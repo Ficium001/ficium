@@ -6,20 +6,22 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 // could mark themselves verified. These tests pin the server-side rules.
 
 const UID = "11111111-1111-4111-8111-111111111111";
-const writes: { method: string; path: string; body: Record<string, unknown> }[] = [];
+const writes: { fn: string; args: any }[] = [];
+const calls: { fn: string; args: any }[] = [];
 let ownName = "Asha Ramdin";
 let faceScore = 97;
 
+let ctxOk = true;
 vi.mock("../_kyc/db.js", () => ({
-  supabaseQuery: vi.fn(async (path: string) => {
-    if (path.startsWith("clients?")) return [{ full_name: ownName }];
-    if (path.startsWith("kyc_settings")) return [];
-    return [];
-  }),
-  supabaseWrite: vi.fn(async (method: string, path: string, body: Record<string, unknown>) => {
-    writes.push({ method, path, body }); return true;
-  }),
+  supabaseQuery: vi.fn(async () => []),
   supabaseInsert: vi.fn(async () => undefined),
+  supabaseRpc: vi.fn(async (fn: string, args: Record<string, unknown>) => {
+    if (fn === "kyc_server_context") {
+      calls.push({ fn, args });
+      return ctxOk ? { ok: true, data: { full_name: ownName, attempts_24h: 0, document_reused: false } } : { ok: false, data: null };
+    }
+    writes.push({ fn, args }); return { ok: true, data: "sub-id" };
+  }),
 }));
 vi.mock("../_kyc/aws.js", () => ({
   detectText: vi.fn(async () => "REPUBLIC OF MAURITIUS ASHA RAMDIN"),
@@ -45,7 +47,7 @@ function res() {
 
 describe("KYC verify records the outcome server-side", () => {
   beforeEach(() => {
-    writes.length = 0; ownName = "Asha Ramdin"; faceScore = 97;
+    writes.length = 0; calls.length = 0; ownName = "Asha Ramdin"; faceScore = 97; ctxOk = true;
     vi.stubEnv("AWS_ACCESS_KEY_ID", "test");
     vi.spyOn(console, "log").mockImplementation(() => undefined);
     vi.spyOn(console, "error").mockImplementation(() => undefined);
@@ -67,24 +69,31 @@ describe("KYC verify records the outcome server-side", () => {
     expect(writes).toEqual([]);
   });
 
-  it("records a pass for the signed-in user, ignoring the body's clientId", async () => {
+  it("records a pass for the signed-in user, ignoring the body's clientId and name", async () => {
     const { verifyHandler } = await import("../_kyc/verify");
     const r = res(); await verifyHandler({ method: "POST", authUserId: UID, body: body() }, r);
-    const sub = writes.find((w) => w.path === "kyc_submissions");
-    const cli = writes.find((w) => w.path.startsWith("clients?"));
-    expect(sub?.body.client_id).toBe(UID);
-    expect(sub?.body.id_document_path).toBe(`${UID}/id-1.jpg`);
-    expect(cli?.path).toBe(`clients?id=eq.${UID}`);
-    expect(["verified", "pending_review"]).toContain(cli?.body.kyc_status);
-    expect(r.body.status).toBe(cli?.body.kyc_status);
+    expect(calls[0]?.args.p_client).toBe(UID);
+    expect(writes).toHaveLength(1);
+    const w = writes[0]!;
+    expect(w.fn).toBe("kyc_record_outcome");
+    expect(w.args.p_client).toBe(UID);
+    expect(w.args.p_submission.id_document_path).toBe(`${UID}/id-1.jpg`);
+    expect(["verified", "pending_review"]).toContain(w.args.p_status);
+    expect(r.body.status).toBe(w.args.p_status);
   });
 
-  it("a hard reject is recorded but never changes the borrower's status", async () => {
+  it("a hard reject is recorded as rejected", async () => {
     faceScore = 0;  // selfie does not match the ID
     const { verifyHandler } = await import("../_kyc/verify");
     const r = res(); await verifyHandler({ method: "POST", authUserId: UID, body: body() }, r);
     expect(r.body.ok).toBe(false);
-    expect(writes.find((w) => w.path === "kyc_submissions")?.body.status).toBe("rejected");
-    expect(writes.some((w) => w.path.startsWith("clients?"))).toBe(false);
+    expect(writes[0]?.args.p_status).toBe("rejected");
+  });
+
+  it("no context, no verification: 503 and nothing saved", async () => {
+    ctxOk = false;
+    const { verifyHandler } = await import("../_kyc/verify");
+    const r = res(); await verifyHandler({ method: "POST", authUserId: UID, body: body() }, r);
+    expect(r.code).toBe(503); expect(writes).toEqual([]);
   });
 });
