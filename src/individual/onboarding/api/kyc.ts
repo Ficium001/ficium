@@ -45,7 +45,7 @@ async function uploadKycFile(
 
   const { error } = await supabase.storage
     .from("kyc-documents")
-    .upload(path, file, { cacheControl: "3600", upsert: true, contentType: file.type });
+    .upload(path, file, { cacheControl: "3600", upsert: false, contentType: file.type }); // evidence is never overwritten
 
   if (error) return { error: error.message };
   return { path };

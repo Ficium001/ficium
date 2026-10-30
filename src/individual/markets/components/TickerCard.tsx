@@ -1,3 +1,4 @@
+import { STALE_AFTER_MS } from "../api/supabase";
 import { Sparkline }    from "./Sparkline";
 import { ChangeBadge }  from "./ChangeBadge";
 import type { Ticker }  from "../types";
@@ -54,6 +55,11 @@ export function TickerCard({ ticker, isActive, onClick }: TickerCardProps) {
           {reading?.displayValue}
         </div>
       )}
+      {!isLoading && reading && reading.displayValue !== "—" && isStale(reading.fetchedAt) && (
+        <div className="text-[9px] font-semibold text-amber-700 leading-tight mb-0.5">
+          as of {reading.fetchedAt.toLocaleDateString("en-MU", { day: "numeric", month: "short" })}
+        </div>
+      )}
 
       {/* Label */}
       <div className="text-[10px] font-semibold text-muted leading-tight mb-2.5">
@@ -75,4 +81,8 @@ export function TickerCard({ ticker, isActive, onClick }: TickerCardProps) {
       )}
     </button>
   );
+}
+
+function isStale(at: Date): boolean {
+  return Date.now() - at.getTime() > STALE_AFTER_MS;
 }

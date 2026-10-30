@@ -38,19 +38,24 @@ function calcSaving(currencyCode: string, best: number, worst: number): string {
 
 // ── fetchMarketData ────────────────────────────────────────────────────────
 
+/** A reading older than this is shown with its date, never as current. */
+export const STALE_AFTER_MS = 3 * 24 * 60 * 60 * 1000;
+
 export async function fetchMarketData(): Promise<MarketDataResult> {
-  const [tickerRes, fxRes, depositRes, lendingRes] = await Promise.all([
+  // Per-bank deposit and lending tables are NOT read: they held hand-entered
+  // figures under real bank names, never a live feed. Per-bank FX rows are
+  // shown only when they are real bank quotes (rate_basis = "live"); rows
+  // computed from one mid-market rate plus assumed spreads must not name a
+  // "best bank". Both return when real per-bank feeds exist.
+  const [tickerRes, fxRes] = await Promise.all([
     supabase.from("market_data").select("*"),
-    supabase.from("market_fx_rates").select("*"),
-    supabase.from("market_deposit_rates").select("*"),
-    supabase.from("market_lending_rates").select("*"),
+    supabase.from("market_fx_rates").select("*").eq("rate_basis", "live"),
   ]);
+
 
   // Surface any Supabase errors to the browser console for debugging
   if (tickerRes.error)  console.error("[markets] market_data error:",          tickerRes.error);
   if (fxRes.error)      console.error("[markets] market_fx_rates error:",      fxRes.error);
-  if (depositRes.error) console.error("[markets] market_deposit_rates error:", depositRes.error);
-  if (lendingRes.error) console.error("[markets] market_lending_rates error:", lendingRes.error);
 
   // ── Ticker readings ──
   const readings = {} as MarketDataResult["readings"];
@@ -69,6 +74,7 @@ export async function fetchMarketData(): Promise<MarketDataResult> {
     };
   }
 
+  let newest: Date | null = null;
   for (const row of tickerRes.data ?? []) {
     const id = row.ticker_id as TickerId;
     if (!TICKER_CONFIGS[id]) continue;
@@ -83,6 +89,7 @@ export async function fetchMarketData(): Promise<MarketDataResult> {
       fetchedAt: new Date(row.fetched_at),
     };
     readings[id] = r;
+    if (!newest || r.fetchedAt > newest) newest = r.fetchedAt;
   }
 
   // ── FX rates — pivot to best/worst per currency ──
@@ -120,40 +127,17 @@ export async function fetchMarketData(): Promise<MarketDataResult> {
       };
     });
 
-  // ── Deposit rates ──
-  const BANK_COLORS: Record<string, string> = {
-    MCB:           "#1d4ed8",
-    SBM:           "#dc2626",
-    Absa:          "#ea580c",
-    "SBI Mauritius":"#7c3aed",
-    AfrAsia:       "#0891b2",
-    "Bank One":    "#059669",
-    HSBC:          "#db2777",
-    MauBank:       "#d97706",
-  };
-
-  const depositRates: DepositRateRow[] = (depositRes.data ?? []).map((row) => ({
-    bank:    row.bank_name,
-    color:   BANK_COLORS[row.bank_name] ?? "#64748b",
-    rate1y:  row.rate_1y,
-    rate2y:  row.rate_2y,
-    rate3y:  row.rate_3y,
-  }));
-
-  // ── Lending rates ──
-  const lendingRates: LendingRateRow[] = (lendingRes.data ?? []).map((row) => ({
-    product:  row.product,
-    iconName: row.icon_name ?? "landmark",
-    bestRate: row.best_rate,
-    isBest:   row.is_best ?? false,
-  }));
+  // Not shown until real per-bank feeds exist (see the note at the top).
+  const depositRates: DepositRateRow[] = [];
+  const lendingRates: LendingRateRow[] = [];
 
   return {
     readings,
     fxRates,
     depositRates,
     lendingRates,
-    fetchedAt: new Date(),
+    // When the data was last refreshed at source, not when this page loaded.
+    fetchedAt: newest ?? new Date(0),
     source:    "supabase",
   };
 }

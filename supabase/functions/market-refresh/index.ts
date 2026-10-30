@@ -1,3 +1,16 @@
+// market-refresh v8 — no invented numbers, visible failures, staleness alert
+//
+// v8 (2026-10-30):
+//   - BOM: no fallback figures. v7 wrote hard-coded 3.40% / 8.25% as the
+//     "BOM" average deposit/lending rates whenever the page didn't parse;
+//     a figure we can't read is now left at its last real value (with its
+//     real fetched_at), never replaced by a guess.
+//   - Per-bank FX rows computed from one mid-market rate + assumed spreads
+//     are no longer written (the app named a "best bank" from them).
+//   - Anthropic failures record the API's error type/message, not just the status.
+//   - Every run checks freshness; anything stale makes ok=false and logs
+//     "ALERT market stale" (route that line to an alert).
+//
 // market-refresh v7 — real news ingestion + regenerated stories + honest freshness
 //
 // Content lanes per run:
@@ -56,7 +69,8 @@ async function fetchBom() {
     if (!repo) return null;
     const dep = html.match(/Average[\s\S]{0,50}?[Dd]eposit[\s\S]{0,200}?(\d+\.\d+)/i);
     const len = html.match(/Average[\s\S]{0,50}?[Ll]ending[\s\S]{0,200}?(\d+\.\d+)/i);
-    return { repo: +repo[1], deposit: +(dep?.[1] ?? "3.40"), lending: +(len?.[1] ?? "8.25") };
+    // A figure that isn't on the page stays unknown: never a default.
+    return { repo: +repo[1], deposit: dep ? +dep[1] : null, lending: len ? +len[1] : null };
   } catch { return null; }
 }
 
@@ -169,6 +183,16 @@ async function fetchFeed(url: string, scope: NewsScope): Promise<RawHeadline[]> 
   } catch { return []; }
 }
 
+/** The API's own reason for a failed call (type + message), for the run log. */
+async function anthropicError(r: Response): Promise<string> {
+  try {
+    const d = await r.json();
+    return `anthropic ${r.status} ${d?.error?.type ?? ""}: ${String(d?.error?.message ?? "").slice(0, 200)}`.trim();
+  } catch { return `anthropic ${r.status}`; }
+}
+
+let lastEnrichError: string | null = null;
+
 async function sha256Hex(input: string): Promise<string> {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
@@ -217,7 +241,7 @@ Respond ONLY with a JSON array of ${raw.length} objects in input order. No markd
       body: JSON.stringify({ model: "claude-haiku-4-5-20251001", max_tokens: 4000, messages: [{ role: "user", content: prompt }] }),
       signal: AbortSignal.timeout(30000),
     });
-    if (!r.ok) return null;
+    if (!r.ok) { lastEnrichError = await anthropicError(r); console.error("news enrichment failed", lastEnrichError); return null; }
     const d = await r.json();
     const text: string = d.content?.[0]?.text ?? "";
     const items = JSON.parse(text.replace(/```json|```/g, "").trim());
@@ -247,7 +271,7 @@ async function ingestNews(snap: Record<string, number | undefined>): Promise<Rec
 
   // 3. Enrich with grounded AI rewrite
   const enriched = await enrichHeadlines(fresh, snap);
-  if (!enriched) return { skipped: "enrichment unavailable — existing news left untouched" };
+  if (!enriched) return { error: lastEnrichError ?? "enrichment unavailable", note: "existing news left untouched" };
 
   // 4. Insert with REAL timestamps and attribution
   const rows = fresh.map((h, i) => ({
@@ -333,7 +357,7 @@ Respond ONLY with a JSON array of 6 objects, no markdown:
       body: JSON.stringify({ model: "claude-haiku-4-5-20251001", max_tokens: 4000, messages: [{ role: "user", content: prompt }] }),
       signal: AbortSignal.timeout(30000),
     });
-    if (!r.ok) return { error: `anthropic ${r.status}` };
+    if (!r.ok) { const e = await anthropicError(r); console.error("story generation failed", e); return { error: e }; }
     const d = await r.json();
     const text: string = d.content?.[0]?.text ?? "";
     const items = JSON.parse(text.replace(/```json|```/g, "").trim());
@@ -386,6 +410,22 @@ async function authorised(req: Request): Promise<boolean> {
   return !error && data === true;
 }
 
+// What borrowers would see as current but isn't. Thresholds per lane.
+async function staleness(): Promise<string[]> {
+  const out: string[] = [];
+  const age = (iso: unknown) => iso ? (Date.now() - Date.parse(String(iso))) / 3600000 : Infinity;
+  const { data: ticks } = await sb.from("market_data").select("ticker_id,fetched_at");
+  for (const t of ticks ?? []) {
+    const limit = t.ticker_id === "inflation_yoy" ? 24 * 45 : 72;  // monthly series vs daily
+    if (age(t.fetched_at) > limit) out.push(`${t.ticker_id} last fetched ${t.fetched_at}`);
+  }
+  const { data: n } = await sb.from("market_news").select("published_at").order("published_at", { ascending: false }).limit(1);
+  if (age(n?.[0]?.published_at) > 72) out.push(`news newest ${n?.[0]?.published_at ?? "none"}`);
+  const { data: st } = await sb.from("market_stories").select("generated_at").order("generated_at", { ascending: false }).limit(1);
+  if (age(st?.[0]?.generated_at) > 48) out.push(`stories newest ${st?.[0]?.generated_at ?? "none"}`);
+  return out;
+}
+
 Deno.serve(async (req: Request) => {
   if (!(await authorised(req))) {
     return new Response(JSON.stringify({ error: "unauthorised" }), {
@@ -393,7 +433,7 @@ Deno.serve(async (req: Request) => {
     });
   }
   const ts = now();
-  const log: Record<string,unknown> = { started_at: ts, version: "v7" };
+  const log: Record<string,unknown> = { started_at: ts, version: "v8" };
 
   const [fx, bom, semdex, prev] = await Promise.all([fetchFx(), fetchBom(), fetchSemdex(), getPrev()]);
   log.sources = { fx: !!fx, bom: !!bom, semdex: !!semdex };
@@ -407,7 +447,10 @@ Deno.serve(async (req: Request) => {
     }
   }
   if (bom) {
-    for (const [id, val, fmt] of [["repo_rate", bom.repo, `${bom.repo.toFixed(2)}%`], ["avg_deposit_rate", bom.deposit, `${bom.deposit.toFixed(2)}%`], ["avg_lending_rate", bom.lending, `${bom.lending.toFixed(2)}%`]] as [string, number, string][]) {
+    const bomRows = ([["repo_rate", bom.repo], ["avg_deposit_rate", bom.deposit], ["avg_lending_rate", bom.lending]] as [string, number | null][])
+      .filter((r): r is [string, number] => r[1] !== null && Number.isFinite(r[1]))
+      .map(([id, v]) => [id, v, `${v.toFixed(2)}%`] as [string, number, string]);
+    for (const [id, val, fmt] of bomRows) {
       const p = prev[id] ?? val, h = await getHist(id);
       ups.push({ ticker_id: id, value: val, display_value: fmt, change_pct: chg(p, val), direction: dir(p, val), history: [...h, val], source: "bom", fetched_at: ts });
     }
@@ -422,34 +465,9 @@ Deno.serve(async (req: Request) => {
     log.tickers = error ? { error: error.message } : { updated: count };
   }
 
-  if (fx) {
-    const s = (b: number, m: number, dp = 2) => parseFloat((b * m).toFixed(dp));
-    const fxRows = [
-      { currency_code: "USD", bank_name: "MCB",      buy_rate: s(fx.usd,1.010), sell_rate: s(fx.usd,1.017) },
-      { currency_code: "USD", bank_name: "SBM",      buy_rate: s(fx.usd,1.004), sell_rate: s(fx.usd,1.011) },
-      { currency_code: "USD", bank_name: "Absa",     buy_rate: s(fx.usd,0.996), sell_rate: s(fx.usd,1.006) },
-      { currency_code: "USD", bank_name: "AfrAsia",  buy_rate: s(fx.usd,1.009), sell_rate: s(fx.usd,1.015) },
-      { currency_code: "USD", bank_name: "Bank One", buy_rate: s(fx.usd,1.006), sell_rate: s(fx.usd,1.013) },
-      { currency_code: "EUR", bank_name: "MCB",      buy_rate: s(fx.eur,1.008), sell_rate: s(fx.eur,1.015) },
-      { currency_code: "EUR", bank_name: "SBM",      buy_rate: s(fx.eur,1.002), sell_rate: s(fx.eur,1.009) },
-      { currency_code: "EUR", bank_name: "AfrAsia",  buy_rate: s(fx.eur,1.012), sell_rate: s(fx.eur,1.018) },
-      { currency_code: "EUR", bank_name: "Absa",     buy_rate: s(fx.eur,1.005), sell_rate: s(fx.eur,1.011) },
-      { currency_code: "EUR", bank_name: "Bank One", buy_rate: s(fx.eur,1.007), sell_rate: s(fx.eur,1.013) },
-      { currency_code: "GBP", bank_name: "MCB",      buy_rate: s(fx.gbp,1.007), sell_rate: s(fx.gbp,1.014) },
-      { currency_code: "GBP", bank_name: "SBM",      buy_rate: s(fx.gbp,1.003), sell_rate: s(fx.gbp,1.010) },
-      { currency_code: "GBP", bank_name: "Bank One", buy_rate: s(fx.gbp,1.011), sell_rate: s(fx.gbp,1.018) },
-      { currency_code: "GBP", bank_name: "HSBC",     buy_rate: s(fx.gbp,1.001), sell_rate: s(fx.gbp,1.008) },
-      { currency_code: "GBP", bank_name: "AfrAsia",  buy_rate: s(fx.gbp,1.009), sell_rate: s(fx.gbp,1.016) },
-      { currency_code: "ZAR", bank_name: "Absa",     buy_rate: s(fx.zar,1.020,4), sell_rate: s(fx.zar,1.035,4) },
-      { currency_code: "ZAR", bank_name: "MCB",      buy_rate: s(fx.zar,1.010,4), sell_rate: s(fx.zar,1.026,4) },
-      { currency_code: "ZAR", bank_name: "MauBank",  buy_rate: s(fx.zar,0.998,4), sell_rate: s(fx.zar,1.016,4) },
-    // Computed from a live FX feed + fixed per-bank spread assumption, not
-    // each bank's own published counter rate — honestly marked "indicative"
-    // until real per-bank rate feeds are integrated (see market_fx_rates.rate_basis).
-    ].map(r => ({ ...r, currency_pair: `${r.currency_code} / MUR`, rate_basis: "indicative", fetched_at: ts }));
-    const { error, count } = await sb.from("market_fx_rates").upsert(fxRows, { onConflict: "currency_code,bank_name", count: "exact" });
-    log.fx_rates = error ? { error: error.message } : { updated: count };
-  }
+  // v8: no per-bank FX rows. They were one mid-market rate times assumed
+  // per-bank spreads, and the app used them to name a "best bank".
+  log.fx_rates = { skipped: "no real per-bank quotes feed" };
 
   const snap = { usd: fx?.usd, eur: fx?.eur, gbp: fx?.gbp, repo: bom?.repo, semdex: semdex ?? undefined };
 
@@ -457,6 +475,10 @@ Deno.serve(async (req: Request) => {
   log.news    = await ingestNews(snap);
   log.stories = await generateStories(snap, prev);
 
+  log.stale = await staleness();
+  const ok = (log.stale as string[]).length === 0;
+  if (!ok) console.error("ALERT market stale", JSON.stringify(log.stale));
+
   log.done_at = now();
-  return new Response(JSON.stringify({ ok: true, log }, null, 2), { headers: { "Content-Type": "application/json" } });
+  return new Response(JSON.stringify({ ok, log }, null, 2), { headers: { "Content-Type": "application/json" } });
 });

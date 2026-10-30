@@ -58,13 +58,16 @@ export default function Markets() {
     ? tickers.find((t) => t.id === activeId) ?? null
     : null;
 
-  const timeLabel = lastUpdated
-    ? lastUpdated.toLocaleTimeString("en-MU", { hour: "2-digit", minute: "2-digit" })
-    : "—";
+  // The data's own refresh time: today shows a time, older shows the date.
+  const timeLabel = !lastUpdated || lastUpdated.getTime() === 0
+    ? "—"
+    : lastUpdated.toDateString() === new Date().toDateString()
+      ? lastUpdated.toLocaleTimeString("en-MU", { hour: "2-digit", minute: "2-digit" })
+      : lastUpdated.toLocaleDateString("en-MU", { day: "numeric", month: "short" });
 
   const heroStats: HeroStat[] = [
     { label: "Indicators tracked", value: tickers.length },
-    { label: "Banks compared",     value: fxRates.length },
+    ...(fxRates.length > 0 ? [{ label: "Banks compared", value: fxRates.length }] : []),
     { label: "Stories today",      value: news.length },
   ];
 
@@ -120,9 +123,11 @@ export default function Markets() {
         </Reveal>
 
         {/* Best FX rates across all Mauritius banks */}
-        <Reveal>
-          <FxBestRates rates={fxRates} />
-        </Reveal>
+        {fxRates.length > 0 && (
+          <Reveal>
+            <FxBestRates rates={fxRates} />
+          </Reveal>
+        )}
 
         {/* Market news — personalised, scope-filterable */}
         <Reveal>
