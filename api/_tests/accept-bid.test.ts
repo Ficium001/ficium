@@ -1,0 +1,68 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+// Internal detail (database errors, the bank side's messages, network errors) must stay in the
+// logs. The borrower's browser only ever gets a generic message and a code.
+const LEAK = "connect ECONNREFUSED 10.0.0.5:5432 password=hunter2";
+
+vi.mock("../_lib/auth.js", () => ({
+  requireUser: vi.fn(async () => ({ id: "11111111-1111-4111-8111-111111111111" })),
+  requireOwnership: vi.fn(),
+  sendAuthError: vi.fn(() => false),
+}));
+vi.mock("../_lib/db.js", () => ({ getServiceDb: vi.fn(() => ({})) }));
+vi.mock("../_lib/handlers/bid-accepted.js", () => ({ writeBidAcceptedNotification: vi.fn(async () => undefined) }));
+const acceptViaContract = vi.fn();
+vi.mock("../_lib/integration/acceptance.js", () => ({ acceptViaContract: (...a: unknown[]) => acceptViaContract(...a) }));
+
+function fakeRes() {
+  const r: any = { statusCode: 0, body: undefined };
+  r.status = (c: number) => { r.statusCode = c; return r; };
+  r.json = (b: unknown) => { r.body = b; return r; };
+  r.setHeader = () => r;
+  return r;
+}
+const req = { method: "POST", headers: {}, body: { requestId: "22222222-2222-4222-8222-222222222222", bidId: "33333333-3333-4333-8333-333333333333" } };
+
+describe("POST /api/accept-bid never returns internal errors", () => {
+  beforeEach(() => {
+    vi.stubEnv("SUPABASE_URL", "https://db.test");
+    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "service");
+    vi.stubEnv("INTEGRATION_ACCEPTANCE_ENABLED", "true");
+    vi.stubEnv("INTEGRATION_ACCEPT_URL", "https://portal.test/integration/v1/acceptances");
+    vi.stubEnv("INTEGRATION_ACCEPT_SIGNING_KEY", "k");
+    vi.stubGlobal("fetch", vi.fn(async () => new globalThis.Response(
+      JSON.stringify([{ client_id: "11111111-1111-4111-8111-111111111111", status: "open" }]), { status: 200 })));
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+  });
+  afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); vi.restoreAllMocks(); acceptViaContract.mockReset(); });
+
+  it("the bank side's error text is logged, not shown (5xx becomes 502)", async () => {
+    acceptViaContract.mockResolvedValue({ status: 500, error: LEAK });
+    const { default: handler } = await import("../accept-bid");
+    const res = fakeRes();
+    await handler(req, res);
+    expect(res.statusCode).toBe(502);
+    expect(res.body.code).toBe("ACCEPTANCE_FAILED");
+    expect(JSON.stringify(res.body)).not.toContain("ECONNREFUSED");
+    expect(JSON.stringify(res.body)).not.toContain("hunter2");
+  });
+
+  it("a refusal keeps its 4xx status but not its text", async () => {
+    acceptViaContract.mockResolvedValue({ status: 409, error: `bid_not_open: ${LEAK}` });
+    const { default: handler } = await import("../accept-bid");
+    const res = fakeRes();
+    await handler(req, res);
+    expect(res.statusCode).toBe(409);
+    expect(JSON.stringify(res.body)).not.toContain("hunter2");
+  });
+
+  it("an unexpected exception is a generic 500", async () => {
+    acceptViaContract.mockRejectedValue(new Error(LEAK));
+    const { default: handler } = await import("../accept-bid");
+    const res = fakeRes();
+    await handler(req, res);
+    expect(res.statusCode).toBe(500);
+    expect(res.body.code).toBe("UNEXPECTED");
+    expect(JSON.stringify(res.body)).not.toContain("hunter2");
+  });
+});

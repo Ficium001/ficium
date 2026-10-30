@@ -32,7 +32,8 @@ export default async function handler(req: any, res: any): Promise<void> {
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
     console.error("[accept-bid] UNCAUGHT:", msg, e instanceof Error ? e.stack : "");
-    return Response.error(res, `Unexpected error: ${msg}`, 500, "UNEXPECTED");
+    // Internal detail stays in the logs; the browser gets a generic message.
+    return Response.error(res, "Accepting this offer failed. Nothing was changed. Try again shortly.", 500, "UNEXPECTED");
   }
 }
 async function _handler(req: any, res: any): Promise<void> {
@@ -119,7 +120,9 @@ async function _handler(req: any, res: any): Promise<void> {
     );
     if (out.status !== 200 || !out.reveal) {
       console.error("[accept-bid] contract acceptance failed:", out.status, out.error);
-      return Response.error(res, `Acceptance failed: ${out.error ?? "unknown"}`, out.status, "ACCEPTANCE_FAILED");
+      // out.error comes from the bank side or the network: log it, never show it.
+      const status = out.status >= 400 && out.status < 500 ? out.status : 502;
+      return Response.error(res, "The lender couldn't confirm this acceptance. Nothing was changed. Try again shortly.", status, "ACCEPTANCE_FAILED");
     }
     reveal = out.reveal;
   }
