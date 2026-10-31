@@ -9,7 +9,8 @@ vi.mock("../_lib/auth.js", () => ({
   requireOwnership: vi.fn(),
   sendAuthError: vi.fn(() => false),
 }));
-vi.mock("../_lib/db.js", () => ({ getServiceDb: vi.fn(() => ({})) }));
+const rpc = vi.fn(async (..._a: unknown[]): Promise<{ error: { message: string } | null }> => ({ error: null }));
+vi.mock("../_lib/db.js", () => ({ getServiceDb: vi.fn(() => ({ rpc })) }));
 vi.mock("../_lib/handlers/bid-accepted.js", () => ({ writeBidAcceptedNotification: vi.fn(async () => undefined) }));
 const acceptViaContract = vi.fn();
 vi.mock("../_lib/integration/acceptance.js", () => ({ acceptViaContract: (...a: unknown[]) => acceptViaContract(...a) }));
@@ -63,6 +64,47 @@ describe("POST /api/accept-bid never returns internal errors", () => {
     await handler(req, res);
     expect(res.statusCode).toBe(500);
     expect(res.body.code).toBe("UNEXPECTED");
+    expect(JSON.stringify(res.body)).not.toContain("hunter2");
+  });
+});
+
+describe("POST /api/accept-bid records the acceptance or says it didn't", () => {
+  const reveal = { institution_id: "i", institution_name: "Bank", rate: 5, rate_type: "fixed", amount_offered: 1000, term_months: 12 };
+  beforeEach(() => {
+    vi.stubEnv("SUPABASE_URL", "https://db.test");
+    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "service");
+    vi.stubEnv("INTEGRATION_ACCEPTANCE_ENABLED", "true");
+    vi.stubEnv("INTEGRATION_ACCEPT_URL", "https://portal.test/integration/v1/acceptances");
+    vi.stubEnv("INTEGRATION_ACCEPT_SIGNING_KEY", "k");
+    vi.stubGlobal("fetch", vi.fn(async () => new globalThis.Response(
+      JSON.stringify([{ client_id: "11111111-1111-4111-8111-111111111111", status: "open" }]), { status: 200 })));
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+  });
+  afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); vi.restoreAllMocks(); acceptViaContract.mockReset(); rpc.mockReset(); });
+
+  // Simulates acceptViaContract: bank side accepts, then the App DB completion runs.
+  const bankAccepts = async (deps: any) => { await deps.complete("consent_x", "accepted", "i"); return { status: 200, reveal }; };
+
+  it("success only after the App DB recorded it, with no extra direct table writes", async () => {
+    rpc.mockResolvedValue({ error: null });
+    acceptViaContract.mockImplementation(bankAccepts);
+    const { default: handler } = await import("../accept-bid");
+    const res = fakeRes();
+    await handler(req, res);
+    expect(res.statusCode).toBe(200);
+    expect(rpc).toHaveBeenCalledWith("integration_complete_acceptance", { p_consent_ref: "consent_x", p_outcome: "accepted", p_institution: "i" });
+    // only the ownership lookup touches REST directly; bid_acceptances/requests are written by the RPC
+    expect((globalThis.fetch as any).mock.calls).toHaveLength(1);
+  });
+
+  it("bank accepted but the App DB write failed: 503 asking for a retry, never 200", async () => {
+    rpc.mockResolvedValue({ error: { message: LEAK } });
+    acceptViaContract.mockImplementation(bankAccepts);
+    const { default: handler } = await import("../accept-bid");
+    const res = fakeRes();
+    await handler(req, res);
+    expect(res.statusCode).toBe(503);
+    expect(res.body.code).toBe("ACCEPTANCE_NOT_SAVED");
     expect(JSON.stringify(res.body)).not.toContain("hunter2");
   });
 });

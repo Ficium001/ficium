@@ -10,9 +10,11 @@
  *   3. The contract acceptance call (ficium-integration step 5), the only path: only the fields the
  *      borrower released leave this side, signed, audited in the App DB. The legacy direct call to
  *      portal-api (shared secret + raw account id) was removed: no direct link between the apps.
- *   4. Write bid_acceptances row in App DB.
- *   5. Update requests.status = 'accepted' in App DB.
- *   6. Return Phase 2 institution contact to the browser.
+ *   4. Record the acceptance in the App DB: integration_complete_acceptance writes the audit row,
+ *      requests.status/accepted_bid_id and bid_acceptances in ONE transaction. If that fails after
+ *      the bank side committed, the borrower is told to tap Accept again: the retry reuses the
+ *      same consent_ref, the bank side answers from its idempotency log, and the write is redone.
+ *   5. Return Phase 2 institution contact to the browser.
  *
  * Env required (Vercel + .env):
  *   INTEGRATION_ACCEPTANCE_ENABLED, INTEGRATION_ACCEPT_URL, INTEGRATION_ACCEPT_SIGNING_KEY,
@@ -99,6 +101,7 @@ async function _handler(req: any, res: any): Promise<void> {
       return Response.error(res, "Acceptance call not configured", 503, "ACCEPTANCE_NOT_CONFIGURED");
     }
     const db = getServiceDb();
+    let notSaved = false;
     const out = await acceptViaContract(
       {
         async prepare(c, r, b) {
@@ -108,7 +111,10 @@ async function _handler(req: any, res: any): Promise<void> {
         },
         async complete(ref, outcome, inst) {
           const { error } = await (db as any).rpc("integration_complete_acceptance", { p_consent_ref: ref, p_outcome: outcome, p_institution: inst });
-          if (error) console.error("[accept-bid] audit completion failed:", error.message);
+          if (error) {
+            console.error("[accept-bid] completion failed:", outcome, error.message);
+            if (outcome === "accepted") notSaved = true;
+          }
         },
         fetchFn: fetch,
         url,
@@ -124,34 +130,15 @@ async function _handler(req: any, res: any): Promise<void> {
       const status = out.status >= 400 && out.status < 500 ? out.status : 502;
       return Response.error(res, "The lender couldn't confirm this acceptance. Nothing was changed. Try again shortly.", status, "ACCEPTANCE_FAILED");
     }
+    if (notSaved) {
+      // The bank has the acceptance; this side didn't record it. Never report success on a state the
+      // borrower's own app doesn't show. A retry is safe and finishes the job (see header, step 4).
+      return Response.error(res, "Your acceptance reached the lender but wasn't saved here. Tap Accept again to finish. It won't be accepted twice.", 503, "ACCEPTANCE_NOT_SAVED");
+    }
     reveal = out.reveal;
   }
 
-  // ── 4. App DB — write bid_acceptance + close request ──────────────────────
-  const headers = { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" };
-
-  await Promise.allSettled([
-    fetch(`${supabaseUrl}/rest/v1/bid_acceptances`, {
-      method:  "POST",
-      headers: { ...headers, Prefer: "return=minimal" },
-      body: JSON.stringify({
-        bid_id:         bidId,
-        request_id:     requestId,
-        client_id:      consumerId,
-        institution_id: reveal.institution_id ?? null,
-        accepted_at:    new Date().toISOString(),
-      }),
-    }),
-    fetch(`${supabaseUrl}/rest/v1/requests?id=eq.${encodeURIComponent(requestId)}`, {
-      method:  "PATCH",
-      headers: { ...headers, Prefer: "return=minimal" },
-      // accepted_bid_id: the deal progress and document receivers apply events only for this bid.
-      // integration_complete_acceptance sets it too; this is the second guarantee.
-      body: JSON.stringify({ status: "accepted", accepted_bid_id: bidId }),
-    }),
-  ]);
-
-  // ── 5. Notification (fire-and-forget) ─────────────────────────────────────
+  // ── 4. Notification (fire-and-forget) ─────────────────────────────────────
   writeBidAcceptedNotification({
     client_id:        consumerId,
     request_id:       requestId,
