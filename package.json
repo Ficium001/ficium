@@ -14,7 +14,7 @@
     "lint:dead": "knip"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.137.0",
+    "@anthropic-ai/sdk": "^1.3.0",
     "@ficium/contract": "github:Ficium001/ficium-integration#v1.10.0",
     "@hookform/resolvers": "^6.0.0",
     "@supabase/supabase-js": "^2.118.0",
