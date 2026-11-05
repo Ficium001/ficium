@@ -19,6 +19,7 @@ import {
 } from "@/individual/dashboard/components";
 import { WhatAreYouPlanningSection } from "@/individual/dashboard/components/WhatAreYouPlanningSection";
 import { ActiveRequestCard } from "@/individual/requests/components/ActiveRequestCard";
+import { statusFilterKey } from "@/individual/requests/api/requests";
 import { BottomNav } from "@/shared/ui";
 import { Hero, HeroButton, GradText, type HeroStat } from "@/shared/ui/dashboard";
 import { FiciumLogo } from "@/shared/ui/FiciumLogo";
@@ -190,11 +191,11 @@ export default function Dashboard() {
           const FILTERS = [
             { key: "open",     label: "Open"     },
             { key: "accepted", label: "Accepted" },
-            { key: "rejected", label: "Rejected" },
+            { key: "rejected", label: "Declined" },
             { key: "expired",  label: "Expired"  },
             { key: "closed",   label: "Closed"   },
           ] as const;
-          const filtered = requests.filter(r => r.status === requestFilter);
+          const filtered = requests.filter(r => statusFilterKey(r.status) === requestFilter);
           return (
             <div>
               <div className="flex items-end justify-between mb-3">
@@ -210,7 +211,7 @@ export default function Dashboard() {
               {/* Filter pills — segmented control */}
               <div className="flex items-center gap-2 mb-4 p-1 bg-ink/4 rounded-[16px] w-fit max-w-full overflow-x-auto scrollbar-hide">
                 {FILTERS.map(f => {
-                  const count = requests.filter(r => r.status === f.key).length;
+                  const count = requests.filter(r => statusFilterKey(r.status) === f.key).length;
                   const active = requestFilter === f.key;
                   const META = {
                     open:     { dot: "#356EF4", activeBg: "linear-gradient(135deg,#356EF4,#8231EC)" },

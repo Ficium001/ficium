@@ -4,7 +4,7 @@
  *
  * Routes (via ?action= query param, or { action } in POST body):
  *   GET  ?action=tracker&requestId=            → loan pipeline tracker
- *   POST ?action=relist                        → relist expired request
+ *   POST ?action=relist                        → relist an expired/declined request (a declined deal relists as a new request)
  *   GET  ?action=invitation-preview&token=     → public invite preview (no auth)
  *   GET  ?action=couple                        → caller's couple + joint requests
  *   POST { action: "invitation-create", ... }  → invite a co-applicant
@@ -166,6 +166,12 @@ async function route(req: any, res: any): Promise<void> {
     });
     if (error) {
       if (/RELIST_NOT_FOUND/.test(error.message)) return Response.error(res, "Request not found", 404, "NOT_FOUND");
+      if (/RELIST_ALREADY_DONE/.test(error.message)) {
+        return Response.error(res, "This request has already been relisted", 409, "ALREADY_RELISTED");
+      }
+      if (/RELIST_JOINT_NOT_SUPPORTED/.test(error.message)) {
+        return Response.error(res, "A joint request needs a new request so every applicant can consent", 409, "JOINT_RELIST");
+      }
       if (/RELIST_NOT_ALLOWED/.test(error.message)) {
         return Response.error(res, "Only an expired or declined request can be relisted", 409, "NOT_ALLOWED");
       }

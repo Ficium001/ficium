@@ -48,7 +48,7 @@ describe("relist", () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it.each([["RELIST_NOT_FOUND", 404], ["RELIST_NOT_ALLOWED", 409]])("maps %s", async (code, status) => {
+  it.each([["RELIST_NOT_FOUND", 404], ["RELIST_NOT_ALLOWED", 409], ["RELIST_ALREADY_DONE", 409], ["RELIST_JOINT_NOT_SUPPORTED", 409]])("maps %s", async (code, status) => {
     rpc.mockResolvedValue({ data: null, error: { message: code } });
     const r = res();
     await handler({ method: "POST", query: {}, body: { action: "relist", requestId: "req-1" }, headers: {} }, r);

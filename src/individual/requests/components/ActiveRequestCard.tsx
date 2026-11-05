@@ -10,6 +10,7 @@ import {
   CheckCircle2, ArrowRight, Users, XCircle,
 } from "lucide-react";
 import type { RequestSummary } from "@/individual/requests/api/requests";
+import { statusLabel } from "@/individual/requests/api/requests";
 
 const PRODUCT_CONFIG: Record<string, {
   icon:        React.ElementType;
@@ -82,10 +83,10 @@ export function ActiveRequestCard({ request }: { request: RequestSummary }) {
         <span
           className={[
             "absolute top-4 right-4 text-[10px] font-bold px-3 py-1.5 rounded-full uppercase tracking-wide text-white",
-            request.status === "rejected" ? "bg-red-500/60" : "bg-white/25",
+            request.status === "rejected" || request.status === "deal_declined" ? "bg-red-500/60" : "bg-white/25",
           ].join(" ")}
         >
-          {request.status}
+          {statusLabel(request.status)}
         </span>
 
         {/* Centered icon */}
@@ -164,6 +165,12 @@ export function ActiveRequestCard({ request }: { request: RequestSummary }) {
           <div className="flex items-center gap-2 bg-red-50 border border-red-100 rounded-xl px-3 py-2.5">
             <XCircle size={13} className="text-red-500 shrink-0" />
             <span className="text-[11px] text-red-700 font-medium">Declined by the provider · post a new request to try again</span>
+          </div>
+        )}
+        {request.status === "deal_declined" && (
+          <div className="flex items-center gap-2 bg-red-50 border border-red-100 rounded-xl px-3 py-2.5">
+            <XCircle size={13} className="text-red-500 shrink-0" />
+            <span className="text-[11px] text-red-700 font-medium">The bank declined this deal · relist to get new offers</span>
           </div>
         )}
         {!isClosed && request.bidCount === 0 && (

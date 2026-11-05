@@ -13,7 +13,7 @@ import {
   BarChart3, CheckCircle2, MapPin, Layers,
 } from "lucide-react";
 import { TrackerTab } from "../tracker/tabs/TrackerTab";
-import { formatProductType } from "../api/requests";
+import { formatProductType, statusLabel } from "../api/requests";
 import type { Bid, RequestDetail as RequestDetailType, Phase2Reveal } from "../api/requests";
 import { Button, Card, BottomNav } from "../../../shared/ui";
 import RequestThreads from "../components/RequestThreads";
@@ -380,6 +380,51 @@ function DetailsTab({ request, profile }: { request: RequestDetailType; profile:
   );
 }
 
+/* ── The accepted bank declined the deal ──
+   Relisting creates a NEW request (same ask, fresh window) and opens it. Old offers are not revived:
+   they closed at acceptance and were priced on that day. */
+function DealDeclinedState({ requestId, bankName }: { requestId: string; bankName?: string }) {
+  const navigate = useNavigate();
+  const [relisting, setRelisting] = useState(false);
+  const [error, setError]         = useState<string | null>(null);
+  const bank = bankName && bankName !== "Institution" ? bankName : "The bank";
+
+  const handleRelist = async () => {
+    setRelisting(true); setError(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch("/api/request-actions?action=relist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token ?? ""}` },
+        body: JSON.stringify({ requestId }),
+      });
+      const body = await res.json().catch(() => null);
+      const newId: string | undefined = body?.data?.request_id;
+      if (res.ok && newId) { navigate(`/requests/${newId}`); return; }
+      setError(typeof body?.error === "string" ? body.error : "Couldn't relist. Please try again.");
+    } finally { setRelisting(false); }
+  };
+
+  return (
+    <div className="px-4 py-4 bg-red-50 border border-red-200 rounded-2xl">
+      <div className="font-semibold text-red-900 text-[14px] mb-1">Declined by {bank === "The bank" ? "the bank" : bank}</div>
+      <p className="text-[12px] text-red-800 leading-relaxed mb-3">
+        {bank} declined this deal during its review. Relisting sends the same request to every
+        provider again, for a fresh round of offers.
+      </p>
+      {error && <p className="text-[12px] text-red-700 mb-3">{error}</p>}
+      <button
+        onClick={handleRelist}
+        disabled={relisting}
+        className="w-full py-3 rounded-xl text-[13px] font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+        style={{ background: "linear-gradient(135deg,#3536DC,#8231EC)" }}
+      >
+        {relisting ? "Relisting…" : "Relist this request"}
+      </button>
+    </div>
+  );
+}
+
 /* ── No-bids / closed state ── */
 function NoBidsState({
   requestId, status, bidCount,
@@ -511,6 +556,10 @@ function BidsTab({ bids, request, isClosed, accepting, acceptingBid, onAccept }:
   const [view, setView] = useState<"table" | "cards">(bids.length >= 2 ? "table" : "cards");
   const countdown  = useCountdown(request.decisionDeadline ?? null);
   const acceptedBid = bids.find(b => b.status === "accepted");
+
+  if (request.status === "deal_declined") {
+    return <DealDeclinedState requestId={request.id} bankName={acceptedBid?.institutionName} />;
+  }
 
   // Cheapest first: rate after guaranteed discounts, then guaranteed cashback.
   const sorted = [...bids].sort(byEffectiveCost);
@@ -826,7 +875,7 @@ export default function RequestDetail() {
             <div className="ml-auto flex items-center gap-2">
               <span className={["text-[11px] font-bold px-3 py-1.5 rounded-pill uppercase tracking-wide",
                 request.status === "open" ? "bg-white/20 text-white" : "bg-white/10 text-white/60"].join(" ")}>
-                {request.status}
+                {statusLabel(request.status)}
               </span>
               <div className="flex items-center gap-1 bg-white/10 border border-white/20 rounded-pill px-2.5 py-1">
                 <Lock size={10} className="text-white/50" />
