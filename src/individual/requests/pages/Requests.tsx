@@ -28,6 +28,7 @@ const KIND_TONE: Record<NotificationKind, "good" | "warn" | "bad" | "blue" | "vi
   request_created:  "blue",
   request_expiring: "warn",
   request_rejected: "bad",
+  request_declined_by_provider: "warn",
   bid_received:     "violet",
   bid_accepted:     "good",
   bid_expired:      "warn",

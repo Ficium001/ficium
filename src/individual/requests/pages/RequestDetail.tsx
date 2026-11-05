@@ -485,7 +485,7 @@ function NoBidsState({
           <div className="font-semibold text-amber-900 text-[14px] mb-1">No bids received</div>
           <p className="text-[12px] text-amber-800 leading-relaxed mb-3">
             Your bid window closed without any offers. You can relist to give institutions
-            another 72 hours to respond.
+            another 14 days to respond.
           </p>
           <ul className="text-[11px] text-amber-700 space-y-1 mb-4 pl-3">
             <li>• Consider increasing your max rate slightly</li>

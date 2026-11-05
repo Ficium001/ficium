@@ -26,11 +26,15 @@ const KIND_CONFIG: Record<NotificationKind, {
   request_created:  { icon: FileText,     bg: "bg-ficium/10",  fg: "text-ficium",      dot: "bg-ficium",      label: "Request", actionRequired: false },
   request_expiring: { icon: Clock,        bg: "bg-amber-50",   fg: "text-amber-600",   dot: "bg-amber-400",   label: "Request", actionRequired: true  },
   request_rejected: { icon: ShieldAlert,  bg: "bg-red-50",     fg: "text-red-500",     dot: "bg-red-400",     label: "Request", actionRequired: false },
+  request_declined_by_provider: { icon: ShieldAlert, bg: "bg-ink/6", fg: "text-muted", dot: "bg-ink/25", label: "Request", actionRequired: false },
   bid_received:     { icon: TrendingUp,   bg: "bg-ficium/10",  fg: "text-ficium",      dot: "bg-ficium",      label: "Bid",     actionRequired: true  },
   bid_accepted:     { icon: Sparkles,     bg: "bg-emerald-50", fg: "text-emerald-600", dot: "bg-emerald-400", label: "Bid",     actionRequired: true  },
   bid_expired:      { icon: TrendingDown, bg: "bg-ink/6", fg: "text-muted",       dot: "bg-ink/25",      label: "Bid",     actionRequired: false },
   system:           { icon: Sparkles,     bg: "bg-ficium/10",  fg: "text-ficium",      dot: "bg-ficium",      label: "System",  actionRequired: false },
 };
+
+/** Any kind the server adds before this app knows it renders as a plain system alert instead of crashing. */
+const kindConfig = (kind: string) => KIND_CONFIG[kind as NotificationKind] ?? KIND_CONFIG.system;
 
 type FilterTab = "all" | "action";
 
@@ -52,9 +56,9 @@ export default function Alerts() {
   };
 
   const unreadCount  = items.filter((n) => !n.readAt).length;
-  const actionCount  = items.filter((n) => KIND_CONFIG[n.kind].actionRequired && !n.readAt).length;
+  const actionCount  = items.filter((n) => kindConfig(n.kind).actionRequired && !n.readAt).length;
   const filtered     = activeTab === "action"
-    ? items.filter((n) => KIND_CONFIG[n.kind].actionRequired)
+    ? items.filter((n) => kindConfig(n.kind).actionRequired)
     : items;
 
   const todayItems    = filtered.filter((n) => isToday(n.createdAt));
@@ -220,7 +224,7 @@ function NotificationRow({
   notification: AppNotification;
   onClick: () => void;
 }) {
-  const cfg   = KIND_CONFIG[notification.kind];
+  const cfg   = kindConfig(notification.kind);
   const Icon  = cfg.icon;
   const unread = !notification.readAt;
   const needsAction = cfg.actionRequired;
