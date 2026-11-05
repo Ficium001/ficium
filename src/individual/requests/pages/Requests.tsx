@@ -14,6 +14,7 @@ import { useNotifications } from "@/individual/alerts/hooks/useAlerts";
 import { timeAgo } from "@/individual/alerts/api/notifications";
 import type { NotificationKind } from "@/individual/alerts/api/notifications";
 import { ActiveRequestCard } from "@/individual/requests/components/ActiveRequestCard";
+import { statusFilterKey } from "@/individual/requests/api/requests";
 import { BottomNav, CardScroller } from "@/shared/ui";
 import {
   Hero, HeroButton, GradText, type HeroStat,
@@ -42,7 +43,7 @@ export default function Requests() {
   const [statusFilter, setStatusFilter] = useState<"open" | "accepted" | "rejected" | "expired" | "closed">("open");
 
   const openRequests  = requests.filter(r => r.status === "open");
-  const filteredRequests = requests.filter(r => r.status === statusFilter);
+  const filteredRequests = requests.filter(r => statusFilterKey(r.status) === statusFilter);
   const totalOffers   = requests.reduce((s, r) => s + r.bidCount, 0);
 
   // Compute best rate from real bids across all requests
@@ -125,14 +126,14 @@ export default function Requests() {
                   const FILTERS = [
                     { key: "open"     as const, label: "Open",     dot: "#356EF4", activeBg: "linear-gradient(135deg,#356EF4,#8231EC)", activeText: "#fff" },
                     { key: "accepted" as const, label: "Accepted", dot: "#10b981", activeBg: "linear-gradient(135deg,#059669,#10b981)",   activeText: "#fff" },
-                    { key: "rejected" as const, label: "Rejected", dot: "#ef4444", activeBg: "linear-gradient(135deg,#dc2626,#ef4444)",   activeText: "#fff" },
+                    { key: "rejected" as const, label: "Declined", dot: "#ef4444", activeBg: "linear-gradient(135deg,#dc2626,#ef4444)",   activeText: "#fff" },
                     { key: "expired"  as const, label: "Expired",  dot: "#f59e0b", activeBg: "linear-gradient(135deg,#d97706,#f59e0b)",   activeText: "#fff" },
                     { key: "closed"   as const, label: "Closed",   dot: "#9ca3af", activeBg: "linear-gradient(135deg,#4b5563,#9ca3af)",   activeText: "#fff" },
                   ];
                   return (
                     <div className="flex items-center gap-2 mb-5 p-1 bg-ink/4 rounded-[16px] w-fit max-w-full overflow-x-auto scrollbar-hide">
                       {FILTERS.map(f => {
-                        const count = requests.filter(r => r.status === f.key).length;
+                        const count = requests.filter(r => statusFilterKey(r.status) === f.key).length;
                         const active = statusFilter === f.key;
                         return (
                           <button

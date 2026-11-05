@@ -24,7 +24,16 @@ export type ProductType =
   | "offshore_investment"
   | "mixed_portfolio";
 
-export type RequestStatus = "open" | "closed" | "cancelled" | "accepted" | "expired" | "rejected";
+export type RequestStatus =
+  | "open" | "closed" | "cancelled" | "accepted" | "expired" | "rejected"
+  | "deal_declined"; // the accepted bank declined the deal in its own process
+
+/** Which filter tab a request belongs to: a declined deal sits with the other declines. */
+export const statusFilterKey = (s: RequestStatus): RequestStatus => (s === "deal_declined" ? "rejected" : s);
+
+/** Short status label for badges. */
+export const statusLabel = (s: RequestStatus): string =>
+  s === "deal_declined" || s === "rejected" ? "declined" : s;
 
 export type CreateRequestInput = {
   productType: ProductType;
