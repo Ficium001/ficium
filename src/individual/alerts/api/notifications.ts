@@ -8,6 +8,7 @@ export type NotificationKind =
   | "request_created"
   | "request_expiring"
   | "request_rejected"
+  | "request_declined_by_provider" // one bank declined to make an offer; the request stays open
   | "bid_received"
   | "bid_accepted"
   | "bid_expired"

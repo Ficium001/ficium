@@ -141,8 +141,6 @@ export const router = createBrowserRouter([
   // ── Institution app → moved to ficium-portal ────────────────
   { path: "/institution",            element: <PortalRedirect /> },
   { path: "/institution/*",          element: <PortalRedirect /> },
-  { path: "/admin",                  element: <PortalRedirect to="/admin" /> },
-  { path: "/admin/*",                element: <PortalRedirect to="/admin" /> },
 
   { path: "*", element: <S><NotFound /></S> },
 ]);
