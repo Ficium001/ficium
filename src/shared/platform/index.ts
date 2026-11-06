@@ -9,3 +9,7 @@ export type { RuntimePlatform } from "./runtime";
 export { apiUrl, publicUrl } from "./endpoints";
 export { openExternal } from "./navigation";
 export { bootstrapNative } from "./bootstrap";
+export { LOCK_POLICY, shouldLockOnResume, isIdleExpired } from "./lockPolicy";
+export { verifyDeviceOwner, confirmSensitiveAction, isDeviceAuthPromptOpen } from "./deviceAuth";
+export type { DeviceAuthResult } from "./deviceAuth";
+export { onAppStateChange } from "./lifecycle";

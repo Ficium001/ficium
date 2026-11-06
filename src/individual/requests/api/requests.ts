@@ -1,7 +1,7 @@
 import { supabase , getCachedUser } from "@/shared/lib/supabase";
 import { audit } from "@/shared/lib/audit";
 import { formatProductType } from "@/shared/lib/format";
-import { apiUrl } from "@/shared/platform";
+import { apiUrl, confirmSensitiveAction } from "@/shared/platform";
 export { formatProductType } from "@/shared/lib/format";
 
 /* ---------- Types ---------- */
@@ -452,6 +452,11 @@ export async function acceptBid(
   bidId:     string,
   requestId: string,
 ): Promise<AcceptBidResult> {
+  // Accepting reveals the borrower's identity to the bank: on the phone app the
+  // device owner confirms it first (no-op on the web).
+  if (!(await confirmSensitiveAction("Confirm you want to accept this offer"))) {
+    return { ok: false, error: "Not confirmed. Your offer has not been accepted." };
+  }
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token ?? "";
 
