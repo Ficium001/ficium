@@ -121,7 +121,7 @@ export type Phase2Reveal = {
 
 export type AcceptBidResult =
   | { ok: true;  reveal: Phase2Reveal }
-  | { ok: false; error: string };
+  | { ok: false; error: string; notConfirmed?: true };
 
 
 /* ---------- Summary type (used by list views + dashboard) ---------- */
@@ -455,7 +455,7 @@ export async function acceptBid(
   // Accepting reveals the borrower's identity to the bank: on the phone app the
   // device owner confirms it first (no-op on the web).
   if (!(await confirmSensitiveAction("Confirm you want to accept this offer"))) {
-    return { ok: false, error: "Not confirmed. Your offer has not been accepted." };
+    return { ok: false, error: "Not confirmed. Your offer has not been accepted.", notConfirmed: true };
   }
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token ?? "";
