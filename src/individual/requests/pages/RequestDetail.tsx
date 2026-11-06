@@ -546,7 +546,8 @@ function useCountdown(deadline: string | null) {
 }
 
 /* ── Bids tab — side-by-side comparison + live countdown ── */
-function BidsTab({ bids, request, isClosed, accepting, acceptingBid, onAccept }: {
+function BidsTab({ bids, request, isClosed, accepting, acceptingBid, onAccept, acceptError }: {
+  acceptError: string | null;
   bids: Bid[];
   request: RequestDetailType;
   isClosed: boolean;
@@ -567,6 +568,11 @@ function BidsTab({ bids, request, isClosed, accepting, acceptingBid, onAccept }:
 
   return (
     <div>
+      {acceptError && (
+        <div role="alert" className="px-4 py-3 mb-4 rounded-2xl border bg-red-50 border-red-200 text-red-700 text-[13px]">
+          {acceptError}
+        </div>
+      )}
       {/* Live countdown banner */}
       {!isClosed && countdown && (
         <div className={`flex items-center gap-3 px-4 py-3 mb-4 rounded-2xl border text-[12px] ${
@@ -814,6 +820,7 @@ export default function RequestDetail() {
   const navigate   = useNavigate();
   const [tab, setTab] = useState<TabId>("plan");
   const [reveal, setReveal] = useState<Phase2Reveal | null>(null);
+  const [acceptError, setAcceptError] = useState<string | null>(null);
 
   const { data: request, isLoading: reqLoading }    = useRequest(id!);
   const { data: bids = [], isLoading: bidsLoading } = useRequestBids(id!);
@@ -830,10 +837,16 @@ export default function RequestDetail() {
   if (!request) return <NotFound />;
 
   const handleAccept = (bid: Bid) => {
+    setAcceptError(null);
     accept(bid, {
       onSuccess: (result) => {
         if (result.ok) setReveal(result.reveal);
+        // Server detail stays out of the UI; the user gets what happened and what to do.
+        else setAcceptError(result.notConfirmed
+          ? result.error
+          : "This offer couldn't be accepted. Check your connection and try again. If it keeps failing, the offer may have expired or been withdrawn.");
       },
+      onError: () => setAcceptError("This offer couldn't be accepted. Check your connection and try again."),
     });
   };
 
@@ -940,6 +953,7 @@ export default function RequestDetail() {
             accepting={accepting}
             acceptingBid={acceptingBid}
             onAccept={handleAccept}
+            acceptError={acceptError}
           />
         )}
         {tab === "tracker"   && <TrackerTab requestId={id!} />}
