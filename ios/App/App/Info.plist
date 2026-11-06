@@ -24,6 +24,8 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Ficium uses Face ID to unlock the app and to confirm actions like accepting an offer.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Ficium uses the camera to scan your ID card and capture documents you choose to share with a bank.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

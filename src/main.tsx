@@ -6,6 +6,7 @@ import { router }              from "./app/routes";
 import { AuthProvider }        from "./features/auth/context/AuthContext";
 import { queryClient }         from "./core/query-client";
 import { bootstrapNative }     from "./shared/platform";
+import { AppLockGate }         from "./app/AppLockGate";
 import "./index.css";
 
 const root = document.getElementById("root");
@@ -15,7 +16,9 @@ createRoot(root).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <RouterProvider router={router} />
+        <AppLockGate>
+          <RouterProvider router={router} />
+        </AppLockGate>
       </AuthProvider>
     </QueryClientProvider>
   </StrictMode>
