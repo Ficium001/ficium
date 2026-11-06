@@ -7,6 +7,7 @@
 
 import { supabase } from "@/shared/lib/supabase";
 import type { Facility, FacilityStage } from "@/individual/money/portfolio/types";
+import { apiUrl } from "@/shared/platform";
 
 
 function num(v: unknown): number | null {
@@ -50,7 +51,7 @@ function mapFacility(row: Record<string, unknown>): Facility {
 
 export async function getPortfolio(): Promise<Facility[]> {
   const { data: { session } } = await supabase.auth.getSession();
-  const resp = await fetch("/api/request-actions?action=portfolio", {
+  const resp = await fetch(apiUrl("/api/request-actions?action=portfolio"), {
     headers: { Authorization: `Bearer ${session?.access_token ?? ""}` },
   });
   if (!resp.ok) throw new Error(`Could not load your portfolio (${resp.status}).`);

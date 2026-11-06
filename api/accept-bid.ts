@@ -26,9 +26,11 @@ import { requireUser, requireOwnership, sendAuthError } from "./_lib/auth.js";
 import { writeBidAcceptedNotification }           from "./_lib/handlers/bid-accepted.js";
 import { getServiceDb }                           from "./_lib/db.js";
 import { acceptViaContract, type Prepared }       from "./_lib/integration/acceptance.js";
+import { handleCors }                 from "./_lib/cors.js";
 
 export const config = { runtime: "nodejs" };
 export default async function handler(req: any, res: any): Promise<void> {
+  if (handleCors(req, res)) return;
   try {
     return await _handler(req, res);
   } catch (e: unknown) {

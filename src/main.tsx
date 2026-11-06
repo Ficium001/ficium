@@ -5,6 +5,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { router }              from "./app/routes";
 import { AuthProvider }        from "./features/auth/context/AuthContext";
 import { queryClient }         from "./core/query-client";
+import { bootstrapNative }     from "./shared/platform";
 import "./index.css";
 
 const root = document.getElementById("root");
@@ -19,3 +20,6 @@ createRoot(root).render(
     </QueryClientProvider>
   </StrictMode>
 );
+
+// iOS/Android only: deep links + hardware back. No-op in the browser.
+void bootstrapNative(router);

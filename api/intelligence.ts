@@ -8,10 +8,12 @@
 import { IntelligenceService } from "./_lib/intelligence-service.js";
 import { Response }       from "./_lib/response.js";
 import { requireUser, sendAuthError } from "./_lib/auth.js";
+import { handleCors }                 from "./_lib/cors.js";
 
 export const config = { runtime: "nodejs" };
 
 export default async function handler(req: any, res: any) {
+  if (handleCors(req, res)) return;
   if (req.method !== "GET" && req.method !== "POST") {
     return Response.methodNotAllowed(res, ["GET", "POST"]);
   }

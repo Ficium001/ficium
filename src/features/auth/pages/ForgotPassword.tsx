@@ -6,6 +6,7 @@ import { z } from "zod";
 import { ArrowLeft, ArrowRight, Mail } from "lucide-react";
 import { supabase } from "../../../shared/lib/supabase";
 import { Button, Card, Field, Input } from "../../../shared/ui";
+import { publicUrl } from "@/shared/platform";
 
 const schema = z.object({
   email: z.string().trim().toLowerCase().email("Enter a valid email address"),
@@ -33,7 +34,9 @@ export default function ForgotPassword() {
     // Important: redirectTo controls where the email's link lands the user.
     // It MUST be on our allowed redirect URLs (which we already set in Supabase
     // when we configured auth: ficium.net/** and the codespace preview).
-    const redirectTo = `${window.location.origin}/auth/reset-password`;
+    // publicUrl() keeps this an https link in the native app, which the OS
+    // routes back into the app as a universal / App Link.
+    const redirectTo = publicUrl("/auth/reset-password");
 
     const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
       redirectTo,

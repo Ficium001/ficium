@@ -27,6 +27,8 @@ export const Env = {
   portalApiUrl:       () => getEnv("PORTAL_API_URL"),
   appServiceSecret:   () => getEnv("APP_SERVICE_SECRET"),
   isProduction:       () => getEnv("NODE_ENV") === "production",
+  // Native app shell origins allowed to call /api (see _lib/cors.ts). Empty = built-in defaults.
+  corsAllowedOrigins: () => getEnv("CORS_ALLOWED_ORIGINS").split(",").map((o) => o.trim()).filter(Boolean),
   // Integration contract v1 (ficium-integration). Comma-separated verify keys allow rotation.
   integrationI2bVerifyKeys: () => getEnv("INTEGRATION_I2B_VERIFY_KEYS").split(",").map((k) => k.trim()).filter(Boolean),
   integrationB2iSigningKey: () => getEnv("INTEGRATION_B2I_SIGNING_KEY"),

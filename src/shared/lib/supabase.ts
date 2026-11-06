@@ -10,6 +10,8 @@
 // =============================================================
 import { createClient } from "@supabase/supabase-js";
 import type { User as AuthUser } from "@supabase/supabase-js";
+import { isNativeApp } from "@/shared/platform/runtime";
+import { secureAuthStorage } from "@/shared/platform/secureStorage";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyClient = ReturnType<typeof createClient<any, any, any>>;
@@ -31,8 +33,11 @@ export const supabase: AnyClient = createClient(url, key, {
   auth: {
     persistSession:     true,
     autoRefreshToken:   true,
-    detectSessionInUrl: true,
+    // Native: links arrive via the OS, not the WebView URL; shared/platform/deepLinks consumes them.
+    detectSessionInUrl: !isNativeApp(),
     storageKey:         "ficium-auth",
+    // Native: Keychain / Keystore. Web: Supabase's default (localStorage).
+    ...(isNativeApp() ? { storage: secureAuthStorage } : {}),
   },
 });
 

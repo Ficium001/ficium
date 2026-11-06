@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { openExternal } from "@/shared/platform";
 
 /**
  * Sends the visitor to the Ficium Portal (separate app for institutions).
@@ -12,7 +13,7 @@ export default function PortalRedirect({ to = "" }: { to?: string }) {
   const base = import.meta.env.VITE_PORTAL_URL ?? "https://ficium-portal.vercel.app";
 
   useEffect(() => {
-    window.location.replace(`${base}${to}`);
+    void openExternal(`${base}${to}`, { replace: true });
   }, [base, to]);
 
   return (

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Universal links: keep equal to the host of VITE_PUBLIC_APP_URL. Requires
+	     /.well-known/apple-app-site-association on that host (docs/mobile/README.md). -->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:ficium.vercel.app</string>
+	</array>
+</dict>
+</plist>

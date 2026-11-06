@@ -13,6 +13,7 @@ import Anthropic          from "@anthropic-ai/sdk";
 import { Env }            from "./_lib/env.js";
 import { Response as R }  from "./_lib/response.js";
 import { requireUser, sendAuthError } from "./_lib/auth.js";
+import { handleCors }                 from "./_lib/cors.js";
 
 export const config = { runtime: "nodejs" };
 
@@ -51,6 +52,7 @@ Live market data is injected in the user message.`;
 // ── Handler ──────────────────────────────────────────────────────────────────
 
 export default async function handler(req: any, res: any) {
+  if (handleCors(req, res)) return;
   if (req.method !== "POST") return R.methodNotAllowed(res, ["POST"]);
 
   try { await requireUser(req); }

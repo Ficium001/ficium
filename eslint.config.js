@@ -57,6 +57,27 @@ export default defineConfig([
       'react-hooks/set-state-in-effect': 'off',
       // immutability aspirational; off until Immer/Zustand patterns adopted.
       'react-hooks/immutability': 'off',
+
+      // ── Platform boundary (web vs iOS/Android shell) ─────────────────────
+      // Native APIs are reached only through src/shared/platform, and API
+      // calls only through apiUrl()/apiFetch, so the app keeps working when
+      // the WebView origin is not the API origin.
+      'no-restricted-imports': ['error', {
+        patterns: [{
+          group: ['@capacitor/*', '@aparajita/*'],
+          message: 'Import from "@/shared/platform" instead of native plugins directly.',
+        }],
+      }],
+      'no-restricted-syntax': ['error', {
+        selector: "CallExpression[callee.name='fetch'] > :matches(Literal[value=/^\\/api\\//], TemplateLiteral[quasis.0.value.raw=/^\\/api\\//]):first-child",
+        message: 'Wrap API paths with apiUrl() from "@/shared/platform" (or use apiFetch).',
+      }],
     },
+  },
+
+  // The platform module is the one place allowed to touch native plugins.
+  {
+    files: ['src/shared/platform/**/*.{ts,tsx}'],
+    rules: { 'no-restricted-imports': 'off' },
   },
 ])

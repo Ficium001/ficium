@@ -1,6 +1,7 @@
 import { supabase , getCachedUser } from "@/shared/lib/supabase";
 import { audit } from "@/shared/lib/audit";
 import { formatProductType } from "@/shared/lib/format";
+import { apiUrl } from "@/shared/platform";
 export { formatProductType } from "@/shared/lib/format";
 
 /* ---------- Types ---------- */
@@ -158,7 +159,7 @@ export async function getMyRequests(): Promise<RequestSummary[]> {
   for (const id of ids) bidMap.set(id, { count: 0, bestRate: null });
 
   try {
-    const r = await fetch("/api/request-bids-bulk", {
+    const r = await fetch(apiUrl("/api/request-bids-bulk"), {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ requestIds: ids }),
@@ -402,7 +403,7 @@ export async function getBidsForRequests(
   const token = session?.access_token ?? "";
 
   try {
-    const r = await fetch("/api/request-bids-bulk", {
+    const r = await fetch(apiUrl("/api/request-bids-bulk"), {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ requestIds }),
@@ -431,7 +432,7 @@ export async function getRequestBids(requestId: string): Promise<Bid[]> {
 
   let data: Array<Record<string, unknown>> | null = null;
   try {
-    const r = await fetch(`/api/request-bids?requestId=${encodeURIComponent(requestId)}`, {
+    const r = await fetch(apiUrl(`/api/request-bids?requestId=${encodeURIComponent(requestId)}`), {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (r.ok) {
@@ -455,7 +456,7 @@ export async function acceptBid(
   const token = session?.access_token ?? "";
 
   try {
-    const res = await fetch("/api/accept-bid", {
+    const res = await fetch(apiUrl("/api/accept-bid"), {
       method:  "POST",
       headers: {
         "Content-Type": "application/json",

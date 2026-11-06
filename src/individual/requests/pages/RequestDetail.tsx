@@ -22,6 +22,7 @@ import { useProfile } from "../../dashboard/hooks/useDashboard";
 import { useRequest, useRequestBids, useAcceptBid } from "../hooks/useRequests";
 import { useVault } from "../../vault/hooks/useVault";
 import type { VaultDocType } from "../../vault/api/vault";
+import { apiUrl } from "@/shared/platform";
 
 /* ── Tab definition ── */
 type TabId = "plan" | "documents" | "insights" | "details" | "bids" | "tracker" | "chat";
@@ -393,7 +394,7 @@ function DealDeclinedState({ requestId, bankName }: { requestId: string; bankNam
     setRelisting(true); setError(null);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch("/api/request-actions?action=relist", {
+      const res = await fetch(apiUrl("/api/request-actions?action=relist"), {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token ?? ""}` },
         body: JSON.stringify({ requestId }),
@@ -440,7 +441,7 @@ function NoBidsState({
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token ?? "";
-      const res = await fetch("/api/request-actions?action=relist", {
+      const res = await fetch(apiUrl("/api/request-actions?action=relist"), {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ requestId }),

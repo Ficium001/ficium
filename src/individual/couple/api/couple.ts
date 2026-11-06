@@ -1,4 +1,5 @@
 import { supabase } from "@/shared/lib/supabase";
+import { apiUrl } from "@/shared/platform";
 
 /* ---------- Types ---------- */
 
@@ -34,7 +35,7 @@ type ApiResult<T> = { ok: true; data: T } | { ok: false; error: string };
 async function authedFetch(qs: string, init?: RequestInit): Promise<Response> {
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token ?? "";
-  return fetch(`/api/request-actions${qs}`, {
+  return fetch(apiUrl(`/api/request-actions${qs}`), {
     ...init,
     headers: {
       "Content-Type": "application/json",
@@ -48,7 +49,7 @@ async function authedFetch(qs: string, init?: RequestInit): Promise<Response> {
 
 export async function previewInvitation(token: string): Promise<ApiResult<InvitationPreview>> {
   try {
-    const r = await fetch(`/api/request-actions?action=invitation-preview&token=${encodeURIComponent(token)}`);
+    const r = await fetch(apiUrl(`/api/request-actions?action=invitation-preview&token=${encodeURIComponent(token)}`));
     const json = await r.json();
     if (!r.ok || !json.ok) return { ok: false, error: json.error ?? `HTTP ${r.status}` };
     return { ok: true, data: json.data as InvitationPreview };

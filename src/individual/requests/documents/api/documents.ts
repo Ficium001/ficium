@@ -1,5 +1,6 @@
 import { supabase } from "@/shared/lib/supabase";
 import type { BankDocumentChecklist } from "../types";
+import { apiUrl } from "@/shared/platform";
 
 async function authHeader(): Promise<Record<string, string>> {
   const { data: { session } } = await supabase.auth.getSession();
@@ -8,7 +9,7 @@ async function authHeader(): Promise<Record<string, string>> {
 
 /** The bank's document request for this deal, or null when there is none (yet). */
 export async function fetchBankDocuments(requestId: string): Promise<BankDocumentChecklist | null> {
-  const res = await fetch(`/api/request-actions?action=documents&requestId=${encodeURIComponent(requestId)}`,
+  const res = await fetch(apiUrl(`/api/request-actions?action=documents&requestId=${encodeURIComponent(requestId)}`),
     { headers: await authHeader() });
   if (!res.ok) throw new Error("Couldn't load the bank's document request.");
   const json = await res.json() as { ok: boolean; data?: { checklist: BankDocumentChecklist | null } };
@@ -24,7 +25,7 @@ export interface SendBody {
 }
 
 export async function sendBankDocument(body: SendBody): Promise<void> {
-  const res = await fetch("/api/request-actions", {
+  const res = await fetch(apiUrl("/api/request-actions"), {
     method: "POST",
     headers: { ...(await authHeader()), "Content-Type": "application/json" },
     body: JSON.stringify({ action: "document-send", ...body }),
