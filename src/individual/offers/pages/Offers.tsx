@@ -9,6 +9,7 @@ import { useOffers } from "../hooks/useOffers";
 import { filterOffers } from "../api/offers";
 import { OfferPost } from "../components/OfferPost";
 import type { Offer, OfferFilter } from "../types";
+import { publicUrl } from "@/shared/platform";
 
 const FILTERS: { key: OfferFilter; label: string }[] = [
   { key: "all", label: "All" }, { key: "new", label: "New" },
@@ -28,7 +29,7 @@ export default function Offers() {
   }, [offers.length]);
 
   const share = async (o: Offer) => {
-    const url = `${window.location.origin}/offers#offer-${o.id}`;
+    const url = publicUrl(`/offers#offer-${o.id}`);
     const text = `${o.institutionName}: ${o.headline}`;
     try {
       if (navigator.share) { await navigator.share({ title: "Ficium offer", text, url }); return; }

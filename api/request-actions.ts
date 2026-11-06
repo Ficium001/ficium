@@ -26,10 +26,12 @@ import { getServiceDb }               from "./_lib/db.js";
 import { generateToken, hashToken, sendInvitationEmail } from "./_lib/handlers/joint-invitation.js";
 import { listDocuments, sendDocument } from "./_lib/handlers/deal-documents.js";
 import { renderChatMessage, ContractError } from "@ficium/contract";
+import { handleCors }                 from "./_lib/cors.js";
 
 export const config = { runtime: "nodejs" };
 
 export default async function handler(req: any, res: any): Promise<void> {
+  if (handleCors(req, res)) return;
   try {
     return await route(req, res);
   } catch (e: unknown) {

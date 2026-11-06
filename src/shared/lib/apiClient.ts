@@ -17,6 +17,7 @@
  */
 
 import { supabase } from "./supabase";
+import { apiUrl } from "@/shared/platform/endpoints";
 
 export class ApiAuthError extends Error {
   status: number;
@@ -53,7 +54,7 @@ export async function apiFetch(input: string, init: RequestInit = {}): Promise<R
     headers.set("Content-Type", "application/json");
   }
 
-  const res = await fetch(input, { ...init, headers });
+  const res = await fetch(apiUrl(input), { ...init, headers });
 
   if (res.status === 401 || res.status === 403) {
     let code = "UNAUTHORIZED";

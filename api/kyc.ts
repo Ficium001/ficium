@@ -26,6 +26,7 @@ import { setupHandler }      from "./_kyc/setup.js";
 import {
   requireUser, requireAdmin, requireService, sendAuthError,
 } from "./_lib/auth.js";
+import { handleCors }                 from "./_lib/cors.js";
 
 export const config = { runtime: "nodejs" };
 type Handler = (req: any, res: any) => unknown | Promise<unknown>;
@@ -48,6 +49,7 @@ const ROUTES: Record<string, { handler: Handler; gate: Gate }> = {
   "setup":       { handler: setupHandler,      gate: "service" },
 };
 export default async function handler(req: any, res: any) {
+  if (handleCors(req, res)) return;
   const action = String(req.query?.action ?? req.body?.action ?? "");
   const route  = ROUTES[action];
 

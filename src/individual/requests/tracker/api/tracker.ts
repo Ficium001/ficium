@@ -1,5 +1,6 @@
 import { supabase }              from "@/shared/lib/supabase";
 import type { LoanTrackerResponse } from "../types/tracker";
+import { apiUrl }                from "@/shared/platform";
 
 export async function fetchLoanTracker(
   requestId: string,
@@ -8,7 +9,7 @@ export async function fetchLoanTracker(
   const token = session?.access_token ?? "";
 
   const res = await fetch(
-    `/api/request-actions?action=tracker&requestId=${encodeURIComponent(requestId)}`,
+    apiUrl(`/api/request-actions?action=tracker&requestId=${encodeURIComponent(requestId)}`),
     { headers: { Authorization: `Bearer ${token}` } },
   );
 

@@ -11,6 +11,7 @@ import { Env }                from "./_lib/env.js";
 import { IntelligenceService } from "./_lib/intelligence-service.js";
 import { Response }           from "./_lib/response.js";
 import { requireUser, sendAuthError } from "./_lib/auth.js";
+import { handleCors }                 from "./_lib/cors.js";
 
 export const config = { runtime: "nodejs" };
 
@@ -145,6 +146,7 @@ Return ONLY valid JSON (no markdown):
 
 // ── Main handler ──────────────────────────────────────────────
 export default async function handler(req: any, res: any): Promise<void> {
+  if (handleCors(req, res)) return;
   if (req.method !== "POST") return Response.methodNotAllowed(res, ["POST"]);
 
   let authed;

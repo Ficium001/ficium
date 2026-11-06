@@ -12,6 +12,7 @@
 // these helpers are a convenience layer — not the security boundary.
 // =============================================================
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { apiUrl } from "@/shared/platform";
 
 export interface ChatMessage {
   id: string;
@@ -68,7 +69,7 @@ export async function getThread(
 
 async function chatSend(client: SupabaseClient, body: Record<string, unknown>): Promise<void> {
   const { data: { session } } = await client.auth.getSession();
-  const res = await fetch("/api/request-actions", {
+  const res = await fetch(apiUrl("/api/request-actions"), {
     method: "POST",
     headers: { Authorization: `Bearer ${session?.access_token ?? ""}`, "Content-Type": "application/json" },
     body: JSON.stringify({ action: "chat-send", ...body }),

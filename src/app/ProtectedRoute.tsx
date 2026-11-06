@@ -1,4 +1,5 @@
 import { Navigate, useLocation } from "react-router-dom";
+import { openExternal } from "@/shared/platform";
 import { useEffect } from "react";
 import type { ReactNode } from "react";
 import { useAuth } from "../features/auth/context/AuthContext";
@@ -17,7 +18,7 @@ const PORTAL_URL =
 /** Full-page redirect out to the Portal for bank/admin roles. */
 function PortalRedirect() {
   useEffect(() => {
-    window.location.href = PORTAL_URL;
+    void openExternal(PORTAL_URL);
   }, []);
   return <LoadingScreen />;
 }

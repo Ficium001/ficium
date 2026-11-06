@@ -9,10 +9,12 @@ import { Response } from "./_lib/response.js";
 import { requireUser, sendAuthError } from "./_lib/auth.js";
 import { getServiceDb } from "./_lib/db.js";
 import { bidsFor } from "./_lib/handlers/bids-read.js";
+import { handleCors }                 from "./_lib/cors.js";
 
 export const config = { runtime: "nodejs" };
 
 export default async function handler(req: any, res: any): Promise<void> {
+  if (handleCors(req, res)) return;
   if (req.method !== "GET") return Response.methodNotAllowed(res, ["GET"]);
   let consumerId: string;
   try {
