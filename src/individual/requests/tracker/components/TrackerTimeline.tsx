@@ -77,7 +77,7 @@ function StageRow({
       </div>
 
       {/* Content */}
-      <div className={`pb-4 ${isLast ? "" : ""}`}>
+      <div className="pb-4">
         <div className={`text-[14px] leading-tight ${vis.labelCls}`}>
           {stage.label}
         </div>
