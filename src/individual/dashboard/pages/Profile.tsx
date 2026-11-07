@@ -291,6 +291,12 @@ export default function Profile() {
             )}
           </ProfileSection>
 
+          <div className="pt-2 text-center">
+            <Link to="/profile/close" className="text-[13px] text-muted no-underline hover:text-red-700 hover:underline">
+              Close account
+            </Link>
+          </div>
+
         </div>
       </div>
     </PageShell>

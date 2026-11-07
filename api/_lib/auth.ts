@@ -35,6 +35,11 @@ export interface AuthedUser {
 }
 type Req = any;
 
+/** The raw bearer token, or null. Only trust its claims after requireUser() accepted it. */
+export function bearerToken(req: Req): string | null {
+  return bearer(req);
+}
+
 function bearer(req: Req): string | null {
   const raw =
     req.headers?.authorization ?? req.headers?.Authorization ?? "";

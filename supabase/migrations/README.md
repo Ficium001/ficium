@@ -225,3 +225,21 @@ Ficium staff curate offers in `ficium-admin` (role `ficium_admin_app`, functions
 into `public.offer_listing` is `admin.offer_publish`. Borrowers (`authenticated`) can SELECT live rows
 only (`live_until > now()`, i.e. not expired and verified within 30 days); `anon` has no access.
 Explicit GRANTs are included — RLS alone grants nothing.
+
+---
+
+## Account closure (Nov 2026)
+
+| File | Purpose | Status |
+|------|---------|--------|
+| `20261107120000_account_closure.sql` | `public.account_closures` + `close_account(uuid, int)` (service role only) + `account_closures_due_for_erasure` view | **Not applied.** Dry-run compiled on the App DB inside a rolled-back transaction, 2026-11-07 |
+
+In-app "Close account" (Apple requires it). Closing withdraws open requests, deletes
+non-regulated personal data (advisor, money tracker, alerts, feed), records the closure
+and an audit event; the API then signs the user out everywhere and bans the login.
+Regulated records stay until `retain_until`; erasing them after that is an operator task
+(see the view). The data classes are listed at the top of the migration: review them
+with compliance before enabling.
+
+Switched off until **both**: this migration is applied, and `ACCOUNT_CLOSURE_RETENTION_YEARS`
+(whole number, at least 7 per FIAMLA) is set on the `ficium` Vercel project.
