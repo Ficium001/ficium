@@ -42,6 +42,16 @@ export const Env = {
   integrationDocumentsEnabled:  () => getEnv("INTEGRATION_DOCUMENTS_ENABLED") === "true",
   integrationDocumentsUrl:      () => getEnv("INTEGRATION_DOCUMENTS_URL"),
   cronSecret:               () => getEnv("CRON_SECRET"),
+  /**
+   * Account closure: years regulated records are kept after an account is closed.
+   * Closure is OFF unless this is a whole number of at least 7 (FIAMLA minimum).
+   */
+  accountClosureRetentionYears: (): number | null => {
+    const raw = getEnv("ACCOUNT_CLOSURE_RETENTION_YEARS").trim();
+    if (!/^\d+$/.test(raw)) return null;
+    const n = Number(raw);
+    return n >= 7 && n <= 50 ? n : null;
+  },
   /** Verify keys for the app admin site's signed sync calls (comma-separated: rotation). */
   adminSyncVerifyKeys:      () => getEnv("ADMIN_SYNC_VERIFY_KEYS").split(",").map((k) => k.trim()).filter(Boolean),
 } as const;

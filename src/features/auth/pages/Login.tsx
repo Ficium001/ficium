@@ -52,6 +52,7 @@ export default function Login() {
   const location = useLocation();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const from = (location.state as { from?: string } | null)?.from || "/dashboard";
+  const accountClosed = (location.state as { accountClosed?: boolean } | null)?.accountClosed === true;
 
   const {
     register,
@@ -169,6 +170,12 @@ export default function Login() {
                   <span className="lg:hidden text-white/50">Sign in to your Ficium account</span>
                 </p>
               </div>
+
+              {accountClosed && (
+                <div role="status" className="mb-6 px-4 py-3.5 rounded-xl border bg-white border-line text-ink text-[14px]">
+                  Your Ficium account is closed and you've been signed out everywhere.
+                </div>
+              )}
 
               {/* Single form instance — styled differently via inner className */}
               <LoginForm

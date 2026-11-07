@@ -25,6 +25,7 @@ const NotFound            = lazy(() => import("../shared/pages/NotFound"));
 const Dashboard           = lazy(() => import("../individual/dashboard/pages/Dashboard"));
 const Offers              = lazy(() => import("../individual/offers/pages/Offers"));
 const Profile             = lazy(() => import("../individual/dashboard/pages/Profile"));
+const CloseAccount        = lazy(() => import("../individual/account/pages/CloseAccount"));
 const Kyc                 = lazy(() => import("../individual/onboarding/pages/Kyc"));
 const KycPending          = lazy(() => import("../individual/onboarding/pages/KycPending"));
 const Dossier             = lazy(() => import("../individual/onboarding/pages/Dossier"));
@@ -110,6 +111,7 @@ export const router = createBrowserRouter([
 
   { path: "/dashboard",              element: <ClientOnlyRoute><S><Dashboard /></S></ClientOnlyRoute> },
   { path: "/profile",                element: <ClientOnlyRoute><S><Profile /></S></ClientOnlyRoute> },
+  { path: "/profile/close",          element: <ClientOnlyRoute><S><CloseAccount /></S></ClientOnlyRoute> },
   { path: "/onboarding/kyc",         element: <ClientOnlyRoute><S><Kyc /></S></ClientOnlyRoute> },
   { path: "/onboarding/kyc-pending", element: <ClientOnlyRoute><S><KycPending /></S></ClientOnlyRoute> },
   { path: "/onboarding/dossier",     element: <ClientOnlyRoute><S><Dossier /></S></ClientOnlyRoute> },
