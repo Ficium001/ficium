@@ -64,6 +64,9 @@ export function useAcceptBid(requestId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (bid: Bid) => acceptBid(bid.id, requestId),
+    // Never queue an acceptance while offline to replay later: it must fail
+    // now and be retried deliberately by the user.
+    networkMode: "always",
     onSuccess: () => {
       // Invalidate request detail (status: open → accepted), list, bids, and tracker
       queryClient.invalidateQueries({ queryKey: RequestQueryKeys.all });
