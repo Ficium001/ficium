@@ -24,6 +24,8 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>UIUserInterfaceStyle</key>
+	<string>Light</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Ficium uses Face ID to unlock the app and to confirm actions like accepting an offer.</string>
 	<key>NSCameraUsageDescription</key>

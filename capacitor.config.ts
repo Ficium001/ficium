@@ -23,6 +23,18 @@ const config: CapacitorConfig = {
   ios: {
     contentInset: "automatic",
   },
+  // Matches the app's paper background, so the area behind the status bar,
+  // the bounce overscroll and the first frame never flash white or black.
+  backgroundColor: "#FAFAFC",
+  plugins: {
+    SystemBars: {
+      // Webview stays inside the safe area (no viewport-fit=cover), so no
+      // page needs notch padding; insets are still exposed as CSS variables.
+      insetsHandling: "css",
+      // Dark icons on the light app, even when the phone is in dark mode.
+      style: "LIGHT",
+    },
+  },
 };
 
 export default config;

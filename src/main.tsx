@@ -7,6 +7,7 @@ import { AuthProvider }        from "./features/auth/context/AuthContext";
 import { queryClient }         from "./core/query-client";
 import { bootstrapNative }     from "./shared/platform";
 import { AppLockGate }         from "./app/AppLockGate";
+import { ConnectionBanner }    from "./app/ConnectionBanner";
 import "./index.css";
 
 const root = document.getElementById("root");
@@ -18,6 +19,7 @@ createRoot(root).render(
       <AuthProvider>
         <AppLockGate>
           <RouterProvider router={router} />
+          <ConnectionBanner />
         </AppLockGate>
       </AuthProvider>
     </QueryClientProvider>
