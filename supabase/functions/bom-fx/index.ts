@@ -1,4 +1,4 @@
-// bom-fx v1 — real per-bank FX quotes from the Bank of Mauritius
+// bom-fx v2 — real per-bank FX quotes from the Bank of Mauritius
 // "Indicative Exchange Rates of Local Banks and FOREX Dealers" page.
 //
 // Why a custom client: bom.mu does not serve its full certificate chain, so the
@@ -142,32 +142,36 @@ const cell = (row: string, cls: string): number | null => {
 
 function iso(d: string): string { const [dd, mm, yy] = d.split("."); return `${yy}-${mm}-${dd}`; }
 
-/** Walk the page in document order: "Date: dd.mm.yyyy" markers and bank rows. */
-function parsePage(html: string, unknown: Set<string>): Quote[] {
-  const out: Quote[] = [];
-  const tokens = [...html.matchAll(/Date:\s*(\d{2}\.\d{2}\.\d{4})|class="views-row [^"]*"/g)];
-  let date = "";
-  for (let i = 0; i < tokens.length; i++) {
-    const t = tokens[i];
-    if (t[1]) { date = iso(t[1]); continue; }
-    const start = t.index!;
-    const end = i + 1 < tokens.length ? tokens[i + 1].index! : html.length;
-    const row = html.slice(start, end);
+/** Bank rows of one page in document order. BoM prints ONE date per page (the date of the
+ *  page's first row) and lists days newest-first, so a bank repeating means the next day began. */
+function parseRows(html: string): { logo: string; quotes: Omit<Quote, "date">[] }[] {
+  const starts = [...html.matchAll(/class="views-row [^"]*"/g)].map(m => m.index!);
+  const rows: { logo: string; quotes: Omit<Quote, "date">[] }[] = [];
+  for (let i = 0; i < starts.length; i++) {
+    const row = html.slice(starts[i], i + 1 < starts.length ? starts[i + 1] : html.length);
     const logo = (row.match(/banks\/([^?"]+)/) ?? [])[1]?.toLowerCase();
-    if (!logo || !date) continue;
+    if (!logo) continue;
     const bank = BANKS[logo];
-    if (!bank) { unknown.add(logo); continue; }
-    for (const tr of row.match(/<tr class="field-collection-item">[\s\S]*?<\/tr>/g) ?? []) {
-      const name = (tr.match(/field-name-field-curr-code[\s\S]*?field-item (?:even|odd)">([^<]+)</) ?? [])[1]?.trim();
-      const code = name ? CURRENCIES[name] : undefined;
-      if (!code) continue;
-      const buy = cell(tr, "buy-tt"), sell = cell(tr, "sell-ttddtc");
-      if (buy === null || sell === null || sell < buy) continue;
-      out.push({ date, bank, code, buy, sell });
+    const quotes: Omit<Quote, "date">[] = [];
+    if (bank) {
+      for (const tr of row.match(/<tr class="field-collection-item">[\s\S]*?<\/tr>/g) ?? []) {
+        const name = (tr.match(/field-name-field-curr-code[\s\S]*?field-item (?:even|odd)">([^<]+)</) ?? [])[1]?.trim();
+        const code = name ? CURRENCIES[name] : undefined;
+        if (!code) continue;
+        const buy = cell(tr, "buy-tt"), sell = cell(tr, "sell-ttddtc");
+        if (buy === null || sell === null || sell < buy) continue;
+        quotes.push({ bank, code, buy, sell });
+      }
     }
+    rows.push({ logo, quotes });
   }
-  return out;
+  return rows;
 }
+
+const headerDate = (html: string): string | null => {
+  const m = html.match(/Date:\s*(\d{2}\.\d{2}\.\d{4})/);
+  return m ? iso(m[1]) : null;
+};
 
 async function authorised(req: Request): Promise<boolean> {
   const secret = req.headers.get("x-cron-secret");
@@ -178,17 +182,26 @@ async function authorised(req: Request): Promise<boolean> {
 
 Deno.serve(async (req: Request) => {
   if (!(await authorised(req))) return new Response(JSON.stringify({ error: "unauthorised" }), { status: 401, headers: { "Content-Type": "application/json" } });
-  const log: Record<string, unknown> = { version: "v1", started_at: new Date().toISOString() };
+  const log: Record<string, unknown> = { version: "v2", started_at: new Date().toISOString() };
   try {
     const unknown = new Set<string>();
     const all: Quote[] = [];
+    const seen = new Set<string>();
     let newest = "";
-    for (let p = 0; p < MAX_PAGES; p++) {
-      const q = parsePage(await getPage(p), unknown);
-      if (p === 0 && q.length) newest = q.map(x => x.date).sort().pop()!;
-      all.push(...q);
-      if (newest && q.length && q.every(x => x.date < newest)) break; // paged into an older day
+    let done = false;
+    for (let p = 0; p < MAX_PAGES && !done; p++) {
+      const html = await getPage(p);
+      const hd = headerDate(html);
+      if (p === 0) newest = hd ?? "";
+      else if (!hd || hd < newest) break; // whole page is an older day
+      for (const row of parseRows(html)) {
+        if (seen.has(row.logo)) { done = true; break; } // bank repeated => previous day starts here
+        seen.add(row.logo);
+        if (!BANKS[row.logo]) { unknown.add(row.logo); continue; }
+        for (const q of row.quotes) all.push({ date: newest, ...q });
+      }
     }
+    log.rows_seen = seen.size;
     log.newest_date = newest || null;
     log.unknown_logos = [...unknown];
     if (!newest) return new Response(JSON.stringify({ ok: false, log: { ...log, error: "no quotes parsed — nothing written" } }), { headers: { "Content-Type": "application/json" } });
