@@ -15,7 +15,7 @@ import type { NewsItem } from "../types";
 type ScopeFilter = "all" | "local" | "global";
 
 /** Headlines shown before the "See more" control. */
-const INITIAL_VISIBLE = 7;
+const INITIAL_VISIBLE = 5;
 
 const SCOPE_CHIPS: { id: ScopeFilter; label: string }[] = [
   { id: "all",    label: "All" },
