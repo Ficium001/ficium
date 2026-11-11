@@ -67,7 +67,7 @@ export default function Markets() {
 
   const heroStats: HeroStat[] = [
     { label: "Indicators tracked", value: tickers.length },
-    ...(fxRates.length > 0 ? [{ label: "Banks compared", value: fxRates.length }] : []),
+    ...(fxRates.length > 0 ? [{ label: "Banks compared", value: new Set(fxRates.flatMap((r) => r.banks.map((b) => b.bank))).size }] : []),
     { label: "Stories today",      value: news.length },
   ];
 
@@ -97,7 +97,16 @@ export default function Markets() {
           subline="Live rates and news for Mauritius — explained by AI, grounded in real numbers, so you know exactly how it affects your money."
           actions={
             <>
-              <HeroButton onClick={() => navigate("/requests/new")}>Compare provider rates</HeroButton>
+              <HeroButton
+                onClick={() => {
+                  // Live per-bank FX rates when we have them; otherwise fall back to the request flow.
+                  const el = document.getElementById("fx-rates");
+                  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+                  else navigate("/requests/new");
+                }}
+              >
+                Compare provider rates
+              </HeroButton>
               <HeroButton variant="ghost" onClick={() => navigate("/advisor")}>Ask the AI</HeroButton>
             </>
           }
@@ -124,9 +133,11 @@ export default function Markets() {
 
         {/* Best FX rates across all Mauritius banks */}
         {fxRates.length > 0 && (
-          <Reveal>
-            <FxBestRates rates={fxRates} />
-          </Reveal>
+          <div id="fx-rates" className="scroll-mt-20">
+            <Reveal>
+              <FxBestRates rates={fxRates} />
+            </Reveal>
+          </div>
         )}
 
         {/* Market news — personalised, scope-filterable */}
