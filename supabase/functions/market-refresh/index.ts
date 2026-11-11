@@ -1,3 +1,4 @@
+// market-refresh v10 — Key Rate read from bom.mu via scoped CA trust (exact element, sanity-checked).
 // market-refresh v9 — news keeps flowing when AI enrichment is down (raw real headlines, source "rss").
 // market-refresh v8 — no invented numbers, visible failures, staleness alert
 //
@@ -61,17 +62,100 @@ async function fetchFx() {
   } catch { return null; }
 }
 
+// bom.mu does not serve its full certificate chain, so the runtime rejects it
+// (UnknownIssuer). Trust ONLY the Sectigo chain that signs bom.mu, for BoM requests
+// only; verification stays on everywhere else. (Chain supplied by owner, 2026-11-11.)
+const BOM_CA_INTERMEDIATE = `-----BEGIN CERTIFICATE-----
+MIIGSzCCBDOgAwIBAgIQbU98rTNTd8jG4AHd4uLIjjANBgkqhkiG9w0BAQwFADBf
+MQswCQYDVQQGEwJHQjEYMBYGA1UEChMPU2VjdGlnbyBMaW1pdGVkMTYwNAYDVQQD
+Ey1TZWN0aWdvIFB1YmxpYyBTZXJ2ZXIgQXV0aGVudGljYXRpb24gUm9vdCBSNDYw
+HhcNMjEwMzIyMDAwMDAwWhcNMzYwMzIxMjM1OTU5WjBgMQswCQYDVQQGEwJHQjEY
+MBYGA1UEChMPU2VjdGlnbyBMaW1pdGVkMTcwNQYDVQQDEy5TZWN0aWdvIFB1Ymxp
+YyBTZXJ2ZXIgQXV0aGVudGljYXRpb24gQ0EgRVYgUjM2MIIBojANBgkqhkiG9w0B
+AQEFAAOCAY8AMIIBigKCAYEApduwxkQH5noeb0k4yRXK47Fd+hVkH8twKWQF3FNm
+HHShQrOH7S0L3p8Aaf8P7OqojwyZgyqD5o/Sb95N45P/NfmL+lfAOkQ1Bpvz0OcZ
+VmwYhMWFYJe8parkz5w9Bk8mn/AtN65hIQF0NqBI6F+23/jzhlpl3E0zKkkUJSfT
+dgvwaJvTiPgLQ7CpYyLJvMpgdPHf+nnvA5YJjhae6olh6BRllvRhzKOq0gd60BrO
+Aos9QyOfYhUDG3eQovMA9fyiI2qNclCp6DY8hqt55lERoBS/Whza8Cx1bh6q8rTP
+nno2uI6FZb2UavIYblyGDamXAW/jv3qsMB42xz/p2mUHg0wQzn/8KAiyu2ZbDs7E
+OOwYx0V2ViNsCXGR/GCmJsUNPmhEEXBclOj6qF7rFf7nkST2bokSt9VF1NB1JgRl
+djZin1+v2Vm88UEgFxerQPPrPjAEMqDx44vKl22sGWnl+jOyxf/H59DHKbIezrIY
+rJpSnA3WEVaiXs1oIRy1ZziNAgMBAAGjggGAMIIBfDAfBgNVHSMEGDAWgBRWc1hk
+lfmSGrASKgRieaFAFYghSTAdBgNVHQ4EFgQUmC1eHo/rVPS5/1WVrUzHfqSYrnsw
+DgYDVR0PAQH/BAQDAgGGMBIGA1UdEwEB/wQIMAYBAf8CAQAwHQYDVR0lBBYwFAYI
+KwYBBQUHAwEGCCsGAQUFBwMCMBoGA1UdIAQTMBEwBgYEVR0gADAHBgVngQwBATBU
+BgNVHR8ETTBLMEmgR6BFhkNodHRwOi8vY3JsLnNlY3RpZ28uY29tL1NlY3RpZ29Q
+dWJsaWNTZXJ2ZXJBdXRoZW50aWNhdGlvblJvb3RSNDYuY3JsMIGEBggrBgEFBQcB
+AQR4MHYwTwYIKwYBBQUHMAKGQ2h0dHA6Ly9jcnQuc2VjdGlnby5jb20vU2VjdGln
+b1B1YmxpY1NlcnZlckF1dGhlbnRpY2F0aW9uUm9vdFI0Ni5wN2MwIwYIKwYBBQUH
+MAGGF2h0dHA6Ly9vY3NwLnNlY3RpZ28uY29tMA0GCSqGSIb3DQEBDAUAA4ICAQA2
+LRCehSXiyw56alKt2aqDwDLEDmyu74lUmDG4rI1Jw3+ivLz+OK3NpE466a8yXu7b
+f326wkrrOCF2SVu3ItNjXqsgwXdIM9tapVEKjsEwbjcPUcxNeqzSpLSgHZIVhjJJ
++QtdEL2n1NhDxqewlN+ZKWWBLGB0LA/S7SvCl9s7rsppo97uv6J3h//q4b2SgzHu
+KUu80Hofpjp2bILGHy4CqzKzyg3wn9sKFcX6Ufkcea/tuiWhIMPkiQCv5tXsRj+H
+n3CZql+wRPbjhNqncCkzrwOBrt7Gov46EHhqMUP/Euf8gSw7X+CzWEUJ0Q+Vn8VL
+ZDkiKcMSYMJI+6Trc5tVn9LQLI6tTzwagLhgcVtFpom3PVtEJRPN/d05L0ck7S1b
+xPaXcQhKUqdzFd09pt6fLx2vMmylBKXjKosSxjB12KRzLvI2CUUVdpl7OTFA32Fk
++zQC2gJPGmPPCzRMRYfVOEIZxbG0nI9lpYZidLkQ/EyTtJ3JVj7cb3KRe/e1s+Xj
+rnHqbUwoizicfogtcKm5giwj74f+Rpr0RRy4xum1bC662fNHRJaTt5ErVR6gHjHM
+Zhp+tOeOvohq5XxIMCKuetnwcPeBsOzUBzmUPoxQNRVXEYbwV2rS3t2jJ0Zh/Dnn
+O96biaAsEnxbQyu4fvMx6D4J4Zbkc7Zp75T3GE/UjQ==
+-----END CERTIFICATE-----
+`;
+const BOM_CA_ROOT = `-----BEGIN CERTIFICATE-----
+MIIFijCCA3KgAwIBAgIQdY39i658BwD6qSWn4cetFDANBgkqhkiG9w0BAQwFADBf
+MQswCQYDVQQGEwJHQjEYMBYGA1UEChMPU2VjdGlnbyBMaW1pdGVkMTYwNAYDVQQD
+Ey1TZWN0aWdvIFB1YmxpYyBTZXJ2ZXIgQXV0aGVudGljYXRpb24gUm9vdCBSNDYw
+HhcNMjEwMzIyMDAwMDAwWhcNNDYwMzIxMjM1OTU5WjBfMQswCQYDVQQGEwJHQjEY
+MBYGA1UEChMPU2VjdGlnbyBMaW1pdGVkMTYwNAYDVQQDEy1TZWN0aWdvIFB1Ymxp
+YyBTZXJ2ZXIgQXV0aGVudGljYXRpb24gUm9vdCBSNDYwggIiMA0GCSqGSIb3DQEB
+AQUAA4ICDwAwggIKAoICAQCTvtU2UnXYASOgHEdCSe5jtrch/cSV1UgrJnwUUxDa
+ef0rty2k1Cz66jLdScK5vQ9IPXtamFSvnl0xdE8H/FAh3aTPaE8bEmNtJZlMKpnz
+SDBh+oF8HqcIStw+KxwfGExxqjWMrfhu6DtK2eWUAtaJhBOqbchPM8xQljeSM9xf
+iOefVNlI8JhD1mb9nxc4Q8UBUQvX4yMPFF1bFOdLvt30yNoDN9HWOaEhUTCDsG3X
+ME6WW5HwcCSrv0WBZEMNvSE6Lzzpng3LILVCJ8zab5vuZDCQOc2TZYEhMbUjUDM3
+IuM47fgxMMxF/mL50V0yeUKH32rMVhlATc6qu/m1dkmU8Sf4kaWD5QazYw6A3OAS
+VYCmO2a0OYctyPDQ0RTp5A1NDvZdV3LFOxxHVp3i1fuBYYzMTYCQNFu31xR13NgE
+SJ/AwSiItOkcyqex8Va3e0lMWeUgFaiEAin6OJRpmkkGj80feRQXEgyDet4fsZfu
++Zd4KKTIRJLpfSYFplhym3kT2BFfrsU4YjRosoYwjviQYZ4ybPUHNs2iTG7sijbt
+8uaZFURww3y8nDnAtOFr94MlI1fZEoDlSfB1D++N6xybVCi0ITz8fAr/73trdf+L
+HaAZBav6+CuBQug4urv7qv094PPK306Xlynt8xhW6aWWrL3DkJiy4Pmi1KZHQ3xt
+zwIDAQABo0IwQDAdBgNVHQ4EFgQUVnNYZJX5khqwEioEYnmhQBWIIUkwDgYDVR0P
+AQH/BAQDAgGGMA8GA1UdEwEB/wQFMAMBAf8wDQYJKoZIhvcNAQEMBQADggIBAC9c
+mTz8Bl6MlC5w6tIyMY208FHVvArzZJ8HXtXBc2hkeqK5Duj5XYUtqDdFqij0lgVQ
+YKlJfp/imTYpE0RHap1VIDzYm/EDMrraQKFz6oOht0SmDpkBm+S8f74TlH7Kph52
+gDY9hAaLMyZlbcp+nv4fjFg4exqDsQ+8FxG75gbMY/qB8oFM2gsQa6H61SilzwZA
+Fv97fRheORKkU55+MkIQpiGRqRxOF3yEvJ+M0ejf5lG5Nkc/kLnHvALcWxxPDkjB
+JYOcCj+esQMzEhonrPcibCTRAUH4WAP+JWgiH5paPHxsnnVI84HxZmduTILA7rpX
+DhjvLpr3Etiga+kFpaHpaPi8TD8SHkXoUsCjvxInebnMMTzD9joiFgOgyY9mpFui
+TdaBJQbpdqQACj7LzTWb4OE4y2BThihCQRxEV+ioratF4yUQvNs+ZUH7G6aXD+u5
+dHn5HrwdVw1Hr8Mvn4dGp+smWg9WY7ViYG4A++MnESLn/pmPNPW56MORcr3Ywx65
+LvKRRFHQV80MNNVIIb/bE/FmJUNS0nAiNs2fxBx1IK1jcmMGDw4nztJqDby1ORrp
+0XZ60Vzk50lJLVU3aPAaOpg+VBeHVOmmJ1CJeyAvP/+/oYtKR5j/K3tJPsMpRmAY
+QqszKbrAKbkTidOIijlBO8n9pu0f9GBj39ItVQGL
+-----END CERTIFICATE-----
+`;
+// deno-lint-ignore no-explicit-any
+const bomClient = (Deno as any).createHttpClient({ caCerts: [BOM_CA_INTERMEDIATE, BOM_CA_ROOT] });
+
 async function fetchBom() {
+  // v10: read the Key Rate from the fixed element every bom.mu page carries:
+  //   <p class="repo-rate"> 5.00 % </p> ... content="2026-11-11T15:30:00+04:00"
+  // No loose patterns: a figure that isn't exactly there stays unknown. Average
+  // deposit/lending rates were never reliably on this page; they are not guessed.
   try {
-    const r = await fetch("https://www.bom.mu/statistics/key-rates", { headers: { "User-Agent": "Ficium/1.0" }, signal: AbortSignal.timeout(10000) });
+    // deno-lint-ignore no-explicit-any
+    const r = await fetch("https://www.bom.mu/", { client: bomClient, headers: { "User-Agent": "Ficium/1.0 (+https://ficium.net)" }, signal: AbortSignal.timeout(15000) } as any);
     if (!r.ok) return null;
     const html = await r.text();
-    const repo = html.match(/Key\s*Rate[\s\S]{0,300}?(\d+\.\d+)/i) ?? html.match(/Repo\s*Rate[\s\S]{0,300}?(\d+\.\d+)/i);
-    if (!repo) return null;
-    const dep = html.match(/Average[\s\S]{0,50}?[Dd]eposit[\s\S]{0,200}?(\d+\.\d+)/i);
-    const len = html.match(/Average[\s\S]{0,50}?[Ll]ending[\s\S]{0,200}?(\d+\.\d+)/i);
-    // A figure that isn't on the page stays unknown: never a default.
-    return { repo: +repo[1], deposit: dep ? +dep[1] : null, lending: len ? +len[1] : null };
+    const m = html.match(/<p class="repo-rate">\s*([\d.]+)\s*%\s*<\/p>\s*<p class="repo-rate-date">[\s\S]*?content="([^"]+)"/);
+    if (!m) return null;
+    const repo = parseFloat(m[1]);
+    const asOf = Date.parse(m[2]);
+    // Sanity: a policy rate in a plausible band, with a real decision date (not future, not > 1 year old).
+    if (!Number.isFinite(repo) || repo <= 0 || repo > 25) return null;
+    if (!Number.isFinite(asOf) || asOf > Date.now() + 86400000 || Date.now() - asOf > 400 * 86400000) return null;
+    return { repo, deposit: null as number | null, lending: null as number | null };
   } catch { return null; }
 }
 
@@ -463,7 +547,7 @@ Deno.serve(async (req: Request) => {
     });
   }
   const ts = now();
-  const log: Record<string,unknown> = { started_at: ts, version: "v9" };
+  const log: Record<string,unknown> = { started_at: ts, version: "v10" };
 
   const [fx, bom, semdex, prev] = await Promise.all([fetchFx(), fetchBom(), fetchSemdex(), getPrev()]);
   log.sources = { fx: !!fx, bom: !!bom, semdex: !!semdex };
@@ -497,7 +581,7 @@ Deno.serve(async (req: Request) => {
 
   // v8: no per-bank FX rows. They were one mid-market rate times assumed
   // per-bank spreads, and the app used them to name a "best bank".
-  log.fx_rates = { skipped: "no real per-bank quotes feed" };
+  log.fx_rates = { skipped: "per-bank FX handled by the bom-fx function" };
 
   const snap = { usd: fx?.usd, eur: fx?.eur, gbp: fx?.gbp, repo: bom?.repo, semdex: semdex ?? undefined };
 
