@@ -1,3 +1,4 @@
+// market-refresh v9 — news keeps flowing when AI enrichment is down (raw real headlines, source "rss").
 // market-refresh v8 — no invented numbers, visible failures, staleness alert
 //
 // v8 (2026-10-30):
@@ -249,6 +250,30 @@ Respond ONLY with a JSON array of ${raw.length} objects in input order. No markd
   } catch (e) { console.error("news enrichment failed", e); return null; }
 }
 
+/** Keyword category for un-enriched headlines. Conservative: "Economy" default. */
+function guessCategory(title: string): { category: string; emoji: string } {
+  const t = title.toLowerCase();
+  if (/(interest rate|repo|key rate|central bank|fed |federal reserve|ecb|rate (hike|cut))/.test(t)) return { category: "Interest Rates", emoji: "🏦" };
+  if (/(rupee|currency|forex|exchange rate|dollar|euro|sterling)/.test(t))                          return { category: "Currency",       emoji: "💱" };
+  if (/(stock|shares|semdex|equities|market rally|nasdaq|dow|s&p)/.test(t))                          return { category: "Stock Market",   emoji: "📈" };
+  if (/(deposit|savings)/.test(t))                                                                   return { category: "Savings",        emoji: "💰" };
+  if (/(loan|lending|mortgage|credit)/.test(t))                                                      return { category: "Lending",        emoji: "💳" };
+  return { category: "Economy", emoji: "📰" };
+}
+
+/** Un-enriched item: real title only, no generated commentary. */
+function fallbackItem(h: RawHeadline): EnrichedItem {
+  const { category, emoji } = guessCategory(h.title);
+  return {
+    headline:          h.title.slice(0, 160),
+    category,
+    emoji,
+    plain_english:     `Reported by ${h.sourceName}. Tap to read the full story.`,
+    body:              "",
+    related_ticker_id: null,
+  };
+}
+
 async function ingestNews(snap: Record<string, number | undefined>): Promise<Record<string, unknown>> {
   // 1. Fetch both feeds in parallel
   const feeds = await Promise.all(NEWS_FEEDS.map(f => fetchFeed(f.url, f.scope)));
@@ -270,8 +295,13 @@ async function ingestNews(snap: Record<string, number | undefined>): Promise<Rec
   if (fresh.length === 0) return { skipped: "no new headlines since last run" };
 
   // 3. Enrich with grounded AI rewrite
-  const enriched = await enrichHeadlines(fresh, snap);
-  if (!enriched) return { error: lastEnrichError ?? "enrichment unavailable", note: "existing news left untouched" };
+  // v9: if the AI rewrite is unavailable (credits, outage, bad JSON) we still
+  // ingest the REAL headlines un-rewritten rather than freezing the feed.
+  // Nothing is invented: headline/source/link/time are exactly what the RSS
+  // carried; plain_english is a neutral pointer, body stays null.
+  const aiEnriched = await enrichHeadlines(fresh, snap);
+  const enriched: EnrichedItem[] = aiEnriched ?? fresh.map(h => fallbackItem(h));
+  const enrichedBy = aiEnriched ? "rss+ai" : "rss";
 
   // 4. Insert with REAL timestamps and attribution
   const rows = fresh.map((h, i) => ({
@@ -286,7 +316,7 @@ async function ingestNews(snap: Record<string, number | undefined>): Promise<Rec
     source_url:        h.link,
     content_hash:      h.hash,
     published_at:      h.publishedAt,
-    source:            "rss+ai",
+    source:            enrichedBy,
   }));
   const { error, count } = await sb.from("market_news").insert(rows, { count: "exact" });
   if (error) return { error: error.message };
@@ -299,7 +329,7 @@ async function ingestNews(snap: Record<string, number | undefined>): Promise<Rec
   if (overflow?.length) {
     await sb.from("market_news").delete().in("id", overflow.map((r: Record<string, unknown>) => r.id));
   }
-  return { ingested: count, local: perScope.local, global: perScope.global };
+  return { ingested: count, local: perScope.local, global: perScope.global, enriched: !!aiEnriched, ...(aiEnriched ? {} : { enrich_error: lastEnrichError ?? "enrichment unavailable" }) };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -433,7 +463,7 @@ Deno.serve(async (req: Request) => {
     });
   }
   const ts = now();
-  const log: Record<string,unknown> = { started_at: ts, version: "v8" };
+  const log: Record<string,unknown> = { started_at: ts, version: "v9" };
 
   const [fx, bom, semdex, prev] = await Promise.all([fetchFx(), fetchBom(), fetchSemdex(), getPrev()]);
   log.sources = { fx: !!fx, bom: !!bom, semdex: !!semdex };
