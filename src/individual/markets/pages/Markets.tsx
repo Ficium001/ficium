@@ -97,7 +97,7 @@ export default function Markets() {
           subline="Live rates and news for Mauritius — explained by AI, grounded in real numbers, so you know exactly how it affects your money."
           actions={
             <>
-              <HeroButton onClick={() => navigate("/requests/new")}>Get offers from banks</HeroButton>
+              <HeroButton onClick={() => navigate("/requests/new")}>Compare provider rates</HeroButton>
               <HeroButton variant="ghost" onClick={() => navigate("/advisor")}>Ask the AI</HeroButton>
             </>
           }
