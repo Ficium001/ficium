@@ -222,20 +222,21 @@ export async function submitDossier(input: DossierInput): Promise<DossierResult>
   if (assetError) return { ok: false, error: `Assets: ${assetError.message}` };
 
   // 4. V2: client_loan_details (replaces loan_details, uses client_id)
-  await supabase.from("client_loan_details").delete().eq("client_id", userId);
-  if (input.hasExistingLoans && input.loans.length > 0) {
-    const { error: loanError } = await supabase.from("client_loan_details").insert(
-      input.loans.map((l) => ({
-        client_id: userId,
-        loan_type: l.loanType,
-        outstanding_amount: l.outstandingAmount,
-        monthly_repayment: l.monthlyRepayment,
-        bank_name: l.bankName,
-        remaining_months: l.remainingMonths ?? null,
-      }))
-    );
-    if (loanError) return { ok: false, error: `Loans: ${loanError.message}` };
-  }
+  //    Replaced in ONE transaction by replace_client_loans(): a separate delete
+  //    then insert meant a failed insert left the user with no loans at all,
+  //    and every DSR / health score downstream was computed on the empty set.
+  const { error: loanError } = await supabase.rpc("replace_client_loans", {
+    p_loans: input.hasExistingLoans
+      ? input.loans.map((l) => ({
+          loan_type: l.loanType,
+          outstanding_amount: l.outstandingAmount,
+          monthly_repayment: l.monthlyRepayment,
+          bank_name: l.bankName,
+          remaining_months: l.remainingMonths ?? null,
+        }))
+      : [],
+  });
+  if (loanError) return { ok: false, error: `Loans: ${loanError.message}` };
 
   // 5. compliance_details (unchanged — still uses user_id FK)
   const { error: compError } = await supabase.from("compliance_details").upsert(
