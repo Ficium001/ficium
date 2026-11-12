@@ -47,7 +47,7 @@ export default function Offers() {
   }, [notice]);
 
   return (
-    <PageShell max="max-w-[640px]">
+    <PageShell max="640px">
       <div className="flex flex-col gap-3 -mx-4 sm:mx-0 pb-6">
         <div className="px-4 sm:px-0 pt-2">
           <h1 className="text-[28px] font-extrabold font-display text-ink tracking-tight">Offers</h1>
