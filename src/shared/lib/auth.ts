@@ -1,5 +1,6 @@
 import { supabase } from "./supabase";
 import { audit } from "./audit";
+import { PRIVACY, TERMS } from "../../features/legal/content";
 
 /* ============================================================
    TYPES
@@ -63,6 +64,10 @@ export async function signUpIndividual(input: SignUpIndividualInput): Promise<Si
           country,
           date_of_birth: dateOfBirth || "",
           gender: gender || "",
+          // The versions the user agreed to at signup ("By creating an account you agree…").
+          terms_version: TERMS.version,
+          privacy_version: PRIVACY.version,
+          terms_accepted_at: new Date().toISOString(),
         },
       },
     })

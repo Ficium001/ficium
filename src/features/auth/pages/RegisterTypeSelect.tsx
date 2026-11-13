@@ -14,6 +14,7 @@ const TYPES = [
     href: "/register/individual",
     accent: "border-ficium/30 hover:border-ficium",
     badge: null,
+    available: true,
   },
   {
     id: "business",
@@ -24,8 +25,10 @@ const TYPES = [
     description: "Your company needs financing, working capital or banking products.",
     features: ["SME loans", "Business accounts", "Equipment leasing", "Trade finance"],
     href: "/register/business",
-    accent: "border-amber-200 hover:border-amber-400",
-    badge: null,
+    accent: "border-amber-200",
+    badge: "Coming soon",
+    // SME borrowers are the next phase: no business dashboard exists yet, so no business accounts.
+    available: false,
   },
   {
     id: "institution",
@@ -38,6 +41,7 @@ const TYPES = [
     href: "/register/institution",
     accent: "border-blue-200 hover:border-blue-500",
     badge: "By agreement",
+    available: true,
   },
 ] as const;
 
@@ -61,10 +65,12 @@ export default function RegisterTypeSelect() {
           return (
             <button
               key={t.id}
-              onClick={() => navigate(t.href)}
+              onClick={() => t.available && navigate(t.href)}
+              disabled={!t.available}
+              aria-disabled={!t.available}
               className={[
                 "w-full text-left p-5 sm:p-6 bg-white rounded-2xl border-2 transition-all duration-200",
-                "hover:shadow-md group",
+                t.available ? "hover:shadow-md group" : "opacity-60 cursor-not-allowed",
                 t.accent,
               ].join(" ")}
             >
@@ -99,10 +105,10 @@ export default function RegisterTypeSelect() {
                 </div>
 
                 {/* Arrow */}
-                <ArrowRight
+                {t.available && <ArrowRight
                   size={18}
                   className="text-muted group-hover:text-ink group-hover:translate-x-0.5 transition-all shrink-0 mt-1"
-                />
+                />}
               </div>
             </button>
           );

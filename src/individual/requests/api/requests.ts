@@ -312,6 +312,27 @@ export async function createMultiProductRequest(
 }
 
 
+/* ---------- Cancel an open request ---------- */
+
+const CANCEL_ERRORS: Record<string, string> = {
+  request_not_open:  "This request is no longer open, so it can't be cancelled.",
+  request_not_found: "We couldn't find this request.",
+  not_signed_in:     "Your session has ended. Sign in again and retry.",
+};
+
+/**
+ * Cancel the caller's own open request. The database function checks ownership and status,
+ * writes the audit row, and the status change reaches every bank through the contract.
+ */
+export async function cancelRequest(requestId: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  const { data, error } = await supabase.rpc("cancel_request", { p_request_id: requestId });
+  if (error) return { ok: false, error: "Couldn't cancel this request. Check your connection and try again." };
+  const res = data as { ok: boolean; error?: string } | null;
+  if (res?.ok) return { ok: true };
+  return { ok: false, error: CANCEL_ERRORS[res?.error ?? ""] ?? "Couldn't cancel this request. Try again shortly." };
+}
+
+
 /* ---------- Get single request ---------- */
 
 export async function getRequest(id: string): Promise<RequestDetail | null> {
