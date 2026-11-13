@@ -19,7 +19,7 @@ import { Button, Card, BottomNav } from "../../../shared/ui";
 import RequestThreads from "../components/RequestThreads";
 import { supabase } from "../../../shared/lib/supabase";
 import { useProfile } from "../../dashboard/hooks/useDashboard";
-import { useRequest, useRequestBids, useAcceptBid } from "../hooks/useRequests";
+import { useRequest, useRequestBids, useAcceptBid, useCancelRequest } from "../hooks/useRequests";
 import { useVault } from "../../vault/hooks/useVault";
 import type { VaultDocType } from "../../vault/api/vault";
 import { apiUrl } from "@/shared/platform";
@@ -727,6 +727,55 @@ function BidsTab({ bids, request, isClosed, accepting, acceptingBid, onAccept, a
   );
 }
 
+/* ── Cancel an open request ── */
+function CancelRequestCard({ requestId, bidCount }: { requestId: string; bidCount: number }) {
+  const [confirming, setConfirming] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { mutate: cancel, isPending } = useCancelRequest(requestId);
+
+  const onConfirm = () => {
+    setError(null);
+    cancel(undefined, {
+      onSuccess: (res) => { if (!res.ok) setError(res.error); else setConfirming(false); },
+      onError:   () => setError("Couldn't cancel this request. Check your connection and try again."),
+    });
+  };
+
+  return (
+    <div className="mt-6 rounded-2xl border border-line bg-white p-4">
+      {!confirming ? (
+        <div className="flex items-center gap-3">
+          <div className="flex-1">
+            <div className="text-[13px] font-semibold text-ink">No longer need this?</div>
+            <div className="text-[12px] text-muted">Cancelling closes the request for every institution.</div>
+          </div>
+          <Button variant="secondary" size="sm" onClick={() => setConfirming(true)}>Cancel request</Button>
+        </div>
+      ) : (
+        <div role="alertdialog" aria-labelledby="cancel-title" aria-describedby="cancel-body">
+          <div id="cancel-title" className="text-[13px] font-semibold text-ink">Cancel this request?</div>
+          <p id="cancel-body" className="text-[12px] text-muted mt-1">
+            {bidCount > 0
+              ? `The ${bidCount} offer${bidCount === 1 ? "" : "s"} you received will no longer be available. `
+              : "Institutions will stop seeing it. "}
+            This can't be undone, but you can post a new request at any time.
+          </p>
+          {error && <p role="alert" className="text-[12px] text-red-700 mt-2">{error}</p>}
+          <div className="flex gap-2 mt-3">
+            <Button variant="secondary" size="sm" onClick={() => { setConfirming(false); setError(null); }} disabled={isPending}>
+              Keep request
+            </Button>
+            <Button size="sm" onClick={onConfirm} disabled={isPending}
+              className="bg-red-700 hover:bg-red-800">
+              {isPending ? "Cancelling…" : "Yes, cancel it"}
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── Phase 2 Reveal Modal ── */
 function Phase2RevealModal({ reveal, onClose }: { reveal: Phase2Reveal; onClose: () => void }) {
   return (
@@ -942,6 +991,9 @@ export default function RequestDetail() {
       {/* Tab content */}
       <div className="max-w-[680px] mx-auto px-4 sm:px-6 pt-5">
         {tab === "plan"      && <PlanTab request={request} bidCount={bids.length} />}
+        {tab === "plan" && request.status === "open" && (
+          <CancelRequestCard requestId={request.id} bidCount={bids.length} />
+        )}
         {tab === "documents" && <DocumentsTab requestId={request.id} isAccepted={isAccepted} />}
         {tab === "insights"  && <InsightsTab bids={bids} request={request} profile={profile} />}
         {tab === "details"   && <DetailsTab request={request} profile={profile} />}
