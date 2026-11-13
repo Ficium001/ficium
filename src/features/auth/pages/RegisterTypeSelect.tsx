@@ -33,11 +33,11 @@ const TYPES = [
     iconBg: "bg-blue-50 text-blue-600",
     title: "Financial Institution",
     subtitle: "Banks, fintechs, micro-credit",
-    description: "You're a licensed lender wanting to bid on client requests.",
+    description: "Licensed lenders join by agreement. Apply and our team will be in touch.",
     features: ["Place competitive bids", "Access qualified leads", "Manage your pipeline", "Analytics dashboard"],
     href: "/register/institution",
     accent: "border-blue-200 hover:border-blue-500",
-    badge: "For institutions",
+    badge: "By agreement",
   },
 ] as const;
 
