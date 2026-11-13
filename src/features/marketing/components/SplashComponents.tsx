@@ -544,14 +544,14 @@ export function Footer() {
             <div className="text-sm opacity-60 leading-relaxed max-w-[280px]">More value, less friction. Banking flipped on its head.</div>
           </div>
           {[
-            { h: "Products", l: ["Personal loans", "Business funding", "Fixed deposits", "Investments"] },
-            { h: "Company",  l: ["About", "Contact"] },
-            { h: "Legal",    l: ["Terms", "Privacy"] },
+            { h: "Products", l: [["Personal loans", "/how-it-works"], ["Fixed deposits", "/how-it-works"], ["Investments", "/how-it-works"]] },
+            { h: "Company",  l: [["How it works", "/how-it-works"], ["Contact", "mailto:kishan.jeebun@ficium.net"]] },
+            { h: "Legal",    l: [["Terms of Use", "/terms"], ["Privacy Notice", "/privacy"]] },
           ].map((c) => (
             <div key={c.h}>
               <div className="text-[13px] font-bold tracking-[0.08em] uppercase mb-4 opacity-50">{c.h}</div>
               <div className="flex flex-col gap-2.5">
-                {c.l.map((item) => <a key={item} href="#" className="text-paper no-underline text-sm opacity-80 hover:opacity-100 transition-opacity">{item}</a>)}
+                {c.l.map(([label, href]) => <a key={label} href={href} className="text-paper no-underline text-sm opacity-80 hover:opacity-100 transition-opacity">{label}</a>)}
               </div>
             </div>
           ))}

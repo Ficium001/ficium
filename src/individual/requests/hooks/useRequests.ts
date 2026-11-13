@@ -5,6 +5,7 @@ import {
   getRequestBids,
   getBidsForRequests,
   acceptBid,
+  cancelRequest,
   type Bid,
   type Phase2Reveal,
 } from "@/individual/requests/api/requests";
@@ -73,6 +74,19 @@ export function useAcceptBid(requestId: string) {
       queryClient.invalidateQueries({ queryKey: RequestQueryKeys.detail(requestId) });
       queryClient.invalidateQueries({ queryKey: RequestQueryKeys.bids(requestId) });
       queryClient.invalidateQueries({ queryKey: ["tracker", requestId] });
+    },
+  });
+}
+
+export function useCancelRequest(requestId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => cancelRequest(requestId),
+    networkMode: "always",
+    onSuccess: (res) => {
+      if (!res.ok) return;
+      queryClient.invalidateQueries({ queryKey: RequestQueryKeys.all });
+      queryClient.invalidateQueries({ queryKey: RequestQueryKeys.detail(requestId) });
     },
   });
 }

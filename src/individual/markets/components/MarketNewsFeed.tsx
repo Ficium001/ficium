@@ -14,6 +14,9 @@ import type { NewsItem } from "../types";
 
 type ScopeFilter = "all" | "local" | "global";
 
+/** Headlines shown before the "See more" control. */
+const INITIAL_VISIBLE = 5;
+
 const SCOPE_CHIPS: { id: ScopeFilter; label: string }[] = [
   { id: "all",    label: "All" },
   { id: "local",  label: "Mauritius" },
@@ -40,8 +43,11 @@ function timeAgo(date: Date): string {
 export function MarketNewsFeed({ news, forYouIds, onPersonalise, personalised }: Props) {
   const [scope, setScope]           = useState<ScopeFilter>("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [showAll, setShowAll]       = useState(false);
 
   const visible = useMemo(() => filterByScope(news, scope), [news, scope]);
+  const shown   = showAll ? visible : visible.slice(0, INITIAL_VISIBLE);
+  const hiddenCount = visible.length - shown.length;
 
   if (!news.length) return null;
 
@@ -75,7 +81,7 @@ export function MarketNewsFeed({ news, forYouIds, onPersonalise, personalised }:
             key={c.id}
             role="radio"
             aria-checked={scope === c.id}
-            onClick={() => setScope(c.id)}
+            onClick={() => { setScope(c.id); setShowAll(false); setExpandedId(null); }}
             className={[
               "px-3 py-1.5 rounded-pill text-[12px] font-semibold transition-all border",
               scope === c.id
@@ -94,7 +100,7 @@ export function MarketNewsFeed({ news, forYouIds, onPersonalise, personalised }:
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-ink/6 divide-y divide-ink/4">
-          {visible.map((item) => {
+          {shown.map((item) => {
             const tagColor = NEWS_CATEGORY_COLORS[item.category] ?? "#64748b";
             const tagBg    = NEWS_CATEGORY_BG[item.category]    ?? "#f1f5f9";
             const isForYou = forYouIds?.has(item.id) ?? false;
@@ -182,6 +188,18 @@ export function MarketNewsFeed({ news, forYouIds, onPersonalise, personalised }:
               </div>
             );
           })}
+          {visible.length > INITIAL_VISIBLE && (
+            <button
+              onClick={() => setShowAll((v) => !v)}
+              aria-expanded={showAll}
+              className="w-full px-4 py-3 flex items-center justify-center gap-1.5 text-[12px] font-bold text-ficium hover:text-ficium-deep transition-colors"
+            >
+              {showAll
+                ? <><ChevronUp size={12} /> Show less</>
+                : <><ChevronDown size={12} /> See more ({hiddenCount})</>
+              }
+            </button>
+          )}
         </div>
       )}
     </section>
