@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -203,8 +203,8 @@ export default function RegisterIndividual() {
 
           <p className="text-center text-xs text-muted">
             By creating an account you agree to our{" "}
-            <a href="#" className="text-ficium no-underline">Terms</a> and{" "}
-            <a href="#" className="text-ficium no-underline">Privacy Policy</a>
+            <Link to="/terms" target="_blank" rel="noopener" className="text-ficium no-underline">Terms of Use</Link> and{" "}
+            <Link to="/privacy" target="_blank" rel="noopener" className="text-ficium no-underline">Privacy Notice</Link>
           </p>
         </form>
       </div>

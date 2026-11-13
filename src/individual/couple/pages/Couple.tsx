@@ -37,7 +37,7 @@ export default function Couple() {
   const couple = data?.couple ?? null;
 
   return (
-    <PageShell max="max-w-[560px]">
+    <PageShell max="560px">
       <div className="mb-6">
         <p className="text-[11px] font-bold text-muted uppercase tracking-widest mb-1">Joint finance</p>
         <h1 className="font-display text-3xl font-extrabold text-ink leading-none">Couple</h1>

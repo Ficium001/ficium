@@ -16,10 +16,13 @@ const CheckEmail  = lazy(() => import("../features/auth/pages/CheckEmail"));
 
 const RegisterTypeSelect  = lazy(() => import("../features/auth/pages/RegisterTypeSelect"));
 const RegisterIndividual  = lazy(() => import("../individual/auth/pages/RegisterIndividual"));
-const RegisterBusiness    = lazy(() => import("../business/auth/pages/RegisterBusiness"));
+const ApplyInstitution    = lazy(() => import("../features/auth/pages/ApplyInstitution"));
+const VerifyInstitutionApplication = lazy(() => import("../features/auth/pages/VerifyInstitutionApplication"));
 const ForgotPassword      = lazy(() => import("../features/auth/pages/ForgotPassword"));
 const ResetPassword       = lazy(() => import("../features/auth/pages/ResetPassword"));
 const HowItWorks          = lazy(() => import("../features/marketing/pages/HowItWorks"));
+const TermsPage           = lazy(() => import("../features/legal/pages/LegalPage").then(m => ({ default: m.TermsPage })));
+const PrivacyPage         = lazy(() => import("../features/legal/pages/LegalPage").then(m => ({ default: m.PrivacyPage })));
 const NotFound            = lazy(() => import("../shared/pages/NotFound"));
 
 const Dashboard           = lazy(() => import("../individual/dashboard/pages/Dashboard"));
@@ -96,6 +99,8 @@ export const router = createBrowserRouter([
 
   { path: "/",                       element: <Splash /> },
   { path: "/how-it-works",           element: <S><HowItWorks /></S> },
+  { path: "/terms",                  element: <S><TermsPage /></S> },
+  { path: "/privacy",                element: <S><PrivacyPage /></S> },
   { path: "/onboarding/check-email", element: <S><CheckEmail /></S> },
   { path: "/invite/:token",          element: <S><InvitePage /></S> },
 
@@ -104,10 +109,14 @@ export const router = createBrowserRouter([
   { path: "/auth/reset-password",    element: <S><ResetPassword /></S> },
   { path: "/register",               element: <S><RegisterTypeSelect /></S> },
   { path: "/register/individual",    element: <S><RegisterIndividual /></S> },
-  { path: "/register/business",      element: <S><RegisterBusiness /></S> },
+  // /register/business returns with the SME phase (the old page is in git history, commit 860628e).
 
-  // Institutions register/sign in on the Portal app, not here.
-  { path: "/register/institution",   element: <PortalRedirect to="/register" /> },
+  // Institutions APPLY here (public, no account): the portal is restrictive and has no
+  // public registration. After a contract Ficium provisions the institution, whose
+  // administrator is invited by email and signs in on the portal.
+  { path: "/register/institution",   element: <S><ApplyInstitution /></S> },
+  { path: "/request-access/verify",  element: <S><VerifyInstitutionApplication /></S> },
+  { path: "/request-access",         element: <Navigate to="/register/institution" replace /> },
 
   { path: "/dashboard",              element: <ClientOnlyRoute><S><Dashboard /></S></ClientOnlyRoute> },
   { path: "/profile",                element: <ClientOnlyRoute><S><Profile /></S></ClientOnlyRoute> },
