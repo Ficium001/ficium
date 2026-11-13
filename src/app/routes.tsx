@@ -109,7 +109,7 @@ export const router = createBrowserRouter([
   { path: "/auth/reset-password",    element: <S><ResetPassword /></S> },
   { path: "/register",               element: <S><RegisterTypeSelect /></S> },
   { path: "/register/individual",    element: <S><RegisterIndividual /></S> },
-  // /register/business returns with the SME phase (page kept in src/business/auth/pages).
+  // /register/business returns with the SME phase (the old page is in git history, commit 860628e).
 
   // Institutions APPLY here (public, no account): the portal is restrictive and has no
   // public registration. After a contract Ficium provisions the institution, whose
