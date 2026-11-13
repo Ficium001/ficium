@@ -103,7 +103,7 @@ async function logAudit(event: AuditEvent): Promise<void> {
 
     if (error) {
       // Fallback: direct insert into public.audit_events
-      await supabase.from("audit_events").insert({
+      const { error: fallbackError } = await supabase.from("audit_events").insert({
         client_id:       userId,
         actor_id:        userId,
         actor_type:      "client_user",
@@ -115,6 +115,12 @@ async function logAudit(event: AuditEvent): Promise<void> {
         outcome_note:    event.errorMessage ?? null,
         actor_device:    getDeviceType(),
       });
+      if (fallbackError) {
+        // Both paths failed: the event is lost. Say so — never silently.
+        console.error("[audit] event LOST (rpc and fallback insert both failed)", {
+          event: event.eventName, rpc: error.message, fallback: fallbackError.message,
+        });
+      }
     }
   } catch {
     console.warn("[audit] Failed to log event:", event.eventName);

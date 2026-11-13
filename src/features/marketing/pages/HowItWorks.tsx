@@ -439,6 +439,6 @@ const FAQS = [
   },
   {
     q: "I'm a bank. How do I join?",
-    a: "Register as a Financial Institution, complete compliance onboarding, and your team will have access to the live marketplace feed. Contact us at hello@ficium.mu to fast-track your onboarding.",
+    a: "Apply as a Financial Institution. Access is by agreement: we review your application, sign a contract, then your administrator is invited to set up your team and complete compliance onboarding. Contact us at hello@ficium.mu to fast-track it.",
   },
 ];
