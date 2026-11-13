@@ -15,7 +15,7 @@ describe("institution applications", () => {
     reply(202, { status: "received", message: "Check your email" });
     expect(await submitAccessRequest(input)).toEqual({ ok: true, message: "Check your email" });
     const [url, init] = (fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0]!;
-    expect(String(url)).toMatch(/\/access-requests$/);
+    expect(url).toBe("/institution-apply");   // same origin: proxied by vercel.json, no CORS
     expect(JSON.parse(init.body).contact_email).toBe("ada@zzbank.mu");
   });
 
@@ -30,6 +30,12 @@ describe("institution applications", () => {
     vi.stubGlobal("fetch", vi.fn(async () => { throw new TypeError("network"); }));
     const r = await submitAccessRequest(input);
     expect(r.ok).toBe(false);
+  });
+
+  it("confirms through the same-origin proxy too", async () => {
+    reply(200, { status: "submitted", reference: "AB12CD34EF", institution_name: "ZZ Bank" });
+    await confirmAccessRequest("t".repeat(43));
+    expect((fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0]![0]).toBe("/institution-apply/verify");
   });
 
   it("confirms a link once and surfaces a used or expired one", async () => {

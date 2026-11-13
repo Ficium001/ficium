@@ -74,6 +74,14 @@
       "destination": "/api/$1"
     },
     {
+      "source": "/institution-apply",
+      "destination": "https://ficium-portal-api-production.up.railway.app/access-requests"
+    },
+    {
+      "source": "/institution-apply/verify",
+      "destination": "https://ficium-portal-api-production.up.railway.app/access-requests/verify"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

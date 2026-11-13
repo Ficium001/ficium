@@ -1,5 +1,5 @@
 /**
- * Institution applications through portal-api (POST /access-requests).
+ * Institution applications: the public site's same-origin proxy to the portal API.
  * Applying creates NO account: it stores the application and emails a link to
  * confirm it. Ficium reviews confirmed applications; after the contract, two
  * Ficium admins create the institution and email its administrator an invitation.
@@ -7,10 +7,10 @@
  * restrictive (sign-in for provisioned users only). Self-registration
  * (POST /auth/register) is off since 2026-11-13.
  */
-// The institution portal API. Applying is the one public call the borrower app makes to it
-// (the app's CSP and the API's CORS both allow exactly this).
-const API_URL = (import.meta.env.VITE_PORTAL_API_URL as string | undefined)
-  || 'https://ficium-portal-api-production.up.railway.app'
+// Same origin: vercel.json proxies these two fixed paths to the institution portal API's
+// public endpoints (/access-requests, /access-requests/verify). The browser never calls that
+// API cross-origin, so the API needs no CORS exception for this site.
+const APPLY = '/institution-apply'
 
 export type InstitutionType =
   | 'commercial_bank' | 'fintech' | 'micro_credit' | 'leasing' | 'insurance' | 'cooperative' | 'other'
@@ -42,7 +42,7 @@ function errorFrom(status: number, data: unknown, fallback: string): string {
 
 async function post(path: string, body: unknown): Promise<{ status: number; data: unknown } | null> {
   try {
-    const res = await fetch(`${API_URL}${path}`, {
+    const res = await fetch(path, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
     })
     return { status: res.status, data: await res.json().catch(() => ({})) }
@@ -54,14 +54,14 @@ async function post(path: string, body: unknown): Promise<{ status: number; data
 const UNREACHABLE: Fail = { ok: false, error: 'Could not reach Ficium. Check your connection and try again.' }
 
 export async function submitAccessRequest(input: AccessRequestInput): Promise<{ ok: true; message: string } | Fail> {
-  const r = await post('/access-requests', input)
+  const r = await post(APPLY, input)
   if (!r) return UNREACHABLE
   if (r.status !== 202) return { ok: false, error: errorFrom(r.status, r.data, 'The application could not be sent. Please try again.') }
   return { ok: true, message: String((r.data as { message?: string }).message ?? '') }
 }
 
 export async function confirmAccessRequest(token: string): Promise<{ ok: true; reference: string; institution_name: string } | Fail> {
-  const r = await post('/access-requests/verify', { token })
+  const r = await post(`${APPLY}/verify`, { token })
   if (!r) return UNREACHABLE
   if (r.status !== 200) return { ok: false, error: errorFrom(r.status, r.data, 'This link could not be confirmed.') }
   const d = r.data as { reference: string; institution_name: string }
