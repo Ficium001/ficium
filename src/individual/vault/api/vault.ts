@@ -46,6 +46,37 @@ export type UploadResult =
   | { ok: true;  document: VaultDocument }
   | { ok: false; error: string };
 
+/**
+ * Record a vault access in client_vault_access_log and REPORT a failure.
+ *
+ * This table is the audit trail for every vault upload/view. In Aug 2026 every
+ * write silently failed for weeks (missing INSERT policy) because the result
+ * was never read. We still don't block the user's own access on a log failure,
+ * but it is never silent again. The log is written from the browser, so it
+ * can also be skipped by the client: moving it server-side (RPC/trigger) is the
+ * proper fix and is tracked separately.
+ */
+export async function logVaultAccess(entry: {
+  documentId: string;
+  clientId:   string;
+  action:     "upload" | "view";
+  actorId:    string;
+}): Promise<boolean> {
+  const { error } = await supabase.from("client_vault_access_log").insert({
+    document_id: entry.documentId,
+    client_id:   entry.clientId,
+    action:      entry.action,
+    actor_id:    entry.actorId,
+  });
+  if (error) {
+    console.error("[vault] access log write FAILED — audit gap", {
+      action: entry.action, documentId: entry.documentId, code: error.code, message: error.message,
+    });
+    return false;
+  }
+  return true;
+}
+
 export async function uploadVaultDocument(
   file: File,
   docType: VaultDocType,
@@ -79,16 +110,17 @@ export async function uploadVaultDocument(
     .upload(storagePath, file, { contentType: file.type, upsert: false });
 
   if (uploadErr) {
-    await supabase.from("client_vault_document").delete().eq("id", doc.id);
+    const { error: cleanupErr } = await supabase.from("client_vault_document").delete().eq("id", doc.id);
+    if (cleanupErr) {
+      // The file never reached storage, but its record is still here: an orphan.
+      console.error("[vault] orphan document record after failed upload", {
+        documentId: doc.id, code: cleanupErr.code, message: cleanupErr.message,
+      });
+    }
     return { ok: false, error: uploadErr.message };
   }
 
-  await supabase.from("client_vault_access_log").insert({
-    document_id: doc.id,
-    client_id:   user.id,
-    action:      "upload",
-    actor_id:    user.id,
-  });
+  await logVaultAccess({ documentId: doc.id, clientId: user.id, action: "upload", actorId: user.id });
 
   return { ok: true, document: doc as VaultDocument };
 }
@@ -129,12 +161,7 @@ export async function getVaultDocumentUrl(documentId: string): Promise<string | 
 
   const { data: { user } } = await getCachedUser();
   if (user) {
-    await supabase.from("client_vault_access_log").insert({
-      document_id: documentId,
-      client_id:   doc.client_id,
-      action:      "view",
-      actor_id:    user.id,
-    });
+    await logVaultAccess({ documentId, clientId: doc.client_id, action: "view", actorId: user.id });
   }
 
   return data?.signedUrl ?? null;
