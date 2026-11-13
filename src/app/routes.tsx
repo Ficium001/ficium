@@ -17,6 +17,8 @@ const CheckEmail  = lazy(() => import("../features/auth/pages/CheckEmail"));
 const RegisterTypeSelect  = lazy(() => import("../features/auth/pages/RegisterTypeSelect"));
 const RegisterIndividual  = lazy(() => import("../individual/auth/pages/RegisterIndividual"));
 const RegisterBusiness    = lazy(() => import("../business/auth/pages/RegisterBusiness"));
+const ApplyInstitution    = lazy(() => import("../features/auth/pages/ApplyInstitution"));
+const VerifyInstitutionApplication = lazy(() => import("../features/auth/pages/VerifyInstitutionApplication"));
 const ForgotPassword      = lazy(() => import("../features/auth/pages/ForgotPassword"));
 const ResetPassword       = lazy(() => import("../features/auth/pages/ResetPassword"));
 const HowItWorks          = lazy(() => import("../features/marketing/pages/HowItWorks"));
@@ -106,8 +108,12 @@ export const router = createBrowserRouter([
   { path: "/register/individual",    element: <S><RegisterIndividual /></S> },
   { path: "/register/business",      element: <S><RegisterBusiness /></S> },
 
-  // Institutions register/sign in on the Portal app, not here.
-  { path: "/register/institution",   element: <PortalRedirect to="/register" /> },
+  // Institutions APPLY here (public, no account): the portal is restrictive and has no
+  // public registration. After a contract Ficium provisions the institution, whose
+  // administrator is invited by email and signs in on the portal.
+  { path: "/register/institution",   element: <S><ApplyInstitution /></S> },
+  { path: "/request-access/verify",  element: <S><VerifyInstitutionApplication /></S> },
+  { path: "/request-access",         element: <Navigate to="/register/institution" replace /> },
 
   { path: "/dashboard",              element: <ClientOnlyRoute><S><Dashboard /></S></ClientOnlyRoute> },
   { path: "/profile",                element: <ClientOnlyRoute><S><Profile /></S></ClientOnlyRoute> },
