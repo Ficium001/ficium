@@ -250,7 +250,7 @@ Switched off until **both**: this migration is applied, and `ACCOUNT_CLOSURE_RET
 
 | File | Purpose | Status |
 |------|---------|--------|
-| `20261114070000_financial_profile_single_source.sql` | Scores computed by the DB, derived copies enforced by triggers, duplicate columns and `asset_details` dropped | **Not applied.** Apply before deploying the matching app code (PR on branch `fix/financial-profile-single-source`) |
+| `20261114070000_financial_profile_single_source.sql` | Scores computed by the DB, derived copies enforced by triggers, duplicate columns and `asset_details` dropped | Applied 2026-11-14 (`financial_profile_single_source`), dry-run verified first |
 
 - Health / risk / affordability scores and the EDD flag come from `public.compute_client_scores` via
   the `dossier_derive` trigger. Values sent by a client for these columns are overwritten.
