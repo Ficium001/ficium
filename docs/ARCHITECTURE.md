@@ -95,11 +95,9 @@ Vercel API routes (`/api/*`) are used for:
 
   | Action | Handler | Trigger |
   |--------|---------|---------|
-  | `bid-notify` | `_lib/handlers/bid-notify.ts` | `trg_bid_notify` on `marketplace.bid` INSERT (Portal DB) |
   | `vault-extract` | `_lib/handlers/vault-extract.ts` | `trg_vault_extract` on `client_vault_document` INSERT (App DB) |
   | `request-expiring` | `_lib/handlers/request-expiring.ts` | pg_cron hourly, 23-25h before deadline (App DB) |
   | `request-expired` | `_lib/handlers/request-expired.ts` | `close_expired_windows()` on status→expired (Portal DB) |
-  | `bid-accepted` | `_lib/handlers/bid-accepted.ts` | Called directly from `accept-bid.ts` |
 
 **Keepalive:**
 - `keepalive.ts` — pings Railway services to prevent cold starts

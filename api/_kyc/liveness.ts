@@ -10,7 +10,7 @@
  */
 
 import { createHmac, createHash } from "crypto";
-const getEnv = (k: string) => (globalThis as any).process?.env?.[k] ?? "";
+import { Env } from "../_lib/env.js";
 
 const AWS_REGION = "ap-south-1";
 
@@ -25,8 +25,8 @@ function getSigningKey(secret: string, date: string, region: string, service: st
 }
 
 async function awsPost(service: string, target: string, body: object): Promise<unknown> {
-  const accessKey = getEnv("AWS_ACCESS_KEY_ID")     || getEnv("VITE_AWS_ACCESS_KEY_ID");
-  const secretKey = getEnv("AWS_SECRET_ACCESS_KEY") || getEnv("VITE_AWS_SECRET_ACCESS_KEY");
+  const accessKey = Env.awsAccessKeyId();
+  const secretKey = Env.awsSecretAccessKey();
   const now       = new Date();
   const amzDate   = now.toISOString().replace(/[:-]|\.\d{3}/g, "").slice(0, 15) + "Z";
   const dateStamp = amzDate.slice(0, 8);

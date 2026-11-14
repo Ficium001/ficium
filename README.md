@@ -53,8 +53,8 @@ Vercel Serverless (12 functions — Hobby plan limit)
   ├── /api/request-builder    AI request drafting
   ├── /api/request-actions    Request status transitions
   ├── /api/internal           Internal pg_net dispatcher
-  │     actions: bid-notify, vault-extract,
-  │              request-expiring, request-expired, bid-accepted
+  │     actions: vault-extract, request-expiring
+  │     (bids and acceptances arrive as signed contract events)
   ├── /api/chat               Claude AI coach
   ├── /api/intelligence       Market intelligence
   ├── /api/market             Market data

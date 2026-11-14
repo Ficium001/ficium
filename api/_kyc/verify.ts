@@ -29,6 +29,7 @@ import {
 } from "./aws.js";
 import { parseMrz } from "./docExtract.js";
 import { supabaseQuery, supabaseRpc } from "./db.js";
+import { Env } from "../_lib/env.js";
 
 const getEnv = (k: string) => (globalThis as any).process?.env?.[k] ?? "";
 
@@ -265,7 +266,7 @@ async function recordOutcome(
 /* ── Handler ────────────────────────────────────────────────── */
 export async function verifyHandler(req: any, res: any) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
-  if (!getEnv("AWS_ACCESS_KEY_ID") && !getEnv("VITE_AWS_ACCESS_KEY_ID"))
+  if (!Env.awsAccessKeyId())
     return res.status(503).json({ error: "AWS credentials not configured" });
 
   // Parse body — Vercel may pass it as a string if Content-Type header is missing

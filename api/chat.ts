@@ -10,7 +10,8 @@ import Anthropic              from "@anthropic-ai/sdk";
 import { Env }                from "./_lib/env.js";
 import { IntelligenceService } from "./_lib/intelligence-service.js";
 import { Response }           from "./_lib/response.js";
-import { requireUser, sendAuthError } from "./_lib/auth.js";
+import { bearerToken, requireUser, sendAuthError } from "./_lib/auth.js";
+import { consumeAiQuota, quotaRefusal } from "./_lib/ai-quota.js";
 import { handleCors }                 from "./_lib/cors.js";
 
 export const config = { runtime: "nodejs" };
@@ -27,15 +28,17 @@ type JourneyBody = {
   answers: Record<string, unknown>;
 };
 
-// ── Shared: fetch user profile via Supabase REST ──────────────
-async function fetchProfile(userId: string): Promise<Record<string, unknown> | null> {
+// ── Shared: fetch the caller's own profile via Supabase REST ──
+// Runs AS THE CALLER (their access token), so row security returns only their own row. The view
+// filters on auth.uid(); with the service key it returned nothing, so the coach never saw a profile.
+async function fetchProfile(accessToken: string): Promise<Record<string, unknown> | null> {
   const url = Env.supabaseUrl();
   const key = Env.supabaseServiceKey();
-  if (!url || !key || !userId) return null;
+  if (!url || !key || !accessToken) return null;
   try {
     const res = await fetch(
-      `${url}/rest/v1/client_profile_view?user_id=eq.${userId}&limit=1`,
-      { headers: { "apikey": key, "Authorization": `Bearer ${key}` } }
+      `${url}/rest/v1/client_profile_view?limit=1`,
+      { headers: { "apikey": key, "Authorization": `Bearer ${accessToken}` } }
     );
     if (!res.ok) return null;
     const rows = await res.json() as Record<string, unknown>[];
@@ -63,7 +66,7 @@ function fmtProfile(p: Record<string, unknown>): string {
 }
 
 // ── Route 1: AI Coach ─────────────────────────────────────────
-async function handleChat(body: ChatBody, apiKey: string, res: any): Promise<void> {
+async function handleChat(body: ChatBody, apiKey: string, accessToken: string, res: any): Promise<void> {
   if (!body?.messages?.length) {
     return Response.error(res, "messages array required", 400, "INVALID_BODY");
   }
@@ -92,7 +95,7 @@ Keep responses under 200 words unless asked for detail. Tone: warm, direct, prac
   } catch { /* degrade */ }
 
   if (body.userId) {
-    const p = await fetchProfile(body.userId);
+    const p = await fetchProfile(accessToken);
     if (p) parts.push(`\n=== USER FINANCIAL PROFILE ===\n${fmtProfile(p)}\n=== END ===\nUse these exact numbers. Be personal and specific.`);
   }
 
@@ -110,11 +113,11 @@ Keep responses under 200 words unless asked for detail. Tone: warm, direct, prac
 }
 
 // ── Route 2: Journey affordability calculator ─────────────────
-async function handleJourneyCalculate(body: JourneyBody, apiKey: string, res: any): Promise<void> {
+async function handleJourneyCalculate(body: JourneyBody, apiKey: string, accessToken: string, res: any): Promise<void> {
   const { userId, type, answers } = body;
   if (!userId || !type || !answers) return Response.error(res, "userId, type, answers required", 400, "INVALID_BODY");
 
-  const p = await fetchProfile(userId);
+  const p = await fetchProfile(accessToken);
   const profileCtx = p ? fmtProfile(p) : "Profile: not available.";
 
   const prompt = `You are a Mauritius financial analyst. Calculate precise affordability metrics.
@@ -156,19 +159,24 @@ export default async function handler(req: any, res: any): Promise<void> {
   // Never trust a client-supplied userId: the profile lookup below runs with
   // the service key, so it must be bound to the verified caller.
   const body = { ...((req.body as object) ?? {}), userId: authed.id };
+  const accessToken = bearerToken(req) ?? "";
 
   const apiKey = Env.anthropicApiKey();
   if (!apiKey) return Response.error(res, "AI service not configured", 503, "NO_API_KEY");
+
+  // Count before calling Claude; refuse when today's cap is reached or the counter is down.
+  const quota = await consumeAiQuota(authed.id, "chat");
+  if (!quota.allowed) { const q = quotaRefusal(quota); return Response.error(res, q.message, q.status, q.code); }
 
   const action = (req.query?.action as string) ?? "";
 
   try {
     if (action === "journey-calculate") {
-      return await handleJourneyCalculate(body as JourneyBody, apiKey, res);
+      return await handleJourneyCalculate(body as JourneyBody, apiKey, accessToken, res);
     }
-    return await handleChat(body as ChatBody, apiKey, res);
+    return await handleChat(body as ChatBody, apiKey, accessToken, res);
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : "AI temporarily unavailable";
-    return Response.error(res, msg, 503, "AI_ERROR");
+    console.error("[chat] AI call failed:", e instanceof Error ? e.message : e);
+    return Response.error(res, "AI temporarily unavailable. Try again shortly.", 503, "AI_ERROR");
   }
 }

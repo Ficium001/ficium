@@ -121,44 +121,6 @@ function timingSafeEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
-/**
- * Enforce that the authenticated user is an ACTIVE admin.
- *
- * Authoritative source is admin.admin_users (same as the get_my_role RPC) —
- * NOT user_metadata, which a user could influence. Queried with the service
- * key over the Supabase REST API. Throws AuthError(403) if not an admin.
- */
-export async function requireAdmin(user: AuthedUser): Promise<void> {
-  const url = Env.supabaseUrl();
-  const key = Env.supabaseServiceKey();
-  if (!url || !key) {
-    throw new AuthError("Auth not configured", 503, "AUTH_NOT_CONFIGURED");
-  }
-
-  let res: globalThis.Response;
-  try {
-    // PostgREST against the admin schema; service key bypasses RLS but the
-    // filter still scopes to this user id + active flag.
-    res = await fetch(
-      `${url}/rest/v1/admin_users?id=eq.${encodeURIComponent(user.id)}&active=eq.true&select=id`,
-      {
-        headers: {
-          apikey: key,
-          Authorization: `Bearer ${key}`,
-          "Accept-Profile": "admin",
-        },
-      },
-    );
-  } catch {
-    throw new AuthError("Auth provider unreachable", 503, "AUTH_UNAVAILABLE");
-  }
-
-  if (!res.ok) throw new AuthError("Admin check failed", 403, "FORBIDDEN");
-  const rows = (await res.json()) as Array<{ id: string }>;
-  if (!Array.isArray(rows) || rows.length === 0) {
-    throw new AuthError("Forbidden — admin access required", 403, "FORBIDDEN");
-  }
-}
 
 /** Map an unknown error to an AuthError-shaped response, or null if not auth. */
 export function asAuthError(e: unknown): AuthError | null {
