@@ -274,13 +274,14 @@ async function attestIncome(
 
   if (newPriority > existingPriority) return; // existing source is higher priority
 
+  // Income's home is the dossier; the snapshot copy is derived from it by the
+  // database (trg_snapshot_derive), so only the verification is recorded there.
   await (db as any).from("client_dossier")
     .update({ monthly_income: income, updated_at: now })
     .eq("client_id", clientId);
 
   await (db as any).from("client_financial_snapshot")
     .update({
-      monthly_income:         income,
       income_verified:        true,
       income_verified_at:     now,
       income_verified_source: docType,
@@ -315,19 +316,10 @@ async function attestLiabilities(
     { onConflict: "client_id,loan_type" },
   );
 
-  // Recalculate totals from all loan rows
-  const { data: loans } = await (db as any)
-    .from("client_loan_details")
-    .select("outstanding_amount, monthly_repayment")
-    .eq("client_id", clientId) as { data: Array<{ outstanding_amount: string; monthly_repayment: string }> | null };
-
-  if (!loans?.length) return;
-
-  const totalMonthlyPx = loans.reduce((s, l) => s + (Number(l.monthly_repayment) || 0), 0);
-
+  // The snapshot's liability totals and monthly payments are derived from the
+  // loan rows by the database; only the verification is recorded here.
   await (db as any).from("client_financial_snapshot")
     .update({
-      monthly_loan_payments:    totalMonthlyPx,
       liabilities_verified:     true,
       liabilities_verified_at:  now,
       updated_at:               now,
