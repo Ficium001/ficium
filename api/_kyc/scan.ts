@@ -29,6 +29,7 @@ import { parseMrz, extractNic } from "./docExtract.js";
 import { extractIdFields } from "./claudeVision.js";
 import { supabaseQuery, supabaseInsert } from "./db.js";
 import { requireUser } from "../_lib/auth.js";
+import { Env } from "../_lib/env.js";
 
 interface ScanInput {
   idB64?: string;
@@ -57,7 +58,7 @@ async function tooManyAttempts(key: string, keyType: "ip_hash" | "client_id", li
 
 export async function scanHandler(req: any, res: any) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
-  if (!(globalThis as any).process?.env?.AWS_ACCESS_KEY_ID && !(globalThis as any).process?.env?.VITE_AWS_ACCESS_KEY_ID) {
+  if (!Env.awsAccessKeyId()) {
     return res.status(503).json({ error: "AWS credentials not configured" });
   }
 

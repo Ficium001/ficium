@@ -202,16 +202,9 @@ Uses Smile ID (in-house provider) or falls back to manual review.
 
 ---
 
-### `DELETE /api/kyc-admin-faces`
+### Removed: `kyc-admin-faces`, `kyc?action=notify`
 
-**Admin: reset KYC** — removes face data from Rekognition collection. Requires `x-admin-secret` header.
-
-```
-DELETE /api/kyc-admin-faces?clientId=<uuid>
-x-admin-secret: <VITE_ADMIN_SECRET>
-```
-
----
+Removed on 2026-11-14. Staff KYC work happens on the admin site (ficium-admin), which reaches this app only through its signed API (`/api/internal?op=admin-kyc`).
 
 ### `POST /api/kyc-notify`
 

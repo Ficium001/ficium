@@ -9,9 +9,13 @@
  * When upgrading to Pro, each action can be split back into its own file
  * with zero logic changes — handlers are imported as pure functions.
  *
- * Actions:
- *   bid-notify     → notify consumer of a new bid (Portal DB trigger)
- *   vault-extract  → extract structured data from an uploaded document
+ * Actions (callers are this app's own database, via pg_net; never the portal):
+ *   vault-extract     → extract structured data from an uploaded document
+ *   request-expiring  → warn a borrower that a request's deadline is near
+ *
+ * bid-notify and bid-accepted were removed (2026-11-14): they were the portal's old direct line
+ * into this app. Bids and acceptances now arrive only as signed contract events (?op=events),
+ * which write the borrower's notifications in the same transaction.
  *
  * Auth: X-Service-Secret header on every request (same shared secret).
  * All handlers are idempotent and non-fatal on downstream errors.
@@ -25,20 +29,16 @@ import { handleIntegration, isIntegrationRequest } from "./_lib/integration/hand
 // Each module exports a named `handle` function that receives (body, res).
 // They never look at headers — auth is checked once here at the router level.
 
-import { handle as handleBidNotify }       from "./_lib/handlers/bid-notify.js";
 import { handle as handleVaultExtract }    from "./_lib/handlers/vault-extract.js";
 import { handle as handleRequestExpiring } from "./_lib/handlers/request-expiring.js";
-import { handle as handleBidAccepted }     from "./_lib/handlers/bid-accepted.js";
 
 export const config = { runtime: "nodejs" };
 
-type Action = "bid-notify" | "vault-extract" | "request-expiring" | "bid-accepted";
+type Action = "vault-extract" | "request-expiring";
 
 const HANDLERS: Record<Action, (body: unknown, res: any) => Promise<void>> = {
-  "bid-notify":        handleBidNotify,
   "vault-extract":     handleVaultExtract,
   "request-expiring":  handleRequestExpiring,
-  "bid-accepted":      handleBidAccepted,
 };
 export default async function handler(req: any, res: any): Promise<void> {
   // Integration contract v1 (?op=events|dispatch). Checked BEFORE the legacy

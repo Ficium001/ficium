@@ -35,7 +35,6 @@ These keys are stored as **environment variables** on Vercel — they never appe
 | `GET/POST /api/kyc-settings` | GET / POST | Reads or updates KYC verification toggles for admin |
 | `POST /api/kyc-faces` | POST | Manages the face database used for duplicate detection |
 | `POST /api/kyc-liveness` | POST | Runs a real-time liveness check (proves user is a live person, not a photo) |
-| `GET/DELETE /api/kyc-admin-faces` | GET / DELETE | Admin tool to view or remove faces from the database |
 | `POST /api/chat` | POST | Powers the AI Financial Advisor and journey affordability calculator |
 | `POST /api/market` | POST | Powers the live market commentary and Q&A on the Markets page |
 | `GET /api/intelligence` | GET | Returns live market rate statistics for the frontend |
@@ -674,9 +673,8 @@ Passed to /api/kyc-verify as livenessSessionId + livenessConfidence
 
 ---
 
-## API 6 — KYC Admin Faces
-
-**Endpoint:** `GET /api/kyc-admin-faces` | `DELETE /api/kyc-admin-faces`
+### Removed: kyc-admin-faces (2026-11-14)
+Staff KYC work moved to the admin site.
 
 ### What Is This?
 
@@ -1355,13 +1353,12 @@ All APIs rely on these environment variables configured in Vercel:
 
 | Variable | Used By | Description |
 |---|---|---|
-| `AWS_ACCESS_KEY_ID` | kyc-verify, kyc-faces, kyc-liveness, kyc-admin-faces | AWS IAM key for Rekognition access |
-| `AWS_SECRET_ACCESS_KEY` | kyc-verify, kyc-faces, kyc-liveness, kyc-admin-faces | AWS IAM secret |
+| `AWS_ACCESS_KEY_ID` | kyc-verify, kyc-faces, kyc-liveness | AWS IAM key for Rekognition access |
+| `AWS_SECRET_ACCESS_KEY` | kyc-verify, kyc-faces, kyc-liveness | AWS IAM secret |
 | `VITE_SUPABASE_URL` | All | Supabase project URL |
 | `SUPABASE_SERVICE_ROLE_KEY` | All | Supabase master key for server-side access |
 | `RESEND_API_KEY` | kyc-notify | Resend email API key |
 | `ANTHROPIC_API_KEY` | chat, market, request-builder, kyc-verify (AI analysis) | Claude AI API key |
-| `ADMIN_SECRET` | kyc-admin-faces | Protects admin-only endpoints |
 
 ---
 

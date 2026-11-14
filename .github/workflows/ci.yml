@@ -61,6 +61,18 @@ jobs:
           node-version: 24
           cache: npm
 
+      - name: No secret can reach the browser bundle
+        # Vite inlines every VITE_* name that browser code references. Server secrets must never be
+        # referenced from src/, and new server code must not read secrets under VITE_ names.
+        run: |
+          pat='VITE_[A-Z0-9_]*(SECRET|ACCESS_KEY|PRIVATE|SERVICE_ROLE|PASSWORD|TOKEN|SIGNING)'
+          if grep -rEn "$pat" src index.html; then
+            echo "::error::Browser code references a secret-like VITE_ variable."; exit 1
+          fi
+          if grep -rEn "$pat" api supabase scripts .env.example | grep -v 'legacyViteName("VITE_AWS_'; then
+            echo "::error::Server secrets must not use VITE_ names (only the two legacy AWS reads in env.ts)."; exit 1
+          fi
+
       - name: Authenticate private @ficium/shared (SSH -> HTTPS with token)
         run: |
           git config --global url."https://${FICIUM_SHARED_TOKEN}@github.com/".insteadOf "ssh://git@github.com/"

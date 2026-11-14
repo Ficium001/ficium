@@ -9,8 +9,6 @@
  * Routes (was 7 separate functions, now 1):
  *   ?action=verify        → full KYC verification pipeline   (POST)   [was /api/kyc-verify]
  *   ?action=scan           → OCR/vision NIC scan, pre-auth capable (POST)
- *   ?action=notify        → send applicant notification      (POST)   [was /api/kyc-notify]
- *   ?action=admin-faces   → list/delete a clients faces     (GET|DELETE) [was /api/kyc-admin-faces]
  *   ?action=faces         → face collection (create/search/index) (POST) [was /api/kyc-faces]
  *   ?action=liveness      → liveness session/result          (POST)   [was /api/kyc-liveness]
  *   ?action=setup         → one-time collection setup         (POST)   [was /api/kyc-setup]
@@ -18,13 +16,11 @@
 
 import { verifyHandler }     from "./_kyc/verify.js";
 import { scanHandler }       from "./_kyc/scan.js";
-import { notifyHandler }     from "./_kyc/notify.js";
-import { adminFacesHandler } from "./_kyc/adminFaces.js";
 import { facesHandler }      from "./_kyc/faces.js";
 import { livenessHandler }   from "./_kyc/liveness.js";
 import { setupHandler }      from "./_kyc/setup.js";
 import {
-  requireUser, requireAdmin, requireService, sendAuthError,
+  requireUser, requireService, sendAuthError,
 } from "./_lib/auth.js";
 import { handleCors }                 from "./_lib/cors.js";
 
@@ -32,17 +28,16 @@ export const config = { runtime: "nodejs" };
 type Handler = (req: any, res: any) => unknown | Promise<unknown>;
 
 /** Auth level required per action. */
-type Gate = "user" | "admin" | "service" | "none";
+type Gate = "user" | "service" | "none";
 
 const ROUTES: Record<string, { handler: Handler; gate: Gate }> = {
   // A logged-in user verifying their own identity.
   "verify":      { handler: verifyHandler,     gate: "user"    },
   // Optional auth — handler checks for a token itself (signup has none yet).
   "scan":        { handler: scanHandler,       gate: "none"    },
-  // Admin operations. (KYC check settings are NOT here any more: they moved to the internal admin app,
-  // ficium-admin, and can only change through the audited DB function admin.set_kyc_check.)
-  "notify":      { handler: notifyHandler,     gate: "admin"   },
-  "admin-faces": { handler: adminFacesHandler, gate: "admin"   },
+  // No staff operations here: staff work happens on the admin site (ficium-admin), which reaches this
+  // app only through its signed API. The old in-app "notify" and "admin-faces" routes were removed
+  // on 2026-11-14 (unused; admin-faces took its secret in the query string).
   // Internal / server-to-server utilities — never called from a browser.
   "faces":       { handler: facesHandler,      gate: "service" },
   "liveness":    { handler: livenessHandler,   gate: "service" },
@@ -69,7 +64,6 @@ export default async function handler(req: any, res: any) {
       requireService(req);
     } else {
       const user = await requireUser(req);
-      if (route.gate === "admin") await requireAdmin(user);
       // Handlers act for THIS user only; never for an id the browser sends.
       req.authUserId = user.id;
     }

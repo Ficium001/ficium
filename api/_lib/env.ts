@@ -16,15 +16,31 @@ function getEnv(key: string): string {
   return "";
 }
 
+const warnedLegacy = new Set<string>();
+
+/**
+ * TEMPORARY read of a server secret still stored under a VITE_ name in Vercel. Vite inlines only
+ * VITE_ variables that browser code references, and CI forbids any such reference in src/, so the
+ * value is not in the bundle; the name is still wrong. Rename it in Vercel/Doppler (drop VITE_),
+ * then delete this function: every call site already prefers the server name.
+ */
+function legacyViteName(key: string): string {
+  const v = getEnv(key);
+  if (v && !warnedLegacy.has(key)) {
+    warnedLegacy.add(key);
+    console.warn(`[env] ${key} is set: rename it to ${key.replace(/^VITE_/, "")} (server secrets must not use VITE_ names)`);
+  }
+  return v;
+}
+
 export const Env = {
   anthropicApiKey:    () => getEnv("ANTHROPIC_API_KEY"),
   supabaseUrl:        () => getEnv("VITE_SUPABASE_URL") || getEnv("SUPABASE_URL"),
   supabaseServiceKey: () => getEnv("SUPABASE_SERVICE_ROLE_KEY"),
   resendApiKey:       () => getEnv("RESEND_API_KEY"),
-  awsAccessKeyId:     () => getEnv("VITE_AWS_ACCESS_KEY_ID")     || getEnv("AWS_ACCESS_KEY_ID"),
-  awsSecretAccessKey: () => getEnv("VITE_AWS_SECRET_ACCESS_KEY") || getEnv("AWS_SECRET_ACCESS_KEY"),
+  awsAccessKeyId:     () => getEnv("AWS_ACCESS_KEY_ID")     || legacyViteName("VITE_AWS_ACCESS_KEY_ID"),
+  awsSecretAccessKey: () => getEnv("AWS_SECRET_ACCESS_KEY") || legacyViteName("VITE_AWS_SECRET_ACCESS_KEY"),
   internalApiSecret:  () => getEnv("INTERNAL_API_SECRET"),
-  portalApiUrl:       () => getEnv("PORTAL_API_URL"),
   appServiceSecret:   () => getEnv("APP_SERVICE_SECRET"),
   isProduction:       () => getEnv("NODE_ENV") === "production",
   // Native app shell origins allowed to call /api (see _lib/cors.ts). Empty = built-in defaults.

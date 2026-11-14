@@ -54,11 +54,3 @@ export async function writeBidAcceptedNotification(p: AcceptedPayload): Promise<
     console.error("[bid-accepted] notification failed:", e);
   }
 }
-export async function handle(body: unknown, res: any): Promise<void> {
-  const p = body as Partial<AcceptedPayload>;
-  if (!p.client_id || !p.request_id || !p.bid_id) {
-    return res.status(400).json({ error: "client_id, request_id, bid_id required" });
-  }
-  await writeBidAcceptedNotification(p as AcceptedPayload);
-  return res.status(200).json({ ok: true });
-}

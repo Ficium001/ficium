@@ -21,6 +21,6 @@ describe("KYC router", () => {
   it("no action in the router is left without a gate except the pre-signup scan", async () => {
     const res = fakeRes();
     await handler({ method: "GET", query: { action: "nope" }, headers: {} }, res);
-    expect(res.body.available.sort()).toEqual(["admin-faces", "faces", "liveness", "notify", "scan", "setup", "verify"]);
+    expect(res.body.available.sort()).toEqual(["faces", "liveness", "scan", "setup", "verify"]);
   });
 });

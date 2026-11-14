@@ -13,6 +13,7 @@ import Anthropic          from "@anthropic-ai/sdk";
 import { Env }            from "./_lib/env.js";
 import { Response as R }  from "./_lib/response.js";
 import { requireUser, sendAuthError } from "./_lib/auth.js";
+import { consumeAiQuota, quotaRefusal } from "./_lib/ai-quota.js";
 import { handleCors }                 from "./_lib/cors.js";
 
 export const config = { runtime: "nodejs" };
@@ -55,13 +56,19 @@ export default async function handler(req: any, res: any) {
   if (handleCors(req, res)) return;
   if (req.method !== "POST") return R.methodNotAllowed(res, ["POST"]);
 
-  try { await requireUser(req); }
+  let user;
+  try { user = await requireUser(req); }
   catch (e) { if (sendAuthError(res, e)) return; throw e; }
 
   const apiKey = Env.anthropicApiKey();
   if (!apiKey) return R.error(res, "AI not configured", 503, "NO_API_KEY");
 
   const action = (req.query?.action as string) ?? "";
+  if (action !== "summary" && action !== "ask") return R.error(res, "Unknown action", 400, "UNKNOWN_ACTION");
+
+  // Count before calling Claude; refuse when today's cap is reached or the counter is down.
+  const quota = await consumeAiQuota(user.id, "market");
+  if (!quota.allowed) { const q = quotaRefusal(quota); return R.error(res, q.message, q.status, q.code); }
 
   // ── Summary ────────────────────────────────────────────────────────────────
   if (action === "summary") {

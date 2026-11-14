@@ -25,6 +25,8 @@ export default async function handler(req: any, res: any): Promise<void> {
   }
   const body = req.body as { requestIds?: unknown };
   const requestIds = Array.isArray(body?.requestIds) ? body.requestIds : [];
+  // A borrower has a handful of requests; cap the list so one call can't ask for thousands.
+  if (requestIds.length > 50) return Response.error(res, "Too many requests in one call (max 50).", 400, "TOO_MANY");
   try {
     return Response.ok(res, await bidsFor(getServiceDb(), consumerId, requestIds));
   } catch {
