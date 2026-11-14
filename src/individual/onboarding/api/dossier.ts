@@ -1,5 +1,21 @@
 import { supabase , getCachedUser } from "../../../shared/lib/supabase";
 import { audit } from "../../../shared/lib/audit";
+import type { DossierInput as DossierFormValues } from "@/individual/onboarding/types/dossier";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Financial profile ("dossier") — read for editing, and save.
+//
+// Each fact is written to exactly one table here; the database derives every
+// other copy (migration 20261114070000_financial_profile_single_source):
+//   employment, income, dependants   client_dossier
+//   job / business details           employment_details
+//   existing loans                   client_loan_details (replace_client_loans)
+//   PEP, tax, wealth, credit history compliance_details
+//   assets                           client_financial_snapshot
+// Health, risk and affordability scores are computed by the database from
+// those rows. They are never sent from the browser: whatever is sent for them
+// is ignored, so a client cannot set their own risk tier.
+// ─────────────────────────────────────────────────────────────────────────────
 
 export type EmploymentStatus =
   | "employed" | "self_employed" | "business_owner" | "freelance"
@@ -47,146 +63,163 @@ export type DossierInput = {
   hasExistingLoans: boolean; loans: LoanEntry[]; compliance: ComplianceDetails;
 };
 
+type Scores = { healthScore: number | null; riskScore: number | null; affordabilityScore: number | null };
+
 export type DossierResult =
-  | { ok: true; healthScore: number; riskScore: number; affordabilityScore: number }
+  | ({ ok: true } & Scores)
   | { ok: false; error: string };
 
-function computeNetWorth(a: AssetDetails): number {
-  return a.savings + a.investments + a.propertyValue + a.vehicleValue + a.businessAssets + a.otherAssets;
-}
-function computeTotalIncome(d: DossierInput): number { return d.monthlyIncome + d.additionalIncome; }
-function computeDebtToIncome(d: DossierInput): number {
-  const totalIncome = computeTotalIncome(d);
-  if (totalIncome === 0) return 1;
-  const totalRepayment = d.loans.reduce((sum, l) => sum + l.monthlyRepayment, 0);
-  return totalRepayment / totalIncome;
-}
+/** What the client has itemised elsewhere; those asset figures are not edited here. */
+type Itemised = { accounts: boolean; holdings: boolean };
 
-function computeHealthScore(d: DossierInput): number {
-  let score = 50;
-  const income = computeTotalIncome(d);
-  if (income >= 200000) score += 22; else if (income >= 100000) score += 16;
-  else if (income >= 50000) score += 10; else if (income >= 25000) score += 5;
-  const netWorth = computeNetWorth(d.assets);
-  if (income > 0) {
-    const months = netWorth / income;
-    if (months >= 36) score += 15; else if (months >= 18) score += 10; else if (months >= 6) score += 5;
-  }
-  const stableEmployment = ["employed", "self_employed", "business_owner"].includes(d.employmentStatus);
-  if (stableEmployment) score += 6;
-  if (d.employmentStatus === "unemployed") score -= 15;
-  if (d.employmentStatus === "student") score -= 8;
-  const dti = computeDebtToIncome(d);
-  if (dti > 0.6) score -= 25; else if (dti > 0.4) score -= 15;
-  else if (dti > 0.25) score -= 8; else if (dti > 0.1) score -= 3;
-  if (d.compliance.bankruptcy) score -= 30;
-  if (d.compliance.blacklisted) score -= 25;
-  if (d.compliance.missedRepayments) score -= 12;
-  if (d.compliance.legalDisputes) score -= 10;
-  return Math.max(0, Math.min(100, Math.round(score)));
-}
+export type LoadedDossier = {
+  /** true when the client has saved a profile before. */
+  exists:   boolean;
+  values:   Partial<DossierFormValues>;
+  itemised: Itemised;
+};
 
-function computeRiskScore(d: DossierInput): number {
-  let risk = 30;
-  if (d.compliance.bankruptcy) risk += 35; if (d.compliance.blacklisted) risk += 30;
-  if (d.compliance.missedRepayments) risk += 18; if (d.compliance.legalDisputes) risk += 12;
-  if (d.compliance.isPep) risk += 10;
-  const dti = computeDebtToIncome(d);
-  if (dti > 0.6) risk += 25; else if (dti > 0.4) risk += 15; else if (dti > 0.25) risk += 8;
-  if (d.employmentStatus === "unemployed") risk += 20;
-  if (d.employmentStatus === "freelance" || d.employmentStatus === "student") risk += 8;
-  const income = computeTotalIncome(d);
-  if (income < 15000) risk += 15; else if (income < 30000) risk += 5;
-  return Math.max(0, Math.min(100, Math.round(risk)));
-}
+const num = (v: unknown): number => (v == null ? 0 : Number(v) || 0);
+const opt = (v: unknown): number | undefined => (v == null ? undefined : Number(v));
+const str = (v: unknown): string => (v == null ? "" : String(v));
 
-function computeAffordabilityScore(d: DossierInput): number {
-  const income = computeTotalIncome(d);
-  if (income === 0) return 0;
-  const dti = computeDebtToIncome(d);
-  let score = Math.round((1 - dti) * 80);
-  const netWorth = computeNetWorth(d.assets);
-  if (netWorth > income * 12) score += 15;
-  else if (netWorth > income * 6) score += 8;
-  else if (netWorth > income * 3) score += 3;
-  if (income < 20000) score -= 10;
-  return Math.max(0, Math.min(100, score));
-}
+/** The saved profile, shaped as the form's values, so it can be edited in place. */
+export async function getDossier(): Promise<LoadedDossier> {
+  const { data: authData } = await getCachedUser();
+  const uid = authData.user?.id;
+  const empty: LoadedDossier = { exists: false, values: {}, itemised: { accounts: false, holdings: false } };
+  if (!uid) return empty;
 
-function requiresEDD(d: DossierInput): boolean {
-  if (d.compliance.isPep) return true;
-  if (computeTotalIncome(d) > 500000) return true;
-  if (computeNetWorth(d.assets) > 10000000) return true;
-  if (d.employmentStatus === "business_owner" && (d.employmentDetails.annualRevenue ?? 0) > 5000000) return true;
-  return false;
-}
+  const [dossier, employment, loans, compliance, snapshot, accounts, holdings] = await Promise.all([
+    supabase.from("client_dossier")
+      .select("employment_status, monthly_income, additional_income, dependants")
+      .eq("client_id", uid).maybeSingle(),
+    supabase.from("employment_details").select("*").eq("user_id", uid).maybeSingle(),
+    supabase.from("client_loan_details")
+      .select("loan_type, outstanding_amount, monthly_repayment, bank_name, remaining_months")
+      .eq("client_id", uid),
+    supabase.from("compliance_details")
+      .select("source_of_wealth, source_of_wealth_other, is_pep, pep_details, tax_residency, missed_repayments, blacklisted, bankruptcy, legal_disputes")
+      .eq("user_id", uid).maybeSingle(),
+    supabase.from("client_financial_snapshot")
+      .select("cash_savings, investments_value, property_value, vehicle_value, business_assets, other_assets")
+      .eq("client_id", uid).maybeSingle(),
+    supabase.rpc("finance_accounts_summary", { p_reporting_currency: null }),
+    supabase.rpc("finance_holdings_summary", { p_reporting_currency: null }),
+  ]);
 
-/**
- * Map the onboarding dossier onto the flat client_financial_snapshot shape that
- * NetWorth / FinancialHealth / the AI advisor read from. Fields the dossier
- * doesn't capture (fixed deposits, monthly expenses/savings) are left for the
- * NetWorth editor to fill — we never fabricate them. Generated columns
- * (total_*, net_worth, debt_to_income_ratio) are intentionally omitted.
- */
-function snapshotFromDossier(input: DossierInput, clientId: string) {
-  const loans = input.hasExistingLoans ? input.loans : [];
-  const balByType = (t: LoanType) =>
-    loans.filter((l) => l.loanType === t).reduce((s, l) => s + (l.outstandingAmount || 0), 0);
+  const firstError = [dossier, employment, loans, compliance, snapshot].find((r) => r.error)?.error;
+  if (firstError) throw new Error(firstError.message);
+
+  const d = dossier.data as Record<string, unknown> | null;
+  const e = (employment.data ?? {}) as Record<string, unknown>;
+  const c = compliance.data as Record<string, unknown> | null;
+  const s = (snapshot.data ?? {}) as Record<string, unknown>;
+  const loanRows = (loans.data ?? []) as Record<string, unknown>[];
+
+  const itemised: Itemised = {
+    accounts: Array.isArray(accounts.data) && accounts.data.length > 0,
+    holdings: Array.isArray(holdings.data) && holdings.data.length > 0,
+  };
+  if (!d) return { ...empty, itemised };
+
   return {
-    client_id: clientId,
-    // assets
-    cash_savings:      input.assets.savings,
-    investments_value: input.assets.investments,
-    property_value:    input.assets.propertyValue,
-    vehicle_value:     input.assets.vehicleValue,
-    other_assets:      input.assets.businessAssets + input.assets.otherAssets,
-    // liabilities — bucketed from the typed loan list (snapshot has no business
-    // or generic bucket, so business + other fold into other_liabilities)
-    mortgage_balance:      balByType("mortgage"),
-    personal_loan_balance: balByType("personal"),
-    credit_card_balance:   balByType("credit_card"),
-    vehicle_loan_balance:  balByType("vehicle"),
-    other_liabilities:     balByType("business") + balByType("other"),
-    // monthly cashflow
-    monthly_income:        input.monthlyIncome + input.additionalIncome,
-    monthly_loan_payments: loans.reduce((s, l) => s + (l.monthlyRepayment || 0), 0),
-    // fixed_deposits / monthly_expenses / monthly_savings: no dossier source → DB defaults (0)
+    exists: true,
+    itemised,
+    values: {
+      employmentStatus:      d.employment_status as DossierFormValues["employmentStatus"],
+      monthlyIncome:         num(d.monthly_income),
+      additionalIncome:      num(d.additional_income),
+      dependants:            num(d.dependants),
+      employerName:          str(e.employer_name),
+      industry:              str(e.industry),
+      jobTitle:              str(e.job_title),
+      yearsOfEmployment:     opt(e.years_of_employment),
+      employmentType:        (e.employment_type as DossierFormValues["employmentType"]) ?? undefined,
+      workEmail:             str(e.work_email),
+      businessName:          str(e.business_name),
+      brnNumber:             str(e.brn_number),
+      yearsInBusiness:       opt(e.years_in_business),
+      averageMonthlyRevenue: opt(e.average_monthly_revenue),
+      taxRegistrationNumber: str(e.tax_registration_number),
+      companyType:           str(e.company_type),
+      numberOfEmployees:     opt(e.number_of_employees),
+      annualRevenue:         opt(e.annual_revenue),
+      primaryProfession:     str(e.primary_profession),
+      primaryClientsRegion:  str(e.primary_clients_region),
+      pensionIncome:         opt(e.pension_income),
+      otherIncomeSources:    str(e.other_income_sources),
+      institutionName:       str(e.institution_name),
+      sponsorType:           (e.sponsor_type as DossierFormValues["sponsorType"]) ?? undefined,
+      monthlyAllowance:      opt(e.monthly_allowance),
+      savings:               num(s.cash_savings),
+      investments:           num(s.investments_value),
+      propertyValue:         num(s.property_value),
+      vehicleValue:          num(s.vehicle_value),
+      businessAssets:        num(s.business_assets),
+      otherAssets:           num(s.other_assets),
+      hasExistingLoans:      loanRows.length > 0,
+      loans: loanRows.map((l) => ({
+        loanType:          l.loan_type as LoanType,
+        outstandingAmount: num(l.outstanding_amount),
+        monthlyRepayment:  num(l.monthly_repayment),
+        bankName:          str(l.bank_name),
+        remainingMonths:   opt(l.remaining_months),
+      })),
+      sourceOfWealth:      (c?.source_of_wealth as DossierFormValues["sourceOfWealth"]) ?? undefined,
+      sourceOfWealthOther: str(c?.source_of_wealth_other),
+      isPep:               Boolean(c?.is_pep),
+      pepDetails:          str(c?.pep_details),
+      taxResidency:        str(c?.tax_residency) || "MU",
+      missedRepayments:    Boolean(c?.missed_repayments),
+      blacklisted:         Boolean(c?.blacklisted),
+      bankruptcy:          Boolean(c?.bankruptcy),
+      legalDisputes:       Boolean(c?.legal_disputes),
+    },
   };
 }
 
-export async function submitDossier(input: DossierInput): Promise<DossierResult> {
+/** Live preview from the same formula the database stores. Pure: reads no tables. */
+export async function previewScores(p: {
+  income: number; employmentStatus?: string; netWorth: number; totalAssets: number;
+  monthlyRepayment: number; annualRevenue?: number; isPep?: boolean; bankruptcy?: boolean;
+  blacklisted?: boolean; missedRepayments?: boolean; legalDisputes?: boolean;
+}): Promise<number | null> {
+  const { data, error } = await supabase.rpc("compute_client_scores", {
+    p: {
+      income: p.income, employment_status: p.employmentStatus ?? null, net_worth: p.netWorth,
+      total_assets: p.totalAssets, monthly_repayment: p.monthlyRepayment,
+      annual_revenue: p.annualRevenue ?? 0, is_pep: !!p.isPep, bankruptcy: !!p.bankruptcy,
+      blacklisted: !!p.blacklisted, missed_repayments: !!p.missedRepayments,
+      legal_disputes: !!p.legalDisputes,
+    },
+  });
+  if (error || !data) return null;
+  const score = Number((data as Record<string, unknown>).health_score);
+  return Number.isFinite(score) ? score : null;
+}
+
+export async function submitDossier(input: DossierInput, opts: { isUpdate?: boolean } = {}): Promise<DossierResult> {
   const { data: authData } = await getCachedUser();
   const userId = authData.user?.id;
   if (!userId) return { ok: false, error: "Not signed in." };
 
-  const healthScore = computeHealthScore(input);
-  const riskScore = computeRiskScore(input);
-  const affordabilityScore = computeAffordabilityScore(input);
-  const eddRequired = requiresEDD(input);
-
-  // 1. V2: client_dossier (replaces financial_profiles) — onConflict: client_id
+  // 1. client_dossier — employment status, income, dependants. Scores, net
+  //    worth and has_existing_loans are derived by the database.
   const { error: fpError } = await supabase.from("client_dossier").upsert(
     {
-      client_id: userId,
+      client_id:         userId,
       employment_status: input.employmentStatus,
-      monthly_income: input.monthlyIncome,
-      dependants:     input.dependants ?? 0,
+      monthly_income:    input.monthlyIncome,
       additional_income: input.additionalIncome,
-      total_net_worth: computeNetWorth(input.assets),
-      has_existing_loans: input.hasExistingLoans,
-      pep_declaration: input.compliance.isPep,
-      tax_residency: input.compliance.taxResidency,
-      source_of_wealth: input.compliance.sourceOfWealth,
-      health_score: healthScore,
-      risk_score: riskScore,
-      affordability_score: affordabilityScore,
-      updated_at: new Date().toISOString(),
+      dependants:        input.dependants ?? 0,
+      updated_at:        new Date().toISOString(),
     },
     { onConflict: "client_id" }
   );
   if (fpError) return { ok: false, error: `Profile: ${fpError.message}` };
 
-  // 2. employment_details (unchanged — still uses user_id FK)
+  // 2. employment_details
   const e = input.employmentDetails;
   const { error: empError } = await supabase.from("employment_details").upsert(
     {
@@ -210,21 +243,10 @@ export async function submitDossier(input: DossierInput): Promise<DossierResult>
   );
   if (empError) return { ok: false, error: `Employment: ${empError.message}` };
 
-  // 3. asset_details (unchanged — still uses user_id FK)
-  const { error: assetError } = await supabase.from("asset_details").upsert(
-    {
-      user_id: userId, savings: input.assets.savings, investments: input.assets.investments,
-      property_value: input.assets.propertyValue, vehicle_value: input.assets.vehicleValue,
-      business_assets: input.assets.businessAssets, other_assets: input.assets.otherAssets,
-    },
-    { onConflict: "user_id" }
-  );
-  if (assetError) return { ok: false, error: `Assets: ${assetError.message}` };
-
-  // 4. V2: client_loan_details (replaces loan_details, uses client_id)
-  //    Replaced in ONE transaction by replace_client_loans(): a separate delete
-  //    then insert meant a failed insert left the user with no loans at all,
-  //    and every DSR / health score downstream was computed on the empty set.
+  // 3. client_loan_details — replaced in ONE transaction by replace_client_loans():
+  //    a separate delete then insert meant a failed insert left the user with
+  //    no loans, and every DSR / health score downstream was computed on the
+  //    empty set. The snapshot's liability buckets are derived from these rows.
   const { error: loanError } = await supabase.rpc("replace_client_loans", {
     p_loans: input.hasExistingLoans
       ? input.loans.map((l) => ({
@@ -238,36 +260,49 @@ export async function submitDossier(input: DossierInput): Promise<DossierResult>
   });
   if (loanError) return { ok: false, error: `Loans: ${loanError.message}` };
 
-  // 5. compliance_details (unchanged — still uses user_id FK)
+  // 4. compliance_details — the only home for PEP, tax residency, source of
+  //    wealth and credit-history declarations.
   const { error: compError } = await supabase.from("compliance_details").upsert(
     {
       user_id: userId, source_of_wealth: input.compliance.sourceOfWealth ?? null,
       source_of_wealth_other: input.compliance.sourceOfWealthOther ?? null,
       is_pep: input.compliance.isPep, pep_details: input.compliance.pepDetails ?? null,
       tax_residency: input.compliance.taxResidency,
-      has_credit_issues: input.compliance.missedRepayments || input.compliance.blacklisted ||
-        input.compliance.bankruptcy || input.compliance.legalDisputes,
       missed_repayments: input.compliance.missedRepayments,
       blacklisted: input.compliance.blacklisted, bankruptcy: input.compliance.bankruptcy,
       legal_disputes: input.compliance.legalDisputes,
-      enhanced_due_diligence_required: eddRequired,
     },
     { onConflict: "user_id" }
   );
   if (compError) return { ok: false, error: `Compliance: ${compError.message}` };
 
-  // 6. Seed client_financial_snapshot so NetWorth / FinancialHealth / the AI
-  //    advisor have data immediately after onboarding — without this, those
-  //    screens read an empty snapshot and show zeros despite the user having
-  //    entered everything here. Seed-once: ignoreDuplicates → INSERT ... ON
-  //    CONFLICT DO NOTHING, so we never clobber a snapshot the user has since
-  //    refined in the NetWorth editor. Best-effort: the dossier already
-  //    succeeded, so a snapshot hiccup must not fail onboarding.
-  const { error: snapError } = await supabase
-    .from("client_financial_snapshot")
-    .upsert(snapshotFromDossier(input, userId), { onConflict: "client_id", ignoreDuplicates: true });
-  if (snapError) console.error("Snapshot seed (non-fatal):", snapError.message);
+  // 5. client_financial_snapshot — the home of the assets. Cash and
+  //    investments are the declared figures; once itemised in Accounts the
+  //    database replaces them. Income and liabilities are derived, not sent.
+  const { error: snapError } = await supabase.from("client_financial_snapshot").upsert(
+    {
+      client_id:         userId,
+      cash_savings:      input.assets.savings,
+      investments_value: input.assets.investments,
+      property_value:    input.assets.propertyValue,
+      vehicle_value:     input.assets.vehicleValue,
+      business_assets:   input.assets.businessAssets,
+      other_assets:      input.assets.otherAssets,
+    },
+    { onConflict: "client_id" }
+  );
+  if (snapError) return { ok: false, error: `Assets: ${snapError.message}` };
 
-  await audit.financialProfileCreated(userId);
-  return { ok: true, healthScore, riskScore, affordabilityScore };
+  // 6. Read back the scores the database computed.
+  const { data: scored } = await supabase.from("client_dossier")
+    .select("health_score, risk_score, affordability_score")
+    .eq("client_id", userId).maybeSingle();
+
+  await (opts.isUpdate ? audit.financialProfileUpdated(userId) : audit.financialProfileCreated(userId));
+  return {
+    ok: true,
+    healthScore:        scored?.health_score ?? null,
+    riskScore:          scored?.risk_score ?? null,
+    affordabilityScore: scored?.affordability_score ?? null,
+  };
 }

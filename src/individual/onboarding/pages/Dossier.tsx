@@ -2,10 +2,12 @@ import { useState, useMemo, useEffect } from "react";
 import { useNavigate }    from "react-router-dom";
 import { useForm, useWatch, useFieldArray } from "react-hook-form";
 import { zodResolver }    from "@hookform/resolvers/zod";
-import { submitDossier }  from "@/individual/onboarding/api/dossier";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Loader2 }        from "lucide-react";
+import { submitDossier, getDossier, previewScores } from "@/individual/onboarding/api/dossier";
 import { dossierSchema }  from "@/individual/onboarding/types/dossier";
 import type { DossierInput, DossierData } from "@/individual/onboarding/types/dossier";
-import { calcHealth }     from "@/individual/onboarding/utils/calcHealth";
+import { calcHealth, summarise } from "@/individual/onboarding/utils/calcHealth";
 import {
   DoneScreen, StepHeader, HealthBar,
 } from "@/individual/onboarding/components/dossier/DossierShared";
@@ -16,28 +18,45 @@ import { Step3Compliance } from "@/individual/onboarding/components/dossier/Step
 // ─────────────────────────────────────────────────────────────────────────────
 // Dossier — thin orchestrator.
 // Owns form state, step navigation, and submit. Renders nothing itself.
+// Opens with the saved profile filled in, so "Update financial profile" edits
+// it rather than starting from blank and overwriting it.
 // ─────────────────────────────────────────────────────────────────────────────
+
+const DEFAULTS: DossierInput = {
+  employmentStatus: undefined as unknown as DossierInput["employmentStatus"],
+  monthlyIncome: 0, additionalIncome: 0, dependants: 0,
+  hasExistingLoans: false, loans: [],
+  savings: 0, investments: 0, propertyValue: 0, vehicleValue: 0, businessAssets: 0, otherAssets: 0,
+  taxResidency: "MU", isPep: false,
+  missedRepayments: false, blacklisted: false, bankruptcy: false, legalDisputes: false,
+};
+
+/** Waits this long after the last keystroke before asking the database for a score. */
+const PREVIEW_DEBOUNCE_MS = 400;
 
 export default function Dossier() {
   const navigate = useNavigate();
   const [step,        setStep]        = useState(1);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [expandedAsset, setExpandedAsset] = useState<string | null>(null);
-  const [done,        setDone]        = useState(false);
+  const [saved,       setSaved]       = useState<{ score: number | null } | null>(null);
+  const [preview,     setPreview]     = useState<number | null>(null);
+  const queryClient = useQueryClient();
+
+  const loaded = useQuery({ queryKey: ["dossier"], queryFn: getDossier, staleTime: 0 });
+  const isUpdate = !!loaded.data?.exists;
 
   const form = useForm<DossierInput, unknown, DossierData>({
     resolver: zodResolver(dossierSchema),
     mode: "onTouched",
-    defaultValues: {
-      employmentStatus: undefined, monthlyIncome: 0, additionalIncome: 0, dependants: 0,
-      hasExistingLoans: false, loans: [],
-      savings: 0, investments: 0, propertyValue: 0, vehicleValue: 0, businessAssets: 0, otherAssets: 0,
-      taxResidency: "MU", isPep: false,
-      missedRepayments: false, blacklisted: false, bankruptcy: false, legalDisputes: false,
-    },
+    defaultValues: DEFAULTS,
   });
 
-  const { register, handleSubmit, control, setValue, trigger, formState: { errors, isSubmitting } } = form;
+  const { register, handleSubmit, control, setValue, trigger, reset, formState: { errors, isSubmitting } } = form;
+
+  useEffect(() => {
+    if (loaded.data?.exists) reset({ ...DEFAULTS, ...loaded.data.values });
+  }, [loaded.data, reset]);
 
   const allWatched       = useWatch({ control });
   const employmentStatus = useWatch({ control, name: "employmentStatus" });
@@ -47,7 +66,32 @@ export default function Dossier() {
 
   const { fields: loanFields, append: appendLoan, remove: removeLoan } = useFieldArray({ control, name: "loans" });
 
-  const h = useMemo(() => calcHealth(allWatched as unknown as Partial<DossierInput>), [allWatched]);
+  // Live score: the same database formula that scores the saved profile.
+  const watched = allWatched as unknown as Partial<DossierInput>;
+  const totals  = useMemo(() => summarise(watched), [watched]);
+  const previewKey = JSON.stringify([
+    totals.totalIncome, totals.netWorth, totals.totalAssets, totals.totalRepayment,
+    watched.employmentStatus, watched.annualRevenue, watched.isPep, watched.bankruptcy,
+    watched.blacklisted, watched.missedRepayments, watched.legalDisputes,
+  ]);
+  useEffect(() => {
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      const score = await previewScores({
+        income: totals.totalIncome, employmentStatus: watched.employmentStatus,
+        netWorth: totals.netWorth, totalAssets: totals.totalAssets,
+        monthlyRepayment: totals.totalRepayment, annualRevenue: Number(watched.annualRevenue) || 0,
+        isPep: watched.isPep, bankruptcy: watched.bankruptcy, blacklisted: watched.blacklisted,
+        missedRepayments: watched.missedRepayments, legalDisputes: watched.legalDisputes,
+      });
+      if (!cancelled) setPreview(score);
+    }, PREVIEW_DEBOUNCE_MS);
+    return () => { cancelled = true; clearTimeout(t); };
+    // previewKey captures every input the score reads.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [previewKey]);
+
+  const h = useMemo(() => calcHealth(watched, preview), [watched, preview]);
 
   useEffect(() => { window.scrollTo({ top: 0, behavior: "smooth" }); }, [step]);
 
@@ -87,13 +131,44 @@ export default function Dossier() {
         missedRepayments: data.missedRepayments, blacklisted: data.blacklisted,
         bankruptcy: data.bankruptcy, legalDisputes: data.legalDisputes,
       },
-    });
+    }, { isUpdate });
     if (!result.ok) { setSubmitError(result.error); return; }
-    setDone(true);
+    // Everything that shows these figures re-reads them from the database.
+    for (const key of [["dossier"], ["profile"], ["financial_snapshot"]]) {
+      void queryClient.invalidateQueries({ queryKey: key });
+    }
+    setSaved({ score: result.healthScore });
     setTimeout(() => navigate("/dashboard"), 2200);
   };
 
-  if (done) return <DoneScreen h={h} />;
+  if (saved) return <DoneScreen h={calcHealth(watched, saved.score)} isUpdate={isUpdate} />;
+
+  if (loaded.isLoading) {
+    return (
+      <div className="min-h-screen bg-paper grid place-items-center">
+        <Loader2 size={24} className="text-ficium animate-spin" />
+      </div>
+    );
+  }
+
+  if (loaded.isError) {
+    return (
+      <div className="min-h-screen bg-paper grid place-items-center px-6 text-center">
+        <div>
+          <p className="text-[14px] font-semibold text-ink">We couldn't load your financial profile.</p>
+          <button onClick={() => loaded.refetch()} className="mt-3 text-[13px] font-bold text-ficium hover:underline">
+            Try again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const itemised = loaded.data?.itemised;
+  const locked = {
+    ...(itemised?.accounts ? { savings: "Kept in Money → Accounts. Change it there." } : {}),
+    ...(itemised?.holdings ? { investments: "Kept in Money → Accounts (holdings). Change it there." } : {}),
+  };
 
   const onBack = () => step > 1 ? setStep((s) => s - 1) : window.history.back();
 
@@ -117,7 +192,7 @@ export default function Dossier() {
               allWatched={allWatched as unknown as Partial<DossierInput>} hasLoans={!!hasLoans} h={h}
               expandedAsset={expandedAsset} setExpandedAsset={setExpandedAsset}
               loanFields={loanFields} appendLoan={appendLoan} removeLoan={removeLoan}
-              onNext={goNext}
+              locked={locked} onNext={goNext}
             />
           )}
           {step === 3 && (

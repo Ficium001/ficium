@@ -11,6 +11,7 @@ export type FinancialSnapshot = {
   investmentsValue:   number;
   propertyValue:      number;
   vehicleValue:       number;
+  businessAssets:     number;
   otherAssets:        number;
   totalAssets:        number;
   // Liabilities
@@ -33,14 +34,27 @@ export type FinancialSnapshot = {
   updatedAt:          string;
 };
 
-export type SnapshotInput = Omit<FinancialSnapshot,
-  "totalAssets" | "totalLiabilities" | "netWorth" | "debtToIncomeRatio" | "snapshotDate" | "updatedAt"
->;
+/**
+ * The fields this row is the home of. Everything else on the snapshot is
+ * derived by the database (trg_snapshot_derive) and is never sent from here:
+ *   income              ← client_dossier
+ *   liabilities, loan   ← client_loan_details
+ *   payments
+ * Cash, deposits and investments are sent as the declared figure; once the
+ * client itemises them in Accounts / Holdings the database replaces them.
+ */
+export const SNAPSHOT_OWNED_KEYS = [
+  "cashSavings", "fixedDeposits", "investmentsValue",
+  "propertyValue", "vehicleValue", "businessAssets", "otherAssets",
+  "monthlyExpenses", "monthlySavings",
+] as const;
+
+export type SnapshotInput = Pick<FinancialSnapshot, (typeof SNAPSHOT_OWNED_KEYS)[number]>;
 
 const ZERO: FinancialSnapshot = {
   exists: false,
   cashSavings: 0, fixedDeposits: 0, investmentsValue: 0,
-  propertyValue: 0, vehicleValue: 0, otherAssets: 0, totalAssets: 0,
+  propertyValue: 0, vehicleValue: 0, businessAssets: 0, otherAssets: 0, totalAssets: 0,
   mortgageBalance: 0, personalLoanBalance: 0, creditCardBalance: 0,
   vehicleLoanBalance: 0, otherLiabilities: 0, totalLiabilities: 0,
   netWorth: 0, debtToIncomeRatio: 0,
@@ -68,6 +82,7 @@ export async function getSnapshot(): Promise<FinancialSnapshot> {
     investmentsValue:    Number(data.investments_value     ?? 0),
     propertyValue:       Number(data.property_value        ?? 0),
     vehicleValue:        Number(data.vehicle_value         ?? 0),
+    businessAssets:      Number(data.business_assets       ?? 0),
     otherAssets:         Number(data.other_assets          ?? 0),
     totalAssets:         Number(data.total_assets          ?? 0),
     mortgageBalance:     Number(data.mortgage_balance      ?? 0),
@@ -94,23 +109,17 @@ export async function upsertSnapshot(input: SnapshotInput): Promise<{ ok: boolea
   const { error } = await supabase
     .from("client_financial_snapshot")
     .upsert({
-      client_id:            user.id,
-      cash_savings:         input.cashSavings,
-      fixed_deposits:       input.fixedDeposits,
-      investments_value:    input.investmentsValue,
-      property_value:       input.propertyValue,
-      vehicle_value:        input.vehicleValue,
-      other_assets:         input.otherAssets,
-      mortgage_balance:     input.mortgageBalance,
-      personal_loan_balance:input.personalLoanBalance,
-      credit_card_balance:  input.creditCardBalance,
-      vehicle_loan_balance: input.vehicleLoanBalance,
-      other_liabilities:    input.otherLiabilities,
-      monthly_income:       input.monthlyIncome,
-      monthly_expenses:     input.monthlyExpenses,
-      monthly_loan_payments:input.monthlyLoanPayments,
-      monthly_savings:      input.monthlySavings,
-      snapshot_date:        new Date().toISOString().split("T")[0],
+      client_id:         user.id,
+      cash_savings:      input.cashSavings,
+      fixed_deposits:    input.fixedDeposits,
+      investments_value: input.investmentsValue,
+      property_value:    input.propertyValue,
+      vehicle_value:     input.vehicleValue,
+      business_assets:   input.businessAssets,
+      other_assets:      input.otherAssets,
+      monthly_expenses:  input.monthlyExpenses,
+      monthly_savings:   input.monthlySavings,
+      snapshot_date:     new Date().toISOString().split("T")[0],
     }, { onConflict: "client_id" });
 
   return { ok: !error, error: error?.message };

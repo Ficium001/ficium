@@ -24,6 +24,10 @@ vi.mock("@/individual/money/finance/hooks/useFinanceReporting", () => ({
   useSetReportingCurrency: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 vi.mock("@/individual/money/finance/hooks/useHoldings", () => ({ useHoldings: () => ({ data: [] }) }));
+vi.mock("@/individual/money/finance/hooks/useAccounts", () => ({
+  useAccounts: () => ({ data: [] }),
+  FinanceQueryKeys: { accounts: ["finance_accounts"], holdings: ["finance_holdings"], history: ["finance_net_worth_history"] },
+}));
 vi.mock("@/individual/money/finance/components/AccountsList", () => ({ default: () => <div>accounts-list</div> }));
 vi.mock("@/individual/money/finance/components/HoldingsList", () => ({ default: () => <div>holdings-list</div> }));
 vi.mock("@/individual/money/portfolio/hooks/usePortfolio", () => ({ usePortfolio: () => ({ data: [], isLoading: false }) }));

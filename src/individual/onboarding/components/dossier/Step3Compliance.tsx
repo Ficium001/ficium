@@ -143,7 +143,7 @@ export function Step3Compliance({
       </div>
 
       {/* Score encouragement */}
-      {h.score >= 50 && (
+      {(h.score ?? 0) >= 50 && (
         <div className="flex items-center gap-3 px-4 py-3.5 bg-linear-to-r from-ficium/10 to-mint/10 border border-ficium/20 rounded-2xl">
           <Sparkles size={20} className="text-ficium shrink-0" />
           <div>

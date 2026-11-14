@@ -1,154 +1,63 @@
 import { describe, it, expect } from "vitest";
-import { calcHealth } from "./calcHealth";
+import { calcHealth, presentScore, summarise } from "./calcHealth";
 import type { DossierInput } from "@/individual/onboarding/types/dossier";
 
-/** Build a valid loan row; calcHealth only reads monthlyRepayment. */
-const loan = (monthlyRepayment: number): Exclude<DossierInput["loans"], undefined>[number] => ({
-  loanType: "personal",
-  outstandingAmount: 0,
-  monthlyRepayment,
-  bankName: "Test Bank",
+const loan = (outstandingAmount: number, monthlyRepayment: number): Exclude<DossierInput["loans"], undefined>[number] => ({
+  loanType: "personal", outstandingAmount, monthlyRepayment, bankName: "Test Bank",
 });
 
-describe("calcHealth — financial health scoring", () => {
-  it("returns a getting-started score for an empty profile", () => {
-    const r = calcHealth({});
-    // No income, no assets, but 'no existing loans' grants the clean-DTI 20 pts
-    // plus the clean-flags 3 pts → 23, labelled Fair.
-    expect(r.score).toBeGreaterThanOrEqual(0);
-    expect(r.score).toBeLessThanOrEqual(100);
-    expect(r.totalIncome).toBe(0);
-    expect(r.totalAssets).toBe(0);
+describe("summarise — totals shown while the form is filled in", () => {
+  it("is all zeros for an empty form", () => {
+    expect(summarise({})).toEqual({ totalIncome: 0, totalAssets: 0, totalDebt: 0, totalRepayment: 0, netWorth: 0, dti: 0 });
   });
 
-  it("caps the score at 100 for a maximal profile", () => {
-    const full: Partial<DossierInput> = {
-      monthlyIncome: 100_000,
-      additionalIncome: 20_000,
-      savings: 1_000_000,
-      investments: 1_000_000,
-      propertyValue: 5_000_000,
-      hasExistingLoans: false,
-      loans: [],
-      employmentStatus: "employed",
-      employerName: "MCB",
-      sourceOfWealth: "salary",
-      taxResidency: "MU",
-      isPep: false,
-      missedRepayments: false,
-      blacklisted: false,
-      bankruptcy: false,
-    };
-    expect(calcHealth(full).score).toBe(100);
+  it("counts business assets, which used to be left out of the total", () => {
+    expect(summarise({ savings: 100, businessAssets: 50, otherAssets: 25 }).totalAssets).toBe(175);
   });
 
-  it("awards income tiers cumulatively", () => {
-    const low = calcHealth({ monthlyIncome: 1_000, hasExistingLoans: false });
-    const mid = calcHealth({ monthlyIncome: 30_000, hasExistingLoans: false });
-    const high = calcHealth({ monthlyIncome: 80_000, hasExistingLoans: false });
-    expect(mid.score).toBeGreaterThan(low.score);
-    expect(high.score).toBeGreaterThan(mid.score);
+  it("net worth is assets minus what is owed, not assets alone", () => {
+    const s = summarise({ propertyValue: 5_000_000, hasExistingLoans: true, loans: [loan(3_000_000, 18_000)] });
+    expect(s.totalAssets).toBe(5_000_000);
+    expect(s.netWorth).toBe(2_000_000);
   });
 
-  it("computes DTI from existing loan repayments", () => {
-    const r = calcHealth({
-      monthlyIncome: 50_000,
-      hasExistingLoans: true,
-      loans: [loan(10_000)],
-    });
-    // 10000 / 50000 = 20% DTI
-    expect(r.dti).toBeCloseTo(20, 1);
-    expect(r.totalRepayment).toBe(10_000);
+  it("ignores loan rows when the user says they have no loans", () => {
+    const s = summarise({ monthlyIncome: 50_000, hasExistingLoans: false, loans: [loan(100_000, 5_000)] });
+    expect(s.totalDebt).toBe(0);
+    expect(s.dti).toBe(0);
   });
 
-  it("penalises a high DTI relative to a low DTI", () => {
-    const lowDti = calcHealth({
-      monthlyIncome: 100_000,
-      hasExistingLoans: true,
-      loans: [loan(10_000)],
-    });
-    const highDti = calcHealth({
-      monthlyIncome: 100_000,
-      hasExistingLoans: true,
-      loans: [loan(60_000)],
-    });
-    expect(lowDti.score).toBeGreaterThan(highDti.score);
+  it("debt-to-income is monthly repayments over monthly income, in percent", () => {
+    const s = summarise({ monthlyIncome: 40_000, additionalIncome: 10_000, hasExistingLoans: true, loans: [loan(1, 10_000), loan(1, 5_000)] });
+    expect(s.totalIncome).toBe(50_000);
+    expect(s.totalRepayment).toBe(15_000);
+    expect(s.dti).toBe(30);
   });
 
-  it("treats 'no existing loans' as a clean DTI (full points)", () => {
-    const noLoans = calcHealth({ monthlyIncome: 50_000, hasExistingLoans: false });
-    const heavyLoans = calcHealth({
-      monthlyIncome: 50_000,
-      hasExistingLoans: true,
-      loans: [loan(30_000)],
-    });
-    expect(noLoans.score).toBeGreaterThan(heavyLoans.score);
+  it("treats blank and NaN inputs as zero", () => {
+    expect(summarise({ monthlyIncome: NaN, savings: undefined }).totalIncome).toBe(0);
+  });
+});
+
+describe("presentScore — labels a score from the database", () => {
+  it.each([
+    [95, "Excellent"], [80, "Excellent"], [79, "Strong"], [60, "Strong"],
+    [59, "Good"], [40, "Good"], [39, "Fair"], [20, "Fair"], [19, "Weak"], [0, "Weak"],
+  ])("%i is %s", (score, label) => {
+    expect(presentScore(score).label).toBe(label);
   });
 
-  it("sums assets across all asset categories", () => {
-    const r = calcHealth({
-      savings: 100_000,
-      investments: 200_000,
-      propertyValue: 300_000,
-      vehicleValue: 50_000,
-      businessAssets: 25_000,
-      otherAssets: 25_000,
-    });
-    expect(r.totalAssets).toBe(700_000);
+  it("shows no number until the database has scored the profile", () => {
+    const p = presentScore(null);
+    expect(p.score).toBeNull();
+    expect(p.label).toBe("Getting started");
   });
+});
 
-  it("rewards employed-with-employer more than other employment", () => {
-    const employed = calcHealth({
-      monthlyIncome: 50_000,
-      employmentStatus: "employed",
-      employerName: "MCB",
-      hasExistingLoans: false,
-    });
-    const selfEmployed = calcHealth({
-      monthlyIncome: 50_000,
-      employmentStatus: "self_employed",
-      hasExistingLoans: false,
-    });
-    expect(employed.score).toBeGreaterThan(selfEmployed.score);
-  });
-
-  it("penalises risk flags (PEP, blacklist, bankruptcy)", () => {
-    const clean = calcHealth({
-      monthlyIncome: 50_000,
-      hasExistingLoans: false,
-      isPep: false,
-      blacklisted: false,
-      bankruptcy: false,
-      missedRepayments: false,
-    });
-    const flagged = calcHealth({
-      monthlyIncome: 50_000,
-      hasExistingLoans: false,
-      isPep: true,
-      blacklisted: true,
-      bankruptcy: true,
-      missedRepayments: true,
-    });
-    expect(clean.score).toBeGreaterThan(flagged.score);
-  });
-
-  it("returns a label and colour that track the score band", () => {
-    const excellent = calcHealth({
-      monthlyIncome: 100_000, additionalIncome: 20_000,
-      savings: 1_000_000, investments: 1_000_000, propertyValue: 5_000_000,
-      hasExistingLoans: false, employmentStatus: "employed", employerName: "X",
-      sourceOfWealth: "salary", taxResidency: "MU",
-    });
-    expect(excellent.label).toBe("Excellent");
-    expect(excellent.colour).toBe("#10b981");
-
-    const empty = calcHealth({ monthlyIncome: 0 });
-    expect(["Fair", "Getting started"]).toContain(empty.label);
-  });
-
-  it("never produces a negative score or NaN DTI", () => {
-    const r = calcHealth({ monthlyIncome: 0, hasExistingLoans: true, loans: [] });
-    expect(r.score).toBeGreaterThanOrEqual(0);
-    expect(Number.isNaN(r.dti)).toBe(false);
+describe("calcHealth", () => {
+  it("never invents a score of its own", () => {
+    const full: Partial<DossierInput> = { monthlyIncome: 500_000, savings: 50_000_000, employmentStatus: "employed" };
+    expect(calcHealth(full, null).score).toBeNull();
+    expect(calcHealth(full, 42).score).toBe(42);
   });
 });

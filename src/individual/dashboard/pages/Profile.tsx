@@ -11,11 +11,11 @@ import { useProfile, useBankReadiness }  from "@/individual/dashboard/hooks/useD
 import { PageShell }                     from "@/shared/ui";
 import {
   ProfileSection, InfoRow, EmptySection,
-  LoadingScreen, IdentityEditForm, AddressEditForm, FinancialEditForm,
+  LoadingScreen, IdentityEditForm, AddressEditForm,
   formatMUR, formatEmployment,
 } from "@/individual/dashboard/components/profile/ProfileComponents";
 
-type EditSection = "identity" | "address" | "financial" | null;
+type EditSection = "identity" | "address" | null;
 
 // ── Score ring ────────────────────────────────────────────────────────────────
 function ScoreRing({
@@ -270,11 +270,11 @@ export default function Profile() {
             )}
           </ProfileSection>
 
+          {/* Edited in the full financial profile, which is the only place these
+              figures are written; net worth and existing loans are derived. */}
           <ProfileSection title="Financial profile" icon={<Briefcase size={15} />}
-            isEditing={editing === "financial"} onEdit={() => setEditing("financial")} onClose={() => setEditing(null)}>
-            {editing === "financial" ? (
-              <FinancialEditForm profile={profile ?? null} onClose={() => setEditing(null)} hidden={hidden} setHidden={setHidden} />
-            ) : profile?.hasDossier ? (
+            isEditing={false} onEdit={() => navigate("/onboarding/dossier")} onClose={() => {}}>
+            {profile?.hasDossier ? (
               <>
                 <InfoRow icon={<Briefcase size={14} />}   label="Employment"     value={formatEmployment(profile.employmentStatus)} />
                 <InfoRow icon={<DollarSign size={14} />}  label="Monthly income" value={profile.monthlyIncome ? formatMUR(profile.monthlyIncome) : "—"} sensitive hidden={hidden} onToggle={() => setHidden((h) => !h)} />
@@ -287,7 +287,7 @@ export default function Profile() {
                 } />
               </>
             ) : (
-              <EmptySection message="No financial profile yet." cta="Complete profile" onCta={() => setEditing("financial")} />
+              <EmptySection message="No financial profile yet." cta="Complete profile" onCta={() => navigate("/onboarding/dossier")} />
             )}
           </ProfileSection>
 

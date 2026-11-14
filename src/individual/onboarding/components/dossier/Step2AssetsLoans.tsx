@@ -20,13 +20,17 @@ interface Step2Props {
   loanFields:       FieldArrayWithId<DossierInput, "loans">[];
   appendLoan:       UseFieldArrayAppend<DossierInput, "loans">;
   removeLoan:       UseFieldArrayRemove;
+  /** Asset rows kept elsewhere (itemised in Money), with where; shown read-only. */
+  locked?:          Partial<Record<"savings" | "investments", string>>;
   onNext:           () => void;
 }
 
 export function Step2AssetsLoans({
   control, register, errors, allWatched, hasLoans, h,
-  expandedAsset, setExpandedAsset, loanFields, appendLoan, removeLoan, onNext,
+  expandedAsset, setExpandedAsset, loanFields, appendLoan, removeLoan, locked = {}, onNext,
 }: Step2Props) {
+  const lockedNote = (name: string) => locked[name as keyof typeof locked];
+
   return (
     <div className="flex flex-col gap-6 pt-4 animate-in fade-in slide-in-from-right-4 duration-300">
       <div>
@@ -60,8 +64,12 @@ export function Step2AssetsLoans({
               </button>
               {isOpen && (
                 <div className="px-4 pb-4 animate-in fade-in slide-in-from-top-1 duration-150">
-                  <Input type="number" inputMode="numeric" placeholder="0" autoFocus
-                    {...register(row.name, { valueAsNumber: true })} />
+                  {lockedNote(row.name) ? (
+                    <p className="text-xs text-muted">{lockedNote(row.name)}</p>
+                  ) : (
+                    <Input type="number" inputMode="numeric" placeholder="0" autoFocus
+                      {...register(row.name, { valueAsNumber: true })} />
+                  )}
                 </div>
               )}
             </div>
@@ -73,9 +81,9 @@ export function Step2AssetsLoans({
       <div className="flex items-center justify-between px-5 py-4 rounded-2xl bg-ink text-white">
         <div className="flex items-center gap-2">
           <TrendingUp size={18} />
-          <span className="font-semibold">Total net worth</span>
+          <span className="font-semibold">Net worth</span>
         </div>
-        <span className="font-display text-2xl font-bold">{formatMUR(h.totalAssets)}</span>
+        <span className="font-display text-2xl font-bold">{formatMUR(h.netWorth)}</span>
       </div>
 
       {/* Loans */}

@@ -17,7 +17,7 @@ export function StepButton({ onClick, disabled }: { onClick: () => void; disable
 
 // ── DoneScreen ────────────────────────────────────────────────────────────────
 
-export function DoneScreen({ h }: { h: HealthResult }) {
+export function DoneScreen({ h, isUpdate }: { h: HealthResult; isUpdate?: boolean }) {
   return (
     <div className="min-h-screen bg-ink flex flex-col items-center justify-center px-6 gap-6">
       <div className="relative">
@@ -29,14 +29,18 @@ export function DoneScreen({ h }: { h: HealthResult }) {
         </div>
       </div>
       <div className="text-center">
-        <h1 className="font-display text-4xl font-bold text-white">Your financial passport is ready.</h1>
-        <p className="text-white/50 mt-2 text-lg">Banks are about to compete for you.</p>
+        <h1 className="font-display text-4xl font-bold text-white">
+          {isUpdate ? "Your financial profile is updated." : "Your financial passport is ready."}
+        </h1>
+        <p className="text-white/50 mt-2 text-lg">
+          {isUpdate ? "Banks will see the new figures on your next request." : "Banks are about to compete for you."}
+        </p>
       </div>
       <div className="flex gap-6 mt-2">
         {[
-          ["Score",     `${h.score}/100`],
+          ["Score",     h.score == null ? "—" : `${h.score}/100`],
           ["Income",    `${formatMUR(h.totalIncome)}/mo`],
-          ["Net worth", formatMUR(h.totalAssets)],
+          ["Net worth", formatMUR(h.netWorth)],
         ].map(([l, v]) => (
           <div key={l} className="text-center">
             <div className="text-white/40 text-xs uppercase tracking-wider">{l}</div>
@@ -73,7 +77,7 @@ export function StepHeader({
           </div>
           <div className="flex items-center justify-between">
             <span className="text-xs text-muted">Step {step + 2} of 5 — {STEP_LABELS[step - 1]}</span>
-            <span className="text-xs font-bold" style={{ color: h.colour }}>Score: {h.score}</span>
+            <span className="text-xs font-bold" style={{ color: h.colour }}>Score: {h.score ?? "—"}</span>
           </div>
         </div>
       </div>
@@ -90,16 +94,16 @@ export function HealthBar({ h }: { h: HealthResult }) {
         <div className="flex-1">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs text-muted font-medium">Financial health</span>
-            <span className="text-sm font-bold" style={{ color: h.colour }}>{h.label} · {h.score}/100</span>
+            <span className="text-sm font-bold" style={{ color: h.colour }}>{h.label}{h.score != null && ` · ${h.score}/100`}</span>
           </div>
           <div className="w-full h-2 bg-ink/6 rounded-full overflow-hidden">
             <div className="h-full rounded-full transition-all duration-700"
-                 style={{ width: `${h.score}%`, backgroundColor: h.colour }} />
+                 style={{ width: `${h.score ?? 0}%`, backgroundColor: h.colour }} />
           </div>
           <p className="text-[11px] text-muted mt-1.5 leading-relaxed">{h.insight}</p>
         </div>
         <div className="text-right shrink-0">
-          <div className="font-display text-3xl font-bold" style={{ color: h.colour }}>{h.score}</div>
+          <div className="font-display text-3xl font-bold" style={{ color: h.colour }}>{h.score ?? "—"}</div>
           <div className="text-[10px] text-muted">/ 100</div>
         </div>
       </div>

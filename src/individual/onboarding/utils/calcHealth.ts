@@ -1,57 +1,56 @@
 import type { DossierInput } from "@/individual/onboarding/types/dossier";
 
+// The health SCORE is not computed here. There is one formula, in the database
+// (public.compute_client_scores); the onboarding screen asks it for a live
+// preview and the stored score is derived from the saved rows. This file only
+// sums the form for display and turns a score into a label.
+
 export type HealthResult = {
-  score:         number;
-  colour:        string;
-  label:         string;
-  insight:       string;
-  dti:           number;
-  totalIncome:   number;
-  totalAssets:   number;
-  totalRepayment:number;
+  /** null until the database has returned a score. */
+  score:          number | null;
+  colour:         string;
+  label:          string;
+  insight:        string;
+  /** Monthly repayments as a percentage of monthly income. */
+  dti:            number;
+  totalIncome:    number;
+  totalAssets:    number;
+  totalDebt:      number;
+  netWorth:       number;
+  totalRepayment: number;
 };
 
-// Pure function — accepts the form's input shape (what useWatch returns).
-// All fields are optional/undefined-safe because the form may be partially filled.
-export function calcHealth(data: Partial<DossierInput>): HealthResult {
-  let pts = 0;
+const n = (v: unknown) => Number(v) || 0;
 
-  const income = (Number(data.monthlyIncome)||0) + (Number(data.additionalIncome)||0);
-  if (income > 0)        pts += 10;
-  if (income >= 30_000)  pts += 10;
-  if (income >= 80_000)  pts += 10;
-
-  const assets = [
+/** Totals from a possibly half-filled form. */
+export function summarise(data: Partial<DossierInput>) {
+  const totalIncome = n(data.monthlyIncome) + n(data.additionalIncome);
+  const totalAssets = [
     data.savings, data.investments, data.propertyValue,
     data.vehicleValue, data.businessAssets, data.otherAssets,
-  ].reduce<number>((s, v) => s + (Number(v) || 0), 0);
-  if (assets > 0)          pts += 5;
-  if (assets >= 500_000)   pts += 8;
-  if (assets >= 2_000_000) pts += 7;
+  ].reduce<number>((s, v) => s + n(v), 0);
+  const loans = data.hasExistingLoans ? (data.loans ?? []) : [];
+  const totalDebt      = loans.reduce<number>((s, l) => s + n(l.outstandingAmount), 0);
+  const totalRepayment = loans.reduce<number>((s, l) => s + n(l.monthlyRepayment), 0);
+  return {
+    totalIncome, totalAssets, totalDebt, totalRepayment,
+    netWorth: totalAssets - totalDebt,
+    dti: totalIncome > 0 ? (totalRepayment / totalIncome) * 100 : 0,
+  };
+}
 
-  const rep = (data.loans ?? []).reduce<number>((s, l) => s + (Number(l.monthlyRepayment) || 0), 0);
-  const dti = income > 0 ? rep / income : 0;
-  if (!data.hasExistingLoans || (data.loans ?? []).length === 0) pts += 20;
-  else if (dti < 0.20) pts += 20;
-  else if (dti < 0.35) pts += 12;
-  else if (dti < 0.50) pts += 5;
+/** Label and colour for a score from the database. */
+export function presentScore(score: number | null) {
+  if (score == null) {
+    return { score, colour: "#94a3b8", label: "Getting started", insight: "Add your income to see your score." };
+  }
+  if (score >= 80) return { score, colour: "#10b981", label: "Excellent", insight: "A strong profile. Expect competitive bids." };
+  if (score >= 60) return { score, colour: "#3D6EF5", label: "Strong",    insight: "A good profile. Less debt or more savings would lift it." };
+  if (score >= 40) return { score, colour: "#f59e0b", label: "Good",      insight: "Banks can bid, but expect cautious offers." };
+  if (score >= 20) return { score, colour: "#f97316", label: "Fair",      insight: "Reducing debt will lift this fastest." };
+  return              { score, colour: "#ef4444", label: "Weak",      insight: "Banks will see this as high risk." };
+}
 
-  if (data.employmentStatus)                                                pts += 5;
-  if (data.employmentStatus === "employed" && data.employerName)           pts += 10;
-  else if (data.employmentStatus && data.employmentStatus !== "unemployed") pts += 7;
-
-  if (data.sourceOfWealth) pts += 8;
-  if (data.taxResidency)   pts += 4;
-  if (!data.isPep && !data.missedRepayments && !data.blacklisted && !data.bankruptcy) pts += 3;
-
-  const score = Math.min(100, pts);
-
-  const colour  = score >= 80 ? "#10b981" : score >= 60 ? "#3D6EF5" : score >= 40 ? "#f59e0b" : score >= 20 ? "#f97316" : "#94a3b8";
-  const label   = score >= 80 ? "Excellent" : score >= 60 ? "Strong" : score >= 40 ? "Good" : score >= 20 ? "Fair" : "Getting started";
-  const insight = score >= 80 ? "Your profile is highly attractive. Expect competitive bids."
-    : score >= 60 ? "Good profile. Complete the assets section to strengthen your bids."
-    : score >= 40 ? "Banks can see you. Add your assets to attract more bids."
-    : "Fill in your employment and income to unlock bank bids.";
-
-  return { score, colour, label, insight, dti: dti * 100, totalIncome: income, totalAssets: assets, totalRepayment: rep };
+export function calcHealth(data: Partial<DossierInput>, score: number | null): HealthResult {
+  return { ...summarise(data), ...presentScore(score) };
 }

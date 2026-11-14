@@ -243,3 +243,17 @@ with compliance before enabling.
 
 Switched off until **both**: this migration is applied, and `ACCOUNT_CLOSURE_RETENTION_YEARS`
 (whole number, at least 7 per FIAMLA) is set on the `ficium` Vercel project.
+
+---
+
+## Financial profile: one source per fact (Nov 2026)
+
+| File | Purpose | Status |
+|------|---------|--------|
+| `20261114070000_financial_profile_single_source.sql` | Scores computed by the DB, derived copies enforced by triggers, duplicate columns and `asset_details` dropped | Applied 2026-11-14 (`financial_profile_single_source`), dry-run verified first |
+
+- Health / risk / affordability scores and the EDD flag come from `public.compute_client_scores` via
+  the `dossier_derive` trigger. Values sent by a client for these columns are overwritten.
+- Each fact has one home (table in the migration header). Snapshot income, liabilities and loan
+  payments are derived; cash / deposits / investments are derived once itemised in Accounts.
+- Old app code writes columns this drops, so the migration and the app deploy go together.
