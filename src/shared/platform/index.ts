@@ -7,9 +7,13 @@
 export { isNativeApp, runtimePlatform } from "./runtime";
 export type { RuntimePlatform } from "./runtime";
 export { apiUrl, publicUrl } from "./endpoints";
-export { openExternal } from "./navigation";
+export { openExternal, openStoreListing } from "./navigation";
 export { bootstrapNative } from "./bootstrap";
 export { LOCK_POLICY, shouldLockOnResume, isIdleExpired } from "./lockPolicy";
 export { verifyDeviceOwner, confirmSensitiveAction, isDeviceAuthPromptOpen } from "./deviceAuth";
 export type { DeviceAuthResult } from "./deviceAuth";
 export { onAppStateChange } from "./lifecycle";
+export { checkForRequiredUpdate } from "./releasePolicy";
+export type { UpdateCheck } from "./releasePolicy";
+export { getAppInfo } from "./appInfo";
+export type { AppInfo } from "./appInfo";

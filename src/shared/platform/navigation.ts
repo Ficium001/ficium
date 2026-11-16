@@ -16,3 +16,21 @@ export async function openExternal(url: string, { replace = false } = {}): Promi
   if (replace) window.location.replace(url);
   else window.location.href = url;
 }
+
+const STORE_HOSTS = new Set(["apps.apple.com", "play.google.com"]);
+
+/**
+ * Opens the app's own store page so the user can update.
+ *
+ * In the native shell this is a top-level navigation to a foreign origin,
+ * which Capacitor never loads in the WebView: it hands the URL to the OS, and
+ * the OS opens the App Store / Play Store app directly. (openExternal would
+ * show the store's web page inside an in-app browser instead.)
+ */
+export function openStoreListing(url: string): void {
+  const target = new URL(url);
+  if (target.protocol !== "https:" || !STORE_HOSTS.has(target.hostname)) {
+    throw new Error("openStoreListing only opens App Store / Google Play pages");
+  }
+  window.location.assign(target.href);
+}

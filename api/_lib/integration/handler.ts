@@ -7,6 +7,7 @@
  *   POST /api/internal?op=admin-sync  change from the app admin site (ADMIN_SYNC signed)
  *   POST /api/internal?op=admin-kyc   KYC review queue reads for the app admin site (ADMIN_SYNC signed)
  *   POST /api/internal?op=admin-clients  borrower lookup for the app admin site (ADMIN_SYNC signed)
+ *   POST /api/internal?op=admin-app   mobile app versions in use, for the app admin site (ADMIN_SYNC signed)
  *   POST /api/internal?op=dispatch  send pending outbox rows (B2I signed).
  *                                      Triggered every minute by pg_cron.
  *                                      Auth: Authorization: Bearer <CRON_SECRET>
@@ -21,11 +22,12 @@ import { appliers, outboxStore } from "./supabase.js";
 import { receiveAdminSync } from "./admin-sync.js";
 import { LINK_TTL_S, receiveAdminKyc } from "./admin-kyc.js";
 import { receiveAdminClients } from "./admin-clients.js";
+import { receiveAdminApp } from "./admin-app.js";
 
 /** True when this request is for the integration channel, not a legacy action. */
 export function isIntegrationRequest(req: { url?: string }): boolean {
   const op = new URL(req.url ?? "", "http://localhost").searchParams.get("op");
-  return op === "events" || op === "dispatch" || op === "admin-sync" || op === "admin-kyc" || op === "admin-clients";
+  return op === "events" || op === "dispatch" || op === "admin-sync" || op === "admin-kyc" || op === "admin-clients" || op === "admin-app";
 }
 
 async function readRaw(req: AsyncIterable<Buffer | string>): Promise<Buffer> {
@@ -108,6 +110,20 @@ export async function handleIntegration(req: any, res: any): Promise<void> {
         const { data, error } = await db.rpc("admin_client_summary", { p_client_id: id });
         if (error) throw new Error(`admin_client_summary: ${error.message}`);
         return (data ?? null) as Record<string, unknown> | null;
+      },
+    });
+    res.setHeader?.("Cache-Control", "no-store");
+    return res.status(result.status).json(result.body);
+  }
+
+  if (op === "admin-app") {
+    const raw = await readRaw(req);
+    const db = getServiceDb();
+    const result = await receiveAdminApp(raw, String(req.headers["ficium-signature"] ?? ""), Env.adminSyncVerifyKeys(), {
+      stats: async () => {
+        const { data, error } = await db.rpc("admin_app_release_stats");
+        if (error) throw new Error(`admin_app_release_stats: ${error.message}`);
+        return (data ?? {}) as Record<string, unknown>;
       },
     });
     res.setHeader?.("Cache-Control", "no-store");

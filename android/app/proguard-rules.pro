@@ -1,21 +1,15 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
+# R8 rules for the release build (minifyEnabled true in build.gradle).
 #
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# Capacitor core ships consumer rules that keep every Plugin subclass and its
+# @PluginMethod / callback methods, which covers all plugins in this app. Only
+# app-specific additions belong here.
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# Readable crash stack traces: keep line numbers, hide original file names.
+# The mapping file is uploaded as a release artifact for de-obfuscation.
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
-
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# The WebView bridge is reached from JavaScript by name.
+-keepclassmembers class * {
+    @android.webkit.JavascriptInterface <methods>;
+}
