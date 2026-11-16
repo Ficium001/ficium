@@ -79,6 +79,7 @@ problem.
 > • Face ID or fingerprint lock
 > • Your session is stored in your phone's secure hardware
 > • Screenshots are blocked on Android; the app is hidden in the app switcher
+>   and while the screen is being recorded or shared
 >
 > Ficium is an introducer operated by Ficium Ltd, Mauritius. Ficium is not a
 > bank or a lender, does not hold your money and does not make credit
@@ -99,7 +100,7 @@ problem.
 | Support | **OWNER**: a support page or mailbox on a Ficium domain |
 | Marketing | `https://<host>/how-it-works` |
 
-**Screenshots** (portrait, real screens, no personal data): dashboard, new
+**Screenshots** (portrait, real screens, no personal data; take the Android ones from the web app in a phone-sized browser window, because the Android app blocks screenshots): dashboard, new
 request, offers comparison, request detail with an offer, vault, lock screen.
 App Store: 6.9-inch iPhone set. Play: at least 4 phone screenshots, a 512 px
 icon and a 1024 × 500 feature graphic. The app is iPhone-only, so no iPad set.

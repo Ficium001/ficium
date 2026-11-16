@@ -12,7 +12,7 @@
  */
 export const LOCK_POLICY = {
   backgroundGraceMs: 60_000,
-  idleTimeoutMs:     5 * 60_000,
+  idleTimeoutMs:     15 * 60_000,
 } as const;
 
 /** True when the app was away long enough that it must lock on return. */
