@@ -39,10 +39,14 @@ export function trustedLinkOrigin(): string | null {
 }
 
 /**
- * Where the native app reads its release policy (minimum supported version).
- * A static file on the API origin, which the app's CSP already allows.
- * Null on web, which is always the latest version.
+ * Where the native app reads its release policy (minimum supported version):
+ * the public, read-only app_release_policy table, over the database's REST
+ * endpoint. It is set by Ficium staff in the admin site and readable before
+ * sign-in. The app's CSP already allows this origin.
  */
-export function releasePolicyUrl(): string | null {
-  return API_BASE ? `${API_BASE}/app-release.json` : null;
+export function releasePolicySource(): { url: string; apiKey: string } | null {
+  const base = origin(import.meta.env.VITE_SUPABASE_URL as string | undefined);
+  const apiKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
+  if (!base || !apiKey) return null;
+  return { url: `${base}/rest/v1/app_release_policy?select=platform,min_version,store_url`, apiKey };
 }

@@ -15,3 +15,5 @@ export type { DeviceAuthResult } from "./deviceAuth";
 export { onAppStateChange } from "./lifecycle";
 export { checkForRequiredUpdate } from "./releasePolicy";
 export type { UpdateCheck } from "./releasePolicy";
+export { getAppInfo } from "./appInfo";
+export type { AppInfo } from "./appInfo";

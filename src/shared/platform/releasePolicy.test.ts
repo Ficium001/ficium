@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { evaluateUpdate, isOlderThan, parseReleasePolicy, parseVersion, safeStoreUrl } from "./releasePolicy";
+import { evaluateUpdate, isOlderThan, parseReleasePolicy, parseVersion, policyFromRows, safeStoreUrl } from "./releasePolicy";
 
 const PLAY = "https://play.google.com/store/apps/details?id=net.ficium.app";
 const policy = (min: string, storeUrl = PLAY) => ({
@@ -83,5 +83,28 @@ describe("evaluateUpdate", () => {
   });
   it("does not block without a policy", () => {
     expect(evaluateUpdate(null, "ios", "0.0.1")).toEqual({ required: false });
+  });
+});
+
+describe("policyFromRows", () => {
+  const rows = [
+    { platform: "android", min_version: "1.2.0", store_url: PLAY },
+    { platform: "ios", min_version: "1.1.0", store_url: "" },
+  ];
+  it("reads the policy table's rows", () => {
+    expect(policyFromRows(rows)).toEqual({
+      ios: { minVersion: "1.1.0", storeUrl: "" },
+      android: { minVersion: "1.2.0", storeUrl: PLAY },
+    });
+  });
+  it("ignores platforms it does not know", () => {
+    expect(policyFromRows([...rows, { platform: "huawei", min_version: "9.0.0", store_url: "" }])).not.toBeNull();
+  });
+  it("never yields a policy from an error body, a missing platform or an unreadable version", () => {
+    expect(policyFromRows({ message: "permission denied" })).toBeNull();
+    expect(policyFromRows([])).toBeNull();
+    expect(policyFromRows([rows[0]])).toBeNull();
+    expect(policyFromRows([rows[0], { platform: "ios", min_version: "latest", store_url: "" }])).toBeNull();
+    expect(policyFromRows([rows[0], null])).toBeNull();
   });
 });

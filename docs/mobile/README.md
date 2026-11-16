@@ -19,6 +19,7 @@ src/ (React SPA)  ──vite build --mode native──►  dist/  ──cap sync
             deviceAuth.ts     Face ID / fingerprint / passcode verification
             lockPolicy.ts     when the app locks itself
             releasePolicy.ts  forced-update gate (minimum supported version)
+            appInfo.ts        installed version and build number
             bootstrap.ts      native-only startup wiring (no-op on web)
 ```
 
@@ -91,8 +92,28 @@ If the public domain changes (for example to `app.ficium.net`), update all three
 - `ios/App/App/PrivacyInfo.xcprivacy` declares collected data and API use. No
   tracking, no advertising or analytics SDK.
 - iPhone only. The layout is a portrait phone layout.
-- Forced update: `public/app-release.json` sets the lowest version allowed to
-  run; older installs are blocked until updated (`shared/platform/releasePolicy`).
+- Forced update: staff set the lowest version allowed to run in the app admin
+  site (four-eyes). Older installs are blocked until updated
+  (`shared/platform/releasePolicy`, `public.app_release_policy`).
+- Version monitoring: a signed-in app reports its platform, version and build
+  once a day (`app/AppClientReporter`). The admin site shows totals per version.
+  Nothing about the device is sent.
+
+## Web and app: one product
+
+The phone apps are the same React code as the web app, packaged in a native
+shell, talking to the same API and database. There is no data to sync: neither
+keeps data on the device (only the sign-in session, in the Keychain/Keystore).
+
+What differs is how code ships. A web deploy reaches every browser at once. The
+apps carry their screens inside the installed binary, so a change reaches phones
+only through a store release, and older versions stay in use for weeks. Two
+rules follow:
+
+- The API must keep working for every app version at or above the minimum.
+  A breaking API change ships in three steps: release the app that handles
+  both, raise the minimum, then remove the old behaviour.
+- Server-side changes (API, database, policies) still reach the apps at once.
 
 ## Decisions
 

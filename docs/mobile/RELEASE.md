@@ -162,31 +162,33 @@ From the second release on, run the workflow with `upload` on. Keep
 `play_status` at `draft` until Google has approved the app once; a draft is
 released to testers with one click in Play Console.
 
-## Forcing an update
+## Recording a release and forcing an update
 
-`public/app-release.json` holds the lowest version of each app that is allowed
-to run:
+Both are done in the **app admin site → App releases**, not in this repository.
+Each platform has three settings:
 
-```json
-{ "ios":     { "minVersion": "1.0.0", "storeUrl": "https://apps.apple.com/app/id<APPLE_ID>" },
-  "android": { "minVersion": "1.0.0", "storeUrl": "https://play.google.com/store/apps/details?id=net.ficium.app" } }
-```
+| Setting | Meaning |
+|---|---|
+| Latest version | The version that is live in the store. Record it when the store release goes public. |
+| Minimum version | The lowest version allowed to run. Anything older sees a blocking "Update Ficium to continue" screen. |
+| Store link | Where the "Update now" button goes. Add the iOS link once the app has its App Store ID. |
 
-Raise `minVersion` and deploy the web app. Each installed app below that
-version shows a blocking "Update Ficium to continue" screen, with a button to
-the store, the next time it is opened or brought back to the front (the file is
-cached for 5 minutes and re-read at most every 10). Use it when an old version has a security
-problem or can no longer talk to the API.
+Every change is four-eyes: one admin asks with a reason, a different admin
+approves, and it is in the audit log. The admin database refuses a minimum
+above the latest version, so nobody can be told to update to something that is
+not in the store yet.
 
-- Only raise it **after** the new version is live in the store, or users are
-  blocked with nothing to update to.
-- Fill in the iOS `storeUrl` once the app has its App Store ID.
-- A broken or unreachable file never locks anyone out; a phone that has already
-  seen a higher minimum keeps enforcing it offline.
+After approval the policy is synced to the borrower app's database
+(`public.app_release_policy`) and each installed app picks it up the next time
+it is opened or brought back to the front (re-read at most every 10 minutes).
 
-The file is public and sent with `Access-Control-Allow-Origin: *`. That is
-deliberate: it contains two version numbers and two store links, the app reads
-it without credentials, and the API's strict origin allowlist is unchanged.
+Use a forced update when an old version has a security problem or can no longer
+talk to the API. The same page shows how many borrowers used each version in
+the last 7 and 30 days, so you can see who a new minimum would block before
+asking for it.
+
+A broken or unreachable policy never locks anyone out, and a phone that has
+already seen a higher minimum keeps enforcing it offline.
 
 ## If a release goes wrong
 

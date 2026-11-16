@@ -4,22 +4,21 @@
  *
  * A web deploy reaches every browser at once; an installed app does not. When
  * an old app version must stop being used (a security fix in the native shell,
- * a breaking API change), raising `minVersion` in public/app-release.json
- * blocks it until the user updates from the store.
- *
- * The policy is a static file on the CDN, so checking it costs no function
- * call and no database read however many phones ask.
+ * a breaking API change), Ficium staff raise the minimum version in the admin
+ * site (four-eyes, audited). The decision is synced to the public
+ * app_release_policy table, which the app reads here, and older installs are
+ * blocked until the user updates from the store.
  *
  * Failure behaviour, chosen deliberately:
  *  - Policy unreachable: use the last policy this phone saw. A version already
  *    known to be blocked stays blocked offline.
- *  - No policy ever seen, or a malformed one: do not block. A broken file must
- *    never lock every customer out of the app.
+ *  - No policy ever seen, or a malformed one: do not block. A broken response
+ *    must never lock every customer out of the app.
  * This gate is a rollout control, not a security boundary: the server still
  * authorises every request on its own.
  */
-import { isNativeApp, runtimePlatform } from "./runtime";
-import { releasePolicyUrl } from "./endpoints";
+import { getAppInfo } from "./appInfo";
+import { releasePolicySource } from "./endpoints";
 
 export interface PlatformReleasePolicy {
   /** Lowest app version allowed to run, e.g. "1.2.0". */
@@ -114,11 +113,29 @@ function writeCached(policy: ReleasePolicy): void {
   }
 }
 
-async function fetchPolicy(url: string): Promise<ReleasePolicy | null> {
+/** Rows of app_release_policy → the policy. Null unless both platforms are present and well-formed. */
+export function policyFromRows(rows: unknown): ReleasePolicy | null {
+  if (!Array.isArray(rows)) return null;
+  const byPlatform: Record<string, unknown> = {};
+  for (const row of rows) {
+    if (typeof row !== "object" || row === null) return null;
+    const { platform, min_version, store_url } = row as Record<string, unknown>;
+    if (platform === "ios" || platform === "android") {
+      byPlatform[platform] = { minVersion: min_version, storeUrl: store_url };
+    }
+  }
+  return parseReleasePolicy(byPlatform);
+}
+
+async function fetchPolicy(source: { url: string; apiKey: string }): Promise<ReleasePolicy | null> {
   try {
-    const res = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+    const res = await fetch(source.url, {
+      cache: "no-store",
+      headers: { apikey: source.apiKey, Accept: "application/json" },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
     if (!res.ok) return null;
-    return parseReleasePolicy(await res.json());
+    return policyFromRows(await res.json());
   } catch {
     return null;
   }
@@ -129,20 +146,11 @@ async function fetchPolicy(url: string): Promise<ReleasePolicy | null> {
  * Always `{ required: false }` in a browser.
  */
 export async function checkForRequiredUpdate(): Promise<UpdateCheck> {
-  const platform = runtimePlatform();
-  const url = releasePolicyUrl();
-  if (!isNativeApp() || platform === "web" || !url) return { required: false };
+  const app = await getAppInfo();
+  const source = releasePolicySource();
+  if (!app || !source) return { required: false };
 
-  const fresh = await fetchPolicy(url);
+  const fresh = await fetchPolicy(source);
   if (fresh) writeCached(fresh);
-  const policy = fresh ?? readCached();
-  if (!policy) return { required: false };
-
-  try {
-    const { App } = await import("@capacitor/app");
-    const { version } = await App.getInfo();
-    return evaluateUpdate(policy, platform, version);
-  } catch {
-    return { required: false };
-  }
+  return evaluateUpdate(fresh ?? readCached(), app.platform, app.version);
 }

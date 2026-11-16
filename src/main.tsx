@@ -8,6 +8,7 @@ import { queryClient }         from "./core/query-client";
 import { bootstrapNative }     from "./shared/platform";
 import { AppLockGate }         from "./app/AppLockGate";
 import { UpdateGate }          from "./app/UpdateGate";
+import { AppClientReporter }   from "./app/AppClientReporter";
 import { ConnectionBanner }    from "./app/ConnectionBanner";
 import "./index.css";
 
@@ -19,6 +20,7 @@ createRoot(root).render(
     <UpdateGate>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
+          <AppClientReporter />
           <AppLockGate>
             <RouterProvider router={router} />
             <ConnectionBanner />
