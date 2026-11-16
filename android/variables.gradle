@@ -1,5 +1,6 @@
 ext {
-    minSdkVersion = 24
+    // Android 10. Older versions no longer receive security patches, so the app does not install on them.
+    minSdkVersion = 29
     compileSdkVersion = 36
     targetSdkVersion = 36
     androidxActivityVersion = '1.11.0'

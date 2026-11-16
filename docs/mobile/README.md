@@ -39,7 +39,10 @@ App (client):
 - Deep links are accepted only as `https` from the configured app origin. Custom schemes and look-alike hosts are ignored, and auth tokens are stripped before routing.
 - Foreign sites open in the system browser and never inside the app's WebView.
 - Android: `FLAG_SECURE` (no screenshots, screen recording or recents thumbnail), backups and device-transfer disabled, cleartext disabled, system CAs only (user-installed CAs rejected), App Links `autoVerify`.
-- iOS: the app is blurred in the app switcher, it runs portrait only, and associated domains are used for universal links.
+- Android: installs on Android 10 and later only (`minSdkVersion = 29`). Older versions no longer receive security patches.
+- Android: overlay ("tapjacking") protection. On Android 12+ other apps' overlays are hidden while Ficium is on screen; on Android 10 and 11 a touch that arrives while the window is covered is ignored. Side effect on 10 and 11: with a screen filter or chat bubble drawn over the app, taps do nothing until it is closed.
+- iOS: the app is blurred in the app switcher, and covered with a notice while the screen is recorded, mirrored or shared. iOS cannot block a single screenshot. It runs portrait only, and associated domains are used for universal links.
+- App lock (both): the device owner is verified (Face ID, fingerprint or passcode) on a cold start with a saved session, after more than 60 seconds in the background, and after 15 minutes without input. Timings are in `shared/platform/lockPolicy.ts`.
 
 API (server):
 - CORS uses an exact-match allowlist (`capacitor://localhost`, `https://localhost`, or `CORS_ALLOWED_ORIGINS`). It never uses `*`, never reflects an arbitrary origin, and never allows credentials. Auth is a Bearer token, so CSRF does not apply. CORS is not authentication; every route keeps its own auth gate.

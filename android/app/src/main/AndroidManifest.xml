@@ -52,4 +52,7 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Lets the app hide other apps' overlays while it is on screen (Android 12+). Granted at
+         install, shows no prompt. Required by setHideOverlayWindows in MainActivity. -->
+    <uses-permission android:name="android.permission.HIDE_OVERLAY_WINDOWS" />
 </manifest>
