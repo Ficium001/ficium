@@ -11,8 +11,14 @@ jobs:
     steps:
       - name: Ping keepalive
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://ficium.vercel.app/api/keepalive)
+          BODY=$(mktemp)
+          STATUS=$(curl -s -o "$BODY" -w "%{http_code}" https://ficium.vercel.app/api/keepalive)
           echo "Keepalive response: $STATUS"
+          # The app found a merged database migration that was never applied: fail loudly.
+          if grep -q '"SCHEMA_DRIFT"' "$BODY"; then
+            echo "::error::A merged database migration has not been applied to the App DB. The missing names are in the Vercel log (search: ALERT schema drift). Apply it; this check clears on the next run."
+            exit 1
+          fi
           if [ "$STATUS" != "200" ]; then
             echo "Warning: keepalive returned $STATUS"
           fi

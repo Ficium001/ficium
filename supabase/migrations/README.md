@@ -251,7 +251,9 @@ Switched off until **both**: this migration is applied, and `ACCOUNT_CLOSURE_RET
 | File | Purpose | Status |
 |------|---------|--------|
 | `20261114070000_financial_profile_single_source.sql` | Scores computed by the DB, derived copies enforced by triggers, duplicate columns and `asset_details` dropped | Applied 2026-11-14 (`financial_profile_single_source`), dry-run verified first |
-| `20261116120000_app_release_policy.sql` | Mobile app release policy (`app_release_policy`, public read, written only by admin-sync topic `app.release_policy_changed`), app version sightings (`app_client_seen`, `report_app_client`) and totals for the admin site (`admin_app_release_stats`) | **Pending.** Apply before the admin site's `0010_app_release`; tested against a stubbed local database |
+| `20261116120000_app_release_policy.sql` | Mobile app release policy (`app_release_policy`, public read, written only by admin-sync topic `app.release_policy_changed`), app version sightings (`app_client_seen`, `report_app_client`) and totals for the admin site (`admin_app_release_stats`) | Applied 2026-11-16 (`app_release_policy`); function definitions verified against this file after applying |
+| `20261116150000_migration_ledger.sql` | `admin.schema_migration`: every migration from here on records itself as its last statement (`SELECT admin.migration_applied('<file name>')`). The deployed app checks the ledger (`api/keepalive.ts`) and CI enforces the rule (`scripts/check-migrations.mjs`) | Applied 2026-11-16; function definitions verified against this file |
+| `20261116160000_app_error_reports.sql` | Error reports from the phone apps (`app_error_report`, `report_app_error`), added to `admin_app_release_stats`; purged after 35 days and on account closure | Applied 2026-11-16; function definitions verified against this file; purge job scheduled |
 
 - Health / risk / affordability scores and the EDD flag come from `public.compute_client_scores` via
   the `dossier_derive` trigger. Values sent by a client for these columns are overwritten.

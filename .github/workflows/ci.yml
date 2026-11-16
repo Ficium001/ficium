@@ -86,6 +86,9 @@ jobs:
       - name: Dependency audit (high+ severity, reviewed exceptions in scripts/audit-gate.mjs)
         run: node scripts/audit-gate.mjs
 
+      - name: Database migrations record themselves and do not break installed apps
+        run: node scripts/check-migrations.mjs
+
       - name: Typecheck
         run: npx tsc --noEmit -p tsconfig.app.json
 
