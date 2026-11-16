@@ -1,5 +1,13 @@
 apply plugin: 'com.android.application'
 
+// Release inputs come from the environment so nothing secret or per-build is
+// ever committed (see .github/workflows/mobile-release.yml and docs/mobile/RELEASE.md).
+//   APP_VERSION_NAME / APP_VERSION_CODE   what the stores and the update gate see
+//   ANDROID_KEYSTORE_PATH + passwords     the Play upload key
+def appVersionName = System.getenv("APP_VERSION_NAME") ?: "1.0.0"
+def appVersionCode = (System.getenv("APP_VERSION_CODE") ?: "1").toInteger()
+def releaseKeystore = System.getenv("ANDROID_KEYSTORE_PATH")
+
 android {
     namespace = "net.ficium.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -9,8 +17,8 @@ android {
         manifestPlaceholders = [appLinkHost: "ficium.vercel.app"]
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode appVersionCode
+        versionName appVersionName
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -18,10 +26,28 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            // Configured only when the upload key is supplied. Without it a
+            // release build is unsigned, which the release workflow rejects.
+            if (releaseKeystore) {
+                storeFile file(releaseKeystore)
+                storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("ANDROID_KEY_ALIAS")
+                keyPassword System.getenv("ANDROID_KEY_PASSWORD")
+            }
+        }
+    }
     buildTypes {
         release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            // R8: shrink, optimise and rename the native shell, and drop unused
+            // resources. Capacitor and its plugins ship their own keep rules.
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            if (releaseKeystore) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 }

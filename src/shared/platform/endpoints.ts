@@ -37,3 +37,12 @@ export function publicUrl(path: string): string {
 export function trustedLinkOrigin(): string | null {
   return PUBLIC_APP_URL;
 }
+
+/**
+ * Where the native app reads its release policy (minimum supported version).
+ * A static file on the API origin, which the app's CSP already allows.
+ * Null on web, which is always the latest version.
+ */
+export function releasePolicyUrl(): string | null {
+  return API_BASE ? `${API_BASE}/app-release.json` : null;
+}

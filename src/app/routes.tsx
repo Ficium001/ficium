@@ -23,6 +23,7 @@ const ResetPassword       = lazy(() => import("../features/auth/pages/ResetPassw
 const HowItWorks          = lazy(() => import("../features/marketing/pages/HowItWorks"));
 const TermsPage           = lazy(() => import("../features/legal/pages/LegalPage").then(m => ({ default: m.TermsPage })));
 const PrivacyPage         = lazy(() => import("../features/legal/pages/LegalPage").then(m => ({ default: m.PrivacyPage })));
+const DeleteAccountPage   = lazy(() => import("../features/legal/pages/DeleteAccountPage").then(m => ({ default: m.DeleteAccountPage })));
 const NotFound            = lazy(() => import("../shared/pages/NotFound"));
 
 const Dashboard           = lazy(() => import("../individual/dashboard/pages/Dashboard"));
@@ -101,6 +102,8 @@ export const router = createBrowserRouter([
   { path: "/how-it-works",           element: <S><HowItWorks /></S> },
   { path: "/terms",                  element: <S><TermsPage /></S> },
   { path: "/privacy",                element: <S><PrivacyPage /></S> },
+  // Public by design: Google Play needs account-deletion instructions that work without signing in.
+  { path: "/delete-account",         element: <S><DeleteAccountPage /></S> },
   { path: "/onboarding/check-email", element: <S><CheckEmail /></S> },
   { path: "/invite/:token",          element: <S><InvitePage /></S> },
 

@@ -6,8 +6,8 @@ name: Mobile
 #   web     → the native web bundle (vite --mode native), shared by both apps
 #   android → debug APK (artifact, 7 days)
 #   ios     → unsigned simulator build (compile check; no signing secrets here)
-# Signing and store upload are a separate, manually-triggered release workflow
-# (not yet added: needs the Apple/Google accounts).
+# Signing and store upload are the separate, manually-triggered release
+# workflow (mobile-release.yml).
 #
 # Third-party actions are pinned to commit SHAs.
 
@@ -89,6 +89,9 @@ jobs:
       - name: Assemble debug APK
         working-directory: android
         run: ./gradlew --no-daemon assembleDebug lintDebug
+      - name: Release bundle compiles (R8 shrink, unsigned; never published)
+        working-directory: android
+        run: ./gradlew --no-daemon bundleRelease
       - name: Upload APK (only when built with real config)
         if: env.REAL_CONFIG == 'true'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

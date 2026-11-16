@@ -7,6 +7,7 @@ import { AuthProvider }        from "./features/auth/context/AuthContext";
 import { queryClient }         from "./core/query-client";
 import { bootstrapNative }     from "./shared/platform";
 import { AppLockGate }         from "./app/AppLockGate";
+import { UpdateGate }          from "./app/UpdateGate";
 import { ConnectionBanner }    from "./app/ConnectionBanner";
 import "./index.css";
 
@@ -15,14 +16,16 @@ if (!root) throw new Error("Root element #root not found in index.html");
 
 createRoot(root).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <AppLockGate>
-          <RouterProvider router={router} />
-          <ConnectionBanner />
-        </AppLockGate>
-      </AuthProvider>
-    </QueryClientProvider>
+    <UpdateGate>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <AppLockGate>
+            <RouterProvider router={router} />
+            <ConnectionBanner />
+          </AppLockGate>
+        </AuthProvider>
+      </QueryClientProvider>
+    </UpdateGate>
   </StrictMode>
 );
 
