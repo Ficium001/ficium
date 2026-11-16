@@ -99,6 +99,30 @@ If the public domain changes (for example to `app.ficium.net`), update all three
   once a day (`app/AppClientReporter`). The admin site shows totals per version.
   Nothing about the device is sent.
 
+- Error reporting: a signed-in app reports JavaScript errors it hits, scrubbed
+  of personal-looking data (`app/ErrorReporter`, `shared/lib/errorReport`). The
+  admin site shows the most widespread errors per app version. Crashes in the
+  native shell itself still appear only in Play Console and App Store Connect.
+
+## Changing the server without breaking installed apps
+
+An installed app keeps using the API and the database as they were when it was
+built. Three guards hold that line:
+
+- **Database:** `scripts/check-migrations.mjs` (CI) refuses a migration that
+  drops or renames something, or changes a column's type, unless it carries a
+  `-- compat:` line saying why installed apps are unaffected. Add first, remove
+  later: ship the app that no longer needs it, raise the minimum version in the
+  admin site, then drop.
+- **API routes:** `api/_tests/mobile-surface.test.ts` lists the routes released
+  apps call. Removing one fails the tests until it is retired the same way.
+- **Applied, not just merged:** every migration records itself in the
+  database's ledger. The deployed app compares the ledger with the migrations it
+  was built with, and the scheduled keepalive check fails when one is missing.
+
+These catch removals and renames. They do not catch a route that keeps its name
+but changes what it returns: that still needs care in review.
+
 ## Web and app: one product
 
 The phone apps are the same React code as the web app, packaged in a native

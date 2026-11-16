@@ -9,18 +9,27 @@ import { bootstrapNative }     from "./shared/platform";
 import { AppLockGate }         from "./app/AppLockGate";
 import { UpdateGate }          from "./app/UpdateGate";
 import { AppClientReporter }   from "./app/AppClientReporter";
+import { ErrorReporter, captureError } from "./app/ErrorReporter";
 import { ConnectionBanner }    from "./app/ConnectionBanner";
 import "./index.css";
 
 const root = document.getElementById("root");
 if (!root) throw new Error("Root element #root not found in index.html");
 
-createRoot(root).render(
+createRoot(root, {
+  // Errors caught by an error boundary never reach window.onerror, so report them from here.
+  // React's own console message is kept.
+  onCaughtError: (error, info) => {
+    console.error(error, info.componentStack);
+    captureError("render", error);
+  },
+}).render(
   <StrictMode>
     <UpdateGate>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <AppClientReporter />
+          <ErrorReporter />
           <AppLockGate>
             <RouterProvider router={router} />
             <ConnectionBanner />

@@ -128,6 +128,7 @@ where noted), encrypted in transit **yes**.
 | Messages with institutions, Fia chats | Messages → Other in-app messages | User Content → Other User Content | |
 | User ID | Personal info → User IDs | Identifiers → User ID | |
 | Sign-in records, IP address, audit trail | App activity → Other actions | Usage Data → Product Interaction | Security |
+| Errors the app hits (message with emails, tokens, ids and long numbers removed; bundle position; screen route pattern) | App info and performance → Crash logs | Diagnostics → Crash Data | Reported by a signed-in app; kept 35 days; shown to staff as totals per version |
 | App platform, version and build number | App info and performance → Diagnostics | Diagnostics → Other Diagnostic Data | Purpose: analytics. Reported once a day by a signed-in app; used to decide which versions to keep supporting |
 
 Not collected: location, contacts, calendar, health, browsing history,
