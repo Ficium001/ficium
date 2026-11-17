@@ -8,13 +8,15 @@
  * Changing the policy comes back through admin-sync (topic app.release_policy_changed), never here.
  *
  *   { "action": "stats" } -> { stats: { generated_at, policy: [...], versions: [...] } }
+ *   { "action": "traffic" } -> { traffic: { generated_at, window_hours, channels: [...] } }   (API traffic page)
+ * A pause or resume of an API channel comes back through admin-sync (topic api.channel_policy_changed).
  */
 import { ContractError, verify } from "@ficium/contract";
 import type { Result } from "./core.js";
 
 const MAX_BODY = 256;
 
-export type AdminAppDeps = { stats: () => Promise<Record<string, unknown>> };
+export type AdminAppDeps = { stats: () => Promise<Record<string, unknown>>; traffic?: () => Promise<Record<string, unknown>> };
 
 const err = (status: number, error: string): Result => ({ status, body: { error } });
 
@@ -33,5 +35,6 @@ export async function receiveAdminApp(
   try { b = JSON.parse(raw.toString("utf8")); } catch { return err(422, "invalid_json"); }
 
   if (b?.action === "stats") return { status: 200, body: { stats: await deps.stats() } };
+  if (b?.action === "traffic" && deps.traffic) return { status: 200, body: { traffic: await deps.traffic() } };
   return err(422, "unknown_action");
 }

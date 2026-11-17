@@ -36,6 +36,8 @@ export interface OutboxStore {
   claim(limit: number): Promise<OutboxRow[]>;
   delivered(id: string): Promise<void>;
   failed(id: string, error: string): Promise<string>;
+  /** Put a claimed row back without using an attempt (the receiver paused the channel). */
+  deferred?(id: string): Promise<void>;
 }
 
 export interface Result {
@@ -77,14 +79,30 @@ export async function receive(
 /** The exact bytes that are signed and sent. */
 export const encode = (env: Envelope): Buffer => Buffer.from(JSON.stringify(env), "utf8");
 
+/** Optional hooks for API traffic (pause + counting). The dispatcher itself stays free of them. */
+export type DispatchHooks = {
+  /** True while this channel is paused in the admin site: claim nothing, the outbox just waits. */
+  isPaused?: () => Promise<boolean>;
+  /** Called once per send; report how it went. */
+  timer?: () => { status: (code: number) => void; fail: (e: unknown) => void };
+};
+
+const peerPaused = (body: string): boolean => {
+  try { return (JSON.parse(body) as { error?: unknown })?.error === "channel_paused"; } catch { return false; }
+};
+
 export async function dispatchOnce(
   store: OutboxStore,
   fetchFn: typeof fetch,
   peerUrl: string,
   signingKey: string,
   limit = 20,
+  hooks: DispatchHooks = {},
 ): Promise<Record<string, number>> {
   const counts: Record<string, number> = { delivered: 0, pending: 0, dead: 0 };
+  // Paused here: claim nothing, so no attempt is used and nothing can dead-letter. Events go out in
+  // order once the channel is resumed.
+  if (hooks.isPaused && (await hooks.isPaused())) return counts;
   for (const row of await store.claim(limit)) {
     // Never send anything that breaks the contract (e.g. an employer name in Phase 1). Events are built in SQL,
     // which cannot validate against the JSON Schema, so this is the gate. A violation is a failure like any other:
@@ -101,6 +119,7 @@ export async function dispatchOnce(
     const body = encode(row.envelope);
     let ok = false;
     let error = "";
+    const timer = hooks.timer?.();
     try {
       const r = await fetchFn(peerUrl, {
         method: "POST",
@@ -109,9 +128,21 @@ export async function dispatchOnce(
         signal: AbortSignal.timeout(10_000),
       });
       ok = r.status >= 200 && r.status < 300;
-      if (!ok) error = `HTTP ${r.status}: ${(await r.text()).slice(0, 300)}`;
+      if (!ok) {
+        const text = (await r.text()).slice(0, 300);
+        error = `HTTP ${r.status}: ${text}`;
+        // The receiver is PAUSED on purpose: hold the event without using an attempt, so a long
+        // pause cannot push it past the 24 hour limit and dead-letter it.
+        if (r.status === 503 && store.deferred && peerPaused(text)) {
+          await store.deferred(row.id);
+          counts.pending += 1;
+          continue;
+        }
+      }
+      timer?.status(r.status);
     } catch (e) {
       error = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
+      timer?.fail(e);
     }
     if (ok) {
       await store.delivered(row.id);

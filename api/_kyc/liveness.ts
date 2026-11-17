@@ -11,6 +11,7 @@
 
 import { createHmac, createHash } from "crypto";
 import { Env } from "../_lib/env.js";
+import { traffic } from "../_lib/api-traffic.js";
 
 const AWS_REGION = "ap-south-1";
 
@@ -41,7 +42,7 @@ async function awsPost(service: string, target: string, body: object): Promise<u
   const stringToSign     = ["AWS4-HMAC-SHA256", amzDate, credentialScope, hashHex(canonicalRequest)].join("\n");
   const signature        = hmac(getSigningKey(secretKey, dateStamp, AWS_REGION, service), stringToSign).toString("hex");
   const authHeader       = `AWS4-HMAC-SHA256 Credential=${accessKey}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
-  const res = await fetch(`https://${host}/`, {
+  const res = await traffic.fetch("kyc.aws_out")(`https://${host}/`, {
     method: "POST",
     headers: { "Content-Type": "application/x-amz-json-1.1", "X-Amz-Date": amzDate, "X-Amz-Target": target, "Authorization": authHeader },
     body: bodyStr,

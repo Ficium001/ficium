@@ -14,6 +14,7 @@
  */
 
 import { Env } from "../_lib/env.js";
+import { traffic } from "../_lib/api-traffic.js";
 
 export interface ClaudeIdFields {
   documentNumber?: string;
@@ -41,7 +42,7 @@ Rules:
 - Use null for any field you cannot read with confidence. Never fabricate a value.`;
 
   try {
-    const r = await fetch("https://api.anthropic.com/v1/messages", {
+    const r = await traffic.fetch("kyc.vision_out")("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
         "Content-Type":      "application/json",

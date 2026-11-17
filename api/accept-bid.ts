@@ -27,6 +27,7 @@ import { writeBidAcceptedNotification }           from "./_lib/handlers/bid-acce
 import { getServiceDb }                           from "./_lib/db.js";
 import { acceptViaContract, type Prepared }       from "./_lib/integration/acceptance.js";
 import { handleCors }                 from "./_lib/cors.js";
+import { traffic } from "./_lib/api-traffic.js";
 
 export const config = { runtime: "nodejs" };
 export default async function handler(req: any, res: any): Promise<void> {
@@ -102,6 +103,12 @@ async function _handler(req: any, res: any): Promise<void> {
     if (!url || !key) {
       return Response.error(res, "Acceptance call not configured", 503, "ACCEPTANCE_NOT_CONFIGURED");
     }
+    // Paused in the admin site: refuse before anything is prepared, so a pause leaves no half-made consent behind.
+    if (await traffic.paused("integration.acceptance_out")) {
+      traffic.record("integration.acceptance_out", "blocked");
+      await traffic.flushIfDue();
+      return Response.error(res, "Accepting bids is paused for a moment. Nothing was changed. Try again shortly.", 503, "ACCEPTANCE_PAUSED");
+    }
     const db = getServiceDb();
     let notSaved = false;
     const out = await acceptViaContract(
@@ -118,7 +125,7 @@ async function _handler(req: any, res: any): Promise<void> {
             if (outcome === "accepted") notSaved = true;
           }
         },
-        fetchFn: fetch,
+        fetchFn: traffic.fetch("integration.acceptance_out"),
         url,
         signingKey: key,
       },

@@ -13,6 +13,7 @@ import { Response }           from "./_lib/response.js";
 import { bearerToken, requireUser, sendAuthError } from "./_lib/auth.js";
 import { consumeAiQuota, quotaRefusal } from "./_lib/ai-quota.js";
 import { handleCors }                 from "./_lib/cors.js";
+import { traffic } from "./_lib/api-traffic.js";
 
 export const config = { runtime: "nodejs" };
 
@@ -101,7 +102,7 @@ Keep responses under 200 words unless asked for detail. Tone: warm, direct, prac
 
   if (body.journeyCtx) parts.push(`\n=== JOURNEY CONTEXT ===\n${body.journeyCtx}\n=== END ===`);
 
-  const anthropic  = new Anthropic({ apiKey });
+  const anthropic  = new Anthropic({ apiKey, fetch: traffic.fetch("ai.advisor_out") });
   const completion = await anthropic.messages.create({
     model: "claude-sonnet-4-6", max_tokens: 800,
     system: parts.join("\n"), messages,
@@ -134,7 +135,7 @@ Deposit typically 10-20% for mortgage/vehicle.
 Return ONLY valid JSON (no markdown):
 {"affordability":<0-100>,"eligibility":<0-100>,"monthlyRepayment":<number|null>,"depositGap":<number|null>,"fundingGap":<number|null>,"projectedValue":<number|null>,"banksMatched":<1-6>,"summary":"<one sentence with real numbers>","actionPlan":["<step 1>","<step 2>","<step 3>"],"warnings":[]}`;
 
-  const anthropic  = new Anthropic({ apiKey });
+  const anthropic  = new Anthropic({ apiKey, fetch: traffic.fetch("ai.advisor_out") });
   const completion = await anthropic.messages.create({
     model: "claude-sonnet-4-6", max_tokens: 600,
     messages: [{ role: "user", content: prompt }],

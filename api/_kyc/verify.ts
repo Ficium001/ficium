@@ -30,6 +30,7 @@ import {
 import { parseMrz } from "./docExtract.js";
 import { supabaseQuery, supabaseRpc } from "./db.js";
 import { Env } from "../_lib/env.js";
+import { traffic } from "../_lib/api-traffic.js";
 
 const getEnv = (k: string) => (globalThis as any).process?.env?.[k] ?? "";
 
@@ -94,7 +95,7 @@ Check for name/doc/dob mismatches, nationality inconsistencies, and fraud. Reply
     : [{ type: "text", text: textPrompt }];
 
   try {
-    const r = await fetch("https://api.anthropic.com/v1/messages", {
+    const r = await traffic.fetch("kyc.vision_out")("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
         "Content-Type":      "application/json",
