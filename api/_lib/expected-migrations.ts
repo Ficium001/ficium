@@ -7,4 +7,5 @@ export const EXPECTED_MIGRATIONS: readonly string[] = [
   "20261116120000_app_release_policy",
   "20261116150000_migration_ledger",
   "20261116160000_app_error_reports",
+  "20261117090000_api_traffic",
 ];

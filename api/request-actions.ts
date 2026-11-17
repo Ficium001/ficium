@@ -27,6 +27,7 @@ import { generateToken, hashToken, sendInvitationEmail } from "./_lib/handlers/j
 import { listDocuments, sendDocument } from "./_lib/handlers/deal-documents.js";
 import { renderChatMessage, ContractError } from "@ficium/contract";
 import { handleCors }                 from "./_lib/cors.js";
+import { traffic } from "./_lib/api-traffic.js";
 
 export const config = { runtime: "nodejs" };
 
@@ -142,11 +143,16 @@ async function route(req: any, res: any): Promise<void> {
         || (b.documentDate != null && !(typeof b.documentDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.documentDate)))) {
       return Response.error(res, "Invalid document request", 400, "INVALID_INPUT");
     }
+    if (await traffic.paused("integration.documents_out")) {
+      traffic.record("integration.documents_out", "blocked");
+      await traffic.flushIfDue();
+      return Response.error(res, "Sending documents is paused for a moment. Nothing was sent. Try again shortly.", 503, "DOCUMENTS_PAUSED");
+    }
     const out = await sendDocument(getServiceDb(), {
       enabled: Env.integrationDocumentsEnabled(),
       uploadsUrl: Env.integrationDocumentsUrl(),
       signingKey: Env.integrationAcceptSigningKey(),
-      fetchFn: fetch,
+      fetchFn: traffic.fetch("integration.documents_out"),
     }, consumerId, {
       requestId: b.requestId as string, requirementId: b.requirementId as string,
       vaultDocumentId: b.vaultDocumentId as string, source: b.source as "vault" | "new",

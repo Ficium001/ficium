@@ -19,6 +19,10 @@ export function outboxStore(db: ServiceDb): OutboxStore {
       if (error) throw new Error(`mark_failed: ${error.message}`);
       return String(data);
     },
+    async deferred(id) {
+      const { error } = await db.rpc("integration_defer", { p_id: id });
+      if (error) throw new Error(`defer: ${error.message}`);
+    },
   };
 }
 

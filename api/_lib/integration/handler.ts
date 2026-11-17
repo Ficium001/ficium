@@ -23,6 +23,7 @@ import { receiveAdminSync } from "./admin-sync.js";
 import { LINK_TTL_S, receiveAdminKyc } from "./admin-kyc.js";
 import { receiveAdminClients } from "./admin-clients.js";
 import { receiveAdminApp } from "./admin-app.js";
+import { adminSnapshot, traffic } from "../api-traffic.js";
 
 /** True when this request is for the integration channel, not a legacy action. */
 export function isIntegrationRequest(req: { url?: string }): boolean {
@@ -125,6 +126,7 @@ export async function handleIntegration(req: any, res: any): Promise<void> {
         if (error) throw new Error(`admin_app_release_stats: ${error.message}`);
         return (data ?? {}) as Record<string, unknown>;
       },
+      traffic: () => adminSnapshot(db),
     });
     res.setHeader?.("Cache-Control", "no-store");
     return res.status(result.status).json(result.body);
@@ -135,7 +137,11 @@ export async function handleIntegration(req: any, res: any): Promise<void> {
     const url = Env.integrationPeerUrl();
     const key = Env.integrationB2iSigningKey();
     if (!url || !key) return res.status(503).json({ error: "integration_disabled" });
-    const counts = await dispatchOnce(outboxStore(getServiceDb()), fetch, url, key);
+    const counts = await dispatchOnce(outboxStore(getServiceDb()), fetch, url, key, 20, {
+      isPaused: () => traffic.paused("integration.events_out"),
+      timer: () => traffic.start("integration.events_out"),
+    });
+    await traffic.flushIfDue();
     return res.status(200).json(counts);
   }
 

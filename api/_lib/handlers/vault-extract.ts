@@ -28,6 +28,7 @@
 
 import { Env }         from "../env.js";
 import { getServiceDb, type ServiceDb } from "../db.js";
+import { traffic } from "../api-traffic.js";
 
 export const config = { runtime: "nodejs" };
 
@@ -202,7 +203,7 @@ async function extractWithClaude(
   const isPdf     = mimeType === "application/pdf";
   const mediaType = isPdf ? "application/pdf" : mimeType;
 
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
+  const res = await traffic.fetch("ai.documents_out")("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
       "Content-Type":      "application/json",

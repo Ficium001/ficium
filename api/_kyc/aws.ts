@@ -11,6 +11,7 @@
 
 import { createHmac, createHash } from "crypto";
 import { Env } from "../_lib/env.js";
+import { traffic } from "../_lib/api-traffic.js";
 
 export const AWS_REGION    = "ap-south-1";
 export const COLLECTION_ID = "ficium-kyc-faces";
@@ -43,7 +44,7 @@ export async function awsPost(service: string, target: string, body: object): Pr
   const sts       = ["AWS4-HMAC-SHA256", amzDate, cs, hashHex(cr)].join("\n");
   const sig       = hmac(getSigningKey(secretKey, dateStamp, AWS_REGION, service), sts).toString("hex");
   const auth      = `AWS4-HMAC-SHA256 Credential=${accessKey}/${cs}, SignedHeaders=${sh}, Signature=${sig}`;
-  const res = await fetch(`https://${host}/`, {
+  const res = await traffic.fetch("kyc.aws_out")(`https://${host}/`, {
     method: "POST",
     headers: { "Content-Type": "application/x-amz-json-1.1", "X-Amz-Date": amzDate, "X-Amz-Target": target, "Authorization": auth },
     body: bodyStr,
