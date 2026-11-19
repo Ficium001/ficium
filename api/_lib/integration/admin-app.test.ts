@@ -39,4 +39,19 @@ describe("admin app monitoring over HTTPS", () => {
     expect((await receiveAdminApp(big, signed(big), [KEY], d)).status).toBe(413);
     expect(d.stats).not.toHaveBeenCalled();
   });
+
+  it("returns the marketplace funnel for an allowed window only", async () => {
+    const funnel = { days: 30, funnel: { posted: 4 } };
+    const marketplace = vi.fn(async () => funnel);
+    const d: AdminAppDeps = { ...deps(), marketplace };
+    const b = raw({ action: "marketplace", days: 30 });
+    const r = await receiveAdminApp(b, signed(b), [KEY], d);
+    expect([r.status, (r.body as any).marketplace]).toEqual([200, funnel]);
+    expect(marketplace).toHaveBeenCalledWith(30);
+    for (const days of [12, "30", -1, null, 10_000]) {
+      const bad = raw({ action: "marketplace", days });
+      expect((await receiveAdminApp(bad, signed(bad), [KEY], d)).status).toBe(422);
+    }
+    expect(marketplace).toHaveBeenCalledTimes(1);
+  });
 });

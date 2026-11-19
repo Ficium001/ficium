@@ -9,6 +9,8 @@
  *
  *   { "action": "stats" } -> { stats: { generated_at, policy: [...], versions: [...] } }
  *   { "action": "traffic" } -> { traffic: { generated_at, window_hours, channels: [...] } }   (API traffic page)
+ *   { "action": "marketplace", "days": 7|30|90|365 } -> { marketplace: { funnel, hours_to_first_bid, ... } }
+ *     (Marketplace page: the request → bid → acceptance funnel. Totals only, no borrower, request or bank.)
  * A pause or resume of an API channel comes back through admin-sync (topic api.channel_policy_changed).
  */
 import { ContractError, verify } from "@ficium/contract";
@@ -16,7 +18,14 @@ import type { Result } from "./core.js";
 
 const MAX_BODY = 256;
 
-export type AdminAppDeps = { stats: () => Promise<Record<string, unknown>>; traffic?: () => Promise<Record<string, unknown>> };
+export type AdminAppDeps = {
+  stats: () => Promise<Record<string, unknown>>;
+  traffic?: () => Promise<Record<string, unknown>>;
+  marketplace?: (days: MarketplaceDays) => Promise<Record<string, unknown>>;
+};
+
+export const MARKETPLACE_DAYS = [7, 30, 90, 365] as const;
+export type MarketplaceDays = (typeof MARKETPLACE_DAYS)[number];
 
 const err = (status: number, error: string): Result => ({ status, body: { error } });
 
@@ -31,10 +40,15 @@ export async function receiveAdminApp(
     if (e instanceof ContractError) return err(401, "bad_signature");
     throw e;
   }
-  let b: { action?: unknown };
+  let b: { action?: unknown; days?: unknown };
   try { b = JSON.parse(raw.toString("utf8")); } catch { return err(422, "invalid_json"); }
 
   if (b?.action === "stats") return { status: 200, body: { stats: await deps.stats() } };
   if (b?.action === "traffic" && deps.traffic) return { status: 200, body: { traffic: await deps.traffic() } };
+  if (b?.action === "marketplace" && deps.marketplace) {
+    const days = (MARKETPLACE_DAYS as readonly unknown[]).includes(b.days) ? (b.days as MarketplaceDays) : null;
+    if (days === null) return err(422, "invalid_days");
+    return { status: 200, body: { marketplace: await deps.marketplace(days) } };
+  }
   return err(422, "unknown_action");
 }

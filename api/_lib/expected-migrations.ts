@@ -8,4 +8,5 @@ export const EXPECTED_MIGRATIONS: readonly string[] = [
   "20261116150000_migration_ledger",
   "20261116160000_app_error_reports",
   "20261117090000_api_traffic",
+  "20261119120000_admin_marketplace_stats",
 ];

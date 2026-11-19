@@ -127,6 +127,11 @@ export async function handleIntegration(req: any, res: any): Promise<void> {
         return (data ?? {}) as Record<string, unknown>;
       },
       traffic: () => adminSnapshot(db),
+      marketplace: async (days) => {
+        const { data, error } = await db.rpc("admin_marketplace_stats", { p_days: days });
+        if (error) throw new Error(`admin_marketplace_stats: ${error.message}`);
+        return (data ?? {}) as Record<string, unknown>;
+      },
     });
     res.setHeader?.("Cache-Control", "no-store");
     return res.status(result.status).json(result.body);
