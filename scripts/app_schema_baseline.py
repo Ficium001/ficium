@@ -344,6 +344,31 @@ DO $a$ BEGIN
     $f$;
   END IF;
 END $a$;
+
+-- Same for storage: the storage service creates its tables, and the bare image has none. A
+-- minimal stand-in (the columns our buckets and policies use, Supabase's foldername()) only
+-- where storage.buckets is missing; on a real project the service's own tables are used.
+DO $s$ BEGIN
+  IF to_regclass('storage.buckets') IS NULL THEN
+    CREATE SCHEMA IF NOT EXISTS storage;
+    CREATE TABLE storage.buckets (
+      id text PRIMARY KEY, name text NOT NULL, owner uuid, public boolean DEFAULT false,
+      file_size_limit bigint, allowed_mime_types text[],
+      created_at timestamptz DEFAULT now(), updated_at timestamptz DEFAULT now());
+    CREATE TABLE storage.objects (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(), bucket_id text REFERENCES storage.buckets (id),
+      name text, owner uuid, metadata jsonb,
+      created_at timestamptz DEFAULT now(), updated_at timestamptz DEFAULT now());
+    ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+    CREATE FUNCTION storage.foldername(name text) RETURNS text[] LANGUAGE plpgsql AS $f$
+      DECLARE _parts text[];
+      BEGIN
+        SELECT string_to_array(name, '/') INTO _parts;
+        RETURN _parts[1:array_length(_parts, 1) - 1];
+      END
+    $f$;
+  END IF;
+END $s$;
 """
     publication = (
         "DO $p$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') "
