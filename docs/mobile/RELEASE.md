@@ -105,8 +105,8 @@ Settings → Secrets and variables → Actions.
 | `ASC_ISSUER_ID` | App Store Connect issuer ID |
 | `ASC_PRIVATE_KEY` | Contents of the `.p8` file |
 
-`FICIUM_SHARED_TOKEN` (already set) is also used, to install the private
-contract package.
+The private contract package is installed from `vendor/` (see
+`vendor/README.md`), so no GitHub token is needed.
 
 If the GitHub plan allows protected environments on private repositories,
 move these secrets into an environment with a required reviewer and add

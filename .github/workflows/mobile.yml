@@ -43,12 +43,6 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - name: Authenticate private dependencies (SSH -> HTTPS with token)
-        run: |
-          git config --global url."https://${FICIUM_SHARED_TOKEN}@github.com/".insteadOf "ssh://git@github.com/"
-          git config --global url."https://${FICIUM_SHARED_TOKEN}@github.com/".insteadOf "git@github.com:"
-        env:
-          FICIUM_SHARED_TOKEN: ${{ secrets.FICIUM_SHARED_TOKEN }}
       - run: npm ci
       - name: Native config consistency
         run: npm run check:native
@@ -71,10 +65,6 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - name: Authenticate private dependencies
-        run: git config --global url."https://${FICIUM_SHARED_TOKEN}@github.com/".insteadOf "ssh://git@github.com/"
-        env:
-          FICIUM_SHARED_TOKEN: ${{ secrets.FICIUM_SHARED_TOKEN }}
       - run: npm ci
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
@@ -111,10 +101,6 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - name: Authenticate private dependencies
-        run: git config --global url."https://${FICIUM_SHARED_TOKEN}@github.com/".insteadOf "ssh://git@github.com/"
-        env:
-          FICIUM_SHARED_TOKEN: ${{ secrets.FICIUM_SHARED_TOKEN }}
       - run: npm ci
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
