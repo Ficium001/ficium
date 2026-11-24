@@ -9,7 +9,7 @@
 
 BEGIN;
 
-DROP SCHEMA market_archive CASCADE;
+DROP SCHEMA IF EXISTS market_archive CASCADE;   -- IF EXISTS: an environment built from supabase/baseline/ never had it
 
 SELECT admin.migration_applied('20261124110000_drop_market_archive');
 

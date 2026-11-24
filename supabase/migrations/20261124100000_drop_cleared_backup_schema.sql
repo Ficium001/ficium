@@ -10,7 +10,7 @@
 
 BEGIN;
 
-DROP SCHEMA _cleared_20261112 CASCADE;
+DROP SCHEMA IF EXISTS _cleared_20261112 CASCADE;   -- IF EXISTS: an environment built from supabase/baseline/ never had it
 
 SELECT admin.migration_applied('20261124100000_drop_cleared_backup_schema');
 
