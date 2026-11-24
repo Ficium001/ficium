@@ -1,5 +1,7 @@
 # Ficium App — DB Migrations (App DB)
 
+> **Building a new environment (UAT, production, DR)?** Do not replay this folder. Start from `supabase/baseline/` (see its README), then apply ledger migrations from `20261116120000` on. The run order below is history.
+
 Target database: **Supabase App DB** (`wixfhjlsjkiwfvqewvmt` · `ap-south-1`)
 
 All migrations are applied via the **Supabase SQL editor** in the order below. They are idempotent where possible (`IF NOT EXISTS`, `CREATE OR REPLACE`, `ON CONFLICT DO NOTHING`).
