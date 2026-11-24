@@ -11,4 +11,5 @@ export const EXPECTED_MIGRATIONS: readonly string[] = [
   "20261119120000_admin_marketplace_stats",
   "20261124090000_revoke_anon_sensitive_grants",
   "20261124100000_drop_cleared_backup_schema",
+  "20261124110000_drop_market_archive",
 ];
