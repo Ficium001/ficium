@@ -19,6 +19,6 @@ BEGIN
   END IF;
 END $r$;
 
-SELECT admin.migration_applied('20261124140000_drop_ficium_admin_sync_role');
+SELECT admin.migration_applied('20261124170000_drop_ficium_admin_sync_role');
 
 COMMIT;
