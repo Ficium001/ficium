@@ -324,13 +324,34 @@ def _apply(dsn: str, texts: dict[str, str], project_ref: str, recorded: str = ""
         f"'{n}') THEN PERFORM vault.create_secret('{PLACEHOLDER_SECRET}', '{n}'); END IF; END $v$;"
         for n in names
     )
+    # The supabase/postgres image creates the auth schema without the helpers GoTrue adds later.
+    # Ours call auth.jwt() (and the email helper exists on live); add them only where missing, with
+    # Supabase's own definitions, so a real Supabase project is untouched.
+    auth_helpers = """
+DO $a$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+                 WHERE n.nspname = 'auth' AND p.proname = 'jwt') THEN
+    CREATE FUNCTION auth.jwt() RETURNS jsonb LANGUAGE sql STABLE AS $f$
+      SELECT coalesce(nullif(current_setting('request.jwt.claim', true), ''),
+                      nullif(current_setting('request.jwt.claims', true), ''))::jsonb
+    $f$;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+                 WHERE n.nspname = 'auth' AND p.proname = 'email') THEN
+    CREATE FUNCTION auth.email() RETURNS text LANGUAGE sql STABLE AS $f$
+      SELECT coalesce(nullif(current_setting('request.jwt.claim.email', true), ''),
+                      (nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'email'))::text
+    $f$;
+  END IF;
+END $a$;
+"""
     publication = (
         "DO $p$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') "
         "THEN CREATE PUBLICATION supabase_realtime; END IF; END $p$;"
     )
     run_script(
         dsn,
-        "BEGIN;\n" + texts["platform_pre.sql"] + "\n" + texts["schema.sql"] + "\n" + recorded
+        "BEGIN;\n" + auth_helpers + "\n" + texts["platform_pre.sql"] + "\n" + texts["schema.sql"] + "\n" + recorded
         + "\n" + publication + "\n" + secrets + "\n" + post + "\nCOMMIT;\n",
     )
     if names:
