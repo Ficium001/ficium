@@ -457,5 +457,20 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
+def _annotate(message: str) -> None:
+    """In GitHub Actions, surface a failure as an annotation (job logs are not always at hand)."""
+    if os.environ.get("GITHUB_ACTIONS") == "true":
+        text = message.strip()[:3000].replace("%", "%25").replace("\r", "").replace("\n", "%0A")
+        print(f"::error title=app_schema_baseline {' '.join(sys.argv[1:2])}::{text}", flush=True)
+
+
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        raise SystemExit(main())
+    except SystemExit as e:
+        if isinstance(e.code, str):
+            _annotate(e.code)
+        raise
+    except Exception as e:  # noqa: BLE001 - report, then fail the step
+        _annotate(f"{type(e).__name__}: {e}")
+        raise
