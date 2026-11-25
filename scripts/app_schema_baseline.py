@@ -289,7 +289,16 @@ def write(snap: Path, through: str, out_dir: Path | None = None) -> None:
         text = header + body
         (out_dir / f).write_text(text)
         lines.append(f"{f.removesuffix('.sql')}_sha256: {_sha(text)}")
-    (out_dir / "BASELINE").write_text("\n".join(lines) + "\n")
+    meta_path = out_dir / "BASELINE"
+    # Same point and same content: keep the file as it is. Rewriting only the "taken" time would
+    # make every run on a schema-baseline/* branch commit again, and each bot commit waits for a
+    # workflow approval, so the branch would never settle (seen 2026-11-25).
+    if meta_path.exists():
+        old = [ln for ln in meta_path.read_text().splitlines() if not ln.startswith("taken: ")]
+        if old == [ln for ln in lines if not ln.startswith("taken: ")]:
+            print(f"baseline unchanged (through {through})")
+            return
+    meta_path.write_text("\n".join(lines) + "\n")
     print(f"baseline written through {through}")
 
 
