@@ -41,8 +41,9 @@ migration up to `through`; later migrations then run in order. Afterwards:
 
 1. Set each Vault secret listed at the end of `platform_post.sql` from Doppler.
    `build` creates missing ones with the value `__SET_FROM_DOPPLER__`.
-2. Give `ficium_admin_sync` a login and password only if that environment's
-   admin site still uses the direct sync connection.
+2. Nothing to do for the admin site: it syncs over HTTPS (`op=admin-sync`).
+   The old `ficium_admin_sync` role is created by the baseline and dropped by
+   20261124170000; it is never given a login.
 3. Supabase Auth settings (providers, email templates, redirect URLs, OTP
    expiry) are project settings, not SQL: set them in the dashboard.
 
