@@ -1,0 +1,5 @@
+through: 20261125100000_audit_logs_append_only
+taken: 2026-11-25T15:11:36Z
+platform_pre_sha256: 0a688b18bbebdc582373121ac3b37eb29de6c9980abcbc17cffa102618b678be
+schema_sha256: 2d1f4e61b53b2417bac0506c47c7abda1f4e1514cc0d9e6abd8380d3c01a8b61
+platform_post_sha256: 85da89e875967fe744badccd3b2b633d92ae68d9d1d98f920fdde22f9e0f107a
