@@ -289,7 +289,16 @@ def write(snap: Path, through: str, out_dir: Path | None = None) -> None:
         text = header + body
         (out_dir / f).write_text(text)
         lines.append(f"{f.removesuffix('.sql')}_sha256: {_sha(text)}")
-    (out_dir / "BASELINE").write_text("\n".join(lines) + "\n")
+    meta_path = out_dir / "BASELINE"
+    # Same point and same content: keep the file as it is. Rewriting only the "taken" time would
+    # make every run on a schema-baseline/* branch commit again, and each bot commit waits for a
+    # workflow approval, so the branch would never settle (seen 2026-11-25).
+    if meta_path.exists():
+        old = [ln for ln in meta_path.read_text().splitlines() if not ln.startswith("taken: ")]
+        if old == [ln for ln in lines if not ln.startswith("taken: ")]:
+            print(f"baseline unchanged (through {through})")
+            return
+    meta_path.write_text("\n".join(lines) + "\n")
     print(f"baseline written through {through}")
 
 
@@ -370,13 +379,49 @@ DO $s$ BEGIN
   END IF;
 END $s$;
 """
+    # The supabase/postgres image gives anon, authenticated and service_role full rights on every
+    # new table, sequence and function its admin role creates (default privileges). A dump only
+    # writes the grants an object HAS, never revokes the ones it lacks, so restoring into the image
+    # silently widened every object live keeps narrower (found 2026-11-25: audit_logs and its
+    # trigger function came back with anon/authenticated ALL). Clear the restoring role's defaults
+    # first, so every object ends up with exactly the grants in the dump ...
+    clear_defaults = """
+DO $d$ DECLARE r record; BEGIN
+  FOR r IN SELECT n.nspname, d.defaclobjtype AS t
+             FROM pg_default_acl d LEFT JOIN pg_namespace n ON n.oid = d.defaclnamespace
+            WHERE d.defaclrole = current_user::regrole AND d.defaclobjtype IN ('r', 'S', 'f') LOOP
+    EXECUTE format('ALTER DEFAULT PRIVILEGES %s REVOKE ALL ON %s FROM anon, authenticated, service_role',
+                   coalesce('IN SCHEMA ' || quote_ident(r.nspname), ''),
+                   CASE r.t WHEN 'r' THEN 'TABLES' WHEN 'S' THEN 'SEQUENCES' ELSE 'FUNCTIONS' END);
+  END LOOP;
+END $d$;
+"""
+    # ... then give the restoring role live's own defaults (the dump's ALTER DEFAULT PRIVILEGES FOR
+    # ROLE postgres), so a migration run here afterwards creates objects with the grants it would
+    # get on live, where migrations run as postgres.
+    copy_defaults = """
+DO $c$ DECLARE r record; BEGIN
+  IF current_user::regrole <> 'postgres'::regrole THEN
+    FOR r IN SELECT n.nspname, d.defaclobjtype AS t, a.grantee::regrole::text AS g, a.privilege_type AS p
+               FROM pg_default_acl d LEFT JOIN pg_namespace n ON n.oid = d.defaclnamespace,
+                    aclexplode(d.defaclacl) a
+              WHERE d.defaclrole = 'postgres'::regrole AND d.defaclobjtype IN ('r', 'S', 'f')
+                AND a.grantee <> 0 LOOP
+      EXECUTE format('ALTER DEFAULT PRIVILEGES %s GRANT %s ON %s TO %I',
+                     coalesce('IN SCHEMA ' || quote_ident(r.nspname), ''), r.p,
+                     CASE r.t WHEN 'r' THEN 'TABLES' WHEN 'S' THEN 'SEQUENCES' ELSE 'FUNCTIONS' END, r.g);
+    END LOOP;
+  END IF;
+END $c$;
+"""
     publication = (
         "DO $p$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') "
         "THEN CREATE PUBLICATION supabase_realtime; END IF; END $p$;"
     )
     run_script(
         dsn,
-        "BEGIN;\n" + auth_helpers + "\n" + texts["platform_pre.sql"] + "\n" + texts["schema.sql"] + "\n" + recorded
+        "BEGIN;\n" + clear_defaults + auth_helpers + "\n" + texts["platform_pre.sql"] + "\n" + texts["schema.sql"]
+        + "\n" + copy_defaults + "\n" + recorded
         + "\n" + publication + "\n" + secrets + "\n" + post + "\nCOMMIT;\n",
     )
     if names:

@@ -16,4 +16,5 @@ export const EXPECTED_MIGRATIONS: readonly string[] = [
   "20261124150000_fk_indexes_and_policy_initplan",
   "20261124160000_policy_roles_and_duplicates",
   "20261124170000_drop_ficium_admin_sync_role",
+  "20261125100000_audit_logs_append_only",
 ];
