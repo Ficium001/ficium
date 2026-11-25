@@ -14,6 +14,8 @@ BEGIN;
 DO $r$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'ficium_admin_sync') THEN
+    -- Supabase's postgres is not a superuser: it may only DROP OWNED for roles it is a member of.
+    EXECUTE format('GRANT ficium_admin_sync TO %I', current_user);
     DROP OWNED BY ficium_admin_sync;   -- its grants: EXECUTE on admin.sync_apply, schema USAGE
     DROP ROLE ficium_admin_sync;
   END IF;
