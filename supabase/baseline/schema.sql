@@ -1,5 +1,5 @@
 -- Ficium App DB baseline. GENERATED: do not edit by hand.
--- Through 20261124110000_drop_market_archive. Regenerate with the schema-baseline workflow on a
+-- Through 20261125100000_audit_logs_append_only. Regenerate with the schema-baseline workflow on a
 -- schema-baseline/* branch; see supabase/baseline/README.md.
 
 --
@@ -2390,6 +2390,19 @@ BEGIN
                            THEN EXCLUDED.last_error ELSE t.last_error END;
   END LOOP;
   RETURN n;
+END $$;
+
+--
+-- Name: audit_logs_append_only(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.audit_logs_append_only() RETURNS trigger
+    LANGUAGE plpgsql
+    SET search_path TO ''
+    AS $$
+BEGIN
+  RAISE EXCEPTION 'audit_logs is append-only: % is not allowed', TG_OP
+    USING ERRCODE = 'insufficient_privilege';
 END $$;
 
 --
@@ -7185,6 +7198,12 @@ CREATE INDEX idx_admin_users_role ON admin.admin_users USING btree (role);
 CREATE INDEX idx_admin_users_user_id ON admin.admin_users USING btree (user_id);
 
 --
+-- Name: platform_config_updated_by_fk_idx; Type: INDEX; Schema: admin; Owner: -
+--
+
+CREATE INDEX platform_config_updated_by_fk_idx ON admin.platform_config USING btree (updated_by);
+
+--
 -- Name: sync_log_aggregate_idx; Type: INDEX; Schema: admin; Owner: -
 --
 
@@ -7201,6 +7220,12 @@ CREATE INDEX conversation_user_idx ON fico.conversation USING btree (user_id, st
 --
 
 CREATE INDEX message_conversation_idx ON fico.message USING btree (conversation_id, created_at);
+
+--
+-- Name: message_user_id_fk_idx; Type: INDEX; Schema: fico; Owner: -
+--
+
+CREATE INDEX message_user_id_fk_idx ON fico.message USING btree (user_id);
 
 --
 -- Name: idx_finance_accounts_user; Type: INDEX; Schema: finance; Owner: -
@@ -7245,6 +7270,12 @@ CREATE INDEX deal_progress_request_idx ON integration.deal_progress USING btree 
 CREATE INDEX document_submission_deal_idx ON integration.document_submission USING btree (pipeline_id, requirement_id);
 
 --
+-- Name: document_submission_vault_document_id_fk_idx; Type: INDEX; Schema: integration; Owner: -
+--
+
+CREATE INDEX document_submission_vault_document_id_fk_idx ON integration.document_submission USING btree (vault_document_id);
+
+--
 -- Name: identity_release_client_idx; Type: INDEX; Schema: integration; Owner: -
 --
 
@@ -7261,6 +7292,12 @@ CREATE INDEX outbox_due_idx ON integration.outbox USING btree (status, next_atte
 --
 
 CREATE INDEX activity_events_client_idx ON public.activity_events USING btree (client_id, created_at DESC);
+
+--
+-- Name: activity_events_request_id_fk_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX activity_events_request_id_fk_idx ON public.activity_events USING btree (request_id);
 
 --
 -- Name: activity_events_unread_idx; Type: INDEX; Schema: public; Owner: -
@@ -7287,10 +7324,34 @@ CREATE INDEX app_client_seen_recent_idx ON public.app_client_seen USING btree (l
 CREATE INDEX app_error_report_by_version_idx ON public.app_error_report USING btree (day, platform, app_version, fingerprint);
 
 --
+-- Name: app_error_report_client_id_fk_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX app_error_report_client_id_fk_idx ON public.app_error_report USING btree (client_id);
+
+--
+-- Name: bid_acceptances_client_id_fk_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX bid_acceptances_client_id_fk_idx ON public.bid_acceptances USING btree (client_id);
+
+--
 -- Name: bid_acceptances_request_uniq; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX bid_acceptances_request_uniq ON public.bid_acceptances USING btree (request_id);
+
+--
+-- Name: client_vault_property_deed_document_id_fk_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX client_vault_property_deed_document_id_fk_idx ON public.client_vault_property USING btree (deed_document_id);
+
+--
+-- Name: client_vault_property_valuation_doc_id_fk_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX client_vault_property_valuation_doc_id_fk_idx ON public.client_vault_property USING btree (valuation_doc_id);
 
 --
 -- Name: couple_link_client_a_idx; Type: INDEX; Schema: public; Owner: -
@@ -7303,6 +7364,30 @@ CREATE INDEX couple_link_client_a_idx ON public.couple_link USING btree (client_
 --
 
 CREATE INDEX couple_link_client_b_idx ON public.couple_link USING btree (client_b_id);
+
+--
+-- Name: couple_link_initiated_by_client_id_fk_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX couple_link_initiated_by_client_id_fk_idx ON public.couple_link USING btree (initiated_by_client_id);
+
+--
+-- Name: couple_relationship_document_reviewed_by_fk_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX couple_relationship_document_reviewed_by_fk_idx ON public.couple_relationship_document USING btree (reviewed_by);
+
+--
+-- Name: couple_relationship_document_uploaded_by_client_id_fk_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX couple_relationship_document_uploaded_by_client_id_fk_idx ON public.couple_relationship_document USING btree (uploaded_by_client_id);
+
+--
+-- Name: couple_relationship_document_vault_document_id_fk_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX couple_relationship_document_vault_document_id_fk_idx ON public.couple_relationship_document USING btree (vault_document_id);
 
 --
 -- Name: docs_client_idx; Type: INDEX; Schema: public; Owner: -
@@ -7497,10 +7582,22 @@ CREATE INDEX idx_vault_prop_client ON public.client_vault_property USING btree (
 CREATE UNIQUE INDEX idx_vault_prop_client_addr ON public.client_vault_property USING btree (client_id, address) WHERE (address IS NOT NULL);
 
 --
+-- Name: kyc_scan_attempts_client_id_fk_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX kyc_scan_attempts_client_id_fk_idx ON public.kyc_scan_attempts USING btree (client_id);
+
+--
 -- Name: kyc_scan_attempts_ip_created_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX kyc_scan_attempts_ip_created_idx ON public.kyc_scan_attempts USING btree (ip_hash, created_at);
+
+--
+-- Name: kyc_submissions_client_id_fk_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX kyc_submissions_client_id_fk_idx ON public.kyc_submissions USING btree (client_id);
 
 --
 -- Name: offer_listing_live_idx; Type: INDEX; Schema: public; Owner: -
@@ -7513,6 +7610,18 @@ CREATE INDEX offer_listing_live_idx ON public.offer_listing USING btree (live_un
 --
 
 CREATE UNIQUE INDEX request_invitation_active_uniq ON public.request_invitation USING btree (request_id, invited_email) WHERE (status = 'pending'::public.invitation_status);
+
+--
+-- Name: request_invitation_invited_client_id_fk_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX request_invitation_invited_client_id_fk_idx ON public.request_invitation USING btree (invited_client_id);
+
+--
+-- Name: request_invitation_inviter_client_id_fk_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX request_invitation_inviter_client_id_fk_idx ON public.request_invitation USING btree (inviter_client_id);
 
 --
 -- Name: request_invitation_request_idx; Type: INDEX; Schema: public; Owner: -
@@ -7539,10 +7648,22 @@ CREATE INDEX request_messages_request_id_created_at_idx ON public.request_messag
 CREATE INDEX request_messages_request_id_idx ON public.request_messages USING btree (request_id, created_at);
 
 --
+-- Name: request_messages_template_code_fk_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX request_messages_template_code_fk_idx ON public.request_messages USING btree (template_code);
+
+--
 -- Name: request_messages_thread_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX request_messages_thread_idx ON public.request_messages USING btree (request_id, institution_id, created_at);
+
+--
+-- Name: request_participant_client_id_fk_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX request_participant_client_id_fk_idx ON public.request_participant USING btree (client_id);
 
 --
 -- Name: requests_relisted_from_uniq; Type: INDEX; Schema: public; Owner: -
@@ -7615,6 +7736,18 @@ CREATE TRIGGER recompute_on_price_change AFTER INSERT OR UPDATE ON finance.holdi
 --
 
 CREATE TRIGGER account_closures_forget_app_client AFTER INSERT ON public.account_closures FOR EACH ROW EXECUTE FUNCTION public._app_client_seen_forget();
+
+--
+-- Name: audit_logs audit_logs_append_only_row; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER audit_logs_append_only_row BEFORE DELETE OR UPDATE ON public.audit_logs FOR EACH ROW EXECUTE FUNCTION public.audit_logs_append_only();
+
+--
+-- Name: audit_logs audit_logs_append_only_truncate; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER audit_logs_append_only_truncate BEFORE TRUNCATE ON public.audit_logs FOR EACH STATEMENT EXECUTE FUNCTION public.audit_logs_append_only();
 
 --
 -- Name: clients clients_guard_kyc_status; Type: TRIGGER; Schema: public; Owner: -
@@ -8095,17 +8228,17 @@ ALTER TABLE ONLY public.requests
 -- Name: audit_events admin_audit_insert; Type: POLICY; Schema: admin; Owner: -
 --
 
-CREATE POLICY admin_audit_insert ON admin.audit_events FOR INSERT WITH CHECK ((EXISTS ( SELECT 1
+CREATE POLICY admin_audit_insert ON admin.audit_events FOR INSERT TO authenticated WITH CHECK ((EXISTS ( SELECT 1
    FROM admin.admin_users
-  WHERE ((admin_users.id = auth.uid()) AND (admin_users.active = true)))));
+  WHERE ((admin_users.id = ( SELECT auth.uid() AS uid)) AND (admin_users.active = true)))));
 
 --
 -- Name: audit_events admin_audit_select; Type: POLICY; Schema: admin; Owner: -
 --
 
-CREATE POLICY admin_audit_select ON admin.audit_events FOR SELECT USING ((EXISTS ( SELECT 1
+CREATE POLICY admin_audit_select ON admin.audit_events FOR SELECT TO authenticated USING ((EXISTS ( SELECT 1
    FROM admin.admin_users
-  WHERE ((admin_users.id = auth.uid()) AND (admin_users.active = true)))));
+  WHERE ((admin_users.id = ( SELECT auth.uid() AS uid)) AND (admin_users.active = true)))));
 
 --
 -- Name: admin_users; Type: ROW SECURITY; Schema: admin; Owner: -
@@ -8141,13 +8274,13 @@ ALTER TABLE admin.audit_events ENABLE ROW LEVEL SECURITY;
 -- Name: platform_config ficium_admin_config; Type: POLICY; Schema: admin; Owner: -
 --
 
-CREATE POLICY ficium_admin_config ON admin.platform_config USING ((((auth.jwt() -> 'app_metadata'::text) ->> 'role'::text) = 'ficium_admin'::text)) WITH CHECK ((((auth.jwt() -> 'app_metadata'::text) ->> 'role'::text) = 'ficium_admin'::text));
+CREATE POLICY ficium_admin_config ON admin.platform_config TO authenticated USING ((((( SELECT auth.jwt() AS jwt) -> 'app_metadata'::text) ->> 'role'::text) = 'ficium_admin'::text)) WITH CHECK ((((( SELECT auth.jwt() AS jwt) -> 'app_metadata'::text) ->> 'role'::text) = 'ficium_admin'::text));
 
 --
 -- Name: admin_users ficium_admin_users; Type: POLICY; Schema: admin; Owner: -
 --
 
-CREATE POLICY ficium_admin_users ON admin.admin_users USING ((((auth.jwt() -> 'app_metadata'::text) ->> 'role'::text) = 'ficium_admin'::text)) WITH CHECK ((((auth.jwt() -> 'app_metadata'::text) ->> 'role'::text) = 'ficium_admin'::text));
+CREATE POLICY ficium_admin_users ON admin.admin_users TO authenticated USING ((((( SELECT auth.jwt() AS jwt) -> 'app_metadata'::text) ->> 'role'::text) = 'ficium_admin'::text)) WITH CHECK ((((( SELECT auth.jwt() AS jwt) -> 'app_metadata'::text) ->> 'role'::text) = 'ficium_admin'::text));
 
 --
 -- Name: kyc_settings_change; Type: ROW SECURITY; Schema: admin; Owner: -
@@ -8189,7 +8322,7 @@ ALTER TABLE fico.conversation ENABLE ROW LEVEL SECURITY;
 -- Name: conversation conversation_owner; Type: POLICY; Schema: fico; Owner: -
 --
 
-CREATE POLICY conversation_owner ON fico.conversation FOR SELECT USING ((user_id = auth.uid()));
+CREATE POLICY conversation_owner ON fico.conversation FOR SELECT TO authenticated USING ((user_id = ( SELECT auth.uid() AS uid)));
 
 --
 -- Name: message; Type: ROW SECURITY; Schema: fico; Owner: -
@@ -8207,13 +8340,13 @@ ALTER TABLE fico.message_meter ENABLE ROW LEVEL SECURITY;
 -- Name: message message_owner; Type: POLICY; Schema: fico; Owner: -
 --
 
-CREATE POLICY message_owner ON fico.message FOR SELECT USING ((user_id = auth.uid()));
+CREATE POLICY message_owner ON fico.message FOR SELECT TO authenticated USING ((user_id = ( SELECT auth.uid() AS uid)));
 
 --
 -- Name: message_meter meter_owner_read; Type: POLICY; Schema: fico; Owner: -
 --
 
-CREATE POLICY meter_owner_read ON fico.message_meter FOR SELECT USING ((user_id = auth.uid()));
+CREATE POLICY meter_owner_read ON fico.message_meter FOR SELECT TO authenticated USING ((user_id = ( SELECT auth.uid() AS uid)));
 
 --
 -- Name: profile; Type: ROW SECURITY; Schema: fico; Owner: -
@@ -8225,7 +8358,7 @@ ALTER TABLE fico.profile ENABLE ROW LEVEL SECURITY;
 -- Name: profile profile_owner; Type: POLICY; Schema: fico; Owner: -
 --
 
-CREATE POLICY profile_owner ON fico.profile FOR SELECT USING ((user_id = auth.uid()));
+CREATE POLICY profile_owner ON fico.profile FOR SELECT TO authenticated USING ((user_id = ( SELECT auth.uid() AS uid)));
 
 --
 -- Name: accounts; Type: ROW SECURITY; Schema: finance; Owner: -
@@ -8237,7 +8370,7 @@ ALTER TABLE finance.accounts ENABLE ROW LEVEL SECURITY;
 -- Name: accounts accounts_owner_all; Type: POLICY; Schema: finance; Owner: -
 --
 
-CREATE POLICY accounts_owner_all ON finance.accounts USING ((user_id = auth.uid())) WITH CHECK ((user_id = auth.uid()));
+CREATE POLICY accounts_owner_all ON finance.accounts TO authenticated USING ((user_id = ( SELECT auth.uid() AS uid))) WITH CHECK ((user_id = ( SELECT auth.uid() AS uid)));
 
 --
 -- Name: holding_prices; Type: ROW SECURITY; Schema: finance; Owner: -
@@ -8249,7 +8382,7 @@ ALTER TABLE finance.holding_prices ENABLE ROW LEVEL SECURITY;
 -- Name: holding_prices holding_prices_read_all; Type: POLICY; Schema: finance; Owner: -
 --
 
-CREATE POLICY holding_prices_read_all ON finance.holding_prices FOR SELECT USING ((auth.role() = 'authenticated'::text));
+CREATE POLICY holding_prices_read_all ON finance.holding_prices FOR SELECT TO authenticated USING ((( SELECT auth.role() AS role) = 'authenticated'::text));
 
 --
 -- Name: holdings; Type: ROW SECURITY; Schema: finance; Owner: -
@@ -8261,7 +8394,7 @@ ALTER TABLE finance.holdings ENABLE ROW LEVEL SECURITY;
 -- Name: holdings holdings_owner_all; Type: POLICY; Schema: finance; Owner: -
 --
 
-CREATE POLICY holdings_owner_all ON finance.holdings USING ((user_id = auth.uid())) WITH CHECK ((user_id = auth.uid()));
+CREATE POLICY holdings_owner_all ON finance.holdings TO authenticated USING ((user_id = ( SELECT auth.uid() AS uid))) WITH CHECK ((user_id = ( SELECT auth.uid() AS uid)));
 
 --
 -- Name: net_worth_history; Type: ROW SECURITY; Schema: finance; Owner: -
@@ -8273,19 +8406,19 @@ ALTER TABLE finance.net_worth_history ENABLE ROW LEVEL SECURITY;
 -- Name: net_worth_history net_worth_history_owner_insert; Type: POLICY; Schema: finance; Owner: -
 --
 
-CREATE POLICY net_worth_history_owner_insert ON finance.net_worth_history FOR INSERT WITH CHECK ((user_id = auth.uid()));
+CREATE POLICY net_worth_history_owner_insert ON finance.net_worth_history FOR INSERT TO authenticated WITH CHECK ((user_id = ( SELECT auth.uid() AS uid)));
 
 --
 -- Name: net_worth_history net_worth_history_owner_select; Type: POLICY; Schema: finance; Owner: -
 --
 
-CREATE POLICY net_worth_history_owner_select ON finance.net_worth_history FOR SELECT USING ((user_id = auth.uid()));
+CREATE POLICY net_worth_history_owner_select ON finance.net_worth_history FOR SELECT TO authenticated USING ((user_id = ( SELECT auth.uid() AS uid)));
 
 --
 -- Name: net_worth_history net_worth_history_owner_update; Type: POLICY; Schema: finance; Owner: -
 --
 
-CREATE POLICY net_worth_history_owner_update ON finance.net_worth_history FOR UPDATE USING ((user_id = auth.uid())) WITH CHECK ((user_id = auth.uid()));
+CREATE POLICY net_worth_history_owner_update ON finance.net_worth_history FOR UPDATE TO authenticated USING ((user_id = ( SELECT auth.uid() AS uid))) WITH CHECK ((user_id = ( SELECT auth.uid() AS uid)));
 
 --
 -- Name: aggregate_sequence; Type: ROW SECURITY; Schema: integration; Owner: -
@@ -8363,29 +8496,29 @@ ALTER TABLE integration.outbox ENABLE ROW LEVEL SECURITY;
 -- Name: request_allocations Clients create own request allocations; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Clients create own request allocations" ON public.request_allocations FOR INSERT WITH CHECK ((request_id IN ( SELECT requests.id
+CREATE POLICY "Clients create own request allocations" ON public.request_allocations FOR INSERT TO authenticated WITH CHECK ((request_id IN ( SELECT requests.id
    FROM public.requests
-  WHERE (requests.client_id = auth.uid()))));
+  WHERE (requests.client_id = ( SELECT auth.uid() AS uid)))));
 
 --
 -- Name: requests Clients create own requests; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Clients create own requests" ON public.requests FOR INSERT TO authenticated WITH CHECK (((auth.uid() = client_id) AND (status = 'open'::public.request_status) AND (accepted_bid_id IS NULL) AND (relisted_from IS NULL)));
+CREATE POLICY "Clients create own requests" ON public.requests FOR INSERT TO authenticated WITH CHECK (((( SELECT auth.uid() AS uid) = client_id) AND (status = 'open'::public.request_status) AND (accepted_bid_id IS NULL) AND (relisted_from IS NULL)));
 
 --
 -- Name: request_allocations Clients read own request allocations; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Clients read own request allocations" ON public.request_allocations FOR SELECT USING ((request_id IN ( SELECT requests.id
+CREATE POLICY "Clients read own request allocations" ON public.request_allocations FOR SELECT TO authenticated USING ((request_id IN ( SELECT requests.id
    FROM public.requests
-  WHERE (requests.client_id = auth.uid()))));
+  WHERE (requests.client_id = ( SELECT auth.uid() AS uid)))));
 
 --
 -- Name: requests Clients read own requests; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Clients read own requests" ON public.requests FOR SELECT USING ((auth.uid() = client_id));
+CREATE POLICY "Clients read own requests" ON public.requests FOR SELECT TO authenticated USING ((( SELECT auth.uid() AS uid) = client_id));
 
 --
 -- Name: activity_events Postgres role full access; Type: POLICY; Schema: public; Owner: -
@@ -8523,25 +8656,13 @@ CREATE POLICY "Service role full access on requests" ON public.requests TO servi
 -- Name: compliance_details Users manage own compliance; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Users manage own compliance" ON public.compliance_details TO authenticated USING ((user_id = auth.uid())) WITH CHECK ((user_id = auth.uid()));
+CREATE POLICY "Users manage own compliance" ON public.compliance_details TO authenticated USING ((user_id = ( SELECT auth.uid() AS uid))) WITH CHECK ((user_id = ( SELECT auth.uid() AS uid)));
 
 --
 -- Name: employment_details Users manage own employment; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Users manage own employment" ON public.employment_details TO authenticated USING ((user_id = auth.uid())) WITH CHECK ((user_id = auth.uid()));
-
---
--- Name: notifications Users read own notifications; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Users read own notifications" ON public.notifications FOR SELECT USING ((auth.uid() = user_id));
-
---
--- Name: notifications Users update own notifications; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Users update own notifications" ON public.notifications FOR UPDATE USING ((auth.uid() = user_id));
+CREATE POLICY "Users manage own employment" ON public.employment_details TO authenticated USING ((user_id = ( SELECT auth.uid() AS uid))) WITH CHECK ((user_id = ( SELECT auth.uid() AS uid)));
 
 --
 -- Name: account_closures; Type: ROW SECURITY; Schema: public; Owner: -
@@ -8559,25 +8680,31 @@ ALTER TABLE public.activity_events ENABLE ROW LEVEL SECURITY;
 -- Name: activity_events activity_insert; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY activity_insert ON public.activity_events FOR INSERT WITH CHECK ((auth.uid() = client_id));
+CREATE POLICY activity_insert ON public.activity_events FOR INSERT TO authenticated WITH CHECK ((( SELECT auth.uid() AS uid) = client_id));
 
 --
 -- Name: activity_events activity_select; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY activity_select ON public.activity_events FOR SELECT USING ((auth.uid() = client_id));
+CREATE POLICY activity_select ON public.activity_events FOR SELECT TO authenticated USING ((( SELECT auth.uid() AS uid) = client_id));
 
 --
 -- Name: activity_events activity_update; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY activity_update ON public.activity_events FOR UPDATE USING ((auth.uid() = client_id));
+CREATE POLICY activity_update ON public.activity_events FOR UPDATE TO authenticated USING ((( SELECT auth.uid() AS uid) = client_id));
 
 --
--- Name: audit_logs admin_all_audit_logs; Type: POLICY; Schema: public; Owner: -
+-- Name: audit_logs admin_insert_audit_logs; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY admin_all_audit_logs ON public.audit_logs USING (public.is_ficium_admin()) WITH CHECK (public.is_ficium_admin());
+CREATE POLICY admin_insert_audit_logs ON public.audit_logs FOR INSERT TO authenticated WITH CHECK (( SELECT public.is_ficium_admin() AS is_ficium_admin));
+
+--
+-- Name: audit_logs admin_read_audit_logs; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY admin_read_audit_logs ON public.audit_logs FOR SELECT TO authenticated USING (( SELECT public.is_ficium_admin() AS is_ficium_admin));
 
 --
 -- Name: advisor_messages; Type: ROW SECURITY; Schema: public; Owner: -
@@ -8589,19 +8716,19 @@ ALTER TABLE public.advisor_messages ENABLE ROW LEVEL SECURITY;
 -- Name: advisor_messages advisor_messages_delete_own; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY advisor_messages_delete_own ON public.advisor_messages FOR DELETE TO authenticated USING ((user_id = auth.uid()));
+CREATE POLICY advisor_messages_delete_own ON public.advisor_messages FOR DELETE TO authenticated USING ((user_id = ( SELECT auth.uid() AS uid)));
 
 --
 -- Name: advisor_messages advisor_messages_insert_own; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY advisor_messages_insert_own ON public.advisor_messages FOR INSERT TO authenticated WITH CHECK ((user_id = auth.uid()));
+CREATE POLICY advisor_messages_insert_own ON public.advisor_messages FOR INSERT TO authenticated WITH CHECK ((user_id = ( SELECT auth.uid() AS uid)));
 
 --
 -- Name: advisor_messages advisor_messages_select_own; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY advisor_messages_select_own ON public.advisor_messages FOR SELECT TO authenticated USING ((user_id = auth.uid()));
+CREATE POLICY advisor_messages_select_own ON public.advisor_messages FOR SELECT TO authenticated USING ((user_id = ( SELECT auth.uid() AS uid)));
 
 --
 -- Name: ai_usage; Type: ROW SECURITY; Schema: public; Owner: -
@@ -8649,7 +8776,7 @@ CREATE POLICY app_release_policy_read ON public.app_release_policy FOR SELECT TO
 -- Name: audit_events audit_client_select; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY audit_client_select ON public.audit_events FOR SELECT USING (((client_id = auth.uid()) OR (actor_id = auth.uid())));
+CREATE POLICY audit_client_select ON public.audit_events FOR SELECT TO authenticated USING (((client_id = ( SELECT auth.uid() AS uid)) OR (actor_id = ( SELECT auth.uid() AS uid))));
 
 --
 -- Name: audit_events; Type: ROW SECURITY; Schema: public; Owner: -
@@ -8661,7 +8788,7 @@ ALTER TABLE public.audit_events ENABLE ROW LEVEL SECURITY;
 -- Name: audit_events audit_insert_own; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY audit_insert_own ON public.audit_events FOR INSERT TO authenticated WITH CHECK (((client_id = auth.uid()) AND (actor_id = auth.uid())));
+CREATE POLICY audit_insert_own ON public.audit_events FOR INSERT TO authenticated WITH CHECK (((client_id = ( SELECT auth.uid() AS uid)) AND (actor_id = ( SELECT auth.uid() AS uid))));
 
 --
 -- Name: audit_logs; Type: ROW SECURITY; Schema: public; Owner: -
@@ -8673,13 +8800,13 @@ ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 -- Name: audit_logs audit_logs_no_delete; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY audit_logs_no_delete ON public.audit_logs FOR DELETE USING (false);
+CREATE POLICY audit_logs_no_delete ON public.audit_logs AS RESTRICTIVE FOR DELETE USING (false);
 
 --
 -- Name: audit_logs audit_logs_no_update; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY audit_logs_no_update ON public.audit_logs FOR UPDATE USING (false);
+CREATE POLICY audit_logs_no_update ON public.audit_logs AS RESTRICTIVE FOR UPDATE USING (false);
 
 --
 -- Name: bid_acceptances; Type: ROW SECURITY; Schema: public; Owner: -
@@ -8715,31 +8842,31 @@ ALTER TABLE public.client_loan_details ENABLE ROW LEVEL SECURITY;
 -- Name: bid_acceptances client_own_acceptances; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY client_own_acceptances ON public.bid_acceptances USING ((client_id = auth.uid())) WITH CHECK ((client_id = auth.uid()));
+CREATE POLICY client_own_acceptances ON public.bid_acceptances TO authenticated USING ((client_id = ( SELECT auth.uid() AS uid))) WITH CHECK ((client_id = ( SELECT auth.uid() AS uid)));
 
 --
 -- Name: client_dossier client_own_dossier; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY client_own_dossier ON public.client_dossier USING ((client_id = auth.uid()));
+CREATE POLICY client_own_dossier ON public.client_dossier TO authenticated USING ((client_id = ( SELECT auth.uid() AS uid)));
 
 --
 -- Name: client_loan_details client_own_loan_details; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY client_own_loan_details ON public.client_loan_details USING ((client_id = auth.uid()));
+CREATE POLICY client_own_loan_details ON public.client_loan_details TO authenticated USING ((client_id = ( SELECT auth.uid() AS uid)));
 
 --
 -- Name: clients client_own_row; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY client_own_row ON public.clients TO authenticated USING ((id = auth.uid())) WITH CHECK ((id = auth.uid()));
+CREATE POLICY client_own_row ON public.clients TO authenticated USING ((id = ( SELECT auth.uid() AS uid))) WITH CHECK ((id = ( SELECT auth.uid() AS uid)));
 
 --
 -- Name: audit_logs client_read_own_audit; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY client_read_own_audit ON public.audit_logs FOR SELECT USING ((actor_id = auth.uid()));
+CREATE POLICY client_read_own_audit ON public.audit_logs FOR SELECT TO authenticated USING ((actor_id = ( SELECT auth.uid() AS uid)));
 
 --
 -- Name: client_vault_access_log; Type: ROW SECURITY; Schema: public; Owner: -
@@ -8766,12 +8893,6 @@ ALTER TABLE public.client_vault_property ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.clients ENABLE ROW LEVEL SECURITY;
 
 --
--- Name: clients clients: users can read own record; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "clients: users can read own record" ON public.clients FOR SELECT TO authenticated USING ((id = auth.uid()));
-
---
 -- Name: compliance_details; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -8787,7 +8908,7 @@ ALTER TABLE public.couple_link ENABLE ROW LEVEL SECURITY;
 -- Name: couple_link couple_link_select; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY couple_link_select ON public.couple_link FOR SELECT USING (((client_a_id = auth.uid()) OR (client_b_id = auth.uid())));
+CREATE POLICY couple_link_select ON public.couple_link FOR SELECT TO authenticated USING (((client_a_id = ( SELECT auth.uid() AS uid)) OR (client_b_id = ( SELECT auth.uid() AS uid))));
 
 --
 -- Name: couple_relationship_document; Type: ROW SECURITY; Schema: public; Owner: -
@@ -8799,31 +8920,31 @@ ALTER TABLE public.couple_relationship_document ENABLE ROW LEVEL SECURITY;
 -- Name: couple_relationship_document couple_relationship_document_select; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY couple_relationship_document_select ON public.couple_relationship_document FOR SELECT USING (public.is_couple_member(couple_link_id, auth.uid()));
+CREATE POLICY couple_relationship_document_select ON public.couple_relationship_document FOR SELECT TO authenticated USING (public.is_couple_member(couple_link_id, ( SELECT auth.uid() AS uid)));
 
 --
 -- Name: client_documents docs_delete; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY docs_delete ON public.client_documents FOR DELETE USING ((auth.uid() = client_id));
+CREATE POLICY docs_delete ON public.client_documents FOR DELETE TO authenticated USING ((( SELECT auth.uid() AS uid) = client_id));
 
 --
 -- Name: client_documents docs_insert; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY docs_insert ON public.client_documents FOR INSERT WITH CHECK ((auth.uid() = client_id));
+CREATE POLICY docs_insert ON public.client_documents FOR INSERT TO authenticated WITH CHECK ((( SELECT auth.uid() AS uid) = client_id));
 
 --
 -- Name: client_documents docs_select; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY docs_select ON public.client_documents FOR SELECT USING ((auth.uid() = client_id));
+CREATE POLICY docs_select ON public.client_documents FOR SELECT TO authenticated USING ((( SELECT auth.uid() AS uid) = client_id));
 
 --
 -- Name: client_documents docs_update; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY docs_update ON public.client_documents FOR UPDATE USING ((auth.uid() = client_id));
+CREATE POLICY docs_update ON public.client_documents FOR UPDATE TO authenticated USING ((( SELECT auth.uid() AS uid) = client_id));
 
 --
 -- Name: employment_details; Type: ROW SECURITY; Schema: public; Owner: -
@@ -8835,13 +8956,13 @@ ALTER TABLE public.employment_details ENABLE ROW LEVEL SECURITY;
 -- Name: audit_logs inst_read_audit; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY inst_read_audit ON public.audit_logs FOR SELECT USING ((institution_id = public.get_my_institution_id()));
+CREATE POLICY inst_read_audit ON public.audit_logs FOR SELECT TO authenticated USING ((institution_id = public.get_my_institution_id()));
 
 --
 -- Name: kyc_submissions kyc: users can read own submissions; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "kyc: users can read own submissions" ON public.kyc_submissions FOR SELECT TO authenticated USING ((client_id = auth.uid()));
+CREATE POLICY "kyc: users can read own submissions" ON public.kyc_submissions FOR SELECT TO authenticated USING ((client_id = ( SELECT auth.uid() AS uid)));
 
 --
 -- Name: kyc_scan_attempts; Type: ROW SECURITY; Schema: public; Owner: -
@@ -8943,25 +9064,25 @@ ALTER TABLE public.market_preferences ENABLE ROW LEVEL SECURITY;
 -- Name: market_preferences market_preferences_delete_own; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY market_preferences_delete_own ON public.market_preferences FOR DELETE USING ((auth.uid() = user_id));
+CREATE POLICY market_preferences_delete_own ON public.market_preferences FOR DELETE TO authenticated USING ((( SELECT auth.uid() AS uid) = user_id));
 
 --
 -- Name: market_preferences market_preferences_insert_own; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY market_preferences_insert_own ON public.market_preferences FOR INSERT WITH CHECK ((auth.uid() = user_id));
+CREATE POLICY market_preferences_insert_own ON public.market_preferences FOR INSERT TO authenticated WITH CHECK ((( SELECT auth.uid() AS uid) = user_id));
 
 --
 -- Name: market_preferences market_preferences_select_own; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY market_preferences_select_own ON public.market_preferences FOR SELECT USING ((auth.uid() = user_id));
+CREATE POLICY market_preferences_select_own ON public.market_preferences FOR SELECT TO authenticated USING ((( SELECT auth.uid() AS uid) = user_id));
 
 --
 -- Name: market_preferences market_preferences_update_own; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY market_preferences_update_own ON public.market_preferences FOR UPDATE USING ((auth.uid() = user_id)) WITH CHECK ((auth.uid() = user_id));
+CREATE POLICY market_preferences_update_own ON public.market_preferences FOR UPDATE TO authenticated USING ((( SELECT auth.uid() AS uid) = user_id)) WITH CHECK ((( SELECT auth.uid() AS uid) = user_id));
 
 --
 -- Name: market_stories; Type: ROW SECURITY; Schema: public; Owner: -
@@ -8985,13 +9106,13 @@ ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 -- Name: notifications notifications_owner; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY notifications_owner ON public.notifications USING ((user_id = auth.uid()));
+CREATE POLICY notifications_owner ON public.notifications TO authenticated USING ((user_id = ( SELECT auth.uid() AS uid)));
 
 --
 -- Name: notifications notifications_service; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY notifications_service ON public.notifications USING ((auth.role() = 'service_role'::text));
+CREATE POLICY notifications_service ON public.notifications TO service_role USING ((( SELECT auth.role() AS role) = 'service_role'::text));
 
 --
 -- Name: offer_listing; Type: ROW SECURITY; Schema: public; Owner: -
@@ -9027,7 +9148,7 @@ ALTER TABLE public.request_invitation ENABLE ROW LEVEL SECURITY;
 -- Name: request_invitation request_invitation_select; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY request_invitation_select ON public.request_invitation FOR SELECT USING (((inviter_client_id = auth.uid()) OR (invited_client_id = auth.uid()) OR public.is_request_participant(request_id, auth.uid()) OR (lower(invited_email) = lower(COALESCE(public.current_client_email(), ''::text)))));
+CREATE POLICY request_invitation_select ON public.request_invitation FOR SELECT TO authenticated USING (((inviter_client_id = ( SELECT auth.uid() AS uid)) OR (invited_client_id = ( SELECT auth.uid() AS uid)) OR public.is_request_participant(request_id, ( SELECT auth.uid() AS uid)) OR (lower(invited_email) = lower(COALESCE(public.current_client_email(), ''::text)))));
 
 --
 -- Name: request_message_template; Type: ROW SECURITY; Schema: public; Owner: -
@@ -9051,9 +9172,9 @@ ALTER TABLE public.request_messages ENABLE ROW LEVEL SECURITY;
 -- Name: request_messages request_messages_client_read; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY request_messages_client_read ON public.request_messages FOR SELECT USING ((EXISTS ( SELECT 1
+CREATE POLICY request_messages_client_read ON public.request_messages FOR SELECT TO authenticated USING ((EXISTS ( SELECT 1
    FROM public.requests r
-  WHERE ((r.id = request_messages.request_id) AND (r.client_id = auth.uid())))));
+  WHERE ((r.id = request_messages.request_id) AND (r.client_id = ( SELECT auth.uid() AS uid))))));
 
 --
 -- Name: request_participant; Type: ROW SECURITY; Schema: public; Owner: -
@@ -9065,7 +9186,7 @@ ALTER TABLE public.request_participant ENABLE ROW LEVEL SECURITY;
 -- Name: request_participant request_participant_select; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY request_participant_select ON public.request_participant FOR SELECT USING (public.is_request_participant(request_id, auth.uid()));
+CREATE POLICY request_participant_select ON public.request_participant FOR SELECT TO authenticated USING (public.is_request_participant(request_id, ( SELECT auth.uid() AS uid)));
 
 --
 -- Name: requests; Type: ROW SECURITY; Schema: public; Owner: -
@@ -9077,80 +9198,79 @@ ALTER TABLE public.requests ENABLE ROW LEVEL SECURITY;
 -- Name: bid_acceptances service_all_acceptances; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY service_all_acceptances ON public.bid_acceptances USING ((auth.role() = 'service_role'::text)) WITH CHECK ((auth.role() = 'service_role'::text));
+CREATE POLICY service_all_acceptances ON public.bid_acceptances TO service_role USING ((( SELECT auth.role() AS role) = 'service_role'::text)) WITH CHECK ((( SELECT auth.role() AS role) = 'service_role'::text));
 
 --
 -- Name: client_financial_snapshot snapshot_delete; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY snapshot_delete ON public.client_financial_snapshot FOR DELETE USING ((auth.uid() = client_id));
+CREATE POLICY snapshot_delete ON public.client_financial_snapshot FOR DELETE TO authenticated USING ((( SELECT auth.uid() AS uid) = client_id));
 
 --
 -- Name: client_financial_snapshot snapshot_insert; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY snapshot_insert ON public.client_financial_snapshot FOR INSERT WITH CHECK ((auth.uid() = client_id));
+CREATE POLICY snapshot_insert ON public.client_financial_snapshot FOR INSERT TO authenticated WITH CHECK ((( SELECT auth.uid() AS uid) = client_id));
 
 --
 -- Name: client_financial_snapshot snapshot_select; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY snapshot_select ON public.client_financial_snapshot FOR SELECT USING ((auth.uid() = client_id));
+CREATE POLICY snapshot_select ON public.client_financial_snapshot FOR SELECT TO authenticated USING ((( SELECT auth.uid() AS uid) = client_id));
 
 --
 -- Name: client_financial_snapshot snapshot_update; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY snapshot_update ON public.client_financial_snapshot FOR UPDATE USING ((auth.uid() = client_id));
+CREATE POLICY snapshot_update ON public.client_financial_snapshot FOR UPDATE TO authenticated USING ((( SELECT auth.uid() AS uid) = client_id));
 
 --
 -- Name: client_vault_document vault_doc_owner; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY vault_doc_owner ON public.client_vault_document USING ((client_id = auth.uid()));
+CREATE POLICY vault_doc_owner ON public.client_vault_document TO authenticated USING ((client_id = ( SELECT auth.uid() AS uid)));
 
 --
 -- Name: client_vault_document vault_doc_service; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY vault_doc_service ON public.client_vault_document USING ((auth.role() = 'service_role'::text));
+CREATE POLICY vault_doc_service ON public.client_vault_document TO service_role USING ((( SELECT auth.role() AS role) = 'service_role'::text));
 
 --
 -- Name: client_vault_access_log vault_log_owner_insert; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY vault_log_owner_insert ON public.client_vault_access_log FOR INSERT WITH CHECK (((client_id = auth.uid()) AND (actor_id = auth.uid())));
+CREATE POLICY vault_log_owner_insert ON public.client_vault_access_log FOR INSERT TO authenticated WITH CHECK (((client_id = ( SELECT auth.uid() AS uid)) AND (actor_id = ( SELECT auth.uid() AS uid))));
 
 --
 -- Name: client_vault_access_log vault_log_owner_read; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY vault_log_owner_read ON public.client_vault_access_log FOR SELECT USING ((client_id = auth.uid()));
+CREATE POLICY vault_log_owner_read ON public.client_vault_access_log FOR SELECT TO authenticated USING ((client_id = ( SELECT auth.uid() AS uid)));
 
 --
 -- Name: client_vault_access_log vault_log_service; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY vault_log_service ON public.client_vault_access_log USING ((auth.role() = 'service_role'::text));
+CREATE POLICY vault_log_service ON public.client_vault_access_log TO service_role USING ((( SELECT auth.role() AS role) = 'service_role'::text));
 
 --
 -- Name: client_vault_property vault_prop_owner; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY vault_prop_owner ON public.client_vault_property USING ((client_id = auth.uid()));
+CREATE POLICY vault_prop_owner ON public.client_vault_property TO authenticated USING ((client_id = ( SELECT auth.uid() AS uid)));
 
 --
 -- Name: client_vault_property vault_prop_service; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY vault_prop_service ON public.client_vault_property USING ((auth.role() = 'service_role'::text));
+CREATE POLICY vault_prop_service ON public.client_vault_property TO service_role USING ((( SELECT auth.role() AS role) = 'service_role'::text));
 
 --
 -- Name: SCHEMA admin; Type: ACL; Schema: -; Owner: -
 --
 
 GRANT USAGE ON SCHEMA admin TO service_role;
-GRANT USAGE ON SCHEMA admin TO ficium_admin_sync;
 
 --
 -- Name: SCHEMA fico; Type: ACL; Schema: -; Owner: -
@@ -9246,7 +9366,6 @@ REVOKE ALL ON FUNCTION admin.migration_applied(p_version text) FROM PUBLIC;
 --
 
 REVOKE ALL ON FUNCTION admin.sync_apply(p_event_id uuid, p_topic text, p_aggregate_type text, p_aggregate_id text, p_version bigint, p_payload jsonb) FROM PUBLIC;
-GRANT ALL ON FUNCTION admin.sync_apply(p_event_id uuid, p_topic text, p_aggregate_type text, p_aggregate_id text, p_version bigint, p_payload jsonb) TO ficium_admin_sync;
 
 --
 -- Name: FUNCTION trigger_outbox_dispatch(); Type: ACL; Schema: admin; Owner: -
@@ -9456,9 +9575,6 @@ REVOKE ALL ON FUNCTION integration.trigger_dispatch() FROM PUBLIC;
 
 REVOKE ALL ON FUNCTION public._app_client_seen_forget() FROM PUBLIC;
 GRANT ALL ON FUNCTION public._app_client_seen_forget() TO postgres;
-GRANT ALL ON FUNCTION public._app_client_seen_forget() TO anon;
-GRANT ALL ON FUNCTION public._app_client_seen_forget() TO authenticated;
-GRANT ALL ON FUNCTION public._app_client_seen_forget() TO service_role;
 
 --
 -- Name: FUNCTION _scrub_error_text(p_text text, p_max integer); Type: ACL; Schema: public; Owner: -
@@ -9466,9 +9582,6 @@ GRANT ALL ON FUNCTION public._app_client_seen_forget() TO service_role;
 
 REVOKE ALL ON FUNCTION public._scrub_error_text(p_text text, p_max integer) FROM PUBLIC;
 GRANT ALL ON FUNCTION public._scrub_error_text(p_text text, p_max integer) TO postgres;
-GRANT ALL ON FUNCTION public._scrub_error_text(p_text text, p_max integer) TO anon;
-GRANT ALL ON FUNCTION public._scrub_error_text(p_text text, p_max integer) TO authenticated;
-GRANT ALL ON FUNCTION public._scrub_error_text(p_text text, p_max integer) TO service_role;
 
 --
 -- Name: FUNCTION accept_request_invitation(p_token_hash bytea, p_client_id uuid); Type: ACL; Schema: public; Owner: -
@@ -9476,8 +9589,6 @@ GRANT ALL ON FUNCTION public._scrub_error_text(p_text text, p_max integer) TO se
 
 REVOKE ALL ON FUNCTION public.accept_request_invitation(p_token_hash bytea, p_client_id uuid) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.accept_request_invitation(p_token_hash bytea, p_client_id uuid) TO postgres;
-GRANT ALL ON FUNCTION public.accept_request_invitation(p_token_hash bytea, p_client_id uuid) TO anon;
-GRANT ALL ON FUNCTION public.accept_request_invitation(p_token_hash bytea, p_client_id uuid) TO authenticated;
 GRANT ALL ON FUNCTION public.accept_request_invitation(p_token_hash bytea, p_client_id uuid) TO service_role;
 
 --
@@ -9486,8 +9597,6 @@ GRANT ALL ON FUNCTION public.accept_request_invitation(p_token_hash bytea, p_cli
 
 REVOKE ALL ON FUNCTION public.admin_api_traffic_stats(p_channels text[]) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.admin_api_traffic_stats(p_channels text[]) TO postgres;
-GRANT ALL ON FUNCTION public.admin_api_traffic_stats(p_channels text[]) TO anon;
-GRANT ALL ON FUNCTION public.admin_api_traffic_stats(p_channels text[]) TO authenticated;
 GRANT ALL ON FUNCTION public.admin_api_traffic_stats(p_channels text[]) TO service_role;
 
 --
@@ -9496,8 +9605,6 @@ GRANT ALL ON FUNCTION public.admin_api_traffic_stats(p_channels text[]) TO servi
 
 REVOKE ALL ON FUNCTION public.admin_app_release_stats() FROM PUBLIC;
 GRANT ALL ON FUNCTION public.admin_app_release_stats() TO postgres;
-GRANT ALL ON FUNCTION public.admin_app_release_stats() TO anon;
-GRANT ALL ON FUNCTION public.admin_app_release_stats() TO authenticated;
 GRANT ALL ON FUNCTION public.admin_app_release_stats() TO service_role;
 
 --
@@ -9506,8 +9613,6 @@ GRANT ALL ON FUNCTION public.admin_app_release_stats() TO service_role;
 
 REVOKE ALL ON FUNCTION public.admin_client_search(p_q text, p_limit integer) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.admin_client_search(p_q text, p_limit integer) TO postgres;
-GRANT ALL ON FUNCTION public.admin_client_search(p_q text, p_limit integer) TO anon;
-GRANT ALL ON FUNCTION public.admin_client_search(p_q text, p_limit integer) TO authenticated;
 GRANT ALL ON FUNCTION public.admin_client_search(p_q text, p_limit integer) TO service_role;
 
 --
@@ -9516,8 +9621,6 @@ GRANT ALL ON FUNCTION public.admin_client_search(p_q text, p_limit integer) TO s
 
 REVOKE ALL ON FUNCTION public.admin_client_summary(p_client_id uuid) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.admin_client_summary(p_client_id uuid) TO postgres;
-GRANT ALL ON FUNCTION public.admin_client_summary(p_client_id uuid) TO anon;
-GRANT ALL ON FUNCTION public.admin_client_summary(p_client_id uuid) TO authenticated;
 GRANT ALL ON FUNCTION public.admin_client_summary(p_client_id uuid) TO service_role;
 
 --
@@ -9526,8 +9629,6 @@ GRANT ALL ON FUNCTION public.admin_client_summary(p_client_id uuid) TO service_r
 
 REVOKE ALL ON FUNCTION public.admin_kyc_case(p_submission uuid) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.admin_kyc_case(p_submission uuid) TO postgres;
-GRANT ALL ON FUNCTION public.admin_kyc_case(p_submission uuid) TO anon;
-GRANT ALL ON FUNCTION public.admin_kyc_case(p_submission uuid) TO authenticated;
 GRANT ALL ON FUNCTION public.admin_kyc_case(p_submission uuid) TO service_role;
 
 --
@@ -9536,8 +9637,6 @@ GRANT ALL ON FUNCTION public.admin_kyc_case(p_submission uuid) TO service_role;
 
 REVOKE ALL ON FUNCTION public.admin_kyc_cases(p_limit integer) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.admin_kyc_cases(p_limit integer) TO postgres;
-GRANT ALL ON FUNCTION public.admin_kyc_cases(p_limit integer) TO anon;
-GRANT ALL ON FUNCTION public.admin_kyc_cases(p_limit integer) TO authenticated;
 GRANT ALL ON FUNCTION public.admin_kyc_cases(p_limit integer) TO service_role;
 
 --
@@ -9546,8 +9645,6 @@ GRANT ALL ON FUNCTION public.admin_kyc_cases(p_limit integer) TO service_role;
 
 REVOKE ALL ON FUNCTION public.admin_marketplace_stats(p_days integer) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.admin_marketplace_stats(p_days integer) TO postgres;
-GRANT ALL ON FUNCTION public.admin_marketplace_stats(p_days integer) TO anon;
-GRANT ALL ON FUNCTION public.admin_marketplace_stats(p_days integer) TO authenticated;
 GRANT ALL ON FUNCTION public.admin_marketplace_stats(p_days integer) TO service_role;
 
 --
@@ -9556,8 +9653,6 @@ GRANT ALL ON FUNCTION public.admin_marketplace_stats(p_days integer) TO service_
 
 REVOKE ALL ON FUNCTION public.admin_schema_status() FROM PUBLIC;
 GRANT ALL ON FUNCTION public.admin_schema_status() TO postgres;
-GRANT ALL ON FUNCTION public.admin_schema_status() TO anon;
-GRANT ALL ON FUNCTION public.admin_schema_status() TO authenticated;
 GRANT ALL ON FUNCTION public.admin_schema_status() TO service_role;
 
 --
@@ -9566,8 +9661,6 @@ GRANT ALL ON FUNCTION public.admin_schema_status() TO service_role;
 
 REVOKE ALL ON FUNCTION public.admin_sync_apply(p_event_id uuid, p_topic text, p_aggregate_type text, p_aggregate_id text, p_version bigint, p_payload jsonb) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.admin_sync_apply(p_event_id uuid, p_topic text, p_aggregate_type text, p_aggregate_id text, p_version bigint, p_payload jsonb) TO postgres;
-GRANT ALL ON FUNCTION public.admin_sync_apply(p_event_id uuid, p_topic text, p_aggregate_type text, p_aggregate_id text, p_version bigint, p_payload jsonb) TO anon;
-GRANT ALL ON FUNCTION public.admin_sync_apply(p_event_id uuid, p_topic text, p_aggregate_type text, p_aggregate_id text, p_version bigint, p_payload jsonb) TO authenticated;
 GRANT ALL ON FUNCTION public.admin_sync_apply(p_event_id uuid, p_topic text, p_aggregate_type text, p_aggregate_id text, p_version bigint, p_payload jsonb) TO service_role;
 
 --
@@ -9576,8 +9669,6 @@ GRANT ALL ON FUNCTION public.admin_sync_apply(p_event_id uuid, p_topic text, p_a
 
 REVOKE ALL ON FUNCTION public.api_channel_policies() FROM PUBLIC;
 GRANT ALL ON FUNCTION public.api_channel_policies() TO postgres;
-GRANT ALL ON FUNCTION public.api_channel_policies() TO anon;
-GRANT ALL ON FUNCTION public.api_channel_policies() TO authenticated;
 GRANT ALL ON FUNCTION public.api_channel_policies() TO service_role;
 
 --
@@ -9586,9 +9677,14 @@ GRANT ALL ON FUNCTION public.api_channel_policies() TO service_role;
 
 REVOKE ALL ON FUNCTION public.api_traffic_record(p_rows jsonb, p_status jsonb) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.api_traffic_record(p_rows jsonb, p_status jsonb) TO postgres;
-GRANT ALL ON FUNCTION public.api_traffic_record(p_rows jsonb, p_status jsonb) TO anon;
-GRANT ALL ON FUNCTION public.api_traffic_record(p_rows jsonb, p_status jsonb) TO authenticated;
 GRANT ALL ON FUNCTION public.api_traffic_record(p_rows jsonb, p_status jsonb) TO service_role;
+
+--
+-- Name: FUNCTION audit_logs_append_only(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.audit_logs_append_only() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.audit_logs_append_only() TO postgres;
 
 --
 -- Name: FUNCTION can_release_request(p_request_id uuid); Type: ACL; Schema: public; Owner: -
@@ -9596,8 +9692,6 @@ GRANT ALL ON FUNCTION public.api_traffic_record(p_rows jsonb, p_status jsonb) TO
 
 REVOKE ALL ON FUNCTION public.can_release_request(p_request_id uuid) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.can_release_request(p_request_id uuid) TO postgres;
-GRANT ALL ON FUNCTION public.can_release_request(p_request_id uuid) TO anon;
-GRANT ALL ON FUNCTION public.can_release_request(p_request_id uuid) TO authenticated;
 GRANT ALL ON FUNCTION public.can_release_request(p_request_id uuid) TO service_role;
 
 --
@@ -9606,9 +9700,7 @@ GRANT ALL ON FUNCTION public.can_release_request(p_request_id uuid) TO service_r
 
 REVOKE ALL ON FUNCTION public.cancel_request(p_request_id uuid) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.cancel_request(p_request_id uuid) TO postgres;
-GRANT ALL ON FUNCTION public.cancel_request(p_request_id uuid) TO anon;
 GRANT ALL ON FUNCTION public.cancel_request(p_request_id uuid) TO authenticated;
-GRANT ALL ON FUNCTION public.cancel_request(p_request_id uuid) TO service_role;
 
 --
 -- Name: FUNCTION close_account(p_client_id uuid, p_retain_years integer); Type: ACL; Schema: public; Owner: -
@@ -9616,8 +9708,6 @@ GRANT ALL ON FUNCTION public.cancel_request(p_request_id uuid) TO service_role;
 
 REVOKE ALL ON FUNCTION public.close_account(p_client_id uuid, p_retain_years integer) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.close_account(p_client_id uuid, p_retain_years integer) TO postgres;
-GRANT ALL ON FUNCTION public.close_account(p_client_id uuid, p_retain_years integer) TO anon;
-GRANT ALL ON FUNCTION public.close_account(p_client_id uuid, p_retain_years integer) TO authenticated;
 GRANT ALL ON FUNCTION public.close_account(p_client_id uuid, p_retain_years integer) TO service_role;
 
 --
@@ -9626,7 +9716,6 @@ GRANT ALL ON FUNCTION public.close_account(p_client_id uuid, p_retain_years inte
 
 REVOKE ALL ON FUNCTION public.compute_client_scores(p jsonb) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.compute_client_scores(p jsonb) TO postgres;
-GRANT ALL ON FUNCTION public.compute_client_scores(p jsonb) TO anon;
 GRANT ALL ON FUNCTION public.compute_client_scores(p jsonb) TO authenticated;
 GRANT ALL ON FUNCTION public.compute_client_scores(p jsonb) TO service_role;
 
@@ -9636,8 +9725,6 @@ GRANT ALL ON FUNCTION public.compute_client_scores(p jsonb) TO service_role;
 
 REVOKE ALL ON FUNCTION public.compute_goal_readiness(p_goal_id uuid) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.compute_goal_readiness(p_goal_id uuid) TO postgres;
-GRANT ALL ON FUNCTION public.compute_goal_readiness(p_goal_id uuid) TO anon;
-GRANT ALL ON FUNCTION public.compute_goal_readiness(p_goal_id uuid) TO authenticated;
 GRANT ALL ON FUNCTION public.compute_goal_readiness(p_goal_id uuid) TO service_role;
 
 --
@@ -9646,8 +9733,6 @@ GRANT ALL ON FUNCTION public.compute_goal_readiness(p_goal_id uuid) TO service_r
 
 REVOKE ALL ON FUNCTION public.consume_ai_quota(p_client_id uuid, p_kind text, p_daily_limit integer) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.consume_ai_quota(p_client_id uuid, p_kind text, p_daily_limit integer) TO postgres;
-GRANT ALL ON FUNCTION public.consume_ai_quota(p_client_id uuid, p_kind text, p_daily_limit integer) TO anon;
-GRANT ALL ON FUNCTION public.consume_ai_quota(p_client_id uuid, p_kind text, p_daily_limit integer) TO authenticated;
 GRANT ALL ON FUNCTION public.consume_ai_quota(p_client_id uuid, p_kind text, p_daily_limit integer) TO service_role;
 
 --
@@ -9655,9 +9740,7 @@ GRANT ALL ON FUNCTION public.consume_ai_quota(p_client_id uuid, p_kind text, p_d
 --
 
 GRANT ALL ON FUNCTION public.create_multi_product_request(p_amount numeric, p_purpose text, p_anonymized_brief text, p_preferred_term_months integer, p_max_rate numeric, p_decision_deadline timestamp with time zone, p_allocation_mode text, p_allocations jsonb) TO postgres;
-GRANT ALL ON FUNCTION public.create_multi_product_request(p_amount numeric, p_purpose text, p_anonymized_brief text, p_preferred_term_months integer, p_max_rate numeric, p_decision_deadline timestamp with time zone, p_allocation_mode text, p_allocations jsonb) TO anon;
 GRANT ALL ON FUNCTION public.create_multi_product_request(p_amount numeric, p_purpose text, p_anonymized_brief text, p_preferred_term_months integer, p_max_rate numeric, p_decision_deadline timestamp with time zone, p_allocation_mode text, p_allocations jsonb) TO authenticated;
-GRANT ALL ON FUNCTION public.create_multi_product_request(p_amount numeric, p_purpose text, p_anonymized_brief text, p_preferred_term_months integer, p_max_rate numeric, p_decision_deadline timestamp with time zone, p_allocation_mode text, p_allocations jsonb) TO service_role;
 
 --
 -- Name: FUNCTION create_notification(p_user_id uuid, p_kind public.notification_kind, p_title text, p_body text, p_link text); Type: ACL; Schema: public; Owner: -
@@ -9665,9 +9748,6 @@ GRANT ALL ON FUNCTION public.create_multi_product_request(p_amount numeric, p_pu
 
 REVOKE ALL ON FUNCTION public.create_notification(p_user_id uuid, p_kind public.notification_kind, p_title text, p_body text, p_link text) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.create_notification(p_user_id uuid, p_kind public.notification_kind, p_title text, p_body text, p_link text) TO postgres;
-GRANT ALL ON FUNCTION public.create_notification(p_user_id uuid, p_kind public.notification_kind, p_title text, p_body text, p_link text) TO anon;
-GRANT ALL ON FUNCTION public.create_notification(p_user_id uuid, p_kind public.notification_kind, p_title text, p_body text, p_link text) TO authenticated;
-GRANT ALL ON FUNCTION public.create_notification(p_user_id uuid, p_kind public.notification_kind, p_title text, p_body text, p_link text) TO service_role;
 
 --
 -- Name: FUNCTION create_request_invitation(p_request_id uuid, p_inviter_client_id uuid, p_invited_email text, p_token_hash bytea, p_invited_phone text, p_channel public.invitation_channel, p_proposed_role public.participant_role, p_proposed_liability public.liability_type, p_proposed_ownership_bps integer, p_ttl_days integer); Type: ACL; Schema: public; Owner: -
@@ -9675,8 +9755,6 @@ GRANT ALL ON FUNCTION public.create_notification(p_user_id uuid, p_kind public.n
 
 REVOKE ALL ON FUNCTION public.create_request_invitation(p_request_id uuid, p_inviter_client_id uuid, p_invited_email text, p_token_hash bytea, p_invited_phone text, p_channel public.invitation_channel, p_proposed_role public.participant_role, p_proposed_liability public.liability_type, p_proposed_ownership_bps integer, p_ttl_days integer) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.create_request_invitation(p_request_id uuid, p_inviter_client_id uuid, p_invited_email text, p_token_hash bytea, p_invited_phone text, p_channel public.invitation_channel, p_proposed_role public.participant_role, p_proposed_liability public.liability_type, p_proposed_ownership_bps integer, p_ttl_days integer) TO postgres;
-GRANT ALL ON FUNCTION public.create_request_invitation(p_request_id uuid, p_inviter_client_id uuid, p_invited_email text, p_token_hash bytea, p_invited_phone text, p_channel public.invitation_channel, p_proposed_role public.participant_role, p_proposed_liability public.liability_type, p_proposed_ownership_bps integer, p_ttl_days integer) TO anon;
-GRANT ALL ON FUNCTION public.create_request_invitation(p_request_id uuid, p_inviter_client_id uuid, p_invited_email text, p_token_hash bytea, p_invited_phone text, p_channel public.invitation_channel, p_proposed_role public.participant_role, p_proposed_liability public.liability_type, p_proposed_ownership_bps integer, p_ttl_days integer) TO authenticated;
 GRANT ALL ON FUNCTION public.create_request_invitation(p_request_id uuid, p_inviter_client_id uuid, p_invited_email text, p_token_hash bytea, p_invited_phone text, p_channel public.invitation_channel, p_proposed_role public.participant_role, p_proposed_liability public.liability_type, p_proposed_ownership_bps integer, p_ttl_days integer) TO service_role;
 
 --
@@ -9685,7 +9763,6 @@ GRANT ALL ON FUNCTION public.create_request_invitation(p_request_id uuid, p_invi
 
 REVOKE ALL ON FUNCTION public.current_client_email() FROM PUBLIC;
 GRANT ALL ON FUNCTION public.current_client_email() TO postgres;
-GRANT ALL ON FUNCTION public.current_client_email() TO anon;
 GRANT ALL ON FUNCTION public.current_client_email() TO authenticated;
 GRANT ALL ON FUNCTION public.current_client_email() TO service_role;
 
@@ -9695,8 +9772,6 @@ GRANT ALL ON FUNCTION public.current_client_email() TO service_role;
 
 REVOKE ALL ON FUNCTION public.decline_request_invitation(p_token_hash bytea) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.decline_request_invitation(p_token_hash bytea) TO postgres;
-GRANT ALL ON FUNCTION public.decline_request_invitation(p_token_hash bytea) TO anon;
-GRANT ALL ON FUNCTION public.decline_request_invitation(p_token_hash bytea) TO authenticated;
 GRANT ALL ON FUNCTION public.decline_request_invitation(p_token_hash bytea) TO service_role;
 
 --
@@ -9705,9 +9780,6 @@ GRANT ALL ON FUNCTION public.decline_request_invitation(p_token_hash bytea) TO s
 
 REVOKE ALL ON FUNCTION public.enqueue_webhook_events(p_institution_id uuid, p_event_type text, p_payload jsonb) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.enqueue_webhook_events(p_institution_id uuid, p_event_type text, p_payload jsonb) TO postgres;
-GRANT ALL ON FUNCTION public.enqueue_webhook_events(p_institution_id uuid, p_event_type text, p_payload jsonb) TO anon;
-GRANT ALL ON FUNCTION public.enqueue_webhook_events(p_institution_id uuid, p_event_type text, p_payload jsonb) TO authenticated;
-GRANT ALL ON FUNCTION public.enqueue_webhook_events(p_institution_id uuid, p_event_type text, p_payload jsonb) TO service_role;
 
 --
 -- Name: FUNCTION expire_overdue_requests(); Type: ACL; Schema: public; Owner: -
@@ -9715,9 +9787,6 @@ GRANT ALL ON FUNCTION public.enqueue_webhook_events(p_institution_id uuid, p_eve
 
 REVOKE ALL ON FUNCTION public.expire_overdue_requests() FROM PUBLIC;
 GRANT ALL ON FUNCTION public.expire_overdue_requests() TO postgres;
-GRANT ALL ON FUNCTION public.expire_overdue_requests() TO anon;
-GRANT ALL ON FUNCTION public.expire_overdue_requests() TO authenticated;
-GRANT ALL ON FUNCTION public.expire_overdue_requests() TO service_role;
 
 --
 -- Name: FUNCTION expire_pending_actions(); Type: ACL; Schema: public; Owner: -
@@ -9725,9 +9794,6 @@ GRANT ALL ON FUNCTION public.expire_overdue_requests() TO service_role;
 
 REVOKE ALL ON FUNCTION public.expire_pending_actions() FROM PUBLIC;
 GRANT ALL ON FUNCTION public.expire_pending_actions() TO postgres;
-GRANT ALL ON FUNCTION public.expire_pending_actions() TO anon;
-GRANT ALL ON FUNCTION public.expire_pending_actions() TO authenticated;
-GRANT ALL ON FUNCTION public.expire_pending_actions() TO service_role;
 
 --
 -- Name: FUNCTION expire_stale_bids(); Type: ACL; Schema: public; Owner: -
@@ -9735,9 +9801,6 @@ GRANT ALL ON FUNCTION public.expire_pending_actions() TO service_role;
 
 REVOKE ALL ON FUNCTION public.expire_stale_bids() FROM PUBLIC;
 GRANT ALL ON FUNCTION public.expire_stale_bids() TO postgres;
-GRANT ALL ON FUNCTION public.expire_stale_bids() TO anon;
-GRANT ALL ON FUNCTION public.expire_stale_bids() TO authenticated;
-GRANT ALL ON FUNCTION public.expire_stale_bids() TO service_role;
 
 --
 -- Name: FUNCTION expire_stale_requests(); Type: ACL; Schema: public; Owner: -
@@ -9745,36 +9808,24 @@ GRANT ALL ON FUNCTION public.expire_stale_bids() TO service_role;
 
 REVOKE ALL ON FUNCTION public.expire_stale_requests() FROM PUBLIC;
 GRANT ALL ON FUNCTION public.expire_stale_requests() TO postgres;
-GRANT ALL ON FUNCTION public.expire_stale_requests() TO anon;
-GRANT ALL ON FUNCTION public.expire_stale_requests() TO authenticated;
-GRANT ALL ON FUNCTION public.expire_stale_requests() TO service_role;
 
 --
 -- Name: FUNCTION finance_accounts_summary(p_reporting_currency text); Type: ACL; Schema: public; Owner: -
 --
 
 GRANT ALL ON FUNCTION public.finance_accounts_summary(p_reporting_currency text) TO postgres;
-GRANT ALL ON FUNCTION public.finance_accounts_summary(p_reporting_currency text) TO anon;
-GRANT ALL ON FUNCTION public.finance_accounts_summary(p_reporting_currency text) TO authenticated;
-GRANT ALL ON FUNCTION public.finance_accounts_summary(p_reporting_currency text) TO service_role;
 
 --
 -- Name: FUNCTION finance_delete_account(p_id uuid); Type: ACL; Schema: public; Owner: -
 --
 
 GRANT ALL ON FUNCTION public.finance_delete_account(p_id uuid) TO postgres;
-GRANT ALL ON FUNCTION public.finance_delete_account(p_id uuid) TO anon;
-GRANT ALL ON FUNCTION public.finance_delete_account(p_id uuid) TO authenticated;
-GRANT ALL ON FUNCTION public.finance_delete_account(p_id uuid) TO service_role;
 
 --
 -- Name: FUNCTION finance_delete_holding(p_id uuid); Type: ACL; Schema: public; Owner: -
 --
 
 GRANT ALL ON FUNCTION public.finance_delete_holding(p_id uuid) TO postgres;
-GRANT ALL ON FUNCTION public.finance_delete_holding(p_id uuid) TO anon;
-GRANT ALL ON FUNCTION public.finance_delete_holding(p_id uuid) TO authenticated;
-GRANT ALL ON FUNCTION public.finance_delete_holding(p_id uuid) TO service_role;
 
 --
 -- Name: TABLE net_worth_history; Type: ACL; Schema: finance; Owner: -
@@ -9787,18 +9838,12 @@ GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE finance.net_worth_history TO authenti
 --
 
 GRANT ALL ON FUNCTION public.finance_get_net_worth_history(p_days integer) TO postgres;
-GRANT ALL ON FUNCTION public.finance_get_net_worth_history(p_days integer) TO anon;
-GRANT ALL ON FUNCTION public.finance_get_net_worth_history(p_days integer) TO authenticated;
-GRANT ALL ON FUNCTION public.finance_get_net_worth_history(p_days integer) TO service_role;
 
 --
 -- Name: FUNCTION finance_holdings_summary(p_reporting_currency text); Type: ACL; Schema: public; Owner: -
 --
 
 GRANT ALL ON FUNCTION public.finance_holdings_summary(p_reporting_currency text) TO postgres;
-GRANT ALL ON FUNCTION public.finance_holdings_summary(p_reporting_currency text) TO anon;
-GRANT ALL ON FUNCTION public.finance_holdings_summary(p_reporting_currency text) TO authenticated;
-GRANT ALL ON FUNCTION public.finance_holdings_summary(p_reporting_currency text) TO service_role;
 
 --
 -- Name: TABLE accounts; Type: ACL; Schema: finance; Owner: -
@@ -9811,27 +9856,18 @@ GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE finance.accounts TO authenticated;
 --
 
 GRANT ALL ON FUNCTION public.finance_list_accounts() TO postgres;
-GRANT ALL ON FUNCTION public.finance_list_accounts() TO anon;
-GRANT ALL ON FUNCTION public.finance_list_accounts() TO authenticated;
-GRANT ALL ON FUNCTION public.finance_list_accounts() TO service_role;
 
 --
 -- Name: FUNCTION finance_upsert_account(p_id uuid, p_institution_name text, p_account_type text, p_currency text, p_balance numeric, p_notes text); Type: ACL; Schema: public; Owner: -
 --
 
 GRANT ALL ON FUNCTION public.finance_upsert_account(p_id uuid, p_institution_name text, p_account_type text, p_currency text, p_balance numeric, p_notes text) TO postgres;
-GRANT ALL ON FUNCTION public.finance_upsert_account(p_id uuid, p_institution_name text, p_account_type text, p_currency text, p_balance numeric, p_notes text) TO anon;
-GRANT ALL ON FUNCTION public.finance_upsert_account(p_id uuid, p_institution_name text, p_account_type text, p_currency text, p_balance numeric, p_notes text) TO authenticated;
-GRANT ALL ON FUNCTION public.finance_upsert_account(p_id uuid, p_institution_name text, p_account_type text, p_currency text, p_balance numeric, p_notes text) TO service_role;
 
 --
 -- Name: FUNCTION finance_upsert_holding(p_id uuid, p_asset_type text, p_symbol text, p_exchange text, p_quantity numeric, p_currency text, p_cost_basis numeric, p_notes text); Type: ACL; Schema: public; Owner: -
 --
 
 GRANT ALL ON FUNCTION public.finance_upsert_holding(p_id uuid, p_asset_type text, p_symbol text, p_exchange text, p_quantity numeric, p_currency text, p_cost_basis numeric, p_notes text) TO postgres;
-GRANT ALL ON FUNCTION public.finance_upsert_holding(p_id uuid, p_asset_type text, p_symbol text, p_exchange text, p_quantity numeric, p_currency text, p_cost_basis numeric, p_notes text) TO anon;
-GRANT ALL ON FUNCTION public.finance_upsert_holding(p_id uuid, p_asset_type text, p_symbol text, p_exchange text, p_quantity numeric, p_currency text, p_cost_basis numeric, p_notes text) TO authenticated;
-GRANT ALL ON FUNCTION public.finance_upsert_holding(p_id uuid, p_asset_type text, p_symbol text, p_exchange text, p_quantity numeric, p_currency text, p_cost_basis numeric, p_notes text) TO service_role;
 
 --
 -- Name: FUNCTION get_my_institution_id(); Type: ACL; Schema: public; Owner: -
@@ -9839,7 +9875,6 @@ GRANT ALL ON FUNCTION public.finance_upsert_holding(p_id uuid, p_asset_type text
 
 REVOKE ALL ON FUNCTION public.get_my_institution_id() FROM PUBLIC;
 GRANT ALL ON FUNCTION public.get_my_institution_id() TO postgres;
-GRANT ALL ON FUNCTION public.get_my_institution_id() TO anon;
 GRANT ALL ON FUNCTION public.get_my_institution_id() TO authenticated;
 GRANT ALL ON FUNCTION public.get_my_institution_id() TO service_role;
 
@@ -9849,7 +9884,6 @@ GRANT ALL ON FUNCTION public.get_my_institution_id() TO service_role;
 
 REVOKE ALL ON FUNCTION public.get_my_role() FROM PUBLIC;
 GRANT ALL ON FUNCTION public.get_my_role() TO postgres;
-GRANT ALL ON FUNCTION public.get_my_role() TO anon;
 GRANT ALL ON FUNCTION public.get_my_role() TO authenticated;
 GRANT ALL ON FUNCTION public.get_my_role() TO service_role;
 
@@ -9859,8 +9893,6 @@ GRANT ALL ON FUNCTION public.get_my_role() TO service_role;
 
 REVOKE ALL ON FUNCTION public.get_or_create_couple_link(p_client_x uuid, p_client_y uuid, p_initiated_by uuid) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.get_or_create_couple_link(p_client_x uuid, p_client_y uuid, p_initiated_by uuid) TO postgres;
-GRANT ALL ON FUNCTION public.get_or_create_couple_link(p_client_x uuid, p_client_y uuid, p_initiated_by uuid) TO anon;
-GRANT ALL ON FUNCTION public.get_or_create_couple_link(p_client_x uuid, p_client_y uuid, p_initiated_by uuid) TO authenticated;
 GRANT ALL ON FUNCTION public.get_or_create_couple_link(p_client_x uuid, p_client_y uuid, p_initiated_by uuid) TO service_role;
 
 --
@@ -9868,9 +9900,6 @@ GRANT ALL ON FUNCTION public.get_or_create_couple_link(p_client_x uuid, p_client
 --
 
 GRANT ALL ON FUNCTION public.guard_client_kyc_status() TO postgres;
-GRANT ALL ON FUNCTION public.guard_client_kyc_status() TO anon;
-GRANT ALL ON FUNCTION public.guard_client_kyc_status() TO authenticated;
-GRANT ALL ON FUNCTION public.guard_client_kyc_status() TO service_role;
 
 --
 -- Name: FUNCTION handle_bid_received(); Type: ACL; Schema: public; Owner: -
@@ -9878,9 +9907,6 @@ GRANT ALL ON FUNCTION public.guard_client_kyc_status() TO service_role;
 
 REVOKE ALL ON FUNCTION public.handle_bid_received() FROM PUBLIC;
 GRANT ALL ON FUNCTION public.handle_bid_received() TO postgres;
-GRANT ALL ON FUNCTION public.handle_bid_received() TO anon;
-GRANT ALL ON FUNCTION public.handle_bid_received() TO authenticated;
-GRANT ALL ON FUNCTION public.handle_bid_received() TO service_role;
 
 --
 -- Name: FUNCTION handle_kyc_change(); Type: ACL; Schema: public; Owner: -
@@ -9888,9 +9914,6 @@ GRANT ALL ON FUNCTION public.handle_bid_received() TO service_role;
 
 REVOKE ALL ON FUNCTION public.handle_kyc_change() FROM PUBLIC;
 GRANT ALL ON FUNCTION public.handle_kyc_change() TO postgres;
-GRANT ALL ON FUNCTION public.handle_kyc_change() TO anon;
-GRANT ALL ON FUNCTION public.handle_kyc_change() TO authenticated;
-GRANT ALL ON FUNCTION public.handle_kyc_change() TO service_role;
 
 --
 -- Name: FUNCTION handle_new_user(); Type: ACL; Schema: public; Owner: -
@@ -9898,9 +9921,6 @@ GRANT ALL ON FUNCTION public.handle_kyc_change() TO service_role;
 
 REVOKE ALL ON FUNCTION public.handle_new_user() FROM PUBLIC;
 GRANT ALL ON FUNCTION public.handle_new_user() TO postgres;
-GRANT ALL ON FUNCTION public.handle_new_user() TO anon;
-GRANT ALL ON FUNCTION public.handle_new_user() TO authenticated;
-GRANT ALL ON FUNCTION public.handle_new_user() TO service_role;
 
 --
 -- Name: FUNCTION handle_request_created(); Type: ACL; Schema: public; Owner: -
@@ -9908,9 +9928,6 @@ GRANT ALL ON FUNCTION public.handle_new_user() TO service_role;
 
 REVOKE ALL ON FUNCTION public.handle_request_created() FROM PUBLIC;
 GRANT ALL ON FUNCTION public.handle_request_created() TO postgres;
-GRANT ALL ON FUNCTION public.handle_request_created() TO anon;
-GRANT ALL ON FUNCTION public.handle_request_created() TO authenticated;
-GRANT ALL ON FUNCTION public.handle_request_created() TO service_role;
 
 --
 -- Name: FUNCTION has_institution_role(p_role text); Type: ACL; Schema: public; Owner: -
@@ -9918,9 +9935,6 @@ GRANT ALL ON FUNCTION public.handle_request_created() TO service_role;
 
 REVOKE ALL ON FUNCTION public.has_institution_role(p_role text) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.has_institution_role(p_role text) TO postgres;
-GRANT ALL ON FUNCTION public.has_institution_role(p_role text) TO anon;
-GRANT ALL ON FUNCTION public.has_institution_role(p_role text) TO authenticated;
-GRANT ALL ON FUNCTION public.has_institution_role(p_role text) TO service_role;
 
 --
 -- Name: FUNCTION institution_has_module(p_institution_id uuid, p_module text); Type: ACL; Schema: public; Owner: -
@@ -9928,9 +9942,6 @@ GRANT ALL ON FUNCTION public.has_institution_role(p_role text) TO service_role;
 
 REVOKE ALL ON FUNCTION public.institution_has_module(p_institution_id uuid, p_module text) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.institution_has_module(p_institution_id uuid, p_module text) TO postgres;
-GRANT ALL ON FUNCTION public.institution_has_module(p_institution_id uuid, p_module text) TO anon;
-GRANT ALL ON FUNCTION public.institution_has_module(p_institution_id uuid, p_module text) TO authenticated;
-GRANT ALL ON FUNCTION public.institution_has_module(p_institution_id uuid, p_module text) TO service_role;
 
 --
 -- Name: FUNCTION institution_is_active(p_institution_id uuid); Type: ACL; Schema: public; Owner: -
@@ -9938,9 +9949,6 @@ GRANT ALL ON FUNCTION public.institution_has_module(p_institution_id uuid, p_mod
 
 REVOKE ALL ON FUNCTION public.institution_is_active(p_institution_id uuid) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.institution_is_active(p_institution_id uuid) TO postgres;
-GRANT ALL ON FUNCTION public.institution_is_active(p_institution_id uuid) TO anon;
-GRANT ALL ON FUNCTION public.institution_is_active(p_institution_id uuid) TO authenticated;
-GRANT ALL ON FUNCTION public.institution_is_active(p_institution_id uuid) TO service_role;
 
 --
 -- Name: FUNCTION integration_anon_borrower_id(p_client_id uuid); Type: ACL; Schema: public; Owner: -
@@ -9948,8 +9956,6 @@ GRANT ALL ON FUNCTION public.institution_is_active(p_institution_id uuid) TO ser
 
 REVOKE ALL ON FUNCTION public.integration_anon_borrower_id(p_client_id uuid) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.integration_anon_borrower_id(p_client_id uuid) TO postgres;
-GRANT ALL ON FUNCTION public.integration_anon_borrower_id(p_client_id uuid) TO anon;
-GRANT ALL ON FUNCTION public.integration_anon_borrower_id(p_client_id uuid) TO authenticated;
 GRANT ALL ON FUNCTION public.integration_anon_borrower_id(p_client_id uuid) TO service_role;
 
 --
@@ -9958,8 +9964,6 @@ GRANT ALL ON FUNCTION public.integration_anon_borrower_id(p_client_id uuid) TO s
 
 REVOKE ALL ON FUNCTION public.integration_apply_bid_event(p_env jsonb) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.integration_apply_bid_event(p_env jsonb) TO postgres;
-GRANT ALL ON FUNCTION public.integration_apply_bid_event(p_env jsonb) TO anon;
-GRANT ALL ON FUNCTION public.integration_apply_bid_event(p_env jsonb) TO authenticated;
 GRANT ALL ON FUNCTION public.integration_apply_bid_event(p_env jsonb) TO service_role;
 
 --
@@ -9968,8 +9972,6 @@ GRANT ALL ON FUNCTION public.integration_apply_bid_event(p_env jsonb) TO service
 
 REVOKE ALL ON FUNCTION public.integration_apply_chat_message_event(p_env jsonb, p_refuse text) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.integration_apply_chat_message_event(p_env jsonb, p_refuse text) TO postgres;
-GRANT ALL ON FUNCTION public.integration_apply_chat_message_event(p_env jsonb, p_refuse text) TO anon;
-GRANT ALL ON FUNCTION public.integration_apply_chat_message_event(p_env jsonb, p_refuse text) TO authenticated;
 GRANT ALL ON FUNCTION public.integration_apply_chat_message_event(p_env jsonb, p_refuse text) TO service_role;
 
 --
@@ -9978,8 +9980,6 @@ GRANT ALL ON FUNCTION public.integration_apply_chat_message_event(p_env jsonb, p
 
 REVOKE ALL ON FUNCTION public.integration_apply_deal_documents_event(p_env jsonb) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.integration_apply_deal_documents_event(p_env jsonb) TO postgres;
-GRANT ALL ON FUNCTION public.integration_apply_deal_documents_event(p_env jsonb) TO anon;
-GRANT ALL ON FUNCTION public.integration_apply_deal_documents_event(p_env jsonb) TO authenticated;
 GRANT ALL ON FUNCTION public.integration_apply_deal_documents_event(p_env jsonb) TO service_role;
 
 --
@@ -9988,8 +9988,6 @@ GRANT ALL ON FUNCTION public.integration_apply_deal_documents_event(p_env jsonb)
 
 REVOKE ALL ON FUNCTION public.integration_apply_deal_progress_event(p_env jsonb) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.integration_apply_deal_progress_event(p_env jsonb) TO postgres;
-GRANT ALL ON FUNCTION public.integration_apply_deal_progress_event(p_env jsonb) TO anon;
-GRANT ALL ON FUNCTION public.integration_apply_deal_progress_event(p_env jsonb) TO authenticated;
 GRANT ALL ON FUNCTION public.integration_apply_deal_progress_event(p_env jsonb) TO service_role;
 
 --
@@ -9998,8 +9996,6 @@ GRANT ALL ON FUNCTION public.integration_apply_deal_progress_event(p_env jsonb) 
 
 REVOKE ALL ON FUNCTION public.integration_apply_market_intelligence_event(p_env jsonb) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.integration_apply_market_intelligence_event(p_env jsonb) TO postgres;
-GRANT ALL ON FUNCTION public.integration_apply_market_intelligence_event(p_env jsonb) TO anon;
-GRANT ALL ON FUNCTION public.integration_apply_market_intelligence_event(p_env jsonb) TO authenticated;
 GRANT ALL ON FUNCTION public.integration_apply_market_intelligence_event(p_env jsonb) TO service_role;
 
 --
@@ -10008,8 +10004,6 @@ GRANT ALL ON FUNCTION public.integration_apply_market_intelligence_event(p_env j
 
 REVOKE ALL ON FUNCTION public.integration_apply_request_declined_event(p_env jsonb) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.integration_apply_request_declined_event(p_env jsonb) TO postgres;
-GRANT ALL ON FUNCTION public.integration_apply_request_declined_event(p_env jsonb) TO anon;
-GRANT ALL ON FUNCTION public.integration_apply_request_declined_event(p_env jsonb) TO authenticated;
 GRANT ALL ON FUNCTION public.integration_apply_request_declined_event(p_env jsonb) TO service_role;
 
 --
@@ -10018,8 +10012,6 @@ GRANT ALL ON FUNCTION public.integration_apply_request_declined_event(p_env json
 
 REVOKE ALL ON FUNCTION public.integration_apply_request_window_closed_event(p_env jsonb) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.integration_apply_request_window_closed_event(p_env jsonb) TO postgres;
-GRANT ALL ON FUNCTION public.integration_apply_request_window_closed_event(p_env jsonb) TO anon;
-GRANT ALL ON FUNCTION public.integration_apply_request_window_closed_event(p_env jsonb) TO authenticated;
 GRANT ALL ON FUNCTION public.integration_apply_request_window_closed_event(p_env jsonb) TO service_role;
 
 --
@@ -10028,8 +10020,6 @@ GRANT ALL ON FUNCTION public.integration_apply_request_window_closed_event(p_env
 
 REVOKE ALL ON FUNCTION public.integration_bids_for(p_client_id uuid, p_request_ids uuid[]) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.integration_bids_for(p_client_id uuid, p_request_ids uuid[]) TO postgres;
-GRANT ALL ON FUNCTION public.integration_bids_for(p_client_id uuid, p_request_ids uuid[]) TO anon;
-GRANT ALL ON FUNCTION public.integration_bids_for(p_client_id uuid, p_request_ids uuid[]) TO authenticated;
 GRANT ALL ON FUNCTION public.integration_bids_for(p_client_id uuid, p_request_ids uuid[]) TO service_role;
 
 --
@@ -10038,8 +10028,6 @@ GRANT ALL ON FUNCTION public.integration_bids_for(p_client_id uuid, p_request_id
 
 REVOKE ALL ON FUNCTION public.integration_claim_batch(p_limit integer, p_lease_seconds integer) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.integration_claim_batch(p_limit integer, p_lease_seconds integer) TO postgres;
-GRANT ALL ON FUNCTION public.integration_claim_batch(p_limit integer, p_lease_seconds integer) TO anon;
-GRANT ALL ON FUNCTION public.integration_claim_batch(p_limit integer, p_lease_seconds integer) TO authenticated;
 GRANT ALL ON FUNCTION public.integration_claim_batch(p_limit integer, p_lease_seconds integer) TO service_role;
 
 --
@@ -10048,8 +10036,6 @@ GRANT ALL ON FUNCTION public.integration_claim_batch(p_limit integer, p_lease_se
 
 REVOKE ALL ON FUNCTION public.integration_complete_acceptance(p_consent_ref text, p_outcome text, p_institution uuid) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.integration_complete_acceptance(p_consent_ref text, p_outcome text, p_institution uuid) TO postgres;
-GRANT ALL ON FUNCTION public.integration_complete_acceptance(p_consent_ref text, p_outcome text, p_institution uuid) TO anon;
-GRANT ALL ON FUNCTION public.integration_complete_acceptance(p_consent_ref text, p_outcome text, p_institution uuid) TO authenticated;
 GRANT ALL ON FUNCTION public.integration_complete_acceptance(p_consent_ref text, p_outcome text, p_institution uuid) TO service_role;
 
 --
@@ -10058,8 +10044,6 @@ GRANT ALL ON FUNCTION public.integration_complete_acceptance(p_consent_ref text,
 
 REVOKE ALL ON FUNCTION public.integration_deal_documents_for(p_client_id uuid, p_request_id uuid) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.integration_deal_documents_for(p_client_id uuid, p_request_id uuid) TO postgres;
-GRANT ALL ON FUNCTION public.integration_deal_documents_for(p_client_id uuid, p_request_id uuid) TO anon;
-GRANT ALL ON FUNCTION public.integration_deal_documents_for(p_client_id uuid, p_request_id uuid) TO authenticated;
 GRANT ALL ON FUNCTION public.integration_deal_documents_for(p_client_id uuid, p_request_id uuid) TO service_role;
 
 --
@@ -10068,8 +10052,6 @@ GRANT ALL ON FUNCTION public.integration_deal_documents_for(p_client_id uuid, p_
 
 REVOKE ALL ON FUNCTION public.integration_deal_progress_for(p_client_id uuid, p_request_id uuid) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.integration_deal_progress_for(p_client_id uuid, p_request_id uuid) TO postgres;
-GRANT ALL ON FUNCTION public.integration_deal_progress_for(p_client_id uuid, p_request_id uuid) TO anon;
-GRANT ALL ON FUNCTION public.integration_deal_progress_for(p_client_id uuid, p_request_id uuid) TO authenticated;
 GRANT ALL ON FUNCTION public.integration_deal_progress_for(p_client_id uuid, p_request_id uuid) TO service_role;
 
 --
@@ -10078,8 +10060,6 @@ GRANT ALL ON FUNCTION public.integration_deal_progress_for(p_client_id uuid, p_r
 
 REVOKE ALL ON FUNCTION public.integration_defer(p_id text) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.integration_defer(p_id text) TO postgres;
-GRANT ALL ON FUNCTION public.integration_defer(p_id text) TO anon;
-GRANT ALL ON FUNCTION public.integration_defer(p_id text) TO authenticated;
 GRANT ALL ON FUNCTION public.integration_defer(p_id text) TO service_role;
 
 --
@@ -10088,8 +10068,6 @@ GRANT ALL ON FUNCTION public.integration_defer(p_id text) TO service_role;
 
 REVOKE ALL ON FUNCTION public.integration_enqueue(p_type text, p_aggregate_id text, p_data jsonb) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.integration_enqueue(p_type text, p_aggregate_id text, p_data jsonb) TO postgres;
-GRANT ALL ON FUNCTION public.integration_enqueue(p_type text, p_aggregate_id text, p_data jsonb) TO anon;
-GRANT ALL ON FUNCTION public.integration_enqueue(p_type text, p_aggregate_id text, p_data jsonb) TO authenticated;
 GRANT ALL ON FUNCTION public.integration_enqueue(p_type text, p_aggregate_id text, p_data jsonb) TO service_role;
 
 --
@@ -10098,8 +10076,6 @@ GRANT ALL ON FUNCTION public.integration_enqueue(p_type text, p_aggregate_id tex
 
 REVOKE ALL ON FUNCTION public.integration_finish_document_submission(p_submission_id uuid, p_ok boolean, p_upload_id uuid, p_sha256 text, p_error text, p_bank_name text) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.integration_finish_document_submission(p_submission_id uuid, p_ok boolean, p_upload_id uuid, p_sha256 text, p_error text, p_bank_name text) TO postgres;
-GRANT ALL ON FUNCTION public.integration_finish_document_submission(p_submission_id uuid, p_ok boolean, p_upload_id uuid, p_sha256 text, p_error text, p_bank_name text) TO anon;
-GRANT ALL ON FUNCTION public.integration_finish_document_submission(p_submission_id uuid, p_ok boolean, p_upload_id uuid, p_sha256 text, p_error text, p_bank_name text) TO authenticated;
 GRANT ALL ON FUNCTION public.integration_finish_document_submission(p_submission_id uuid, p_ok boolean, p_upload_id uuid, p_sha256 text, p_error text, p_bank_name text) TO service_role;
 
 --
@@ -10108,8 +10084,6 @@ GRANT ALL ON FUNCTION public.integration_finish_document_submission(p_submission
 
 REVOKE ALL ON FUNCTION public.integration_mark_delivered(p_id text) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.integration_mark_delivered(p_id text) TO postgres;
-GRANT ALL ON FUNCTION public.integration_mark_delivered(p_id text) TO anon;
-GRANT ALL ON FUNCTION public.integration_mark_delivered(p_id text) TO authenticated;
 GRANT ALL ON FUNCTION public.integration_mark_delivered(p_id text) TO service_role;
 
 --
@@ -10118,8 +10092,6 @@ GRANT ALL ON FUNCTION public.integration_mark_delivered(p_id text) TO service_ro
 
 REVOKE ALL ON FUNCTION public.integration_mark_failed(p_id text, p_error text) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.integration_mark_failed(p_id text, p_error text) TO postgres;
-GRANT ALL ON FUNCTION public.integration_mark_failed(p_id text, p_error text) TO anon;
-GRANT ALL ON FUNCTION public.integration_mark_failed(p_id text, p_error text) TO authenticated;
 GRANT ALL ON FUNCTION public.integration_mark_failed(p_id text, p_error text) TO service_role;
 
 --
@@ -10128,8 +10100,6 @@ GRANT ALL ON FUNCTION public.integration_mark_failed(p_id text, p_error text) TO
 
 REVOKE ALL ON FUNCTION public.integration_market_intelligence() FROM PUBLIC;
 GRANT ALL ON FUNCTION public.integration_market_intelligence() TO postgres;
-GRANT ALL ON FUNCTION public.integration_market_intelligence() TO anon;
-GRANT ALL ON FUNCTION public.integration_market_intelligence() TO authenticated;
 GRANT ALL ON FUNCTION public.integration_market_intelligence() TO service_role;
 
 --
@@ -10138,8 +10108,6 @@ GRANT ALL ON FUNCTION public.integration_market_intelligence() TO service_role;
 
 REVOKE ALL ON FUNCTION public.integration_portfolio_for(p_client_id uuid) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.integration_portfolio_for(p_client_id uuid) TO postgres;
-GRANT ALL ON FUNCTION public.integration_portfolio_for(p_client_id uuid) TO anon;
-GRANT ALL ON FUNCTION public.integration_portfolio_for(p_client_id uuid) TO authenticated;
 GRANT ALL ON FUNCTION public.integration_portfolio_for(p_client_id uuid) TO service_role;
 
 --
@@ -10148,8 +10116,6 @@ GRANT ALL ON FUNCTION public.integration_portfolio_for(p_client_id uuid) TO serv
 
 REVOKE ALL ON FUNCTION public.integration_prepare_acceptance(p_client uuid, p_request uuid, p_bid uuid) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.integration_prepare_acceptance(p_client uuid, p_request uuid, p_bid uuid) TO postgres;
-GRANT ALL ON FUNCTION public.integration_prepare_acceptance(p_client uuid, p_request uuid, p_bid uuid) TO anon;
-GRANT ALL ON FUNCTION public.integration_prepare_acceptance(p_client uuid, p_request uuid, p_bid uuid) TO authenticated;
 GRANT ALL ON FUNCTION public.integration_prepare_acceptance(p_client uuid, p_request uuid, p_bid uuid) TO service_role;
 
 --
@@ -10158,8 +10124,6 @@ GRANT ALL ON FUNCTION public.integration_prepare_acceptance(p_client uuid, p_req
 
 REVOKE ALL ON FUNCTION public.integration_record_inbox(p_event_id text, p_type text, p_source text, p_aggregate_id text, p_sequence bigint) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.integration_record_inbox(p_event_id text, p_type text, p_source text, p_aggregate_id text, p_sequence bigint) TO postgres;
-GRANT ALL ON FUNCTION public.integration_record_inbox(p_event_id text, p_type text, p_source text, p_aggregate_id text, p_sequence bigint) TO anon;
-GRANT ALL ON FUNCTION public.integration_record_inbox(p_event_id text, p_type text, p_source text, p_aggregate_id text, p_sequence bigint) TO authenticated;
 GRANT ALL ON FUNCTION public.integration_record_inbox(p_event_id text, p_type text, p_source text, p_aggregate_id text, p_sequence bigint) TO service_role;
 
 --
@@ -10168,8 +10132,6 @@ GRANT ALL ON FUNCTION public.integration_record_inbox(p_event_id text, p_type te
 
 REVOKE ALL ON FUNCTION public.integration_send_borrower_message(p_client_id uuid, p_request_id uuid, p_institution_id uuid, p_template_code text, p_params jsonb, p_body text) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.integration_send_borrower_message(p_client_id uuid, p_request_id uuid, p_institution_id uuid, p_template_code text, p_params jsonb, p_body text) TO postgres;
-GRANT ALL ON FUNCTION public.integration_send_borrower_message(p_client_id uuid, p_request_id uuid, p_institution_id uuid, p_template_code text, p_params jsonb, p_body text) TO anon;
-GRANT ALL ON FUNCTION public.integration_send_borrower_message(p_client_id uuid, p_request_id uuid, p_institution_id uuid, p_template_code text, p_params jsonb, p_body text) TO authenticated;
 GRANT ALL ON FUNCTION public.integration_send_borrower_message(p_client_id uuid, p_request_id uuid, p_institution_id uuid, p_template_code text, p_params jsonb, p_body text) TO service_role;
 
 --
@@ -10178,8 +10140,6 @@ GRANT ALL ON FUNCTION public.integration_send_borrower_message(p_client_id uuid,
 
 REVOKE ALL ON FUNCTION public.integration_start_document_submission(p_client_id uuid, p_pipeline_id uuid, p_requirement_id uuid, p_source text, p_vault_document_id uuid, p_document_date date) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.integration_start_document_submission(p_client_id uuid, p_pipeline_id uuid, p_requirement_id uuid, p_source text, p_vault_document_id uuid, p_document_date date) TO postgres;
-GRANT ALL ON FUNCTION public.integration_start_document_submission(p_client_id uuid, p_pipeline_id uuid, p_requirement_id uuid, p_source text, p_vault_document_id uuid, p_document_date date) TO anon;
-GRANT ALL ON FUNCTION public.integration_start_document_submission(p_client_id uuid, p_pipeline_id uuid, p_requirement_id uuid, p_source text, p_vault_document_id uuid, p_document_date date) TO authenticated;
 GRANT ALL ON FUNCTION public.integration_start_document_submission(p_client_id uuid, p_pipeline_id uuid, p_requirement_id uuid, p_source text, p_vault_document_id uuid, p_document_date date) TO service_role;
 
 --
@@ -10188,7 +10148,6 @@ GRANT ALL ON FUNCTION public.integration_start_document_submission(p_client_id u
 
 REVOKE ALL ON FUNCTION public.is_couple_member(p_couple_id uuid, p_client_id uuid) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.is_couple_member(p_couple_id uuid, p_client_id uuid) TO postgres;
-GRANT ALL ON FUNCTION public.is_couple_member(p_couple_id uuid, p_client_id uuid) TO anon;
 GRANT ALL ON FUNCTION public.is_couple_member(p_couple_id uuid, p_client_id uuid) TO authenticated;
 GRANT ALL ON FUNCTION public.is_couple_member(p_couple_id uuid, p_client_id uuid) TO service_role;
 
@@ -10198,7 +10157,6 @@ GRANT ALL ON FUNCTION public.is_couple_member(p_couple_id uuid, p_client_id uuid
 
 REVOKE ALL ON FUNCTION public.is_ficium_admin() FROM PUBLIC;
 GRANT ALL ON FUNCTION public.is_ficium_admin() TO postgres;
-GRANT ALL ON FUNCTION public.is_ficium_admin() TO anon;
 GRANT ALL ON FUNCTION public.is_ficium_admin() TO authenticated;
 GRANT ALL ON FUNCTION public.is_ficium_admin() TO service_role;
 
@@ -10208,9 +10166,6 @@ GRANT ALL ON FUNCTION public.is_ficium_admin() TO service_role;
 
 REVOKE ALL ON FUNCTION public.is_institution_member(p_institution_id uuid) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.is_institution_member(p_institution_id uuid) TO postgres;
-GRANT ALL ON FUNCTION public.is_institution_member(p_institution_id uuid) TO anon;
-GRANT ALL ON FUNCTION public.is_institution_member(p_institution_id uuid) TO authenticated;
-GRANT ALL ON FUNCTION public.is_institution_member(p_institution_id uuid) TO service_role;
 
 --
 -- Name: FUNCTION is_request_participant(p_request_id uuid, p_client_id uuid); Type: ACL; Schema: public; Owner: -
@@ -10218,7 +10173,6 @@ GRANT ALL ON FUNCTION public.is_institution_member(p_institution_id uuid) TO ser
 
 REVOKE ALL ON FUNCTION public.is_request_participant(p_request_id uuid, p_client_id uuid) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.is_request_participant(p_request_id uuid, p_client_id uuid) TO postgres;
-GRANT ALL ON FUNCTION public.is_request_participant(p_request_id uuid, p_client_id uuid) TO anon;
 GRANT ALL ON FUNCTION public.is_request_participant(p_request_id uuid, p_client_id uuid) TO authenticated;
 GRANT ALL ON FUNCTION public.is_request_participant(p_request_id uuid, p_client_id uuid) TO service_role;
 
@@ -10228,8 +10182,6 @@ GRANT ALL ON FUNCTION public.is_request_participant(p_request_id uuid, p_client_
 
 REVOKE ALL ON FUNCTION public.kyc_record_outcome(p_client uuid, p_status text, p_submission jsonb, p_profile jsonb) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.kyc_record_outcome(p_client uuid, p_status text, p_submission jsonb, p_profile jsonb) TO postgres;
-GRANT ALL ON FUNCTION public.kyc_record_outcome(p_client uuid, p_status text, p_submission jsonb, p_profile jsonb) TO anon;
-GRANT ALL ON FUNCTION public.kyc_record_outcome(p_client uuid, p_status text, p_submission jsonb, p_profile jsonb) TO authenticated;
 GRANT ALL ON FUNCTION public.kyc_record_outcome(p_client uuid, p_status text, p_submission jsonb, p_profile jsonb) TO service_role;
 
 --
@@ -10238,8 +10190,6 @@ GRANT ALL ON FUNCTION public.kyc_record_outcome(p_client uuid, p_status text, p_
 
 REVOKE ALL ON FUNCTION public.kyc_server_context(p_client uuid, p_document_number text) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.kyc_server_context(p_client uuid, p_document_number text) TO postgres;
-GRANT ALL ON FUNCTION public.kyc_server_context(p_client uuid, p_document_number text) TO anon;
-GRANT ALL ON FUNCTION public.kyc_server_context(p_client uuid, p_document_number text) TO authenticated;
 GRANT ALL ON FUNCTION public.kyc_server_context(p_client uuid, p_document_number text) TO service_role;
 
 --
@@ -10247,8 +10197,8 @@ GRANT ALL ON FUNCTION public.kyc_server_context(p_client uuid, p_document_number
 --
 
 GRANT ALL ON FUNCTION public.normalize_name(p_name text) TO postgres;
-GRANT ALL ON FUNCTION public.normalize_name(p_name text) TO anon;
 GRANT ALL ON FUNCTION public.normalize_name(p_name text) TO authenticated;
+GRANT ALL ON FUNCTION public.normalize_name(p_name text) TO anon;
 GRANT ALL ON FUNCTION public.normalize_name(p_name text) TO service_role;
 
 --
@@ -10257,9 +10207,6 @@ GRANT ALL ON FUNCTION public.normalize_name(p_name text) TO service_role;
 
 REVOKE ALL ON FUNCTION public.notify_expiring_requests() FROM PUBLIC;
 GRANT ALL ON FUNCTION public.notify_expiring_requests() TO postgres;
-GRANT ALL ON FUNCTION public.notify_expiring_requests() TO anon;
-GRANT ALL ON FUNCTION public.notify_expiring_requests() TO authenticated;
-GRANT ALL ON FUNCTION public.notify_expiring_requests() TO service_role;
 
 --
 -- Name: FUNCTION on_bid_accepted(); Type: ACL; Schema: public; Owner: -
@@ -10267,9 +10214,6 @@ GRANT ALL ON FUNCTION public.notify_expiring_requests() TO service_role;
 
 REVOKE ALL ON FUNCTION public.on_bid_accepted() FROM PUBLIC;
 GRANT ALL ON FUNCTION public.on_bid_accepted() TO postgres;
-GRANT ALL ON FUNCTION public.on_bid_accepted() TO anon;
-GRANT ALL ON FUNCTION public.on_bid_accepted() TO authenticated;
-GRANT ALL ON FUNCTION public.on_bid_accepted() TO service_role;
 
 --
 -- Name: FUNCTION on_bid_submitted(); Type: ACL; Schema: public; Owner: -
@@ -10277,9 +10221,6 @@ GRANT ALL ON FUNCTION public.on_bid_accepted() TO service_role;
 
 REVOKE ALL ON FUNCTION public.on_bid_submitted() FROM PUBLIC;
 GRANT ALL ON FUNCTION public.on_bid_submitted() TO postgres;
-GRANT ALL ON FUNCTION public.on_bid_submitted() TO anon;
-GRANT ALL ON FUNCTION public.on_bid_submitted() TO authenticated;
-GRANT ALL ON FUNCTION public.on_bid_submitted() TO service_role;
 
 --
 -- Name: FUNCTION on_new_client_request(); Type: ACL; Schema: public; Owner: -
@@ -10287,9 +10228,6 @@ GRANT ALL ON FUNCTION public.on_bid_submitted() TO service_role;
 
 REVOKE ALL ON FUNCTION public.on_new_client_request() FROM PUBLIC;
 GRANT ALL ON FUNCTION public.on_new_client_request() TO postgres;
-GRANT ALL ON FUNCTION public.on_new_client_request() TO anon;
-GRANT ALL ON FUNCTION public.on_new_client_request() TO authenticated;
-GRANT ALL ON FUNCTION public.on_new_client_request() TO service_role;
 
 --
 -- Name: FUNCTION reject_request(p_request_id uuid, p_institution_id uuid, p_reason text); Type: ACL; Schema: public; Owner: -
@@ -10297,8 +10235,6 @@ GRANT ALL ON FUNCTION public.on_new_client_request() TO service_role;
 
 REVOKE ALL ON FUNCTION public.reject_request(p_request_id uuid, p_institution_id uuid, p_reason text) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.reject_request(p_request_id uuid, p_institution_id uuid, p_reason text) TO postgres;
-GRANT ALL ON FUNCTION public.reject_request(p_request_id uuid, p_institution_id uuid, p_reason text) TO anon;
-GRANT ALL ON FUNCTION public.reject_request(p_request_id uuid, p_institution_id uuid, p_reason text) TO authenticated;
 GRANT ALL ON FUNCTION public.reject_request(p_request_id uuid, p_institution_id uuid, p_reason text) TO service_role;
 
 --
@@ -10307,8 +10243,6 @@ GRANT ALL ON FUNCTION public.reject_request(p_request_id uuid, p_institution_id 
 
 REVOKE ALL ON FUNCTION public.relist_request(p_client_id uuid, p_request_id uuid) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.relist_request(p_client_id uuid, p_request_id uuid) TO postgres;
-GRANT ALL ON FUNCTION public.relist_request(p_client_id uuid, p_request_id uuid) TO anon;
-GRANT ALL ON FUNCTION public.relist_request(p_client_id uuid, p_request_id uuid) TO authenticated;
 GRANT ALL ON FUNCTION public.relist_request(p_client_id uuid, p_request_id uuid) TO service_role;
 
 --
@@ -10317,9 +10251,7 @@ GRANT ALL ON FUNCTION public.relist_request(p_client_id uuid, p_request_id uuid)
 
 REVOKE ALL ON FUNCTION public.replace_client_loans(p_loans jsonb) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.replace_client_loans(p_loans jsonb) TO postgres;
-GRANT ALL ON FUNCTION public.replace_client_loans(p_loans jsonb) TO anon;
 GRANT ALL ON FUNCTION public.replace_client_loans(p_loans jsonb) TO authenticated;
-GRANT ALL ON FUNCTION public.replace_client_loans(p_loans jsonb) TO service_role;
 
 --
 -- Name: FUNCTION report_app_client(p_platform text, p_version text, p_build text); Type: ACL; Schema: public; Owner: -
@@ -10327,9 +10259,7 @@ GRANT ALL ON FUNCTION public.replace_client_loans(p_loans jsonb) TO service_role
 
 REVOKE ALL ON FUNCTION public.report_app_client(p_platform text, p_version text, p_build text) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.report_app_client(p_platform text, p_version text, p_build text) TO postgres;
-GRANT ALL ON FUNCTION public.report_app_client(p_platform text, p_version text, p_build text) TO anon;
 GRANT ALL ON FUNCTION public.report_app_client(p_platform text, p_version text, p_build text) TO authenticated;
-GRANT ALL ON FUNCTION public.report_app_client(p_platform text, p_version text, p_build text) TO service_role;
 
 --
 -- Name: FUNCTION report_app_error(p_platform text, p_version text, p_kind text, p_fingerprint text, p_message text, p_location text, p_route text); Type: ACL; Schema: public; Owner: -
@@ -10337,9 +10267,7 @@ GRANT ALL ON FUNCTION public.report_app_client(p_platform text, p_version text, 
 
 REVOKE ALL ON FUNCTION public.report_app_error(p_platform text, p_version text, p_kind text, p_fingerprint text, p_message text, p_location text, p_route text) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.report_app_error(p_platform text, p_version text, p_kind text, p_fingerprint text, p_message text, p_location text, p_route text) TO postgres;
-GRANT ALL ON FUNCTION public.report_app_error(p_platform text, p_version text, p_kind text, p_fingerprint text, p_message text, p_location text, p_route text) TO anon;
 GRANT ALL ON FUNCTION public.report_app_error(p_platform text, p_version text, p_kind text, p_fingerprint text, p_message text, p_location text, p_route text) TO authenticated;
-GRANT ALL ON FUNCTION public.report_app_error(p_platform text, p_version text, p_kind text, p_fingerprint text, p_message text, p_location text, p_route text) TO service_role;
 
 --
 -- Name: FUNCTION request_chat_is_open(p_request_id uuid, p_institution_id uuid); Type: ACL; Schema: public; Owner: -
@@ -10347,7 +10275,6 @@ GRANT ALL ON FUNCTION public.report_app_error(p_platform text, p_version text, p
 
 REVOKE ALL ON FUNCTION public.request_chat_is_open(p_request_id uuid, p_institution_id uuid) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.request_chat_is_open(p_request_id uuid, p_institution_id uuid) TO postgres;
-GRANT ALL ON FUNCTION public.request_chat_is_open(p_request_id uuid, p_institution_id uuid) TO anon;
 GRANT ALL ON FUNCTION public.request_chat_is_open(p_request_id uuid, p_institution_id uuid) TO authenticated;
 GRANT ALL ON FUNCTION public.request_chat_is_open(p_request_id uuid, p_institution_id uuid) TO service_role;
 
@@ -10357,9 +10284,6 @@ GRANT ALL ON FUNCTION public.request_chat_is_open(p_request_id uuid, p_instituti
 
 REVOKE ALL ON FUNCTION public.request_chat_is_winner(p_request_id uuid, p_institution_id uuid) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.request_chat_is_winner(p_request_id uuid, p_institution_id uuid) TO postgres;
-GRANT ALL ON FUNCTION public.request_chat_is_winner(p_request_id uuid, p_institution_id uuid) TO anon;
-GRANT ALL ON FUNCTION public.request_chat_is_winner(p_request_id uuid, p_institution_id uuid) TO authenticated;
-GRANT ALL ON FUNCTION public.request_chat_is_winner(p_request_id uuid, p_institution_id uuid) TO service_role;
 
 --
 -- Name: FUNCTION request_messages_enforce(); Type: ACL; Schema: public; Owner: -
@@ -10367,9 +10291,6 @@ GRANT ALL ON FUNCTION public.request_chat_is_winner(p_request_id uuid, p_institu
 
 REVOKE ALL ON FUNCTION public.request_messages_enforce() FROM PUBLIC;
 GRANT ALL ON FUNCTION public.request_messages_enforce() TO postgres;
-GRANT ALL ON FUNCTION public.request_messages_enforce() TO anon;
-GRANT ALL ON FUNCTION public.request_messages_enforce() TO authenticated;
-GRANT ALL ON FUNCTION public.request_messages_enforce() TO service_role;
 
 --
 -- Name: FUNCTION revoke_request_invitation(p_invitation_id uuid, p_inviter_client_id uuid); Type: ACL; Schema: public; Owner: -
@@ -10377,8 +10298,6 @@ GRANT ALL ON FUNCTION public.request_messages_enforce() TO service_role;
 
 REVOKE ALL ON FUNCTION public.revoke_request_invitation(p_invitation_id uuid, p_inviter_client_id uuid) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.revoke_request_invitation(p_invitation_id uuid, p_inviter_client_id uuid) TO postgres;
-GRANT ALL ON FUNCTION public.revoke_request_invitation(p_invitation_id uuid, p_inviter_client_id uuid) TO anon;
-GRANT ALL ON FUNCTION public.revoke_request_invitation(p_invitation_id uuid, p_inviter_client_id uuid) TO authenticated;
 GRANT ALL ON FUNCTION public.revoke_request_invitation(p_invitation_id uuid, p_inviter_client_id uuid) TO service_role;
 
 --
@@ -10387,36 +10306,24 @@ GRANT ALL ON FUNCTION public.revoke_request_invitation(p_invitation_id uuid, p_i
 
 REVOKE ALL ON FUNCTION public.rls_auto_enable() FROM PUBLIC;
 GRANT ALL ON FUNCTION public.rls_auto_enable() TO postgres;
-GRANT ALL ON FUNCTION public.rls_auto_enable() TO anon;
-GRANT ALL ON FUNCTION public.rls_auto_enable() TO authenticated;
-GRANT ALL ON FUNCTION public.rls_auto_enable() TO service_role;
 
 --
 -- Name: FUNCTION set_reporting_currency(p_currency text); Type: ACL; Schema: public; Owner: -
 --
 
 GRANT ALL ON FUNCTION public.set_reporting_currency(p_currency text) TO postgres;
-GRANT ALL ON FUNCTION public.set_reporting_currency(p_currency text) TO anon;
-GRANT ALL ON FUNCTION public.set_reporting_currency(p_currency text) TO authenticated;
-GRANT ALL ON FUNCTION public.set_reporting_currency(p_currency text) TO service_role;
 
 --
 -- Name: FUNCTION set_updated_at(); Type: ACL; Schema: public; Owner: -
 --
 
 GRANT ALL ON FUNCTION public.set_updated_at() TO postgres;
-GRANT ALL ON FUNCTION public.set_updated_at() TO anon;
-GRANT ALL ON FUNCTION public.set_updated_at() TO authenticated;
-GRANT ALL ON FUNCTION public.set_updated_at() TO service_role;
 
 --
 -- Name: FUNCTION set_vault_updated_at(); Type: ACL; Schema: public; Owner: -
 --
 
 GRANT ALL ON FUNCTION public.set_vault_updated_at() TO postgres;
-GRANT ALL ON FUNCTION public.set_vault_updated_at() TO anon;
-GRANT ALL ON FUNCTION public.set_vault_updated_at() TO authenticated;
-GRANT ALL ON FUNCTION public.set_vault_updated_at() TO service_role;
 
 --
 -- Name: FUNCTION submit_couple_relationship_document(p_couple_link_id uuid, p_vault_document_id uuid, p_uploader_client_id uuid, p_extracted_text text); Type: ACL; Schema: public; Owner: -
@@ -10424,8 +10331,6 @@ GRANT ALL ON FUNCTION public.set_vault_updated_at() TO service_role;
 
 REVOKE ALL ON FUNCTION public.submit_couple_relationship_document(p_couple_link_id uuid, p_vault_document_id uuid, p_uploader_client_id uuid, p_extracted_text text) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.submit_couple_relationship_document(p_couple_link_id uuid, p_vault_document_id uuid, p_uploader_client_id uuid, p_extracted_text text) TO postgres;
-GRANT ALL ON FUNCTION public.submit_couple_relationship_document(p_couple_link_id uuid, p_vault_document_id uuid, p_uploader_client_id uuid, p_extracted_text text) TO anon;
-GRANT ALL ON FUNCTION public.submit_couple_relationship_document(p_couple_link_id uuid, p_vault_document_id uuid, p_uploader_client_id uuid, p_extracted_text text) TO authenticated;
 GRANT ALL ON FUNCTION public.submit_couple_relationship_document(p_couple_link_id uuid, p_vault_document_id uuid, p_uploader_client_id uuid, p_extracted_text text) TO service_role;
 
 --
@@ -10434,9 +10339,6 @@ GRANT ALL ON FUNCTION public.submit_couple_relationship_document(p_couple_link_i
 
 REVOKE ALL ON FUNCTION public.touch_client_dossier(p_client uuid) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.touch_client_dossier(p_client uuid) TO postgres;
-GRANT ALL ON FUNCTION public.touch_client_dossier(p_client uuid) TO anon;
-GRANT ALL ON FUNCTION public.touch_client_dossier(p_client uuid) TO authenticated;
-GRANT ALL ON FUNCTION public.touch_client_dossier(p_client uuid) TO service_role;
 
 --
 -- Name: FUNCTION touch_client_snapshot(p_client uuid); Type: ACL; Schema: public; Owner: -
@@ -10444,18 +10346,12 @@ GRANT ALL ON FUNCTION public.touch_client_dossier(p_client uuid) TO service_role
 
 REVOKE ALL ON FUNCTION public.touch_client_snapshot(p_client uuid) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.touch_client_snapshot(p_client uuid) TO postgres;
-GRANT ALL ON FUNCTION public.touch_client_snapshot(p_client uuid) TO anon;
-GRANT ALL ON FUNCTION public.touch_client_snapshot(p_client uuid) TO authenticated;
-GRANT ALL ON FUNCTION public.touch_client_snapshot(p_client uuid) TO service_role;
 
 --
 -- Name: FUNCTION touch_updated_at(); Type: ACL; Schema: public; Owner: -
 --
 
 GRANT ALL ON FUNCTION public.touch_updated_at() TO postgres;
-GRANT ALL ON FUNCTION public.touch_updated_at() TO anon;
-GRANT ALL ON FUNCTION public.touch_updated_at() TO authenticated;
-GRANT ALL ON FUNCTION public.touch_updated_at() TO service_role;
 
 --
 -- Name: FUNCTION trg_audit_bid_accepted(); Type: ACL; Schema: public; Owner: -
@@ -10463,9 +10359,6 @@ GRANT ALL ON FUNCTION public.touch_updated_at() TO service_role;
 
 REVOKE ALL ON FUNCTION public.trg_audit_bid_accepted() FROM PUBLIC;
 GRANT ALL ON FUNCTION public.trg_audit_bid_accepted() TO postgres;
-GRANT ALL ON FUNCTION public.trg_audit_bid_accepted() TO anon;
-GRANT ALL ON FUNCTION public.trg_audit_bid_accepted() TO authenticated;
-GRANT ALL ON FUNCTION public.trg_audit_bid_accepted() TO service_role;
 
 --
 -- Name: FUNCTION trg_audit_institution_change(); Type: ACL; Schema: public; Owner: -
@@ -10473,9 +10366,6 @@ GRANT ALL ON FUNCTION public.trg_audit_bid_accepted() TO service_role;
 
 REVOKE ALL ON FUNCTION public.trg_audit_institution_change() FROM PUBLIC;
 GRANT ALL ON FUNCTION public.trg_audit_institution_change() TO postgres;
-GRANT ALL ON FUNCTION public.trg_audit_institution_change() TO anon;
-GRANT ALL ON FUNCTION public.trg_audit_institution_change() TO authenticated;
-GRANT ALL ON FUNCTION public.trg_audit_institution_change() TO service_role;
 
 --
 -- Name: FUNCTION trg_audit_kyc_change(); Type: ACL; Schema: public; Owner: -
@@ -10483,9 +10373,6 @@ GRANT ALL ON FUNCTION public.trg_audit_institution_change() TO service_role;
 
 REVOKE ALL ON FUNCTION public.trg_audit_kyc_change() FROM PUBLIC;
 GRANT ALL ON FUNCTION public.trg_audit_kyc_change() TO postgres;
-GRANT ALL ON FUNCTION public.trg_audit_kyc_change() TO anon;
-GRANT ALL ON FUNCTION public.trg_audit_kyc_change() TO authenticated;
-GRANT ALL ON FUNCTION public.trg_audit_kyc_change() TO service_role;
 
 --
 -- Name: FUNCTION trg_audit_request_created(); Type: ACL; Schema: public; Owner: -
@@ -10493,9 +10380,6 @@ GRANT ALL ON FUNCTION public.trg_audit_kyc_change() TO service_role;
 
 REVOKE ALL ON FUNCTION public.trg_audit_request_created() FROM PUBLIC;
 GRANT ALL ON FUNCTION public.trg_audit_request_created() TO postgres;
-GRANT ALL ON FUNCTION public.trg_audit_request_created() TO anon;
-GRANT ALL ON FUNCTION public.trg_audit_request_created() TO authenticated;
-GRANT ALL ON FUNCTION public.trg_audit_request_created() TO service_role;
 
 --
 -- Name: FUNCTION trg_audit_row_change(); Type: ACL; Schema: public; Owner: -
@@ -10503,9 +10387,6 @@ GRANT ALL ON FUNCTION public.trg_audit_request_created() TO service_role;
 
 REVOKE ALL ON FUNCTION public.trg_audit_row_change() FROM PUBLIC;
 GRANT ALL ON FUNCTION public.trg_audit_row_change() TO postgres;
-GRANT ALL ON FUNCTION public.trg_audit_row_change() TO anon;
-GRANT ALL ON FUNCTION public.trg_audit_row_change() TO authenticated;
-GRANT ALL ON FUNCTION public.trg_audit_row_change() TO service_role;
 
 --
 -- Name: FUNCTION trg_dossier_derive(); Type: ACL; Schema: public; Owner: -
@@ -10513,9 +10394,6 @@ GRANT ALL ON FUNCTION public.trg_audit_row_change() TO service_role;
 
 REVOKE ALL ON FUNCTION public.trg_dossier_derive() FROM PUBLIC;
 GRANT ALL ON FUNCTION public.trg_dossier_derive() TO postgres;
-GRANT ALL ON FUNCTION public.trg_dossier_derive() TO anon;
-GRANT ALL ON FUNCTION public.trg_dossier_derive() TO authenticated;
-GRANT ALL ON FUNCTION public.trg_dossier_derive() TO service_role;
 
 --
 -- Name: FUNCTION trg_dossier_propagate(); Type: ACL; Schema: public; Owner: -
@@ -10523,9 +10401,6 @@ GRANT ALL ON FUNCTION public.trg_dossier_derive() TO service_role;
 
 REVOKE ALL ON FUNCTION public.trg_dossier_propagate() FROM PUBLIC;
 GRANT ALL ON FUNCTION public.trg_dossier_propagate() TO postgres;
-GRANT ALL ON FUNCTION public.trg_dossier_propagate() TO anon;
-GRANT ALL ON FUNCTION public.trg_dossier_propagate() TO authenticated;
-GRANT ALL ON FUNCTION public.trg_dossier_propagate() TO service_role;
 
 --
 -- Name: FUNCTION trg_loans_propagate(); Type: ACL; Schema: public; Owner: -
@@ -10533,9 +10408,6 @@ GRANT ALL ON FUNCTION public.trg_dossier_propagate() TO service_role;
 
 REVOKE ALL ON FUNCTION public.trg_loans_propagate() FROM PUBLIC;
 GRANT ALL ON FUNCTION public.trg_loans_propagate() TO postgres;
-GRANT ALL ON FUNCTION public.trg_loans_propagate() TO anon;
-GRANT ALL ON FUNCTION public.trg_loans_propagate() TO authenticated;
-GRANT ALL ON FUNCTION public.trg_loans_propagate() TO service_role;
 
 --
 -- Name: FUNCTION trg_recompute_goal_readiness(); Type: ACL; Schema: public; Owner: -
@@ -10543,9 +10415,6 @@ GRANT ALL ON FUNCTION public.trg_loans_propagate() TO service_role;
 
 REVOKE ALL ON FUNCTION public.trg_recompute_goal_readiness() FROM PUBLIC;
 GRANT ALL ON FUNCTION public.trg_recompute_goal_readiness() TO postgres;
-GRANT ALL ON FUNCTION public.trg_recompute_goal_readiness() TO anon;
-GRANT ALL ON FUNCTION public.trg_recompute_goal_readiness() TO authenticated;
-GRANT ALL ON FUNCTION public.trg_recompute_goal_readiness() TO service_role;
 
 --
 -- Name: FUNCTION trg_snapshot_derive(); Type: ACL; Schema: public; Owner: -
@@ -10553,9 +10422,6 @@ GRANT ALL ON FUNCTION public.trg_recompute_goal_readiness() TO service_role;
 
 REVOKE ALL ON FUNCTION public.trg_snapshot_derive() FROM PUBLIC;
 GRANT ALL ON FUNCTION public.trg_snapshot_derive() TO postgres;
-GRANT ALL ON FUNCTION public.trg_snapshot_derive() TO anon;
-GRANT ALL ON FUNCTION public.trg_snapshot_derive() TO authenticated;
-GRANT ALL ON FUNCTION public.trg_snapshot_derive() TO service_role;
 
 --
 -- Name: FUNCTION trg_snapshot_propagate(); Type: ACL; Schema: public; Owner: -
@@ -10563,9 +10429,6 @@ GRANT ALL ON FUNCTION public.trg_snapshot_derive() TO service_role;
 
 REVOKE ALL ON FUNCTION public.trg_snapshot_propagate() FROM PUBLIC;
 GRANT ALL ON FUNCTION public.trg_snapshot_propagate() TO postgres;
-GRANT ALL ON FUNCTION public.trg_snapshot_propagate() TO anon;
-GRANT ALL ON FUNCTION public.trg_snapshot_propagate() TO authenticated;
-GRANT ALL ON FUNCTION public.trg_snapshot_propagate() TO service_role;
 
 --
 -- Name: FUNCTION trg_user_inputs_propagate(); Type: ACL; Schema: public; Owner: -
@@ -10573,18 +10436,12 @@ GRANT ALL ON FUNCTION public.trg_snapshot_propagate() TO service_role;
 
 REVOKE ALL ON FUNCTION public.trg_user_inputs_propagate() FROM PUBLIC;
 GRANT ALL ON FUNCTION public.trg_user_inputs_propagate() TO postgres;
-GRANT ALL ON FUNCTION public.trg_user_inputs_propagate() TO anon;
-GRANT ALL ON FUNCTION public.trg_user_inputs_propagate() TO authenticated;
-GRANT ALL ON FUNCTION public.trg_user_inputs_propagate() TO service_role;
 
 --
 -- Name: FUNCTION update_updated_at(); Type: ACL; Schema: public; Owner: -
 --
 
 GRANT ALL ON FUNCTION public.update_updated_at() TO postgres;
-GRANT ALL ON FUNCTION public.update_updated_at() TO anon;
-GRANT ALL ON FUNCTION public.update_updated_at() TO authenticated;
-GRANT ALL ON FUNCTION public.update_updated_at() TO service_role;
 
 --
 -- Name: FUNCTION verify_market_refresh_secret(p_secret text); Type: ACL; Schema: public; Owner: -
@@ -10592,8 +10449,6 @@ GRANT ALL ON FUNCTION public.update_updated_at() TO service_role;
 
 REVOKE ALL ON FUNCTION public.verify_market_refresh_secret(p_secret text) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.verify_market_refresh_secret(p_secret text) TO postgres;
-GRANT ALL ON FUNCTION public.verify_market_refresh_secret(p_secret text) TO anon;
-GRANT ALL ON FUNCTION public.verify_market_refresh_secret(p_secret text) TO authenticated;
 GRANT ALL ON FUNCTION public.verify_market_refresh_secret(p_secret text) TO service_role;
 
 --
@@ -10602,9 +10457,6 @@ GRANT ALL ON FUNCTION public.verify_market_refresh_secret(p_secret text) TO serv
 
 REVOKE ALL ON FUNCTION public.write_audit(p_institution_id uuid, p_pending_action_id uuid, p_actor_id uuid, p_actor_type public.actor_type, p_actor_role text, p_actor_ip inet, p_action_category public.action_category_type, p_event_label text, p_resource_type text, p_resource_id uuid, p_state_before jsonb, p_state_after jsonb, p_outcome text, p_outcome_note text) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.write_audit(p_institution_id uuid, p_pending_action_id uuid, p_actor_id uuid, p_actor_type public.actor_type, p_actor_role text, p_actor_ip inet, p_action_category public.action_category_type, p_event_label text, p_resource_type text, p_resource_id uuid, p_state_before jsonb, p_state_after jsonb, p_outcome text, p_outcome_note text) TO postgres;
-GRANT ALL ON FUNCTION public.write_audit(p_institution_id uuid, p_pending_action_id uuid, p_actor_id uuid, p_actor_type public.actor_type, p_actor_role text, p_actor_ip inet, p_action_category public.action_category_type, p_event_label text, p_resource_type text, p_resource_id uuid, p_state_before jsonb, p_state_after jsonb, p_outcome text, p_outcome_note text) TO anon;
-GRANT ALL ON FUNCTION public.write_audit(p_institution_id uuid, p_pending_action_id uuid, p_actor_id uuid, p_actor_type public.actor_type, p_actor_role text, p_actor_ip inet, p_action_category public.action_category_type, p_event_label text, p_resource_type text, p_resource_id uuid, p_state_before jsonb, p_state_after jsonb, p_outcome text, p_outcome_note text) TO authenticated;
-GRANT ALL ON FUNCTION public.write_audit(p_institution_id uuid, p_pending_action_id uuid, p_actor_id uuid, p_actor_type public.actor_type, p_actor_role text, p_actor_ip inet, p_action_category public.action_category_type, p_event_label text, p_resource_type text, p_resource_id uuid, p_state_before jsonb, p_state_after jsonb, p_outcome text, p_outcome_note text) TO service_role;
 
 --
 -- Name: FUNCTION write_client_audit(p_client_id uuid, p_action_category text, p_event_label text, p_resource_type text, p_resource_id uuid, p_state_before jsonb, p_state_after jsonb, p_outcome text, p_outcome_note text, p_actor_ip inet, p_actor_device text); Type: ACL; Schema: public; Owner: -
@@ -10612,9 +10464,7 @@ GRANT ALL ON FUNCTION public.write_audit(p_institution_id uuid, p_pending_action
 
 REVOKE ALL ON FUNCTION public.write_client_audit(p_client_id uuid, p_action_category text, p_event_label text, p_resource_type text, p_resource_id uuid, p_state_before jsonb, p_state_after jsonb, p_outcome text, p_outcome_note text, p_actor_ip inet, p_actor_device text) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.write_client_audit(p_client_id uuid, p_action_category text, p_event_label text, p_resource_type text, p_resource_id uuid, p_state_before jsonb, p_state_after jsonb, p_outcome text, p_outcome_note text, p_actor_ip inet, p_actor_device text) TO postgres;
-GRANT ALL ON FUNCTION public.write_client_audit(p_client_id uuid, p_action_category text, p_event_label text, p_resource_type text, p_resource_id uuid, p_state_before jsonb, p_state_after jsonb, p_outcome text, p_outcome_note text, p_actor_ip inet, p_actor_device text) TO anon;
 GRANT ALL ON FUNCTION public.write_client_audit(p_client_id uuid, p_action_category text, p_event_label text, p_resource_type text, p_resource_id uuid, p_state_before jsonb, p_state_after jsonb, p_outcome text, p_outcome_note text, p_actor_ip inet, p_actor_device text) TO authenticated;
-GRANT ALL ON FUNCTION public.write_client_audit(p_client_id uuid, p_action_category text, p_event_label text, p_resource_type text, p_resource_id uuid, p_state_before jsonb, p_state_after jsonb, p_outcome text, p_outcome_note text, p_actor_ip inet, p_actor_device text) TO service_role;
 
 --
 -- Name: FUNCTION dispatch(p_document_id uuid); Type: ACL; Schema: vault_extract; Owner: -
@@ -10680,71 +10530,57 @@ GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE finance.holdings TO authenticated;
 --
 
 GRANT ALL ON TABLE public.account_closures TO postgres;
-GRANT ALL ON TABLE public.account_closures TO anon;
-GRANT ALL ON TABLE public.account_closures TO authenticated;
-GRANT ALL ON TABLE public.account_closures TO service_role;
+GRANT SELECT,INSERT,REFERENCES,TRIGGER,TRUNCATE,MAINTAIN,UPDATE ON TABLE public.account_closures TO service_role;
 
 --
 -- Name: TABLE account_closures_due_for_erasure; Type: ACL; Schema: public; Owner: -
 --
 
 GRANT ALL ON TABLE public.account_closures_due_for_erasure TO postgres;
-GRANT ALL ON TABLE public.account_closures_due_for_erasure TO anon;
-GRANT ALL ON TABLE public.account_closures_due_for_erasure TO authenticated;
-GRANT ALL ON TABLE public.account_closures_due_for_erasure TO service_role;
+GRANT SELECT,REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE public.account_closures_due_for_erasure TO service_role;
 
 --
 -- Name: TABLE activity_events; Type: ACL; Schema: public; Owner: -
 --
 
 GRANT ALL ON TABLE public.activity_events TO postgres;
-GRANT ALL ON TABLE public.activity_events TO anon;
-GRANT ALL ON TABLE public.activity_events TO authenticated;
-GRANT ALL ON TABLE public.activity_events TO service_role;
+GRANT SELECT,INSERT,UPDATE ON TABLE public.activity_events TO authenticated;
+GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE public.activity_events TO service_role;
 
 --
 -- Name: TABLE advisor_messages; Type: ACL; Schema: public; Owner: -
 --
 
 GRANT ALL ON TABLE public.advisor_messages TO postgres;
-GRANT ALL ON TABLE public.advisor_messages TO anon;
-GRANT ALL ON TABLE public.advisor_messages TO authenticated;
-GRANT ALL ON TABLE public.advisor_messages TO service_role;
+GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE public.advisor_messages TO service_role;
+GRANT SELECT,INSERT,DELETE ON TABLE public.advisor_messages TO authenticated;
 
 --
 -- Name: TABLE ai_usage; Type: ACL; Schema: public; Owner: -
 --
 
 GRANT ALL ON TABLE public.ai_usage TO postgres;
-GRANT ALL ON TABLE public.ai_usage TO anon;
-GRANT ALL ON TABLE public.ai_usage TO authenticated;
-GRANT ALL ON TABLE public.ai_usage TO service_role;
+GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE public.ai_usage TO service_role;
 
 --
 -- Name: TABLE app_client_seen; Type: ACL; Schema: public; Owner: -
 --
 
 GRANT ALL ON TABLE public.app_client_seen TO postgres;
-GRANT ALL ON TABLE public.app_client_seen TO anon;
-GRANT ALL ON TABLE public.app_client_seen TO authenticated;
-GRANT ALL ON TABLE public.app_client_seen TO service_role;
 
 --
 -- Name: TABLE app_error_report; Type: ACL; Schema: public; Owner: -
 --
 
 GRANT ALL ON TABLE public.app_error_report TO postgres;
-GRANT ALL ON TABLE public.app_error_report TO anon;
-GRANT ALL ON TABLE public.app_error_report TO authenticated;
-GRANT ALL ON TABLE public.app_error_report TO service_role;
 
 --
 -- Name: TABLE app_features; Type: ACL; Schema: public; Owner: -
 --
 
 GRANT ALL ON TABLE public.app_features TO postgres;
-GRANT ALL ON TABLE public.app_features TO anon;
-GRANT ALL ON TABLE public.app_features TO authenticated;
+GRANT SELECT ON TABLE public.app_features TO anon;
+GRANT SELECT ON TABLE public.app_features TO authenticated;
 GRANT ALL ON TABLE public.app_features TO service_role;
 
 --
@@ -10752,35 +10588,32 @@ GRANT ALL ON TABLE public.app_features TO service_role;
 --
 
 GRANT ALL ON TABLE public.app_release_policy TO postgres;
-GRANT ALL ON TABLE public.app_release_policy TO anon;
-GRANT ALL ON TABLE public.app_release_policy TO authenticated;
-GRANT ALL ON TABLE public.app_release_policy TO service_role;
+GRANT SELECT ON TABLE public.app_release_policy TO anon;
+GRANT SELECT ON TABLE public.app_release_policy TO authenticated;
+GRANT SELECT ON TABLE public.app_release_policy TO service_role;
 
 --
 -- Name: TABLE audit_events; Type: ACL; Schema: public; Owner: -
 --
 
 GRANT ALL ON TABLE public.audit_events TO postgres;
-GRANT ALL ON TABLE public.audit_events TO anon;
-GRANT ALL ON TABLE public.audit_events TO authenticated;
-GRANT ALL ON TABLE public.audit_events TO service_role;
+GRANT SELECT,INSERT ON TABLE public.audit_events TO authenticated;
+GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE public.audit_events TO service_role;
 
 --
 -- Name: TABLE audit_logs; Type: ACL; Schema: public; Owner: -
 --
 
 GRANT ALL ON TABLE public.audit_logs TO postgres;
-GRANT ALL ON TABLE public.audit_logs TO anon;
-GRANT ALL ON TABLE public.audit_logs TO authenticated;
-GRANT ALL ON TABLE public.audit_logs TO service_role;
+GRANT SELECT,INSERT ON TABLE public.audit_logs TO authenticated;
+GRANT SELECT,INSERT,REFERENCES,TRIGGER,MAINTAIN ON TABLE public.audit_logs TO service_role;
 
 --
 -- Name: TABLE bid_acceptances; Type: ACL; Schema: public; Owner: -
 --
 
 GRANT ALL ON TABLE public.bid_acceptances TO postgres;
-GRANT ALL ON TABLE public.bid_acceptances TO anon;
-GRANT ALL ON TABLE public.bid_acceptances TO authenticated;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.bid_acceptances TO authenticated;
 GRANT ALL ON TABLE public.bid_acceptances TO service_role;
 
 --
@@ -10788,17 +10621,15 @@ GRANT ALL ON TABLE public.bid_acceptances TO service_role;
 --
 
 GRANT ALL ON TABLE public.client_documents TO postgres;
-GRANT ALL ON TABLE public.client_documents TO anon;
-GRANT ALL ON TABLE public.client_documents TO authenticated;
-GRANT ALL ON TABLE public.client_documents TO service_role;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.client_documents TO authenticated;
+GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE public.client_documents TO service_role;
 
 --
 -- Name: TABLE client_dossier; Type: ACL; Schema: public; Owner: -
 --
 
 GRANT ALL ON TABLE public.client_dossier TO postgres;
-GRANT ALL ON TABLE public.client_dossier TO anon;
-GRANT ALL ON TABLE public.client_dossier TO authenticated;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.client_dossier TO authenticated;
 GRANT ALL ON TABLE public.client_dossier TO service_role;
 
 --
@@ -10806,17 +10637,15 @@ GRANT ALL ON TABLE public.client_dossier TO service_role;
 --
 
 GRANT ALL ON TABLE public.client_financial_snapshot TO postgres;
-GRANT ALL ON TABLE public.client_financial_snapshot TO anon;
-GRANT ALL ON TABLE public.client_financial_snapshot TO authenticated;
-GRANT ALL ON TABLE public.client_financial_snapshot TO service_role;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.client_financial_snapshot TO authenticated;
+GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE public.client_financial_snapshot TO service_role;
 
 --
 -- Name: TABLE client_loan_details; Type: ACL; Schema: public; Owner: -
 --
 
 GRANT ALL ON TABLE public.client_loan_details TO postgres;
-GRANT ALL ON TABLE public.client_loan_details TO anon;
-GRANT ALL ON TABLE public.client_loan_details TO authenticated;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.client_loan_details TO authenticated;
 GRANT ALL ON TABLE public.client_loan_details TO service_role;
 
 --
@@ -10824,17 +10653,15 @@ GRANT ALL ON TABLE public.client_loan_details TO service_role;
 --
 
 GRANT ALL ON TABLE public.clients TO postgres;
-GRANT ALL ON TABLE public.clients TO anon;
-GRANT ALL ON TABLE public.clients TO authenticated;
-GRANT ALL ON TABLE public.clients TO service_role;
+GRANT SELECT,UPDATE ON TABLE public.clients TO authenticated;
+GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE public.clients TO service_role;
 
 --
 -- Name: TABLE compliance_details; Type: ACL; Schema: public; Owner: -
 --
 
 GRANT ALL ON TABLE public.compliance_details TO postgres;
-GRANT ALL ON TABLE public.compliance_details TO anon;
-GRANT ALL ON TABLE public.compliance_details TO authenticated;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.compliance_details TO authenticated;
 GRANT ALL ON TABLE public.compliance_details TO service_role;
 
 --
@@ -10842,26 +10669,22 @@ GRANT ALL ON TABLE public.compliance_details TO service_role;
 --
 
 GRANT ALL ON TABLE public.client_profile_view TO postgres;
-GRANT ALL ON TABLE public.client_profile_view TO anon;
-GRANT ALL ON TABLE public.client_profile_view TO authenticated;
-GRANT ALL ON TABLE public.client_profile_view TO service_role;
+GRANT SELECT ON TABLE public.client_profile_view TO authenticated;
 
 --
 -- Name: TABLE client_vault_access_log; Type: ACL; Schema: public; Owner: -
 --
 
 GRANT ALL ON TABLE public.client_vault_access_log TO postgres;
-GRANT ALL ON TABLE public.client_vault_access_log TO anon;
-GRANT ALL ON TABLE public.client_vault_access_log TO authenticated;
-GRANT ALL ON TABLE public.client_vault_access_log TO service_role;
+GRANT INSERT ON TABLE public.client_vault_access_log TO authenticated;
+GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE public.client_vault_access_log TO service_role;
 
 --
 -- Name: TABLE client_vault_document; Type: ACL; Schema: public; Owner: -
 --
 
 GRANT ALL ON TABLE public.client_vault_document TO postgres;
-GRANT ALL ON TABLE public.client_vault_document TO anon;
-GRANT ALL ON TABLE public.client_vault_document TO authenticated;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.client_vault_document TO authenticated;
 GRANT ALL ON TABLE public.client_vault_document TO service_role;
 
 --
@@ -10869,8 +10692,7 @@ GRANT ALL ON TABLE public.client_vault_document TO service_role;
 --
 
 GRANT ALL ON TABLE public.client_vault_property TO postgres;
-GRANT ALL ON TABLE public.client_vault_property TO anon;
-GRANT ALL ON TABLE public.client_vault_property TO authenticated;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.client_vault_property TO authenticated;
 GRANT ALL ON TABLE public.client_vault_property TO service_role;
 
 --
@@ -10878,26 +10700,21 @@ GRANT ALL ON TABLE public.client_vault_property TO service_role;
 --
 
 GRANT ALL ON TABLE public.couple_link TO postgres;
-GRANT ALL ON TABLE public.couple_link TO anon;
-GRANT ALL ON TABLE public.couple_link TO authenticated;
-GRANT ALL ON TABLE public.couple_link TO service_role;
+GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE public.couple_link TO service_role;
 
 --
 -- Name: TABLE couple_relationship_document; Type: ACL; Schema: public; Owner: -
 --
 
 GRANT ALL ON TABLE public.couple_relationship_document TO postgres;
-GRANT ALL ON TABLE public.couple_relationship_document TO anon;
-GRANT ALL ON TABLE public.couple_relationship_document TO authenticated;
-GRANT ALL ON TABLE public.couple_relationship_document TO service_role;
+GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE public.couple_relationship_document TO service_role;
 
 --
 -- Name: TABLE employment_details; Type: ACL; Schema: public; Owner: -
 --
 
 GRANT ALL ON TABLE public.employment_details TO postgres;
-GRANT ALL ON TABLE public.employment_details TO anon;
-GRANT ALL ON TABLE public.employment_details TO authenticated;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.employment_details TO authenticated;
 GRANT ALL ON TABLE public.employment_details TO service_role;
 
 --
@@ -10905,17 +10722,14 @@ GRANT ALL ON TABLE public.employment_details TO service_role;
 --
 
 GRANT ALL ON TABLE public.kyc_scan_attempts TO postgres;
-GRANT ALL ON TABLE public.kyc_scan_attempts TO anon;
-GRANT ALL ON TABLE public.kyc_scan_attempts TO authenticated;
-GRANT ALL ON TABLE public.kyc_scan_attempts TO service_role;
+GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE public.kyc_scan_attempts TO service_role;
 
 --
 -- Name: TABLE kyc_settings; Type: ACL; Schema: public; Owner: -
 --
 
 GRANT ALL ON TABLE public.kyc_settings TO postgres;
-GRANT ALL ON TABLE public.kyc_settings TO anon;
-GRANT ALL ON TABLE public.kyc_settings TO authenticated;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.kyc_settings TO authenticated;
 GRANT ALL ON TABLE public.kyc_settings TO service_role;
 
 --
@@ -10923,17 +10737,16 @@ GRANT ALL ON TABLE public.kyc_settings TO service_role;
 --
 
 GRANT ALL ON TABLE public.kyc_submissions TO postgres;
-GRANT ALL ON TABLE public.kyc_submissions TO anon;
-GRANT ALL ON TABLE public.kyc_submissions TO authenticated;
-GRANT ALL ON TABLE public.kyc_submissions TO service_role;
+GRANT SELECT,INSERT ON TABLE public.kyc_submissions TO authenticated;
+GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE public.kyc_submissions TO service_role;
 
 --
 -- Name: TABLE market_data; Type: ACL; Schema: public; Owner: -
 --
 
 GRANT ALL ON TABLE public.market_data TO postgres;
-GRANT ALL ON TABLE public.market_data TO anon;
-GRANT ALL ON TABLE public.market_data TO authenticated;
+GRANT SELECT ON TABLE public.market_data TO anon;
+GRANT SELECT ON TABLE public.market_data TO authenticated;
 GRANT ALL ON TABLE public.market_data TO service_role;
 
 --
@@ -10941,8 +10754,8 @@ GRANT ALL ON TABLE public.market_data TO service_role;
 --
 
 GRANT ALL ON TABLE public.market_deposit_rates TO postgres;
-GRANT ALL ON TABLE public.market_deposit_rates TO anon;
-GRANT ALL ON TABLE public.market_deposit_rates TO authenticated;
+GRANT SELECT ON TABLE public.market_deposit_rates TO anon;
+GRANT SELECT ON TABLE public.market_deposit_rates TO authenticated;
 GRANT ALL ON TABLE public.market_deposit_rates TO service_role;
 
 --
@@ -10950,8 +10763,8 @@ GRANT ALL ON TABLE public.market_deposit_rates TO service_role;
 --
 
 GRANT ALL ON TABLE public.market_fx_rates TO postgres;
-GRANT ALL ON TABLE public.market_fx_rates TO anon;
-GRANT ALL ON TABLE public.market_fx_rates TO authenticated;
+GRANT SELECT ON TABLE public.market_fx_rates TO anon;
+GRANT SELECT ON TABLE public.market_fx_rates TO authenticated;
 GRANT ALL ON TABLE public.market_fx_rates TO service_role;
 
 --
@@ -10959,8 +10772,8 @@ GRANT ALL ON TABLE public.market_fx_rates TO service_role;
 --
 
 GRANT ALL ON TABLE public.market_lending_rates TO postgres;
-GRANT ALL ON TABLE public.market_lending_rates TO anon;
-GRANT ALL ON TABLE public.market_lending_rates TO authenticated;
+GRANT SELECT ON TABLE public.market_lending_rates TO anon;
+GRANT SELECT ON TABLE public.market_lending_rates TO authenticated;
 GRANT ALL ON TABLE public.market_lending_rates TO service_role;
 
 --
@@ -10968,8 +10781,8 @@ GRANT ALL ON TABLE public.market_lending_rates TO service_role;
 --
 
 GRANT ALL ON TABLE public.market_news TO postgres;
-GRANT ALL ON TABLE public.market_news TO anon;
-GRANT ALL ON TABLE public.market_news TO authenticated;
+GRANT SELECT ON TABLE public.market_news TO anon;
+GRANT SELECT ON TABLE public.market_news TO authenticated;
 GRANT ALL ON TABLE public.market_news TO service_role;
 
 --
@@ -10977,17 +10790,16 @@ GRANT ALL ON TABLE public.market_news TO service_role;
 --
 
 GRANT ALL ON TABLE public.market_preferences TO postgres;
-GRANT ALL ON TABLE public.market_preferences TO anon;
-GRANT ALL ON TABLE public.market_preferences TO authenticated;
-GRANT ALL ON TABLE public.market_preferences TO service_role;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.market_preferences TO authenticated;
+GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE public.market_preferences TO service_role;
 
 --
 -- Name: TABLE market_stories; Type: ACL; Schema: public; Owner: -
 --
 
 GRANT ALL ON TABLE public.market_stories TO postgres;
-GRANT ALL ON TABLE public.market_stories TO anon;
-GRANT ALL ON TABLE public.market_stories TO authenticated;
+GRANT SELECT ON TABLE public.market_stories TO anon;
+GRANT SELECT ON TABLE public.market_stories TO authenticated;
 GRANT ALL ON TABLE public.market_stories TO service_role;
 
 --
@@ -10995,8 +10807,7 @@ GRANT ALL ON TABLE public.market_stories TO service_role;
 --
 
 GRANT ALL ON TABLE public.notifications TO postgres;
-GRANT ALL ON TABLE public.notifications TO anon;
-GRANT ALL ON TABLE public.notifications TO authenticated;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.notifications TO authenticated;
 GRANT ALL ON TABLE public.notifications TO service_role;
 
 --
@@ -11004,71 +10815,60 @@ GRANT ALL ON TABLE public.notifications TO service_role;
 --
 
 GRANT ALL ON TABLE public.offer_listing TO postgres;
-GRANT ALL ON TABLE public.offer_listing TO anon;
-GRANT ALL ON TABLE public.offer_listing TO authenticated;
-GRANT ALL ON TABLE public.offer_listing TO service_role;
+GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE public.offer_listing TO service_role;
+GRANT SELECT ON TABLE public.offer_listing TO authenticated;
 
 --
 -- Name: TABLE request_allocations; Type: ACL; Schema: public; Owner: -
 --
 
 GRANT ALL ON TABLE public.request_allocations TO postgres;
-GRANT ALL ON TABLE public.request_allocations TO anon;
-GRANT ALL ON TABLE public.request_allocations TO authenticated;
-GRANT ALL ON TABLE public.request_allocations TO service_role;
+GRANT SELECT,INSERT ON TABLE public.request_allocations TO authenticated;
+GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE public.request_allocations TO service_role;
 
 --
 -- Name: TABLE request_decisions; Type: ACL; Schema: public; Owner: -
 --
 
 GRANT ALL ON TABLE public.request_decisions TO postgres;
-GRANT ALL ON TABLE public.request_decisions TO anon;
-GRANT ALL ON TABLE public.request_decisions TO authenticated;
-GRANT ALL ON TABLE public.request_decisions TO service_role;
+GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE public.request_decisions TO service_role;
 
 --
 -- Name: TABLE request_invitation; Type: ACL; Schema: public; Owner: -
 --
 
 GRANT ALL ON TABLE public.request_invitation TO postgres;
-GRANT ALL ON TABLE public.request_invitation TO anon;
-GRANT ALL ON TABLE public.request_invitation TO authenticated;
-GRANT ALL ON TABLE public.request_invitation TO service_role;
+GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE public.request_invitation TO service_role;
 
 --
 -- Name: TABLE request_message_template; Type: ACL; Schema: public; Owner: -
 --
 
 GRANT ALL ON TABLE public.request_message_template TO postgres;
-GRANT ALL ON TABLE public.request_message_template TO anon;
-GRANT ALL ON TABLE public.request_message_template TO authenticated;
-GRANT ALL ON TABLE public.request_message_template TO service_role;
+GRANT SELECT ON TABLE public.request_message_template TO authenticated;
+GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE public.request_message_template TO service_role;
 
 --
 -- Name: TABLE request_messages; Type: ACL; Schema: public; Owner: -
 --
 
 GRANT ALL ON TABLE public.request_messages TO postgres;
-GRANT ALL ON TABLE public.request_messages TO anon;
-GRANT ALL ON TABLE public.request_messages TO authenticated;
-GRANT ALL ON TABLE public.request_messages TO service_role;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.request_messages TO authenticated;
+GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE public.request_messages TO service_role;
 
 --
 -- Name: TABLE request_participant; Type: ACL; Schema: public; Owner: -
 --
 
 GRANT ALL ON TABLE public.request_participant TO postgres;
-GRANT ALL ON TABLE public.request_participant TO anon;
-GRANT ALL ON TABLE public.request_participant TO authenticated;
-GRANT ALL ON TABLE public.request_participant TO service_role;
+GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE public.request_participant TO service_role;
 
 --
 -- Name: TABLE requests; Type: ACL; Schema: public; Owner: -
 --
 
 GRANT ALL ON TABLE public.requests TO postgres;
-GRANT ALL ON TABLE public.requests TO anon;
-GRANT ALL ON TABLE public.requests TO authenticated;
+GRANT SELECT,INSERT ON TABLE public.requests TO authenticated;
 GRANT ALL ON TABLE public.requests TO service_role;
 
 --
@@ -11076,9 +10876,7 @@ GRANT ALL ON TABLE public.requests TO service_role;
 --
 
 GRANT ALL ON TABLE public.v_request_patterns TO postgres;
-GRANT ALL ON TABLE public.v_request_patterns TO anon;
-GRANT ALL ON TABLE public.v_request_patterns TO authenticated;
-GRANT ALL ON TABLE public.v_request_patterns TO service_role;
+GRANT SELECT,REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE public.v_request_patterns TO service_role;
 
 --
 -- Name: DEFAULT PRIVILEGES FOR TABLES; Type: DEFAULT ACL; Schema: finance; Owner: -

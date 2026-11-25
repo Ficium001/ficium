@@ -1,5 +1,5 @@
 -- Ficium App DB baseline. GENERATED: do not edit by hand.
--- Through 20261124110000_drop_market_archive. Regenerate with the schema-baseline workflow on a
+-- Through 20261125100000_audit_logs_append_only. Regenerate with the schema-baseline workflow on a
 -- schema-baseline/* branch; see supabase/baseline/README.md.
 
 -- Storage buckets
@@ -24,7 +24,8 @@ SELECT cron.schedule('api-traffic-purge', '37 2 * * *', 'DELETE FROM admin.api_t
 SELECT cron.schedule('app-error-report-purge', '23 2 * * *', 'DELETE FROM public.app_error_report WHERE day < (now() AT TIME ZONE ''utc'')::date - 35');
 SELECT cron.schedule('bom-fx-weekdays', '20 5,8,11,14 * * 1-5', '
   SELECT net.http_post(
-    url     := ''https://__PROJECT_REF__.supabase.co/functions/v1/bom-fx'',
+    url     := (select decrypted_secret from vault.decrypted_secrets where name = ''functions_base_url'')
+               || ''/bom-fx'',
     body    := ''{}''::jsonb,
     headers := jsonb_build_object(
       ''Content-Type'', ''application/json'',
@@ -38,7 +39,8 @@ SELECT cron.schedule('expire-request-invitations', '*/15 * * * *', 'update publi
 SELECT cron.schedule('integration-dispatch', '* * * * *', 'SELECT integration.trigger_dispatch()');
 SELECT cron.schedule('market-refresh-4h', '0 */4 * * *', '
   SELECT net.http_post(
-    url     := ''https://__PROJECT_REF__.supabase.co/functions/v1/market-refresh'',
+    url     := (select decrypted_secret from vault.decrypted_secrets where name = ''functions_base_url'')
+               || ''/market-refresh'',
     body    := ''{}''::jsonb,
     headers := jsonb_build_object(
       ''Content-Type'', ''application/json'',
@@ -46,7 +48,7 @@ SELECT cron.schedule('market-refresh-4h', '0 */4 * * *', '
                          where name = ''market_refresh_cron_secret'')),
     timeout_milliseconds := 60000
   ) AS request_id;
-  ');
+');
 SELECT cron.schedule('notify-expiring-requests', '0 * * * *', ' SELECT public.notify_expiring_requests(); ');
 
 -- Realtime
@@ -54,4 +56,4 @@ SELECT cron.schedule('notify-expiring-requests', '0 * * * *', ' SELECT public.no
 ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.request_messages;
 
--- Vault secrets this database needs (names only; values come from Doppler): admin_outbox_cron_secret, admin_outbox_dispatch_url, app_service_secret, borrower_anon_key, integration_cron_secret, integration_dispatch_url, market_refresh_cron_secret
+-- Vault secrets this database needs (names only; values come from Doppler): admin_outbox_cron_secret, admin_outbox_dispatch_url, app_service_secret, borrower_anon_key, functions_base_url, integration_cron_secret, integration_dispatch_url, market_refresh_cron_secret
