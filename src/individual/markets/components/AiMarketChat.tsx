@@ -2,6 +2,7 @@ import { useState, useRef, useEffect }  from "react";
 import { Sparkles, Send, RotateCcw, X } from "lucide-react";
 import { useAiMarketChat }              from "../hooks/useAiMarketChat";
 import type { MarketDataResult }        from "../types";
+import { aiValue } from "../lib/snapshot";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AiMarketChat — inline AI Q&A panel on the Markets page.
@@ -27,12 +28,12 @@ function buildSnapshot(marketData: MarketDataResult | null): Record<string, stri
   const r = marketData.readings;
 
   const snapshot: Record<string, string | number> = {
-    "Repo Rate":       r.repo_rate?.displayValue     ?? "—",
-    "USD/MUR":         r.usd_mur?.displayValue       ?? "—",
-    "EUR/MUR":         r.eur_mur?.displayValue       ?? "—",
-    "GBP/MUR":         r.gbp_mur?.displayValue       ?? "—",
-    "SEMDEX":          r.semdex?.displayValue         ?? "—",
-    "Inflation YoY":   r.inflation_yoy?.displayValue  ?? "—",
+    "Repo Rate":       aiValue(r.repo_rate),
+    "USD/MUR":         aiValue(r.usd_mur),
+    "EUR/MUR":         aiValue(r.eur_mur),
+    "GBP/MUR":         aiValue(r.gbp_mur),
+    "SEMDEX":          aiValue(r.semdex),
+    "Inflation YoY":   aiValue(r.inflation_yoy),
     "USD change %":    r.usd_mur?.change              ?? 0,
     "SEMDEX change %": r.semdex?.change               ?? 0,
   };
