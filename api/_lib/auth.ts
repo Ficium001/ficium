@@ -16,6 +16,7 @@
  */
 
 import { Env } from "./env.js";
+import { sessionIdFromToken } from "./otp/codes.js";
 
 export class AuthError extends Error {
   status: number;
@@ -51,7 +52,16 @@ function bearer(req: Req): string | null {
  * Validate the caller's Supabase access token against the Auth API.
  * Returns the authenticated user, or throws AuthError(401).
  */
-export async function requireUser(req: Req): Promise<AuthedUser> {
+export interface RequireUserOptions {
+  /**
+   * Accept a session that has not entered its sign-in code yet. Only the OTP routes
+   * themselves (and read-only status) may set this; everything else is refused until
+   * the session is verified, whenever enforcement is on (security.otp_config).
+   */
+  allowUnverifiedOtp?: boolean;
+}
+
+export async function requireUser(req: Req, opts: RequireUserOptions = {}): Promise<AuthedUser> {
   const token = bearer(req);
   if (!token) throw new AuthError("Missing bearer token", 401, "NO_TOKEN");
 
@@ -80,11 +90,34 @@ export async function requireUser(req: Req): Promise<AuthedUser> {
   };
   if (!u?.id) throw new AuthError("Invalid token payload", 401, "BAD_TOKEN");
 
+  if (!opts.allowUnverifiedOtp) await requireOtpVerified(url, key, token, u.id);
+
   return {
     id: u.id,
     email: u.email ?? null,
     role: (u.user_metadata?.role as string) ?? u.role ?? null,
   };
+}
+
+/**
+ * Sign-in OTP gate. One PostgREST call; fails closed (a session we cannot check is refused).
+ */
+async function requireOtpVerified(url: string, key: string, token: string, userId: string): Promise<void> {
+  const sessionId = sessionIdFromToken(token);
+  type OtpStatus = { enforced?: boolean; verified?: boolean };
+  let status = null as OtpStatus | null;
+  try {
+    const r = await fetch(`${url}/rest/v1/rpc/otp_status`, {
+      method: "POST",
+      headers: { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ p_user: userId, p_session: sessionId }),
+    });
+    if (r.ok) status = (await r.json()) as OtpStatus;
+  } catch { /* handled below */ }
+  if (!status) throw new AuthError("Sign-in check unavailable", 503, "OTP_UNAVAILABLE");
+  if (status.enforced && !status.verified) {
+    throw new AuthError("Enter the code we sent you to finish signing in.", 401, "OTP_REQUIRED");
+  }
 }
 
 /**

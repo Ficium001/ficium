@@ -3,6 +3,7 @@ import { openExternal } from "@/shared/platform";
 import { useEffect } from "react";
 import type { ReactNode } from "react";
 import { useAuth } from "../features/auth/context/AuthContext";
+import { OtpGate } from "../features/auth/otp/components/OtpGate";
 
 /**
  * The Ficium Portal is the canonical home for institution (`bank`) and `admin`
@@ -33,6 +34,19 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
   if (isLoading) return <LoadingScreen />;
   if (!user) return <Navigate to="/login" state={{ from: location.pathname }} replace />;
 
+  return <OtpGate fallback={<LoadingScreen />}>{children}</OtpGate>;
+}
+
+/**
+ * Signed in, sign-in code not necessarily entered yet: only the code screen itself.
+ */
+export function SessionOnlyRoute({ children }: { children: ReactNode }) {
+  const { user, role, isLoading } = useAuth();
+
+  if (isLoading) return <LoadingScreen />;
+  if (!user) return <Navigate to="/login" replace />;
+  if (role === "bank" || role === "admin") return <PortalRedirect />;
+
   return <>{children}</>;
 }
 
@@ -48,7 +62,7 @@ export function ClientOnlyRoute({ children }: { children: ReactNode }) {
   if (!user) return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   if (role === "bank" || role === "admin") return <PortalRedirect />;
 
-  return <>{children}</>;
+  return <OtpGate fallback={<LoadingScreen />}>{children}</OtpGate>;
 }
 
 /**
