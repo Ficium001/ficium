@@ -19,4 +19,5 @@ export const EXPECTED_MIGRATIONS: readonly string[] = [
   "20261125100000_audit_logs_append_only",
   "20261126090000_pg_trgm_schema_and_storage_policy",
   "20261126110000_drop_broken_institution_audit_policy",
+  "20261126180000_login_otp",
 ];

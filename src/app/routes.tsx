@@ -1,7 +1,7 @@
 import { lazy, Suspense, Component } from "react";
 import type { ReactNode, ErrorInfo } from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
-import { PublicOnlyRoute, ClientOnlyRoute } from "./ProtectedRoute";
+import { PublicOnlyRoute, ClientOnlyRoute, SessionOnlyRoute } from "./ProtectedRoute";
 
 // Splash is the anonymous landing route — keep it eager so it paints immediately.
 import Splash    from "../features/marketing/pages/Splash";
@@ -13,6 +13,7 @@ import PortalRedirect from "../shared/components/PortalRedirect";
 // Lazy so the form stack loads when a form is actually reached.
 const Login       = lazy(() => import("../features/auth/pages/Login"));
 const CheckEmail  = lazy(() => import("../features/auth/pages/CheckEmail"));
+const VerifySignIn = lazy(() => import("../features/auth/otp/pages/VerifySignIn"));
 
 const RegisterTypeSelect  = lazy(() => import("../features/auth/pages/RegisterTypeSelect"));
 const RegisterIndividual  = lazy(() => import("../individual/auth/pages/RegisterIndividual"));
@@ -108,6 +109,7 @@ export const router = createBrowserRouter([
   { path: "/invite/:token",          element: <S><InvitePage /></S> },
 
   { path: "/login",                  element: <S><PublicOnlyRoute><Login /></PublicOnlyRoute></S> },
+  { path: "/verify-sign-in",         element: <SessionOnlyRoute><S><VerifySignIn /></S></SessionOnlyRoute> },
   { path: "/forgot-password",        element: <S><ForgotPassword /></S> },
   { path: "/auth/reset-password",    element: <S><ResetPassword /></S> },
   { path: "/register",               element: <S><RegisterTypeSelect /></S> },

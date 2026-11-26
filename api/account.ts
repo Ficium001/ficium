@@ -12,6 +12,8 @@
  * A retry after a partial failure is safe: step 1 reports already_closed and
  * step 2 runs again.
  *
+ * Also serves the sign-in OTP routes (?op=otp), see _lib/handlers/otp.ts.
+ *
  * OFF unless ACCOUNT_CLOSURE_RETENTION_YEARS is set (≥ 7): see _lib/env.ts.
  */
 import { Env }                                    from "./_lib/env.js";
@@ -20,6 +22,7 @@ import { requireUser, sendAuthError, bearerToken } from "./_lib/auth.js";
 import { getServiceDb }                           from "./_lib/db.js";
 import { handleCors }                             from "./_lib/cors.js";
 import { passwordEnteredRecently }                from "./_lib/recent-auth.js";
+import { handleOtp }                              from "./_lib/handlers/otp.js";
 
 export const config = { runtime: "nodejs" };
 
@@ -29,6 +32,10 @@ const BAN_DURATION = "876000h";
 export default async function handler(req: any, res: any): Promise<void> {
   if (handleCors(req, res)) return;
   try {
+    if (req.query?.op === "otp") {
+      if (req.method === "GET" || req.method === "POST") return await handleOtp(req, res);
+      return Response.methodNotAllowed(res, ["GET", "POST"]);
+    }
     if (req.method === "GET")  return await status(req, res);
     if (req.method === "POST") return await close(req, res);
     return Response.methodNotAllowed(res, ["GET", "POST"]);
