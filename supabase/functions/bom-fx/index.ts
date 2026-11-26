@@ -124,12 +124,27 @@ interface Quote { date: string; bank: string; code: string; buy: number; sell: n
 // deno-lint-ignore no-explicit-any
 const client = (Deno as any).createHttpClient({ caCerts: [CA_INTERMEDIATE, CA_ROOT] });
 
+// bom.mu drops connections now and then ("peer closed connection" on about one run in four,
+// Nov 2026). Retry a dropped connection or a 5xx twice with a short backoff; a 4xx is not retried.
+const RETRY_DELAYS_MS = [2000, 6000];
+
 async function getPage(p: number): Promise<string> {
   const url = p === 0 ? BASE : `${BASE}?page=${p}`;
-  // deno-lint-ignore no-explicit-any
-  const r = await fetch(url, { client, headers: { "User-Agent": "Ficium/1.0 (+https://ficium.net)" }, signal: AbortSignal.timeout(20000) } as any);
-  if (!r.ok) throw new Error(`bom.mu ${r.status} on page ${p}`);
-  return await r.text();
+  for (let attempt = 0; ; attempt++) {
+    try {
+      // deno-lint-ignore no-explicit-any
+      const r = await fetch(url, { client, headers: { "User-Agent": "Ficium/1.0 (+https://ficium.net)" }, signal: AbortSignal.timeout(20000) } as any);
+      if (r.ok) return await r.text();
+      const err = new Error(`bom.mu ${r.status} on page ${p}`);
+      if (r.status < 500 || attempt >= RETRY_DELAYS_MS.length) throw err;
+      console.warn(`${err.message}, retrying`);
+    } catch (e) {
+      if (e instanceof Error && /^bom\.mu [1-4]\d\d /.test(e.message)) throw e;
+      if (attempt >= RETRY_DELAYS_MS.length) throw e;
+      console.warn(`bom.mu page ${p} attempt ${attempt + 1} failed, retrying: ${e}`);
+    }
+    await new Promise((res) => setTimeout(res, RETRY_DELAYS_MS[attempt]));
+  }
 }
 
 const cell = (row: string, cls: string): number | null => {
