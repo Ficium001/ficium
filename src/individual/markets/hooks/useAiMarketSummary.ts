@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { streamClaude }                from "@/shared/lib/claude";
 import type { MarketDataResult }       from "../types";
+import { aiValue } from "../lib/snapshot";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // useAiMarketSummary — streams an AI-generated one-sentence market summary.
@@ -37,12 +38,12 @@ export function useAiMarketSummary(
 
     const { readings } = marketData;
     const snap = {
-      repoRate:        readings.repo_rate?.displayValue        ?? "4.00%",
-      usdMur:          readings.usd_mur?.displayValue          ?? "—",
-      eurMur:          readings.eur_mur?.displayValue          ?? "—",
-      gbpMur:          readings.gbp_mur?.displayValue          ?? "—",
-      semdex:          readings.semdex?.displayValue           ?? "—",
-      inflation:       readings.inflation_yoy?.displayValue    ?? "—",
+      repoRate:        aiValue(readings.repo_rate),
+      usdMur:          aiValue(readings.usd_mur),
+      eurMur:          aiValue(readings.eur_mur),
+      gbpMur:          aiValue(readings.gbp_mur),
+      semdex:          aiValue(readings.semdex),
+      inflation:       aiValue(readings.inflation_yoy),
       usdChange:       readings.usd_mur?.change                ?? 0,
       semdexChange:    readings.semdex?.change                 ?? 0,
       inflationChange: readings.inflation_yoy?.change          ?? 0,
