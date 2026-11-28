@@ -18,6 +18,24 @@ function getEnv(key: string): string {
 
 const warnedLegacy = new Set<string>();
 
+/** The production App DB. Its service_role key bypasses every RLS policy on borrower data. */
+export const PRODUCTION_SUPABASE_REF = "wixfhjlsjkiwfvqewvmt";
+
+/**
+ * The service_role key, except in a Vercel preview pointed at the production database: preview
+ * deployments run unreviewed branch code, so they must never hold the key to live borrower data.
+ * Returns "" there (callers already treat a missing key as "not configured" and refuse the call).
+ * A preview pointed at a separate staging project keeps working.
+ */
+export function serviceKeyFor(vercelEnv: string, supabaseUrl: string, key: string): string {
+  if (!key) return "";
+  if (vercelEnv === "preview" && supabaseUrl.includes(`${PRODUCTION_SUPABASE_REF}.supabase.co`)) {
+    console.error("[env] refusing SUPABASE_SERVICE_ROLE_KEY: preview deployment pointed at the production DB");
+    return "";
+  }
+  return key;
+}
+
 /**
  * TEMPORARY read of a server secret still stored under a VITE_ name in Vercel. Vite inlines only
  * VITE_ variables that browser code references, and CI forbids any such reference in src/, so the
@@ -36,7 +54,11 @@ function legacyViteName(key: string): string {
 export const Env = {
   anthropicApiKey:    () => getEnv("ANTHROPIC_API_KEY"),
   supabaseUrl:        () => getEnv("VITE_SUPABASE_URL") || getEnv("SUPABASE_URL"),
-  supabaseServiceKey: () => getEnv("SUPABASE_SERVICE_ROLE_KEY"),
+  supabaseServiceKey: () => serviceKeyFor(
+    getEnv("VERCEL_ENV"),
+    getEnv("VITE_SUPABASE_URL") || getEnv("SUPABASE_URL"),
+    getEnv("SUPABASE_SERVICE_ROLE_KEY"),
+  ),
   resendApiKey:       () => getEnv("RESEND_API_KEY"),
   awsAccessKeyId:     () => getEnv("AWS_ACCESS_KEY_ID")     || legacyViteName("VITE_AWS_ACCESS_KEY_ID"),
   awsSecretAccessKey: () => getEnv("AWS_SECRET_ACCESS_KEY") || legacyViteName("VITE_AWS_SECRET_ACCESS_KEY"),
