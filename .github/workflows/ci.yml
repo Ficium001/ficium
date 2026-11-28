@@ -41,7 +41,7 @@ jobs:
         # the full repo history found zero verified secrets. Remove
         # continue-on-error once the runner-level cause is found — see
         # PR #37.
-        uses: trufflesecurity/trufflehog@3bd2b5887eb0efb8fa18bfd1d296032924e4ffdc # v3.99.9
+        uses: trufflesecurity/trufflehog@4ef51f69ca6347aaa76a5e64a87eac9c0c909f71 # v3.100.1
         continue-on-error: true
         with:
           extra_args: --only-verified
